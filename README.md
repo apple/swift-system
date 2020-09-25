@@ -24,7 +24,7 @@ try fd.closeAfter {
 
 ## Adding `SystemPackage` as a Dependency
 
-To use the `SystemPackage` library in a SwiftPM project, 
+To use the `SystemPackage` library in a SwiftPM project,
 add the following line to the dependencies in your `Package.swift` file:
 
 ```swift
