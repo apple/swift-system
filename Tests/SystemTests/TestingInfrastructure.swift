@@ -18,8 +18,16 @@ internal protocol TestCase {
 
   // TODO: Instead have an attribute to register a test in a allTests var, similar to the argument parser.
   func runAllTests()
+
+  // Customization hook: add adornment to reported failure reason
+  // Defaut: reason or empty
+  func failureMessage(_ reason: String?) -> String
 }
+
 extension TestCase {
+  // Default implementation
+  func failureMessage(_ reason: String?) -> String { reason ?? "" }
+
   func expectEqualSequence<S1: Sequence, S2: Sequence>(
     _ actual: S1, _ expected: S2,
     _ message: String? = nil
@@ -50,8 +58,9 @@ extension TestCase {
   }
 
   func fail(_ reason: String? = nil) {
-    XCTAssert(false, reason ?? "", file: file, line: line)
+    XCTAssert(false, failureMessage(reason), file: file, line: line)
   }
+
 }
 
 internal struct MockTestCase: TestCase {

@@ -59,7 +59,8 @@ extension UnsafeBufferPointer where Element == CChar {
 /// like case insensitivity, Unicode normalization, and symbolic links.
 // @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
 public struct FilePath {
-  internal var bytes: [CChar]
+  internal typealias Storage = [CChar]
+  internal var bytes: Storage
 
   /// Creates an empty, null-terminated path.
   public init() {
@@ -186,6 +187,9 @@ extension String {
     }
     self = str
   }
+
+  // TODO: Consider a init?(validating:), keeping the encoding agnostic in API and
+  // dependent on file system.
 }
 
 // @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
@@ -205,6 +209,7 @@ extension FilePath: Hashable, Codable {}
 extension FilePath {
   fileprivate func _invariantCheck() {
     precondition(bytes.last! == 0)
+    // TODO: Should this be a hard trap?
     _debugPrecondition(bytes.firstIndex(of: 0) == bytes.count - 1)
   }
 }
