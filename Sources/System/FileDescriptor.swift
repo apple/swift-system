@@ -83,6 +83,7 @@ extension FileDescriptor {
     @_alwaysEmitIntoClient
     private init(_ raw: CInt) { self.init(rawValue: raw) }
 
+#if !os(Windows)
     /// Indicates that opening the file doesn't
     /// wait for the file or device to become available.
     ///
@@ -103,6 +104,7 @@ extension FileDescriptor {
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "nonBlocking")
     public static var O_NONBLOCK: OpenOptions { nonBlocking }
+#endif
 
     /// Indicates that each write operation appends to the file.
     ///
@@ -201,6 +203,7 @@ extension FileDescriptor {
     public static var O_EXLOCK: OpenOptions { exclusiveLock }
 #endif
 
+#if !os(Windows)
     /// Indicates that opening the file doesn't follow symlinks.
     ///
     /// If you specify this option
@@ -216,6 +219,7 @@ extension FileDescriptor {
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "noFollow")
     public static var O_NOFOLLOW: OpenOptions { noFollow }
+#endif
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
     /// Indicates that opening the file
@@ -252,6 +256,7 @@ extension FileDescriptor {
     public static var O_EVTONLY: OpenOptions { eventOnly }
 #endif
 
+#if !os(Windows)
     /// Indicates that executing a program closes the file.
     ///
     /// Normally, file descriptors remain open
@@ -271,6 +276,7 @@ extension FileDescriptor {
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "closeOnExec")
     public static var O_CLOEXEC: OpenOptions { closeOnExec }
+#endif
   }
 
   /// Options for specifying what a file descriptor's offset is relative to.
@@ -412,6 +418,13 @@ extension FileDescriptor.OpenOptions
       (.symlink, ".symlink"),
       (.eventOnly, ".eventOnly"),
       (.closeOnExec, ".closeOnExec")
+    ]
+#elseif os(Windows)
+    let descriptions: [(Element, StaticString)] = [
+      (.append, ".append"),
+      (.create, ".create"),
+      (.truncate, ".truncate"),
+      (.exclusiveCreate, ".exclusiveCreate"),
     ]
 #else
     let descriptions: [(Element, StaticString)] = [

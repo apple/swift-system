@@ -229,6 +229,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "badAddress")
   public static var EFAULT: Errno { badAddress }
 
+#if !os(Windows)
   /// Not a block device.
   ///
   /// You attempted a block device operation on a nonblock device or file.
@@ -240,6 +241,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "notBlockDevice")
   public static var ENOTBLK: Errno { notBlockDevice }
+#endif
 
   /// Resource busy.
   ///
@@ -360,6 +362,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "tooManyOpenFiles")
   public static var EMFILE: Errno { tooManyOpenFiles }
 
+#if !os(Windows)
   /// Inappropriate control function.
   ///
   /// You attempted a control function
@@ -388,6 +391,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "textFileBusy")
   public static var ETXTBSY: Errno { textFileBusy }
+#endif
 
   /// The file is too large.
   ///
@@ -630,6 +634,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "socketTypeNotSupported")
   public static var ESOCKTNOSUPPORT: Errno { socketTypeNotSupported }
 
+#if !os(Windows)
   /// Not supported.
   ///
   /// The attempted operation isn't supported
@@ -642,6 +647,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "notSupported")
   public static var ENOTSUP: Errno { notSupported }
+#endif
 
   /// Protocol family not supported.
   ///
@@ -1123,6 +1129,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   public static var EDEVERR: Errno { deviceError }
 #endif
 
+#if !os(Windows)
   /// Value too large to be stored in data type.
   ///
   /// A numerical result of the function
@@ -1135,6 +1142,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "overflow")
   public static var EOVERFLOW: Errno { overflow }
+#endif
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
   /// Bad executable or shared library.
@@ -1199,6 +1207,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "canceled")
   public static var ECANCELED: Errno { canceled }
 
+#if !os(Windows)
   /// Identifier removed.
   ///
   /// An IPC identifier was removed while the current process was waiting on it.
@@ -1223,6 +1232,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "noMessage")
   public static var ENOMSG: Errno { noMessage }
+#endif
 
   /// Illegal byte sequence.
   ///
@@ -1252,6 +1262,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   public static var ENOATTR: Errno { attributeNotFound }
 #endif
 
+#if !os(Windows)
   /// Bad message.
   ///
   /// The message to be received is inappropriate
@@ -1350,6 +1361,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "timeout")
   public static var ETIME: Errno { timeout }
+#endif
 
   /// Operation not supported on socket.
   ///
@@ -1411,6 +1423,7 @@ extension Errno {
   public static var ENOPOLICY: Errno { noSuchPolicy }
 #endif
 
+#if !os(Windows)
   /// State not recoverable.
   ///
   /// The corresponding C error is `ENOTRECOVERABLE`.
@@ -1430,6 +1443,7 @@ extension Errno {
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "previousOwnerDied")
   public static var EOWNERDEAD: Errno { previousOwnerDied }
+#endif
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
   /// Interface output queue is full.
