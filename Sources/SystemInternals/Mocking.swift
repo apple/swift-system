@@ -90,11 +90,22 @@ import Glibc
 #error("Unsupported Platform")
 #endif
 
+#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+private func releaseObject(_ raw: UnsafeMutableRawPointer) -> () {
+  Unmanaged<MockingDriver>.fromOpaque(raw).release()
+}
+#elseif os(Linux) || os(FreeBSD) || os(Android)
+private func releaseObject(_ raw: UnsafeMutableRawPointer?) -> () {
+  guard let object = raw else { return }
+  Unmanaged<MockingDriver>.fromOpaque(object).release()
+}
+#else
+#error("Unsupported Platform")
+#endif
+
+
 internal let key: pthread_key_t = {
   var raw = pthread_key_t()
-  func releaseObject(_ raw: UnsafeMutableRawPointer) -> () {
-    Unmanaged<MockingDriver>.fromOpaque(raw).release()
-  }
   guard 0 == pthread_key_create(&raw, releaseObject) else {
     fatalError("Unable to create key")
   }
