@@ -21,7 +21,7 @@ let targets: [PackageDescription.Target] = [
     name: "SystemInternals",
     dependencies: ["CSystem"],
     swiftSettings: [
-      .define("ENABLE_MOCKING")
+      .define("ENABLE_MOCKING", .when(configuration: .debug))
     ]),
   .target(
     name: "CSystem",

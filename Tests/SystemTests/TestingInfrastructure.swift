@@ -79,6 +79,7 @@ internal struct MockTestCase: TestCase {
   }
 
   func runAllTests() {
+    XCTAssertFalse(MockingDriver.enabled)
     MockingDriver.withMockingEnabled { mocking in
       // Make sure we completely match the trace queue
       self.expectTrue(mocking.trace.isEmpty)

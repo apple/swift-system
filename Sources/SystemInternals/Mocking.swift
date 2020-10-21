@@ -17,6 +17,7 @@
 // enabled in testing builds of System currently, to minimize runtime overhead of release builds.
 //
 
+#if ENABLE_MOCKING
 public struct Trace {
   public struct Entry: Hashable {
     var name: String
@@ -152,13 +153,19 @@ private var contextualMockingEnabled: Bool {
   return currentMockingDriver != nil
 }
 
+extension MockingDriver {
+  public static var enabled: Bool { mockingEnabled }
+}
+
+#endif // ENABLE_MOCKING
+
 @inline(__always)
 internal var mockingEnabled: Bool {
   // Fast constant-foldable check for release builds
-  #if !ENABLE_MOCKING
+  #if ENABLE_MOCKING
+    return contextualMockingEnabled
+  #else
     return false
   #endif
-
-  return contextualMockingEnabled
 }
 

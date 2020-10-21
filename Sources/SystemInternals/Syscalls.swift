@@ -25,6 +25,7 @@ private func mockImpl(
   name: String,
   _ args: [AnyHashable]
 ) -> CInt {
+  #if ENABLE_MOCKING
   let origName = originalSyscallName(name)
   guard let driver = currentMockingDriver else {
     fatalError("Mocking requested from non-mocking context")
@@ -42,6 +43,9 @@ private func mockImpl(
     driver.forceErrno = count > 1 ? .counted(errno: e, count: count-1) : .none
     return -1
   }
+  #else
+  fatalError("Mocking uses in non-mocking-enabld build")
+  #endif
 
   return 0
 }
