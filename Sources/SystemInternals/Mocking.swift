@@ -91,23 +91,9 @@ import Glibc
 #error("Unsupported Platform")
 #endif
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
-private func releaseObject(_ raw: UnsafeMutableRawPointer) -> () {
-  Unmanaged<MockingDriver>.fromOpaque(raw).release()
-}
-#elseif os(Linux) || os(FreeBSD) || os(Android)
-private func releaseObject(_ raw: UnsafeMutableRawPointer?) -> () {
-  guard let object = raw else { return }
-  Unmanaged<MockingDriver>.fromOpaque(object).release()
-}
-#else
-#error("Unsupported Platform")
-#endif
-
-
 internal let key: pthread_key_t = {
   var raw = pthread_key_t()
-  guard 0 == pthread_key_create(&raw, releaseObject) else {
+  guard 0 == pthread_key_create(&raw, nil) else {
     fatalError("Unable to create key")
   }
   return raw
@@ -130,16 +116,18 @@ extension MockingDriver {
     _ f: (MockingDriver) throws -> ()
   ) rethrows {
     let priorMocking = currentMockingDriver
+    let driver = MockingDriver()
+
     defer {
       if let object = priorMocking {
         pthread_setspecific(key, Unmanaged.passUnretained(object).toOpaque())
       } else {
         pthread_setspecific(key, nil)
       }
+      _fixLifetime(driver)
     }
 
-    let driver = MockingDriver()
-    guard 0 == pthread_setspecific(key, Unmanaged.passRetained(driver).toOpaque()) else {
+    guard 0 == pthread_setspecific(key, Unmanaged.passUnretained(driver).toOpaque()) else {
       fatalError("Unable to set TLSData")
     }
 
