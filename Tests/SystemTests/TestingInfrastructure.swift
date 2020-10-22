@@ -98,9 +98,7 @@ internal struct MockTestCase: TestCase {
       // retry, to make sure they don't spin (e.g. if API changes to include
       // interruptable)
       do {
-        let oldErrno = mocking.forceErrno
         mocking.forceErrno = .always(errno: EINTR)
-        defer { mocking.forceErrno = oldErrno }
         try body(!interruptable)
         self.fail()
       } catch Errno.interrupted {
@@ -113,8 +111,6 @@ internal struct MockTestCase: TestCase {
       // Force a limited number of EINTRs, and make sure interruptable functions
       // retry that number of times. Non-interruptable functions should throw it.
       do {
-        let origForceErrno = mocking.forceErrno
-        defer { mocking.forceErrno = origForceErrno }
         mocking.forceErrno = .counted(errno: EINTR, count: 3)
 
         try body(interruptable)
