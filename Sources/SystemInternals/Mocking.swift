@@ -87,10 +87,22 @@ public class MockingDriver {
 import Darwin
 #elseif os(Linux) || os(FreeBSD) || os(Android)
 import Glibc
+#elseif os(Windows)
+import ucrt
+import WinSDK
 #else
 #error("Unsupported Platform")
 #endif
 
+#if os(Windows)
+internal let key: DWORD = {
+  var raw: DWORD = FlsAlloc(nil)
+  if raw == FLS_OUT_OF_INDEXES {
+    fatalError("Unable to create key")
+  }
+  return raw
+}()
+#else
 internal let key: pthread_key_t = {
   var raw = pthread_key_t()
   guard 0 == pthread_key_create(&raw, nil) else {
@@ -98,13 +110,18 @@ internal let key: pthread_key_t = {
   }
   return raw
 }()
+#endif
 
 internal var currentMockingDriver: MockingDriver? {
   #if !ENABLE_MOCKING
     fatalError("Contextual mocking in non-mocking build")
   #endif
 
+#if os(Windows)
+  guard let rawPtr = FlsGetValue(key) else { return nil }
+#else
   guard let rawPtr = pthread_getspecific(key) else { return nil }
+#endif
 
   return Unmanaged<MockingDriver>.fromOpaque(rawPtr).takeUnretainedValue()
 }
@@ -120,16 +137,30 @@ extension MockingDriver {
 
     defer {
       if let object = priorMocking {
+#if os(Windows)
+        _ = FlsSetValue(key, Unmanaged.passUnretained(object).toOpaque())
+#else
         pthread_setspecific(key, Unmanaged.passUnretained(object).toOpaque())
+#endif
       } else {
+#if os(Windows)
+        _ = FlsSetValue(key, nil)
+#else
         pthread_setspecific(key, nil)
+#endif
       }
       _fixLifetime(driver)
     }
 
+#if os(Windows)
+    guard FlsSetValue(key, Unmanaged.passUnretained(driver).toOpaque()) else {
+      fatalError("Unable to set TLSData")
+    }
+#else
     guard 0 == pthread_setspecific(key, Unmanaged.passUnretained(driver).toOpaque()) else {
       fatalError("Unable to set TLSData")
     }
+#endif
 
     return try f(driver)
   }
