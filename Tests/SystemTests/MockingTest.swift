@@ -32,7 +32,14 @@ final class MockingTest: XCTestCase {
         XCTAssertEqual(nestedDriver.forceErrno, .none)
       }
 
+      XCTAssertTrue(mockingEnabled)
       XCTAssertEqual(driver.forceErrno, forced)
+    }
+    XCTAssertFalse(mockingEnabled)
+
+    // Mocking should be enabled even if we do not refer to the driver
+    MockingDriver.withMockingEnabled { _ in
+      XCTAssertTrue(mockingEnabled)
     }
     XCTAssertFalse(mockingEnabled)
   }
