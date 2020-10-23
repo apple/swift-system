@@ -21,6 +21,12 @@ import Glibc
 
 public typealias COffT = off_t
 
+#if os(Windows)
+public typealias CModeT = CInt
+#else
+public typealias CModeT = mode_t
+#endif
+
 // MARK: syscalls and variables
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)

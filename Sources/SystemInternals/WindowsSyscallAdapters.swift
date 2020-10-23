@@ -9,8 +9,11 @@
 
 #if os(Windows)
 
+import ucrt
+import WinSDK
+
 @inline(__always)
-internal func open(_ path: UnsafePointer<CChar>, _ oflag: Int32) {
+internal func open(_ path: UnsafePointer<CChar>, _ oflag: Int32) -> CInt {
   var fh: CInt = -1
   _ = _sopen_s(&fh, path, oflag, _SH_DENYNO, _S_IREAD | _S_IWRITE)
   return fh
@@ -18,7 +21,7 @@ internal func open(_ path: UnsafePointer<CChar>, _ oflag: Int32) {
 
 @inline(__always)
 internal func open(
-  _ path: UnsafePointer<CChar>, _ oflag: Int32, _ mode: mode_t
+  _ path: UnsafePointer<CChar>, _ oflag: Int32, _ mode: CModeT
 ) -> CInt {
   // TODO(compnerd): Apply read/write permissions
   var fh: CInt = -1
@@ -33,9 +36,9 @@ internal func close(_ fd: Int32) -> Int32 {
 
 @inline(__always)
 internal func lseek(
-  _ fd: Int32, _ off: off_t, _ whence: Int32
-) -> off_t {
-  _lseek(fd, off, whence)
+  _ fd: Int32, _ off: Int64, _ whence: Int32
+) -> Int64 {
+  _lseeki64(fd, off, whence)
 }
 
 @inline(__always)
