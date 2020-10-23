@@ -92,7 +92,26 @@ import Glibc
 #endif
 
 // TLS helper functions
-#if !os(Windows)
+#if os(Windows)
+internal typealias TLSKey = DWORD
+internal func makeTLSKey() -> TLSKey {
+  var raw: DWORD = FlsAlloc(nil)
+  if raw == FLS_OUT_OF_INDEXES {
+    fatalError("Unable to create key")
+  }
+  return raw
+}
+internal func setTLS(_ key: TLSKey, _ p: UnsafeMutableRawPointer?) {
+  guard 0 != FlsSetValue(key, p) else {
+    fatalError("Unable to set TLS")
+  }
+}
+internal func getTLS(_ key: TLSKey) -> UnsafeMutableRawPointer? {
+  FlsGetValue(key)
+}
+
+#else
+
 internal typealias TLSKey = pthread_key_t
 internal func makeTLSKey() -> TLSKey {
   var raw = pthread_key_t()
@@ -109,9 +128,6 @@ internal func setTLS(_ key: TLSKey, _ p: UnsafeMutableRawPointer?) {
 internal func getTLS(_ key: TLSKey) -> UnsafeMutableRawPointer? {
   pthread_getspecific(key)
 }
-#else
-// TODO: Windows version...
-#error("Unsupported Platform")
 #endif
 
 private let driverKey: TLSKey = { makeTLSKey() }()

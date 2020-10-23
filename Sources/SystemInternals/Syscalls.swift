@@ -35,11 +35,11 @@ private func mockImpl(
   switch driver.forceErrno {
   case .none: break
   case .always(let e):
-    errno = e
+    system_errno = e
     return -1
   case .counted(let e, let count):
     assert(count >= 1)
-    errno = e
+    system_errno = e
     driver.forceErrno = count > 1 ? .counted(errno: e, count: count-1) : .none
     return -1
   }
