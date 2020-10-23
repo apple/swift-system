@@ -91,20 +91,37 @@ import Glibc
 #error("Unsupported Platform")
 #endif
 
-internal let key: pthread_key_t = {
+// TLS helper functions
+#if !os(Windows)
+internal typealias TLSKey = pthread_key_t
+internal func makeTLSKey() -> TLSKey {
   var raw = pthread_key_t()
   guard 0 == pthread_key_create(&raw, nil) else {
     fatalError("Unable to create key")
   }
   return raw
-}()
+}
+internal func setTLS(_ key: TLSKey, _ p: UnsafeMutableRawPointer?) {
+  guard 0 == pthread_setspecific(key, p) else {
+    fatalError("Unable to set TLS")
+  }
+}
+internal func getTLS(_ key: TLSKey) -> UnsafeMutableRawPointer? {
+  pthread_getspecific(key)
+}
+#else
+// TODO: Windows version...
+#error("Unsupported Platform")
+#endif
+
+private let driverKey: TLSKey = { makeTLSKey() }()
 
 internal var currentMockingDriver: MockingDriver? {
   #if !ENABLE_MOCKING
     fatalError("Contextual mocking in non-mocking build")
   #endif
 
-  guard let rawPtr = pthread_getspecific(key) else { return nil }
+  guard let rawPtr = getTLS(driverKey) else { return nil }
 
   return Unmanaged<MockingDriver>.fromOpaque(rawPtr).takeUnretainedValue()
 }
@@ -120,17 +137,14 @@ extension MockingDriver {
 
     defer {
       if let object = priorMocking {
-        pthread_setspecific(key, Unmanaged.passUnretained(object).toOpaque())
+        setTLS(driverKey, Unmanaged.passUnretained(object).toOpaque())
       } else {
-        pthread_setspecific(key, nil)
+        setTLS(driverKey, nil)
       }
       _fixLifetime(driver)
     }
 
-    guard 0 == pthread_setspecific(key, Unmanaged.passUnretained(driver).toOpaque()) else {
-      fatalError("Unable to set TLSData")
-    }
-
+    setTLS(driverKey, Unmanaged.passUnretained(driver).toOpaque())
     return try f(driver)
   }
 }
