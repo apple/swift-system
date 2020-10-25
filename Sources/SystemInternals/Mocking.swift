@@ -87,6 +87,9 @@ public class MockingDriver {
 import Darwin
 #elseif os(Linux) || os(FreeBSD) || os(Android)
 import Glibc
+#elseif os(Windows)
+import ucrt
+import WinSDK
 #else
 #error("Unsupported Platform")
 #endif
@@ -95,14 +98,14 @@ import Glibc
 #if os(Windows)
 internal typealias TLSKey = DWORD
 internal func makeTLSKey() -> TLSKey {
-  var raw: DWORD = FlsAlloc(nil)
+  let raw: DWORD = FlsAlloc(nil)
   if raw == FLS_OUT_OF_INDEXES {
     fatalError("Unable to create key")
   }
   return raw
 }
 internal func setTLS(_ key: TLSKey, _ p: UnsafeMutableRawPointer?) {
-  guard 0 != FlsSetValue(key, p) else {
+  guard FlsSetValue(key, p) else {
     fatalError("Unable to set TLS")
   }
 }
