@@ -7,12 +7,11 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-#ifdef __linux__
-
-#include <CSystemLinux.h>
-
-#endif
-
 #if defined(_WIN32)
-#include <CSystemWindows.h>
+
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#define VC_EXTRA_LEAN
+#include <Windows.h>
+
 #endif

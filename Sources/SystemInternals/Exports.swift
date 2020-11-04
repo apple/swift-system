@@ -15,6 +15,8 @@ import CSystem
 import Darwin
 #elseif os(Linux) || os(FreeBSD) || os(Android)
 import Glibc
+#elseif os(Windows)
+import ucrt
 #else
 #error("Unsupported Platform")
 #endif
@@ -33,6 +35,18 @@ public typealias CModeT = mode_t
 public var system_errno: CInt {
   get { Darwin.errno }
   set { Darwin.errno = newValue }
+}
+#elseif os(Windows)
+public var system_errno: CInt {
+  get {
+    var value: CInt = 0
+    // TODO(compnerd) handle the error?
+    _ = ucrt._get_errno(&value)
+    return value
+  }
+  set {
+    _ = ucrt._set_errno(newValue)
+  }
 }
 #else
 public var system_errno: CInt {

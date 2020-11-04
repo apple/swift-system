@@ -15,6 +15,8 @@
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
 // @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
 public typealias CModeT =  UInt16
+#elseif os(Windows)
+public typealias CModeT =  Int32
 #else
 public typealias CModeT =  UInt32
 #endif

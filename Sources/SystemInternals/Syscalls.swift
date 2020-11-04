@@ -11,6 +11,8 @@
 import Darwin
 #elseif os(Linux) || os(FreeBSD) || os(Android)
 import Glibc
+#elseif os(Windows)
+import ucrt
 #else
 #error("Unsupported Platform")
 #endif
@@ -78,7 +80,7 @@ public func system_open(_ path: UnsafePointer<CChar>, _ oflag: Int32) -> CInt {
 }
 
 public func system_open(
-  _ path: UnsafePointer<CChar>, _ oflag: Int32, _ mode: mode_t
+  _ path: UnsafePointer<CChar>, _ oflag: Int32, _ mode: CModeT
 ) -> CInt {
 #if ENABLE_MOCKING
   if mockingEnabled { return mock(String(cString: path), oflag, mode) }
