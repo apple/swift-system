@@ -94,3 +94,27 @@ extension OptionSet {
     return result
   }
 }
+
+extension UnsafePointer where Pointee == UInt8 {
+  internal var _asCChar: UnsafePointer<CChar> {
+    UnsafeRawPointer(self).assumingMemoryBound(to: CChar.self)
+  }
+}
+extension UnsafePointer where Pointee == CChar {
+  internal var _asUInt8: UnsafePointer<UInt8> {
+    UnsafeRawPointer(self).assumingMemoryBound(to: UInt8.self)
+  }
+}
+extension UnsafeBufferPointer where Element == UInt8 {
+  internal var _asCChar: UnsafeBufferPointer<CChar> {
+    let base = baseAddress?._asCChar
+    return UnsafeBufferPointer<CChar>(start: base, count: self.count)
+  }
+}
+extension UnsafeBufferPointer where Element == CChar {
+  internal var _asUInt8: UnsafeBufferPointer<UInt8> {
+    let base = baseAddress?._asUInt8
+    return UnsafeBufferPointer<UInt8>(start: base, count: self.count)
+  }
+}
+

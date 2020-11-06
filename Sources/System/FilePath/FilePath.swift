@@ -7,30 +7,21 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-extension UnsafePointer where Pointee == UInt8 {
-  internal var _asCChar: UnsafePointer<CChar> {
-    UnsafeRawPointer(self).assumingMemoryBound(to: CChar.self)
-  }
-}
-extension UnsafePointer where Pointee == CChar {
-  internal var _asUInt8: UnsafePointer<UInt8> {
-    UnsafeRawPointer(self).assumingMemoryBound(to: UInt8.self)
-  }
-}
-extension UnsafeBufferPointer where Element == UInt8 {
-  internal var _asCChar: UnsafeBufferPointer<CChar> {
-    let base = baseAddress?._asCChar
-    return UnsafeBufferPointer<CChar>(start: base, count: self.count)
-  }
-}
-extension UnsafeBufferPointer where Element == CChar {
-  internal var _asUInt8: UnsafeBufferPointer<UInt8> {
-    let base = baseAddress?._asUInt8
-    return UnsafeBufferPointer<UInt8>(start: base, count: self.count)
-  }
-}
-
 // NOTE: FilePath not frozen for ABI flexibility
+
+// A platform-native string representation, for file paths
+#if os(Windows)
+  internal typealias SystemString = [UInt16]
+#else
+  internal typealias SystemString = [CChar]
+#endif
+
+// TODO: Adjust comment header to de-emphasize the null-terminated
+// bytes part. This is a type that represents a location in the file
+// system, and can vend null-terminated bytes. Also, we will be
+// normalizing the separator representation, so it needs to pretty
+// much be re-written.
+
 
 /// A null-terminated sequence of bytes
 /// that represents a location in the file system.
@@ -59,11 +50,22 @@ extension UnsafeBufferPointer where Element == CChar {
 /// like case insensitivity, Unicode normalization, and symbolic links.
 // @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
 public struct FilePath {
-  internal var bytes: [CChar]
+  internal typealias Storage = SystemString
+
+  internal var bytes: Storage
 
   /// Creates an empty, null-terminated path.
   public init() {
     self.bytes = [0]
+    _invariantCheck()
+  }
+
+  // In addition to the empty init, this init will properly normalize
+  // separators. All other initializers should be implemented by
+  // ultimately deferring to a normalizing init.
+  internal init<C: Collection>(nullTerminatedBytes: C) where C.Element == CChar {
+    self.bytes = Array(nullTerminatedBytes)
+    self._normalizeSeparators()
     _invariantCheck()
   }
 }
@@ -79,12 +81,7 @@ extension FilePath {
 
 // @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
 extension FilePath {
-  internal init<C: Collection>(nullTerminatedBytes: C) where C.Element == CChar {
-    self.bytes = Array(nullTerminatedBytes)
-    _invariantCheck()
-  }
-
-  internal init<C: Collection>(byteContents bytes: C) where C.Element == CChar {
+  fileprivate init<C: Collection>(byteContents bytes: C) where C.Element == CChar {
     var nulTermBytes = Array(bytes)
     nulTermBytes.append(0)
     self.init(nullTerminatedBytes: nulTermBytes)
@@ -128,6 +125,11 @@ extension FilePath {
   // type constraints, we want to provide a RAC for terminated
   // byte contents and unterminated byte contents.
 }
+
+#if os(Windows)
+  // TODO: wchar_t* initializers, interfaces, etc.
+  // TODO: Consider eventually doing OSString
+#endif
 
 //
 // MARK: - String interfaces
@@ -186,11 +188,16 @@ extension String {
     }
     self = str
   }
+
+  // TODO: Consider a init?(validating:), keeping the encoding agnostic in API and
+  // dependent on file system.
 }
 
 // @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
 extension FilePath: CustomStringConvertible, CustomDebugStringConvertible {
-  /// A textual representation of the file path.
+  /// A textual representation of the file path using the platform's preferred separator.
+  ///
+  /// On Unix, the preferred separator is `/`. On Windows, the preferred separator is `\`
   @inline(never)
   public var description: String { String(decoding: self) }
 
@@ -201,10 +208,3 @@ extension FilePath: CustomStringConvertible, CustomDebugStringConvertible {
 // @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
 extension FilePath: Hashable, Codable {}
 
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
-extension FilePath {
-  fileprivate func _invariantCheck() {
-    precondition(bytes.last! == 0)
-    _debugPrecondition(bytes.firstIndex(of: 0) == bytes.count - 1)
-  }
-}
