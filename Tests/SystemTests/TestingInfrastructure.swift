@@ -21,7 +21,7 @@ internal protocol TestCase {
 }
 extension TestCase {
   func expectEqualSequence<S1: Sequence, S2: Sequence>(
-    _ actual: S1, _ expected: S2,
+    _ expected: S1, _ actual: S2,
     _ message: String? = nil
   ) where S1.Element: Equatable, S1.Element == S2.Element {
     if !actual.elementsEqual(expected) {
@@ -29,7 +29,7 @@ extension TestCase {
     }
   }
   func expectEqual<E: Equatable>(
-    _ actual: E, _ expected: E,
+    _ expected: E, _ actual: E,
     _ message: String? = nil
   ) {
     if actual != expected {
@@ -88,7 +88,7 @@ internal struct MockTestCase: TestCase {
       // Test our API mappings to the lower-level syscall invocation
       do {
         try body(true)
-        self.expectEqual(mocking.trace.dequeue(), self.expected)
+        self.expectEqual(self.expected, mocking.trace.dequeue())
       } catch {
         self.fail()
       }
@@ -103,7 +103,7 @@ internal struct MockTestCase: TestCase {
         self.fail()
       } catch Errno.interrupted {
         // Success!
-        self.expectEqual(mocking.trace.dequeue(), self.expected)
+        self.expectEqual(self.expected, mocking.trace.dequeue())
       } catch {
         self.fail()
       }
@@ -114,13 +114,13 @@ internal struct MockTestCase: TestCase {
         mocking.forceErrno = .counted(errno: EINTR, count: 3)
 
         try body(interruptable)
-        self.expectEqual(mocking.trace.dequeue(), self.expected) // EINTR
-        self.expectEqual(mocking.trace.dequeue(), self.expected) // EINTR
-        self.expectEqual(mocking.trace.dequeue(), self.expected) // EINTR
-        self.expectEqual(mocking.trace.dequeue(), self.expected) // Success
+        self.expectEqual(self.expected, mocking.trace.dequeue()) // EINTR
+        self.expectEqual(self.expected, mocking.trace.dequeue()) // EINTR
+        self.expectEqual(self.expected, mocking.trace.dequeue()) // EINTR
+        self.expectEqual(self.expected, mocking.trace.dequeue()) // Success
       } catch Errno.interrupted {
         self.expectFalse(interruptable)
-        self.expectEqual(mocking.trace.dequeue(), self.expected) // EINTR
+        self.expectEqual(self.expected, mocking.trace.dequeue()) // EINTR
       } catch {
         self.fail()
       }
