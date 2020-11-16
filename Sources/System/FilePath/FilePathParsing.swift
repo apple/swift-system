@@ -49,7 +49,6 @@ extension FilePath {
 
     guard let sepIdx = _trailingSepIdx() else { return }
     bytes.remove(at: sepIdx)
-
   }
 
   // Enforce invariants by normalizing the internal separator representation.
