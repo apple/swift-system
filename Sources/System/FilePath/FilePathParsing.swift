@@ -29,7 +29,6 @@ private func isSeparator(_ c: SystemChar) -> Bool {
   c == genericSeparator || c == platformSeparator
 }
 
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
 extension FilePath {
   // For invariant enforcing/checking. Should always return `nil` on
   // a fully-formed path
