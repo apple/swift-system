@@ -25,7 +25,6 @@ private var platformSeparator: SystemChar {
 #endif
 }
 
-// TODO: Make private
 private func isSeparator(_ c: SystemChar) -> Bool {
   c == genericSeparator || c == platformSeparator
 }
@@ -109,4 +108,3 @@ extension FilePath {
   #endif // DEBUG
   }
 }
-
