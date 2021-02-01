@@ -152,6 +152,33 @@ struct StringTest: TestCase {
       }
     }
 
+    let isComponent = string == fpRaw.components.first?.string
+
+    if hasNormalSeparators && isComponent {
+      // Test FilePath.Component
+      let compStr = FilePath.Component(string)!
+      expectEqualSequence(
+        string.unicodeScalars, compStr.string.unicodeScalars, "Component from string")
+      expectEqual(string, String(decoding: compStr), "Component from string")
+      expectEqual(string, String(validating: compStr), "Component from string")
+      expectEqual(sysStr, compStr._slice.base, "Component from string")
+
+      let compRaw = FilePath.Component(sysRaw)!
+      expectEqual(string, String(decoding: compRaw), "raw Component")
+      expectEqual(isValid, nil != String(validating: compRaw), "raw Component")
+      expectEqual(sysRaw, compRaw._slice.base, "raw Component")
+      expectEqual(isValid, compStr == compRaw, "raw Component")
+
+      // TODO: Below works after we add last component optimization
+      // compRaw.withPlatformString { fp0 in
+      //   compRaw.slice.base.withPlatformString { storage0 in
+      //     expectEqual(fp0, storage0,
+      //       "Component withPlatformString address forwarding")
+      //   }
+      // }
+
+    }
+
     sysRaw.withPlatformString {
       let len = system_platform_strlen($0)
       expectEqual(raw.count, 1+len, "SystemString.withPlatformString")
@@ -159,6 +186,10 @@ struct StringTest: TestCase {
         "SystemString.withPlatformString")
       if hasNormalSeparators {
         expectEqual(sysRaw, FilePath(platformString: $0)._storage)
+        if isComponent {
+          expectEqual(
+            sysRaw, FilePath.Component(platformString: $0)!._slice.base)
+        }
       }
     }
 

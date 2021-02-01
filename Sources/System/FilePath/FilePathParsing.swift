@@ -121,6 +121,73 @@ extension FilePath {
     _storage._normalizeSeparators()
   }
 
+  // Remove any `.` and `..` components
+  internal mutating func _normalizeSpecialDirectories() {
+    guard !isLexicallyNormal else { return }
+    defer { assert(isLexicallyNormal) }
+
+    let relStart = _relativeStart
+    let hasRoot = relStart != _storage.startIndex
+
+    // TODO: all this logic might be nicer if _parseComponent considered
+    // the null character index to be the next start...
+
+    var (writeIdx, readIdx) = (relStart, relStart)
+    while readIdx < _storage.endIndex {
+      let (compEnd, nextStart) = _parseComponent(startingAt: readIdx)
+      assert(readIdx < nextStart && compEnd <= nextStart)
+      let component = readIdx..<compEnd
+
+      // `.` is skipped over
+      if _isCurrentDirectory(component) {
+        readIdx = nextStart
+        continue
+      }
+
+      // `..`s are preserved at the very beginning of a relative path,
+      // otherwise parse-back a component to remove the parent (but stop at
+      // root).
+      if _isParentDirectory(component) {
+        // Skip over it if we're at the root
+        if hasRoot && writeIdx == relStart {
+          readIdx = nextStart
+          continue
+        }
+
+        // Drop the parent (unless we're preserving `..`s)
+        if writeIdx != relStart {
+          let priorComponent = _parseComponent(priorTo: writeIdx)
+
+          // FIXME: it's not up until writeIdx because separator,
+          // parseComponent should give the component...
+          if !_isParentDirectory(priorComponent) {
+            writeIdx = priorComponent.lowerBound
+            readIdx = nextStart
+            continue
+          }
+          assert(self.root == nil && self.components.first!.kind == .parentDirectory)
+        }
+      }
+
+      if readIdx == writeIdx {
+        (readIdx, writeIdx) = (nextStart, nextStart)
+        continue
+      }
+      while readIdx != nextStart {
+        _storage.swapAt(readIdx, writeIdx)
+        readIdx = _storage.index(after: readIdx)
+        writeIdx = _storage.index(after: writeIdx)
+      }
+    }
+
+    assert(readIdx == _storage.endIndex && readIdx >= writeIdx)
+    if readIdx != writeIdx {
+      // TODO: Why was it everything after writeIdx?
+//      storage.removeSubrange(storage.index(after: writeIdx)...)
+      _storage.removeSubrange(writeIdx...)
+      _removeTrailingSeparator()
+    }
+  }
 }
 
 extension SystemString {
@@ -203,6 +270,31 @@ extension FilePath {
   }
 }
 
+extension FilePath.ComponentView {
+  // TODO: Store this...
+  internal var _relativeStart: SystemString.Index {
+    _path._relativeStart
+  }
+
+  internal func parseComponentStart(
+    endingAt i: SystemString.Index
+  ) -> SystemString.Index {
+    if i == _relativeStart, i != _path._storage.startIndex {
+      return _path._storage.startIndex
+    }
+    var i = i
+    if i != _path._storage.endIndex {
+      assert(isSeparator(_path._storage[i]))
+      i = _path._storage.index(before: i)
+    }
+    var slice = _path._storage[..<i]
+    while let c = slice.last, !isSeparator(c) {
+      slice.removeLast()
+    }
+    return slice.endIndex
+  }
+}
+
 extension SystemString {
   internal func _parseRoot() -> (
     rootEnd: Index, relativeBegin: Index
@@ -217,6 +309,30 @@ extension SystemString {
 
     let next = self.index(after: startIndex)
     return (next, next)
+  }
+}
+
+extension FilePath.Root {
+  // Asserting self is a root, returns whether this is an
+  // absolute root.
+  //
+  // On Unix, all roots are absolute. On Windows, `\` and `X:` are
+  // relative roots
+  //
+  // TODO: public
+  internal var isAbsolute: Bool {
+    assert(FilePath(SystemString(self._slice)).root == self, "not a root")
+
+    guard _windowsPaths else { return true }
+
+    // `\` or `C:` are the only form of relative roots, and all
+    // absolute roots are at least 3 chars long.
+    let slice = self._slice
+    guard slice.count < 3 else { return true }
+    assert(
+      (slice.count == 1 && slice.first == .backslash) ||
+        (slice.count == 2 && slice.last == .colon))
+    return false
   }
 }
 
@@ -252,6 +368,17 @@ extension FilePath {
 
     return true
   }
+
+  // Perform an append, inseting a separator if needed.
+  // Note tha this will not check whether `content` is a root
+  internal mutating func _append(unchecked content: Slice<SystemString>) {
+    assert(FilePath(SystemString(content)).root == nil)
+    if content.isEmpty { return }
+    if _needsSeparatorForAppend {
+      _storage.append(platformSeparator)
+    }
+    _storage.append(contentsOf: content)
+  }
 }
 
 // MARK: - Invariants
@@ -262,6 +389,7 @@ extension FilePath {
     normal._normalizeSeparators()
     precondition(self == normal)
     precondition(!self._storage._hasTrailingSeparator())
+    precondition(_hasRoot == (self.root != nil))
     #endif // DEBUG
   }
 }
