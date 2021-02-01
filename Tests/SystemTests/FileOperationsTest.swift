@@ -108,7 +108,7 @@ final class FileOperationsTest: XCTestCase {
       // Should we assert? I'd be interested in knowing if this happened
       XCTAssert(false)
     } catch {
-       fatalError()
+      fatalError("FATAL: `testAdHocOpen`")
     }
   }
 }

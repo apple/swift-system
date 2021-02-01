@@ -11,6 +11,9 @@ import XCTest
 import SystemInternals
 import SystemPackage
 
+// To aid debugging, force failures to fatal error
+internal var forceFatalFailures = false
+
 internal protocol TestCase {
   // TODO: want a source location stack, more fidelity, kinds of stack entries, etc
   var file: StaticString { get }
@@ -18,13 +21,22 @@ internal protocol TestCase {
 
   // TODO: Instead have an attribute to register a test in a allTests var, similar to the argument parser.
   func runAllTests()
+
+  // Customization hook: add adornment to reported failure reason
+  // Defaut: reason or empty
+  func failureMessage(_ reason: String?) -> String
 }
+
 extension TestCase {
+  // Default implementation
+  func failureMessage(_ reason: String?) -> String { reason ?? "" }
+
   func expectEqualSequence<S1: Sequence, S2: Sequence>(
     _ expected: S1, _ actual: S2,
     _ message: String? = nil
   ) where S1.Element: Equatable, S1.Element == S2.Element {
-    if !actual.elementsEqual(expected) {
+    if !expected.elementsEqual(actual) {
+      defer { print("expected: \(expected), actual: \(actual)") }
       fail(message)
     }
   }
@@ -33,6 +45,34 @@ extension TestCase {
     _ message: String? = nil
   ) {
     if actual != expected {
+      defer { print("expected: \(expected), actual: \(actual)") }
+      fail(message)
+    }
+  }
+  func expectNotEqual<E: Equatable>(
+    _ expected: E, _ actual: E,
+    _ message: String? = nil
+  ) {
+    if actual == expected {
+      defer { print("expected not equal: \(expected) and \(actual)") }
+      fail(message)
+    }
+  }
+  func expectNil<T>(
+    _ actual: T?,
+    _ message: String? = nil
+  ) {
+    if actual != nil {
+      defer { print("expected nil: \(actual!)") }
+      fail(message)
+    }
+  }
+  func expectNotNil<T>(
+    _ actual: T?,
+    _ message: String? = nil
+  ) {
+    if actual == nil {
+      defer { print("expected non-nil") }
       fail(message)
     }
   }
@@ -40,18 +80,22 @@ extension TestCase {
     _ actual: Bool,
     _ message: String? = nil
   ) {
-    expectEqual(true, actual, message)
+    if !actual { fail(message) }
   }
   func expectFalse(
     _ actual: Bool,
     _ message: String? = nil
   ) {
-    expectEqual(false, actual, message)
+    if actual { fail(message) }
   }
 
   func fail(_ reason: String? = nil) {
-    XCTAssert(false, reason ?? "", file: file, line: line)
+    XCTAssert(false, failureMessage(reason), file: file, line: line)
+    if forceFatalFailures {
+      fatalError(reason ?? "<no reason>")
+    }
   }
+
 }
 
 internal struct MockTestCase: TestCase {
@@ -127,3 +171,14 @@ internal struct MockTestCase: TestCase {
     }
   }
 }
+
+// Force paths to be treated as Windows syntactically if `enabled` is
+// true.
+internal func withWindowsPaths(enabled: Bool, _ body: () -> ()) {
+  guard enabled else { return body() }
+  MockingDriver.withMockingEnabled { driver in
+    driver.forceWindowsSyntaxForPaths = true
+    body()
+  }
+}
+

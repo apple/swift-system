@@ -7,29 +7,18 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-// NOTE: FilePath not frozen for ABI flexibility
-
-// A platform-native string representation, for file paths
-#if os(Windows)
-  internal typealias SystemString = [UInt16]
-#else
-  internal typealias SystemString = [CChar]
-#endif
-
-// TODO: Adjust comment header to de-emphasize the null-terminated
-// bytes part. This is a type that represents a location in the file
-// system, and can vend null-terminated bytes. Also, we will be
-// normalizing the separator representation, so it needs to pretty
-// much be re-written.
-
-
-/// A null-terminated sequence of bytes
-/// that represents a location in the file system.
+/// Represents a location in the file system.
 ///
-/// This structure doesn't give any meaning to the bytes that it contains,
-/// except for the requirement that the last byte is a NUL (`0x0`).
-/// The file system defines how this string is interpreted;
-/// for example, by its choice of string encoding.
+/// This structure recognizes directory separators  (e.g. `/`), roots, and
+/// requires that the content terminates in a NUL (`0x0`). Beyond that, it
+/// does not give any meaning to the bytes that it contains. The file system
+/// defines how the content is interpreted; for example, by its choice of string
+/// encoding.
+///
+/// On construction, `FilePath` will normalize separators by removing
+/// reduncant intermediary separators and stripping any trailing separators.
+/// On Windows, `FilePath` will also normalize forward slashes `/` into
+/// backslashes `\`, as preferred by the platform.
 ///
 /// The code below creates a file path from a string literal,
 /// and then uses it to open and append to a log file:
@@ -38,6 +27,9 @@
 ///     let path: FilePath = "/tmp/log"
 ///     let fd = try FileDescriptor.open(path, .writeOnly, options: .append)
 ///     try fd.closeAfter { try fd.writeAll(message.utf8) }
+///
+/// TODO(docs): Section on all the new syntactic operations, lexical normalization, decomposition,
+/// components, etc.
 ///
 /// File paths conform to the
 /// and <doc://com.apple.documentation/documentation/swift/equatable>
@@ -50,159 +42,28 @@
 /// like case insensitivity, Unicode normalization, and symbolic links.
 // @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
 public struct FilePath {
-  internal typealias Storage = SystemString
-
-  internal var bytes: Storage
+  internal var _storage: SystemString
 
   /// Creates an empty, null-terminated path.
   public init() {
-    self.bytes = [0]
+    self._storage = SystemString()
     _invariantCheck()
   }
 
   // In addition to the empty init, this init will properly normalize
   // separators. All other initializers should be implemented by
   // ultimately deferring to a normalizing init.
-  internal init<C: Collection>(nullTerminatedBytes: C) where C.Element == CChar {
-    self.bytes = Array(nullTerminatedBytes)
+  internal init(_ str: SystemString) {
+    self._storage = str
     self._normalizeSeparators()
     _invariantCheck()
   }
 }
 
-//
-// MARK: - Public Interfaces
-//
 // @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
 extension FilePath {
-  /// The length of the file path, excluding the null termination.
-  public var length: Int { bytes.count - 1 }
-}
-
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
-extension FilePath {
-  fileprivate init<C: Collection>(byteContents bytes: C) where C.Element == CChar {
-    var nulTermBytes = Array(bytes)
-    nulTermBytes.append(0)
-    self.init(nullTerminatedBytes: nulTermBytes)
-  }
-}
-
-@_implementationOnly import SystemInternals
-
-//
-// MARK: - CString interfaces
-//
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
-extension FilePath {
-  /// Creates a file path by copying bytes from a null-terminated C string.
-  ///
-  /// - Parameter cString: A pointer to a null-terminated C string.
-  public init(cString: UnsafePointer<CChar>) {
-    self.init(nullTerminatedBytes:
-      UnsafeBufferPointer(start: cString, count: 1 + system_strlen(cString)))
-  }
-
-  /// Calls the given closure with a pointer to the contents of the file path,
-  /// represented as a null-terminated C string.
-  ///
-  /// - Parameter body: A closure with a pointer parameter
-  ///   that points to a null-terminated C string.
-  ///   If `body` has a return value,
-  ///   that value is also used as the return value for this method.
-  /// - Returns: The return value, if any, of the `body` closure parameter.
-  ///
-  /// The pointer passed as an argument to `body` is valid
-  /// only during the execution of this method.
-  /// Don't try to store the pointer for later use.
-  public func withCString<Result>(
-    _ body: (UnsafePointer<Int8>) throws -> Result
-  ) rethrows -> Result {
-    try bytes.withUnsafeBufferPointer { try body($0.baseAddress!) }
-  }
-
-  // TODO: in the future, with opaque result types with associated
-  // type constraints, we want to provide a RAC for terminated
-  // byte contents and unterminated byte contents.
-}
-
-#if os(Windows)
-  // TODO: wchar_t* initializers, interfaces, etc.
-  // TODO: Consider eventually doing OSString
-#endif
-
-//
-// MARK: - String interfaces
-//
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
-extension FilePath: ExpressibleByStringLiteral {
-  /// Creates a file path from a string literal.
-  ///
-  /// - Parameter stringLiteral: A string literal
-  ///   whose UTF-8 contents to use as the contents of the path.
-  public init(stringLiteral: String) {
-    self.init(stringLiteral)
-  }
-
-  /// Creates a file path from a string.
-  ///
-  /// - Parameter string: A string
-  ///   whose UTF-8 contents to use as the contents of the path.
-  public init(_ string: String) {
-    var str = string
-    self = str.withUTF8 { FilePath(byteContents: $0._asCChar) }
-  }
-}
-
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
-extension String {
-  /// Creates a string by interpreting the file path's content as UTF-8.
-  ///
-  /// - Parameter path: The file path to be interpreted as UTF-8.
-  ///
-  /// If the content of the file path
-  /// isn't a well-formed UTF-8 string,
-  /// this initializer removes invalid bytes or replaces them with U+FFFD.
-  /// This means that, depending on the semantics of the specific file system,
-  /// conversion to a string and back to a path
-  /// might result in a value that's different from the original path.
-  public init(decoding path: FilePath) {
-    self = path.withCString { String(cString: $0) }
-  }
-
-  @available(*, deprecated, renamed: "String.init(decoding:)")
-  public init(_ path: FilePath) {
-    self.init(decoding: path)
-  }
-
-  /// Creates a string from a file path, validating its UTF-8 contents.
-  ///
-  /// - Parameter path: The file path be interpreted as UTF-8.
-  ///
-  /// If the contents of the file path
-  /// isn't a well-formed UTF-8 string,
-  /// this initializer returns `nil`.
-  public init?(validatingUTF8 path: FilePath) {
-    guard let str = path.withCString({ String(validatingUTF8: $0) }) else {
-      return nil
-    }
-    self = str
-  }
-
-  // TODO: Consider a init?(validating:), keeping the encoding agnostic in API and
-  // dependent on file system.
-}
-
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
-extension FilePath: CustomStringConvertible, CustomDebugStringConvertible {
-  /// A textual representation of the file path using the platform's preferred separator.
-  ///
-  /// On Unix, the preferred separator is `/`. On Windows, the preferred separator is `\`
-  @inline(never)
-  public var description: String { String(decoding: self) }
-
-  /// A textual representation of the file path, suitable for debugging.
-  public var debugDescription: String { self.description.debugDescription }
+  /// The length of the file path, excluding the null terminator.
+  public var length: Int { _storage.length }
 }
 
 // @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)

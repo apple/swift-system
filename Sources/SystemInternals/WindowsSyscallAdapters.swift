@@ -13,19 +13,21 @@ import ucrt
 import WinSDK
 
 @inline(__always)
-internal func open(_ path: UnsafePointer<CChar>, _ oflag: Int32) -> CInt {
+internal func open(
+  _ path: UnsafePointer<_PlatformChar>, _ oflag: Int32
+) -> CInt {
   var fh: CInt = -1
-  _ = _sopen_s(&fh, path, oflag, _SH_DENYNO, _S_IREAD | _S_IWRITE)
+  _ = _wsopen_s(&fh, path, oflag, _SH_DENYNO, _S_IREAD | _S_IWRITE)
   return fh
 }
 
 @inline(__always)
 internal func open(
-  _ path: UnsafePointer<CChar>, _ oflag: Int32, _ mode: CModeT
+  _ path: UnsafePointer<_PlatformChar>, _ oflag: Int32, _ mode: CModeT
 ) -> CInt {
   // TODO(compnerd): Apply read/write permissions
   var fh: CInt = -1
-  _ = _sopen_s(&fh, path, oflag, _SH_DENYNO, _S_IREAD | _S_IWRITE)
+  _ = _wsopen_s(&fh, path, oflag, _SH_DENYNO, _S_IREAD | _S_IWRITE)
   return fh
 }
 

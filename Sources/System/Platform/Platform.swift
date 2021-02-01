@@ -12,11 +12,23 @@
 // Public typealiases that can't be reexported from SystemInternals
 
 /// The C `mode_t` type.
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
 // @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
-public typealias CModeT =  UInt16
-#elseif os(Windows)
-public typealias CModeT =  Int32
-#else
-public typealias CModeT =  UInt32
-#endif
+@available(*, deprecated, renamed: "CInterop.Mode")
+public typealias CModeT =  CInterop.Mode
+
+/// A namespace for C and platform types
+public enum CInterop {
+  #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+  /// The C `mode_t` type.
+  public typealias Mode = UInt16
+  #elseif os(Windows)
+  /// The C `mode_t` type.
+  public typealias Mode = Int32
+  #else
+  /// The C `mode_t` type.
+  public typealias Mode = UInt32
+  #endif
+
+  /// The C `char` type
+  public typealias Char = CChar
+}
