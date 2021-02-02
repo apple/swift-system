@@ -916,14 +916,12 @@ final class FilePathSyntaxTest: XCTestCase {
       path.append(".")
       expect("/.")
       XCTAssert(path.components.last!.kind == .currentDirectory)
-      XCTAssert(path.components.last!.isSpecialDirectory)
       path.lexicallyNormalize()
       expect("/")
 
       path.append("..")
       expect("/..")
       XCTAssert(path.components.last!.kind == .parentDirectory)
-      XCTAssert(path.components.last!.isSpecialDirectory)
       path.lexicallyNormalize()
       expect("/")
 

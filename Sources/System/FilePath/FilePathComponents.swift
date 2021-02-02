@@ -94,9 +94,6 @@ extension FilePath.Component {
     if _path._isParentDirectory(_range) { return .parentDirectory }
     return .regular
   }
-
-  /// Whether this component is either special directory `.` or `..`.
-  public var isSpecialDirectory: Bool { _path._isSpecialDirectory(_range) }
 }
 
 extension FilePath.Root {
@@ -207,7 +204,7 @@ extension FilePath: _PlatformStringable {
 extension FilePath.Component {
   // The index of the `.` denoting an extension
   internal func _extensionIndex() -> SystemString.Index? {
-    guard !isSpecialDirectory,
+    guard kind == .regular,
           let idx = _slice.lastIndex(of: .dot),
           idx != _slice.startIndex
     else { return nil }

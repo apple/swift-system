@@ -325,7 +325,7 @@ extension FilePath {
     get { lastComponent?.extension }
     set {
       defer { _invariantCheck() }
-      guard let base = lastComponent, !base.isSpecialDirectory else { return }
+      guard let base = lastComponent, base.kind == .regular else { return }
 
       let suffix: SystemString
       if let ext = newValue {
@@ -373,7 +373,7 @@ extension FilePath {
     // `\..\foo\bar` should not.
     components.drop(
       while: { root == nil && $0.kind == .parentDirectory }
-    ).allSatisfy { !$0.isSpecialDirectory }
+    ).allSatisfy { $0.kind == .regular }
   }
 
   /// Collapse `.` and `..` components lexically (i.e. without following
