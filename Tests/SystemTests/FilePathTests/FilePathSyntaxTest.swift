@@ -243,7 +243,7 @@ extension SyntaxTestCase {
       copy.lexicallyNormalize()
       expectEqual(copy == path, path.isLexicallyNormal, "isLexicallyNormal")
       expectEqual(lexicallyNormalized, copy.description, "lexically normalized")
-      expectEqual(copy, path.lexicallyNormal, "lexicallyNormal")
+      expectEqual(copy, path.lexicallyNormalized(), "lexicallyNormal")
 
       expectEqual(absolute, path.isAbsolute, "absolute")
       expectEqual(!absolute, path.isRelative, "!absolute")

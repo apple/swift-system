@@ -50,7 +50,8 @@ extension FilePath {
     guard !other.isEmpty else { return true }
     guard !isEmpty else { return false }
 
-    let (selfLex, otherLex) = (self.lexicallyNormal, other.lexicallyNormal)
+    let (selfLex, otherLex) =
+      (self.lexicallyNormalized(), other.lexicallyNormalized())
     if otherLex.isAbsolute { return selfLex.starts(with: otherLex) }
 
     // FIXME: Windows semantics with relative roots?

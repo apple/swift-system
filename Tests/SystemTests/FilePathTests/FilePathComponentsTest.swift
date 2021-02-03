@@ -13,104 +13,6 @@ import SystemPackage
 @testable
 import SystemPackage
 
-
-// Helper to organize some ad-hoc testing
-//
-// TODO: Currently a class so we can overwrite file/line, but that can be
-// re-evaluated when we have source loc stacks.
-private final class AdHocComponentsTest: TestCase {
-  // TODO (source-loc stack): Push fil/line from init onto stack
-
-  // Record the top-most file/line info (`expect` overwrites these values)
-  //
-  // TODO: When we have source loc stacks, push the location from the init,
-  // and `expect` will be push/pops
-  var file: StaticString
-  var line: UInt
-
-  var path: FilePath
-  var body: (AdHocComponentsTest) -> ()
-
-  init(
-    _ path: FilePath,
-    _ file: StaticString = #file,
-    _ line: UInt = #line,
-    _ body: @escaping (AdHocComponentsTest) -> ()
-  ) {
-    self.file = file
-    self.line = line
-    self.path = path
-    self.body = body
-  }
-
-  func runAllTests() {
-    body(self)
-  }
-}
-
-private func adhocComponentsTest(
-  _ path: FilePath,
-  _ file: StaticString = #file,
-  _ line: UInt = #line,
-  _ body: @escaping (AdHocComponentsTest) -> ()
-) {
-  let test = AdHocComponentsTest(path, file, line, body)
-  test.runAllTests()
-}
-
-extension AdHocComponentsTest {
-  // Temporarily re-bind file/line
-  func withSourceLoc(
-    _ newFile: StaticString,
-    _ newLine: UInt,
-    _ body: () -> ()
-  ) {
-    let (origFile, origLine) = (self.file, self.line)
-    (self.file, self.line) = (newFile, newLine)
-    defer { (self.file, self.line) = (origFile, origLine) }
-    body()
-  }
-
-  // Customize error report by adding our path and components to output
-  func failureMessage(_ reason: String?) -> String {
-    """
-
-    Fail
-      path: \(path)
-      components: \(Array(path.components))
-      \(reason ?? "")
-    """
-  }
-
-  func expect(
-    _ expected: FilePath,
-    file: StaticString = #file, line: UInt = #line
-  ) {
-
-    withSourceLoc(file, line) {
-      expectEqual(expected, path, "expected: \(expected)")
-    }
-  }
-
-  func expectRelative(
-    file: StaticString = #file, line: UInt = #line
-  ) {
-    withSourceLoc(file, line) {
-      expectTrue(path.isRelative, "expected relative")
-    }
-  }
-
-  func expectAbsolute(
-    file: StaticString = #file, line: UInt = #line
-  ) {
-    withSourceLoc(file, line) {
-      expectTrue(path.isAbsolute, "expected absolute")
-    }
-  }
-
-  // TODO: Do we want to overload others like expectEqual[Sequence]?
-}
-
 // @available(9999....)
 struct TestPathComponents: TestCase {
   var path: FilePath
@@ -152,34 +54,47 @@ struct TestPathComponents: TestCase {
   }
 
   func testBidi() {
-
-
+    expectEqualSequence(
+      expectedComponents.reversed(), path.components.reversed(), "reversed()")
+    expectEqualSequence(
+      path.components, path.components.reversed().reversed(),
+      "reversed().reversed()")
+    for i in 0 ..< path.components.count {
+      expectEqualSequence(
+        expectedComponents.dropLast(i), path.components.dropLast(i), "dropLast")
+      expectEqualSequence(
+        expectedComponents.suffix(i), path.components.suffix(i), "suffix")
+    }
   }
 
   func testRRC() {
-    // TODO: Convert tests into mutation tests
-//    // What generalized tests can we do, given how initial "/" is special?
-//    // E.g. absolute path inserted into itself can have only one root
-//
-//    do {
-//      var path = self.path
-//      if path.isAbsolute {
-//        path.components.removeFirst()
-//      }
-//      expectTrue(path.isRelative)
-//
-//      let componentsArray = Array(path.components)
-//      path.components.append(contentsOf: componentsArray)
-//      expectEqualSequence(componentsArray + componentsArray, path.components)
-//
-//      // TODO: Other generalized tests which work on relative paths
-//    }
+    // TODO: programmatic tests showing parity with Array<Component>
+  }
+
+  func testModify() {
+    if path.root == nil {
+      let rootedPath = FilePath(root: "/", path.components)
+      expectNotEqual(rootedPath, path)
+      var pathCopy = path
+      expectEqual(path, pathCopy)
+      pathCopy.components = rootedPath.components
+      expectNil(pathCopy.root, "components.set doesn't assign root")
+      expectEqual(path, pathCopy)
+    } else {
+      let rootlessPath = FilePath(root: nil, path.components)
+      var pathCopy = path
+      expectEqual(path, pathCopy)
+      pathCopy.components = rootlessPath.components
+      expectNotNil(pathCopy.root, "components.set preserves root")
+      expectEqual(path, pathCopy)
+    }
   }
 
   func runAllTests() {
     testComponents()
     testBidi()
     testRRC()
+    testModify()
   }
 }
 
@@ -187,34 +102,6 @@ struct TestPathComponents: TestCase {
 
 // @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
 final class FilePathComponentsTest: XCTestCase {
-
-  let testPaths: Array<TestPathComponents> = [
-    TestPathComponents("", root: nil, []),
-    TestPathComponents("/", root: "/", []),
-    TestPathComponents("foo", root: nil, ["foo"]),
-    TestPathComponents("foo/", root: nil, ["foo"]),
-    TestPathComponents("/foo", root: "/", ["foo"]),
-    TestPathComponents("foo/bar", root: nil, ["foo", "bar"]),
-    TestPathComponents("foo/bar/", root: nil, ["foo", "bar"]),
-    TestPathComponents("/foo/bar", root: "/", ["foo", "bar"]),
-    TestPathComponents("///foo//", root: "/", ["foo"]),
-    TestPathComponents("/foo///bar", root: "/", ["foo", "bar"]),
-    TestPathComponents("foo/bar/", root: nil, ["foo", "bar"]),
-    TestPathComponents("foo///bar/baz/", root: nil, ["foo", "bar", "baz"]),
-    TestPathComponents("//foo///bar/baz/", root: "/", ["foo", "bar", "baz"]),
-    TestPathComponents("./", root: nil, ["."]),
-    TestPathComponents("./..", root: nil, [".", ".."]),
-    TestPathComponents("/./..//", root: "/", [".", ".."]),
-  ]
-
-  // TODO: generalize to a driver protocol that will inherit from XCTest, expose allTestCases
-  // based on an associated type, and provide the testCasees func, assuming XCTest supports
-  // that.
-  func testCases() {
-    testPaths.forEach { $0.runAllTests() }
-  }
-
-  // TODO: Convert these kinds of test cases into mutation API test cases.
   func testAdHocRRC() {
     var path: FilePath = "/usr/local/bin"
 
@@ -343,21 +230,26 @@ final class FilePathComponentsTest: XCTestCase {
     }
   }
 
-  func testConcatenation() {
-    // TODO: convert tests into mutation tests
-
-//    for lhsTest in testPaths {
-//      let lhs = lhsTest.path
-//      for rhsTest in testPaths {
-//        let rhs = rhsTest.path
-//        adhocComponentsTest(lhs + rhs) { concatpath in
-//          // (lhs + rhs).components == (lhs.components + rhs.compontents)
-//          concatpath.expectEqualSequence(lhs.components + rhs.components, concatpath.components)
-//
-//          // TODO: More tests around non-normalized separators
-//        }
-//      }
-//    }
+  func testCases() {
+    let testPaths: Array<TestPathComponents> = [
+      TestPathComponents("", root: nil, []),
+      TestPathComponents("/", root: "/", []),
+      TestPathComponents("foo", root: nil, ["foo"]),
+      TestPathComponents("foo/", root: nil, ["foo"]),
+      TestPathComponents("/foo", root: "/", ["foo"]),
+      TestPathComponents("foo/bar", root: nil, ["foo", "bar"]),
+      TestPathComponents("foo/bar/", root: nil, ["foo", "bar"]),
+      TestPathComponents("/foo/bar", root: "/", ["foo", "bar"]),
+      TestPathComponents("///foo//", root: "/", ["foo"]),
+      TestPathComponents("/foo///bar", root: "/", ["foo", "bar"]),
+      TestPathComponents("foo/bar/", root: nil, ["foo", "bar"]),
+      TestPathComponents("foo///bar/baz/", root: nil, ["foo", "bar", "baz"]),
+      TestPathComponents("//foo///bar/baz/", root: "/", ["foo", "bar", "baz"]),
+      TestPathComponents("./", root: nil, ["."]),
+      TestPathComponents("./..", root: nil, [".", ".."]),
+      TestPathComponents("/./..//", root: "/", [".", ".."]),
+    ]
+    testPaths.forEach { $0.runAllTests() }
   }
 
   func testSeparatorNormalization() {

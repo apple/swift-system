@@ -199,8 +199,6 @@ extension FilePath: _PlatformStringable {
 
 }
 
-// TODO(root): Re-think these initializers. We want them to be conv
-
 extension FilePath.Component {
   // The index of the `.` denoting an extension
   internal func _extensionIndex() -> SystemString.Index? {

@@ -158,8 +158,6 @@ extension FilePath {
         if writeIdx != relStart {
           let priorComponent = _parseComponent(priorTo: writeIdx)
 
-          // FIXME: it's not up until writeIdx because separator,
-          // parseComponent should give the component...
           if !_isParentDirectory(priorComponent) {
             writeIdx = priorComponent.lowerBound
             readIdx = nextStart
@@ -182,8 +180,6 @@ extension FilePath {
 
     assert(readIdx == _storage.endIndex && readIdx >= writeIdx)
     if readIdx != writeIdx {
-      // TODO: Why was it everything after writeIdx?
-//      storage.removeSubrange(storage.index(after: writeIdx)...)
       _storage.removeSubrange(writeIdx...)
       _removeTrailingSeparator()
     }
@@ -275,24 +271,6 @@ extension FilePath.ComponentView {
   internal var _relativeStart: SystemString.Index {
     _path._relativeStart
   }
-
-  internal func parseComponentStart(
-    endingAt i: SystemString.Index
-  ) -> SystemString.Index {
-    if i == _relativeStart, i != _path._storage.startIndex {
-      return _path._storage.startIndex
-    }
-    var i = i
-    if i != _path._storage.endIndex {
-      assert(isSeparator(_path._storage[i]))
-      i = _path._storage.index(before: i)
-    }
-    var slice = _path._storage[..<i]
-    while let c = slice.last, !isSeparator(c) {
-      slice.removeLast()
-    }
-    return slice.endIndex
-  }
 }
 
 extension SystemString {
@@ -370,7 +348,7 @@ extension FilePath {
   }
 
   // Perform an append, inseting a separator if needed.
-  // Note tha this will not check whether `content` is a root
+  // Note that this will not check whether `content` is a root
   internal mutating func _append(unchecked content: Slice<SystemString>) {
     assert(FilePath(SystemString(content)).root == nil)
     if content.isEmpty { return }

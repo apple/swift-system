@@ -43,7 +43,7 @@ extension FilePath {
   public var components: ComponentView {
     __consuming get { ComponentView(self) }
     _modify {
-      // RRC's empty init means that we cann't guarantee that the yielded
+      // RRC's empty init means that we can't guarantee that the yielded
       // view will restore our root. So copy it out first.
       //
       // TODO(perf): Small-form root (especially on Unix). Have Root
@@ -54,13 +54,7 @@ extension FilePath {
       self = FilePath()
       defer {
         self = comp._path
-
-        if !rootStr.isEmpty {
-          if let r = self.root {
-            // Roots can be forgotten but never altered
-            assert(r._slice.elementsEqual(rootStr))
-          }
-          // TODO: conditional on it having changed?
+        if root?._slice.elementsEqual(rootStr) != true {
           self.root = Root(rootStr)
         }
       }
@@ -105,7 +99,6 @@ extension FilePath.ComponentView: BidirectionalCollection {
 
 extension FilePath.ComponentView: RangeReplaceableCollection {
   public init() {
-    // FIXME: but what about the root?
     self.init(FilePath())
   }
 

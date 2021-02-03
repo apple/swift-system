@@ -305,13 +305,13 @@ extension FilePath {
   /// replace the extension.
   ///
   /// Examples:
-  ///   * `/tmp/foo.txt                 => txt`
-  ///   * `/Appliations/Foo.app/        => app`
-  ///   * `/Appliations/Foo.app/bar.txt => txt`
-  ///   * `/tmp/foo.tar.gz              => gz`
-  ///   * `/tmp/.hidden                 => nil`
-  ///   * `/tmp/.hidden.                => ""`
-  ///   * `/tmp/..                      => nil`
+  ///   * `/tmp/foo.txt                  => txt`
+  ///   * `/Applications/Foo.app/        => app`
+  ///   * `/Applications/Foo.app/bar.txt => txt`
+  ///   * `/tmp/foo.tar.gz               => gz`
+  ///   * `/tmp/.hidden                  => nil`
+  ///   * `/tmp/.hidden.                 => ""`
+  ///   * `/tmp/..                       => nil`
   ///
   /// Example:
   ///
@@ -391,12 +391,10 @@ extension FilePath {
   /// Returns a copy of `self` in lexical-normal form, that is `.` and `..`
   /// components have been collapsed lexically (i.e. without following
   /// symlinks). See `lexicallyNormalize`
-  public var lexicallyNormal: FilePath {
-    __consuming get {
-      var copy = self
-      copy.lexicallyNormalize()
-      return copy
-    }
+  public __consuming func lexicallyNormalized() -> FilePath {
+    var copy = self
+    copy.lexicallyNormalize()
+    return copy
   }
 
   /// Create a new `FilePath` by resolving `subpath` relative to `self`,
@@ -428,7 +426,7 @@ extension FilePath {
   public __consuming func lexicallyResolving(
     _ subpath: __owned FilePath
   ) -> FilePath? {
-    let subpath = subpath.removingRoot().lexicallyNormal
+    let subpath = subpath.removingRoot().lexicallyNormalized()
     guard !subpath.isEmpty else { return self }
     guard subpath.components.first?.kind != .parentDirectory else {
       return nil
