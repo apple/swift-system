@@ -81,6 +81,10 @@ public class MockingDriver {
 
   // A buffer to put `write` bytes into
   public var writeBuffer = WriteBuffer()
+
+  // Whether we should pretend to be Windows for syntactic operations
+  // inside FilePath
+  public var forceWindowsSyntaxForPaths = false
 }
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
@@ -176,6 +180,10 @@ private var contextualMockingEnabled: Bool {
 
 extension MockingDriver {
   public static var enabled: Bool { mockingEnabled }
+
+  public static var forceWindowsPaths: Bool {
+    currentMockingDriver?.forceWindowsSyntaxForPaths ?? false
+  }
 }
 
 #endif // ENABLE_MOCKING
@@ -190,3 +198,11 @@ internal var mockingEnabled: Bool {
   #endif
 }
 
+@inlinable @inline(__always)
+public var forceWindowsPaths: Bool {
+  #if !ENABLE_MOCKING
+  return false
+  #else
+  return MockingDriver.forceWindowsPaths
+  #endif
+}

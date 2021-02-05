@@ -21,14 +21,14 @@
 public struct FilePermissions: OptionSet, Hashable, Codable {
   /// The raw C file permissions.
   @_alwaysEmitIntoClient
-  public let rawValue: CModeT
+  public let rawValue: CInterop.Mode
 
   /// Create a strongly-typed file permission from a raw C value.
   @_alwaysEmitIntoClient
-  public init(rawValue: CModeT) { self.rawValue = rawValue }
+  public init(rawValue: CInterop.Mode) { self.rawValue = rawValue }
 
   @_alwaysEmitIntoClient
-  private init(_ raw: CModeT) { self.init(rawValue: raw) }
+  private init(_ raw: CInterop.Mode) { self.init(rawValue: raw) }
 
   /// Indicates that other users have read-only permission.
   @_alwaysEmitIntoClient

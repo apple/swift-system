@@ -72,18 +72,24 @@ private func mockOffT(
 // amount of code size, so we hand outline that code for every syscall
 
 // open
-public func system_open(_ path: UnsafePointer<CChar>, _ oflag: Int32) -> CInt {
+public func system_open(
+  _ path: UnsafePointer<_PlatformChar>, _ oflag: Int32
+) -> CInt {
 #if ENABLE_MOCKING
-  if mockingEnabled { return mock(String(cString: path), oflag) }
+  if mockingEnabled {
+    return mock(String(_errorCorrectingPlatformString: path), oflag)
+  }
 #endif
   return open(path, oflag)
 }
 
 public func system_open(
-  _ path: UnsafePointer<CChar>, _ oflag: Int32, _ mode: CModeT
+  _ path: UnsafePointer<_PlatformChar>, _ oflag: Int32, _ mode: CModeT
 ) -> CInt {
 #if ENABLE_MOCKING
-  if mockingEnabled { return mock(String(cString: path), oflag, mode) }
+  if mockingEnabled {
+    return mock(String(_errorCorrectingPlatformString: path), oflag, mode)
+  }
 #endif
   return open(path, oflag, mode)
 }

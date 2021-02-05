@@ -33,7 +33,7 @@ extension FileDescriptor {
     permissions: FilePermissions? = nil,
     retryOnInterrupt: Bool = true
   ) throws -> FileDescriptor {
-    try path.withCString {
+    try path.withPlatformString {
       try FileDescriptor.open(
         $0, mode, options: options, permissions: permissions, retryOnInterrupt: retryOnInterrupt)
     }
@@ -55,7 +55,7 @@ extension FileDescriptor {
   /// The corresponding C function is `open`.
   @_alwaysEmitIntoClient
   public static func open(
-    _ path: UnsafePointer<CChar>,
+    _ path: UnsafePointer<CInterop.PlatformChar>,
     _ mode: FileDescriptor.AccessMode,
     options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
     permissions: FilePermissions? = nil,
@@ -68,7 +68,7 @@ extension FileDescriptor {
 
   @usableFromInline
   internal static func _open(
-    _ path: UnsafePointer<CChar>,
+    _ path: UnsafePointer<CInterop.PlatformChar>,
     _ mode: FileDescriptor.AccessMode,
     options: FileDescriptor.OpenOptions,
     permissions: FilePermissions?,
