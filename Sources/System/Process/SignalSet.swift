@@ -32,7 +32,6 @@ extension SignalSet {
 import Darwin
 
 extension SignalSet {
-  // sigaddset
   public mutating func insert(_ sig: Signal) {
     _ = withUnsafeMutablePointer { sigaddset($0, sig.rawValue) }
   }

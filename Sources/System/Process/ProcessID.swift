@@ -24,36 +24,7 @@ public struct ProcessID: RawRepresentable, Hashable, Codable {
 }
 
 extension ProcessID {
-  public struct TaskInfo: RawRepresentable/*, Hashable, Codable*/ {
-    /// The raw C process id.
-    @_alwaysEmitIntoClient
-    public let rawValue: CInterop.ProcTaskInfo
-
-    /// Creates a strongly-typed process id from a raw C pid
-    @_alwaysEmitIntoClient
-    public init(rawValue: CInterop.ProcTaskInfo) { self.rawValue = rawValue }
-
-    fileprivate init(_ rawValue: CInterop.ProcTaskInfo) {
-      self.init(rawValue: rawValue)
-    }
-
-  }
-
-  public struct ResourceUsageInfo: RawRepresentable/*, Hashable, Codable*/ {
-    /// The raw C process id.
-    @_alwaysEmitIntoClient
-    public let rawValue: CInterop.RUsageInfo
-
-    /// Creates a strongly-typed process id from a raw C pid
-    @_alwaysEmitIntoClient
-    public init(rawValue: CInterop.RUsageInfo) { self.rawValue = rawValue }
-
-    fileprivate init(_ rawValue: CInterop.RUsageInfo) {
-      self.init(rawValue: rawValue)
-    }
-
-    fileprivate static var blank: ResourceUsageInfo {
-      ResourceUsageInfo(rusage_info_current())
-    }
+  public static func current() -> ProcessID {
+    ProcessID(getpid())
   }
 }
