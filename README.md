@@ -57,3 +57,9 @@ let package = Package(
     ]
 )
 ```
+
+## Contributing
+Before contributing, please read [CONTRIBUTING.md](CONTRIBUTING.md). 
+
+## LICENSE
+See [LICENSE](LICENSE.txt) for license information. 
