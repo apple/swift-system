@@ -33,7 +33,9 @@ extension ProcessID {
     @_alwaysEmitIntoClient
     public init(rawValue: CInterop.ProcTaskInfo) { self.rawValue = rawValue }
 
-    fileprivate init(_ rawValue: CInterop.ProcTaskInfo) { self.init(rawValue: rawValue) }
+    fileprivate init(_ rawValue: CInterop.ProcTaskInfo) {
+      self.init(rawValue: rawValue)
+    }
 
   }
 
@@ -46,8 +48,12 @@ extension ProcessID {
     @_alwaysEmitIntoClient
     public init(rawValue: CInterop.RUsageInfo) { self.rawValue = rawValue }
 
-    fileprivate init(_ rawValue: CInterop.RUsageInfo) { self.init(rawValue: rawValue) }
+    fileprivate init(_ rawValue: CInterop.RUsageInfo) {
+      self.init(rawValue: rawValue)
+    }
 
-    fileprivate static var blank: ResourceUsageInfo { ResourceUsageInfo(rusage_info_current()) }
+    fileprivate static var blank: ResourceUsageInfo {
+      ResourceUsageInfo(rusage_info_current())
+    }
   }
 }
