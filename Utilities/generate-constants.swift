@@ -487,7 +487,7 @@ var testFile = """
   """
 for (name, _) in constants.sorted(by: { $0.key < $1.key }) {
   testFile += """
-        XCTAssertEqual(_\(name), \(name))
+        XCTAssertEqual(_\(name), \(name), "\(name)")
 
     """
 }
