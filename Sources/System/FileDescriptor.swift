@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2021 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -23,6 +23,21 @@ public struct FileDescriptor: RawRepresentable, Hashable, Codable {
   /// Creates a strongly-typed file handle from a raw C file handle.
   @_alwaysEmitIntoClient
   public init(rawValue: CInt) { self.rawValue = rawValue }
+}
+
+// Standard file descriptors
+extension FileDescriptor {
+  /// The standard input file descriptor, with a numeric value of 0.
+  @_alwaysEmitIntoClient
+  public static var standardInput: FileDescriptor { .init(rawValue: 0) }
+
+  /// The standard output file descriptor, with a numeric value of 1.
+  @_alwaysEmitIntoClient
+  public static var standardOutput: FileDescriptor { .init(rawValue: 1) }
+
+  /// The standard error file descriptor, with a numeric value of 2.
+  @_alwaysEmitIntoClient
+  public static var standardError: FileDescriptor { .init(rawValue: 2) }
 }
 
 // @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
