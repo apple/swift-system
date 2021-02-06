@@ -26,7 +26,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
   /// Error. Not used.
   @_alwaysEmitIntoClient
-  public static var notUsed: Errno { Errno(_ERRNO_NOT_USED) }
+  public static var notUsed: Errno { Errno(0) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "notUsed")
