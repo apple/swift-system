@@ -26,10 +26,19 @@ let targets: [PackageDescription.Target] = [
   .target(
     name: "CSystem",
     dependencies: []),
+  .target(
+    name: "CodeGen",
+    dependencies: ["SystemPackage"]),
+  .target(
+    name: "RunCodeGen",
+    dependencies: ["CodeGen"]),
 
   .testTarget(
     name: "SystemTests",
     dependencies: ["SystemPackage"]),
+  .testTarget(
+    name: "CodeGenTests",
+    dependencies: ["CodeGen"]),
 ]
 
 let package = Package(
