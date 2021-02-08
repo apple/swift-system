@@ -339,7 +339,7 @@ extension SystemString {
     func parseUNC(deviceSigil: SystemChar?) -> _ParsedWindowsRoot {
       let serverRange = lexer.eatComponent()
       guard lexer.eatBackslash() else {
-        assert(false, "expected normalized root to contain backslash")
+        fatalError("expected normalized root to contain backslash")
       }
       let shareRange = lexer.eatComponent()
       let rootEnd = lexer.current
@@ -375,12 +375,12 @@ extension SystemString {
     _ = sigil // suppress warnings
 
     guard lexer.eatBackslash() else {
-      assert(false, "expected normalized root to contain backslash")
+      fatalError("expected normalized root to contain backslash")
     }
 
     if lexer.eatUNC() {
       guard lexer.eatBackslash() else {
-        assert(false, "expected normalized root to contain backslash")
+        fatalError("expected normalized root to contain backslash")
       }
       return parseUNC(deviceSigil: sigil)
     }
