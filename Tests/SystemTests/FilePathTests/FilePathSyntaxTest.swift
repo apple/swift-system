@@ -8,7 +8,12 @@
 */
 
 import XCTest
+
+#if SYSTEM_PACKAGE
 import SystemPackage
+#else
+import System
+#endif
 
 private struct SyntaxTestCase: TestCase {
   // Whether we want the path to be constructed and syntactically

@@ -8,7 +8,12 @@
 */
 
 import XCTest
+
+#if SYSTEM_PACKAGE
 import SystemPackage
+#else
+import System
+#endif
 
 private struct ParsingTestCase: TestCase {
   // Whether we want the path to be constructed and syntactically
@@ -57,7 +62,11 @@ extension ParsingTestCase {
   }
 }
 
+#if SYSTEM_PACKAGE
 @testable import SystemPackage
+#else
+@testable import System
+#endif
 
 final class FilePathParsingTest: XCTestCase {
   func testNormalization() {

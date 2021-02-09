@@ -8,7 +8,13 @@
 */
 
 import XCTest
+
+#if SYSTEM_PACKAGE
 import SystemPackage
+#else
+import System
+#endif
+
 @testable import SystemInternals
 
 // @available...

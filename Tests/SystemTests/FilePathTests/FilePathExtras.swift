@@ -1,5 +1,9 @@
 
+#if SYSTEM_PACKAGE
 @testable import SystemPackage
+#else
+@testable import System
+#endif
 
 // Why can't I write this extension on `FilePath.ComponentView.SubSequence`?
 extension Slice where Base == FilePath.ComponentView {

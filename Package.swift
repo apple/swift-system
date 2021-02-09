@@ -29,7 +29,10 @@ let targets: [PackageDescription.Target] = [
 
   .testTarget(
     name: "SystemTests",
-    dependencies: ["SystemPackage"]),
+    dependencies: ["SystemPackage"],
+    swiftSettings: [
+      .define("SYSTEM_PACKAGE")
+    ]),
 ]
 
 let package = Package(

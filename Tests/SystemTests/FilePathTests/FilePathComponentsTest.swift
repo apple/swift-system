@@ -8,10 +8,12 @@
 */
 
 import XCTest
-import SystemPackage
 
-@testable
-import SystemPackage
+#if SYSTEM_PACKAGE
+@testable import SystemPackage
+#else
+@testable import System
+#endif
 
 // @available(9999....)
 struct TestPathComponents: TestCase {

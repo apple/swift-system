@@ -9,7 +9,12 @@
 
 import XCTest
 import SystemInternals
+
+#if SYSTEM_PACKAGE
 import SystemPackage
+#else
+import System
+#endif
 
 // To aid debugging, force failures to fatal error
 internal var forceFatalFailures = false
