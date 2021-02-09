@@ -17,7 +17,7 @@ import System
 
 @testable import SystemInternals
 
-// @available...
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 final class MockingTest: XCTestCase {
   func testMocking() {
     XCTAssertFalse(mockingEnabled)

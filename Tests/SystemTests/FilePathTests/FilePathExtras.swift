@@ -6,6 +6,7 @@
 #endif
 
 // Why can't I write this extension on `FilePath.ComponentView.SubSequence`?
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension Slice where Base == FilePath.ComponentView {
   internal var _storageSlice: SystemString.SubSequence {
     base._path._storage[self.startIndex._storage ..< self.endIndex._storage]
@@ -14,6 +15,7 @@ extension Slice where Base == FilePath.ComponentView {
 
 
 // Proposed API that didn't make the cut, but we stil want to keep our testing for
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension FilePath {
   /// Returns `self` relative to `base`.
   /// This does not cosult the file system or resolve symlinks.

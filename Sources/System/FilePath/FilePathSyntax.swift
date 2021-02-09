@@ -9,7 +9,7 @@
 
 // MARK: - Query API
 
-// @available(...)
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension FilePath {
   /// Returns true if this path uniquely identifies the location of
   /// a file without reference to an additional starting location.
@@ -103,6 +103,7 @@ extension FilePath {
 }
 
 // MARK: - Decompose a path
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension FilePath {
   /// Returns the root of a path if there is one, otherwise `nil`.
   ///
@@ -187,6 +188,7 @@ extension FilePath {
   }
 }
 
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension FilePath {
   /// Returns the final component of the path.
   /// Returns `nil` if the path is empty or only contains a root.
@@ -258,6 +260,7 @@ extension FilePath {
   }
 }
 
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension FilePath.Component {
   /// The extension of this file or directory component.
   ///
@@ -290,6 +293,7 @@ extension FilePath.Component {
   }
 }
 
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension FilePath {
 
   /// The extension of the file or directory last component.
@@ -356,6 +360,7 @@ extension FilePath {
 
 }
 
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension FilePath {
   /// Whether the path is in lexical-normal form, that is `.` and `..`
   /// components have been collapsed lexically (i.e. without following
@@ -436,6 +441,7 @@ extension FilePath {
 }
 
 // Modification and concatenation API
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension FilePath {
   /// If `prefix` is a prefix of `self`, removes it and returns `true`.
   ///  Otherwise returns `false`.
@@ -605,6 +611,7 @@ extension FilePath {
 }
 
 // MARK - Renamed
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension FilePath {
   @available(*, unavailable, renamed: "removingLastComponent()")
   public var dirname: FilePath { removingLastComponent() }

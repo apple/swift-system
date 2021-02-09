@@ -17,6 +17,7 @@
 public typealias CModeT =  CInterop.Mode
 
 /// A namespace for C and platform types
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 public enum CInterop {
   #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
   /// The C `mode_t` type.

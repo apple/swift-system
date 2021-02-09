@@ -9,6 +9,7 @@
 
 // MARK: - API
 
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension FilePath {
   /// A bidirectional, range replaceable collection of the non-root components
   /// that make up a file path.
@@ -97,6 +98,7 @@ extension FilePath.ComponentView: BidirectionalCollection {
   }
 }
 
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension FilePath.ComponentView: RangeReplaceableCollection {
   public init() {
     self.init(FilePath())

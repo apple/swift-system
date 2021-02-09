@@ -111,7 +111,6 @@ extension SystemString {
   }
 }
 
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
 extension FilePath {
   internal mutating func _removeTrailingSeparator() {
     _storage._removeTrailingSeparator()

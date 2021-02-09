@@ -7,6 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension CInterop {
   #if os(Windows)
   /// The platform's preferred character type. On Unix, this is an 8-bit C
@@ -54,6 +55,7 @@ extension CInterop.PlatformUnicodeEncoding.CodeUnit {
   }
 }
 
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension String {
   /// Creates a string by interpreting the null-terminated platform string as
   /// UTF-8 on Unix and UTF-16 on Windows.
