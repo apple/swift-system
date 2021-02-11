@@ -160,8 +160,8 @@ internal func setTLS(_ key: _PlatformTLSKey, _ p: UnsafeMutableRawPointer?) {
 }
 internal func getTLS(_ key: _PlatformTLSKey) -> UnsafeMutableRawPointer? {
   #if os(Windows)
-  FlsGetValue(key)
+  return FlsGetValue(key)
   #else
-  pthread_getspecific(key)
+  return pthread_getspecific(key)
   #endif
 }

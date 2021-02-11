@@ -191,9 +191,16 @@ internal func _mockOffT(
 // Force paths to be treated as Windows syntactically if `enabled` is
 // true.
 internal func _withWindowsPaths(enabled: Bool, _ body: () -> ()) {
-  guard enabled else { return body() }
+  #if ENABLE_MOCKING
+  guard enabled else {
+    body()
+    return
+  }
   MockingDriver.withMockingEnabled { driver in
     driver.forceWindowsSyntaxForPaths = true
     body()
   }
+  #else
+  body()
+  #endif
 }
