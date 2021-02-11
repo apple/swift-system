@@ -141,6 +141,45 @@ extension String {
     self.init(cString: platformString)
     #endif
   }
+}
 
+// TLS
+#if os(Windows)
+internal typealias _PlatformTLSKey = DWORD
+#else
+internal typealias _PlatformTLSKey = pthread_key_t
+#endif
 
+internal func makeTLSKey() -> _PlatformTLSKey {
+  #if os(Windows)
+  let raw: DWORD = FlsAlloc(nil)
+  if raw == FLS_OUT_OF_INDEXES {
+    fatalError("Unable to create key")
+  }
+  return raw
+  #else
+  var raw = pthread_key_t()
+  guard 0 == pthread_key_create(&raw, nil) else {
+    fatalError("Unable to create key")
+  }
+  return raw
+  #endif
+}
+internal func setTLS(_ key: _PlatformTLSKey, _ p: UnsafeMutableRawPointer?) {
+  #if os(Windows)
+  guard FlsSetValue(key, p) else {
+    fatalError("Unable to set TLS")
+  }
+  #else
+  guard 0 == pthread_setspecific(key, p) else {
+    fatalError("Unable to set TLS")
+  }
+  #endif
+}
+internal func getTLS(_ key: _PlatformTLSKey) -> UnsafeMutableRawPointer? {
+  #if os(Windows)
+  FlsGetValue(key)
+  #else
+  pthread_getspecific(key)
+  #endif
 }

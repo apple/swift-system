@@ -18,12 +18,12 @@
 //
 
 #if ENABLE_MOCKING
-public struct Trace {
-  public struct Entry: Hashable {
-    var name: String
-    var arguments: [AnyHashable]
+internal struct Trace {
+  internal struct Entry: Hashable {
+    private var name: String
+    private var arguments: [AnyHashable]
 
-    public init(name: String, _ arguments: [AnyHashable]) {
+    internal init(name: String, _ arguments: [AnyHashable]) {
       self.name = name
       self.arguments = arguments
     }
@@ -32,39 +32,20 @@ public struct Trace {
   private var entries: [Entry] = []
   private var firstEntry: Int = 0
 
-  public var isEmpty: Bool { firstEntry >= entries.count }
+  internal var isEmpty: Bool { firstEntry >= entries.count }
 
-  public mutating func dequeue() -> Entry? {
+  internal mutating func dequeue() -> Entry? {
     guard !self.isEmpty else { return nil }
     defer { firstEntry += 1 }
     return entries[firstEntry]
   }
 
-  internal mutating func add(_ e: Entry) {
+  fileprivate mutating func add(_ e: Entry) {
     entries.append(e)
   }
-
-  public mutating func clear() { entries.removeAll() }
 }
 
-// TODO: Track
-public struct WriteBuffer {
-  public var enabled: Bool = false
-
-  private var buffer: [UInt8] = []
-  private var chunkSize: Int? = nil
-
-  internal mutating func write(_ buf: UnsafeRawBufferPointer) -> Int {
-    guard enabled else { return 0 }
-    let chunk = chunkSize ?? buf.count
-    buffer.append(contentsOf: buf.prefix(chunk))
-    return chunk
-  }
-
-  public var contents: [UInt8] { buffer }
-}
-
-public enum ForceErrno: Equatable {
+internal enum ForceErrno: Equatable {
   case none
   case always(errno: CInt)
 
@@ -74,70 +55,17 @@ public enum ForceErrno: Equatable {
 // Provide access to the driver, context, and trace stack of mocking
 public class MockingDriver {
   // Record syscalls and their arguments
-  public var trace = Trace()
+  internal var trace = Trace()
 
   // Mock errors inside syscalls
-  public var forceErrno = ForceErrno.none
-
-  // A buffer to put `write` bytes into
-  public var writeBuffer = WriteBuffer()
+  internal var forceErrno = ForceErrno.none
 
   // Whether we should pretend to be Windows for syntactic operations
   // inside FilePath
-  public var forceWindowsSyntaxForPaths = false
+  fileprivate var forceWindowsSyntaxForPaths = false
 }
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
-import Darwin
-#elseif os(Linux) || os(FreeBSD) || os(Android)
-import Glibc
-#elseif os(Windows)
-import ucrt
-import WinSDK
-#else
-#error("Unsupported Platform")
-#endif
-
-// TLS helper functions
-#if os(Windows)
-internal typealias TLSKey = DWORD
-internal func makeTLSKey() -> TLSKey {
-  let raw: DWORD = FlsAlloc(nil)
-  if raw == FLS_OUT_OF_INDEXES {
-    fatalError("Unable to create key")
-  }
-  return raw
-}
-internal func setTLS(_ key: TLSKey, _ p: UnsafeMutableRawPointer?) {
-  guard FlsSetValue(key, p) else {
-    fatalError("Unable to set TLS")
-  }
-}
-internal func getTLS(_ key: TLSKey) -> UnsafeMutableRawPointer? {
-  FlsGetValue(key)
-}
-
-#else
-
-internal typealias TLSKey = pthread_key_t
-internal func makeTLSKey() -> TLSKey {
-  var raw = pthread_key_t()
-  guard 0 == pthread_key_create(&raw, nil) else {
-    fatalError("Unable to create key")
-  }
-  return raw
-}
-internal func setTLS(_ key: TLSKey, _ p: UnsafeMutableRawPointer?) {
-  guard 0 == pthread_setspecific(key, p) else {
-    fatalError("Unable to set TLS")
-  }
-}
-internal func getTLS(_ key: TLSKey) -> UnsafeMutableRawPointer? {
-  pthread_getspecific(key)
-}
-#endif
-
-private let driverKey: TLSKey = { makeTLSKey() }()
+private let driverKey: _PlatformTLSKey = { makeTLSKey() }()
 
 internal var currentMockingDriver: MockingDriver? {
   #if !ENABLE_MOCKING
@@ -152,7 +80,7 @@ internal var currentMockingDriver: MockingDriver? {
 extension MockingDriver {
   /// Enables mocking for the duration of `f` with a clean trace queue
   /// Restores prior mocking status and trace queue after execution
-  public static func withMockingEnabled(
+  internal static func withMockingEnabled(
     _ f: (MockingDriver) throws -> ()
   ) rethrows {
     let priorMocking = currentMockingDriver
@@ -179,7 +107,7 @@ private var contextualMockingEnabled: Bool {
 }
 
 extension MockingDriver {
-  public static var enabled: Bool { mockingEnabled }
+  internal static var enabled: Bool { mockingEnabled }
 
   public static var forceWindowsPaths: Bool {
     currentMockingDriver?.forceWindowsSyntaxForPaths ?? false
@@ -198,11 +126,74 @@ internal var mockingEnabled: Bool {
   #endif
 }
 
-@inlinable @inline(__always)
+@inline(__always) @inlinable
 public var forceWindowsPaths: Bool {
   #if !ENABLE_MOCKING
   return false
   #else
   return MockingDriver.forceWindowsPaths
   #endif
+}
+
+
+#if ENABLE_MOCKING
+// Strip the mock_system prefix and the arg list suffix
+private func originalSyscallName(_ s: String) -> String {
+  // `function` must be of format `system_<name>(<parameters>)`
+  precondition(s.starts(with: "system_"))
+  return String(s.dropFirst("system_".count).prefix { $0.isLetter })
+}
+
+private func mockImpl(
+  name: String,
+  _ args: [AnyHashable]
+) -> CInt {
+  let origName = originalSyscallName(name)
+  guard let driver = currentMockingDriver else {
+    fatalError("Mocking requested from non-mocking context")
+  }
+  driver.trace.add(Trace.Entry(name: origName, args))
+
+  switch driver.forceErrno {
+  case .none: break
+  case .always(let e):
+    system_errno = e
+    return -1
+  case .counted(let e, let count):
+    assert(count >= 1)
+    system_errno = e
+    driver.forceErrno = count > 1 ? .counted(errno: e, count: count-1) : .none
+    return -1
+  }
+
+  return 0
+}
+
+internal func _mock(
+  name: String = #function, _ args: AnyHashable...
+) -> CInt {
+  precondition(mockingEnabled)
+  return mockImpl(name: name, args)
+}
+internal func _mockInt(
+  name: String = #function, _ args: AnyHashable...
+) -> Int {
+  Int(mockImpl(name: name, args))
+}
+
+internal func _mockOffT(
+  name: String = #function, _ args: AnyHashable...
+) -> COffT {
+  COffT(mockImpl(name: name, args))
+}
+#endif // ENABLE_MOCKING
+
+// Force paths to be treated as Windows syntactically if `enabled` is
+// true.
+internal func _withWindowsPaths(enabled: Bool, _ body: () -> ()) {
+  guard enabled else { return body() }
+  MockingDriver.withMockingEnabled { driver in
+    driver.forceWindowsSyntaxForPaths = true
+    body()
+  }
 }

@@ -8,7 +8,8 @@
 */
 
 import XCTest
-import SystemInternals
+
+@testable import SystemInternals
 
 #if SYSTEM_PACKAGE
 import SystemPackage
@@ -177,13 +178,6 @@ internal struct MockTestCase: TestCase {
   }
 }
 
-// Force paths to be treated as Windows syntactically if `enabled` is
-// true.
 internal func withWindowsPaths(enabled: Bool, _ body: () -> ()) {
-  guard enabled else { return body() }
-  MockingDriver.withMockingEnabled { driver in
-    driver.forceWindowsSyntaxForPaths = true
-    body()
-  }
+  _withWindowsPaths(enabled: enabled, body)
 }
-

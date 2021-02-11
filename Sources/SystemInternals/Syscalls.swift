@@ -17,58 +17,6 @@ import ucrt
 #error("Unsupported Platform")
 #endif
 
-#if ENABLE_MOCKING
-// Strip the mock_system prefix and the arg list suffix
-private func originalSyscallName(_ function: String) -> String {
-  // `function` must be of format `system_<name>(<parameters>)`
-  precondition(function.starts(with: "system_"))
-  return String(function.dropFirst("system_".count).prefix { $0 != "(" })
-}
-
-private func mockImpl(
-  name: String,
-  _ args: [AnyHashable]
-) -> CInt {
-  let origName = originalSyscallName(name)
-  guard let driver = currentMockingDriver else {
-    fatalError("Mocking requested from non-mocking context")
-  }
-  driver.trace.add(Trace.Entry(name: origName, args))
-
-  switch driver.forceErrno {
-  case .none: break
-  case .always(let e):
-    system_errno = e
-    return -1
-  case .counted(let e, let count):
-    assert(count >= 1)
-    system_errno = e
-    driver.forceErrno = count > 1 ? .counted(errno: e, count: count-1) : .none
-    return -1
-  }
-
-  return 0
-}
-
-private func mock(
-  name: String = #function, _ args: AnyHashable...
-) -> CInt {
-  precondition(mockingEnabled)
-  return mockImpl(name: name, args)
-}
-private func mockInt(
-  name: String = #function, _ args: AnyHashable...
-) -> Int {
-  Int(mockImpl(name: name, args))
-}
-
-private func mockOffT(
-  name: String = #function, _ args: AnyHashable...
-) -> off_t {
-  off_t(mockImpl(name: name, args))
-}
-#endif // ENABLE_MOCKING
-
 // Interacting with the mocking system, tracing, etc., is a potentially significant
 // amount of code size, so we hand outline that code for every syscall
 
@@ -78,7 +26,7 @@ public func system_open(
 ) -> CInt {
 #if ENABLE_MOCKING
   if mockingEnabled {
-    return mock(String(_errorCorrectingPlatformString: path), oflag)
+    return _mock(String(_errorCorrectingPlatformString: path), oflag)
   }
 #endif
   return open(path, oflag)
@@ -89,7 +37,7 @@ public func system_open(
 ) -> CInt {
 #if ENABLE_MOCKING
   if mockingEnabled {
-    return mock(String(_errorCorrectingPlatformString: path), oflag, mode)
+    return _mock(String(_errorCorrectingPlatformString: path), oflag, mode)
   }
 #endif
   return open(path, oflag, mode)
@@ -98,7 +46,7 @@ public func system_open(
 // close
 public func system_close(_ fd: Int32) -> Int32 {
 #if ENABLE_MOCKING
-  if mockingEnabled { return mock(fd) }
+  if mockingEnabled { return _mock(fd) }
 #endif
   return close(fd)
 }
@@ -108,7 +56,7 @@ public func system_read(
   _ fd: Int32, _ buf: UnsafeMutableRawPointer!, _ nbyte: Int
 ) -> Int {
 #if ENABLE_MOCKING
-  if mockingEnabled { return mockInt(fd, buf, nbyte) }
+  if mockingEnabled { return _mockInt(fd, buf, nbyte) }
 #endif
   return read(fd, buf, nbyte)
 }
@@ -118,7 +66,7 @@ public func system_pread(
   _ fd: Int32, _ buf: UnsafeMutableRawPointer!, _ nbyte: Int, _ offset: off_t
 ) -> Int {
 #if ENABLE_MOCKING
-  if mockingEnabled { return mockInt(fd, buf, nbyte, offset) }
+  if mockingEnabled { return _mockInt(fd, buf, nbyte, offset) }
 #endif
   return pread(fd, buf, nbyte, offset)
 }
@@ -128,7 +76,7 @@ public func system_lseek(
   _ fd: Int32, _ off: off_t, _ whence: Int32
 ) -> off_t {
 #if ENABLE_MOCKING
-  if mockingEnabled { return mockOffT(fd, off, whence) }
+  if mockingEnabled { return _mockOffT(fd, off, whence) }
 #endif
   return lseek(fd, off, whence)
 }
@@ -138,7 +86,7 @@ public func system_write(
   _ fd: Int32, _ buf: UnsafeRawPointer!, _ nbyte: Int
 ) -> Int {
 #if ENABLE_MOCKING
-  if mockingEnabled { return mockInt(fd, buf, nbyte) }
+  if mockingEnabled { return _mockInt(fd, buf, nbyte) }
 #endif
   return write(fd, buf, nbyte)
 }
@@ -148,21 +96,21 @@ public func system_pwrite(
   _ fd: Int32, _ buf: UnsafeRawPointer!, _ nbyte: Int, _ offset: off_t
 ) -> Int {
 #if ENABLE_MOCKING
-  if mockingEnabled { return mockInt(fd, buf, nbyte, offset) }
+  if mockingEnabled { return _mockInt(fd, buf, nbyte, offset) }
 #endif
   return pwrite(fd, buf, nbyte, offset)
 }
 
 public func system_dup(_ fd: Int32) -> Int32 {
   #if ENABLE_MOCKING
-  if mockingEnabled { return mock(fd) }
+  if mockingEnabled { return _mock(fd) }
   #endif
   return dup(fd)
 }
 
 public func system_dup2(_ fd: Int32, _ fd2: Int32) -> Int32 {
   #if ENABLE_MOCKING
-  if mockingEnabled { return mock(fd, fd2) }
+  if mockingEnabled { return _mock(fd, fd2) }
   #endif
   return dup2(fd, fd2)
 }
