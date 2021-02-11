@@ -42,8 +42,6 @@ import XCTest
 @testable import System
 #endif
 
-import SystemInternals
-
 private func makeRaw(
   _ str: String
 ) -> [CInterop.PlatformChar] {

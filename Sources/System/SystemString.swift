@@ -239,7 +239,6 @@ extension SystemString: CustomStringConvertible, CustomDebugStringConvertible {
   internal var debugDescription: String { description.debugDescription }
 }
 
-@_implementationOnly import func SystemInternals.system_platform_strlen
 extension SystemString {
   /// Creates a system string by copying bytes from a null-terminated platform string.
   ///

@@ -8,11 +8,11 @@
 */
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
-import Darwin
+@_implementationOnly import Darwin
 #elseif os(Linux) || os(FreeBSD) || os(Android)
-import Glibc
+@_implementationOnly import Glibc
 #elseif os(Windows)
-import ucrt
+@_implementationOnly import ucrt
 #else
 #error("Unsupported Platform")
 #endif
@@ -21,8 +21,8 @@ import ucrt
 // amount of code size, so we hand outline that code for every syscall
 
 // open
-public func system_open(
-  _ path: UnsafePointer<_PlatformChar>, _ oflag: Int32
+internal func system_open(
+  _ path: UnsafePointer<CInterop.PlatformChar>, _ oflag: Int32
 ) -> CInt {
 #if ENABLE_MOCKING
   if mockingEnabled {
@@ -32,8 +32,9 @@ public func system_open(
   return open(path, oflag)
 }
 
-public func system_open(
-  _ path: UnsafePointer<_PlatformChar>, _ oflag: Int32, _ mode: CModeT
+internal func system_open(
+  _ path: UnsafePointer<CInterop.PlatformChar>,
+  _ oflag: Int32, _ mode: CInterop.Mode
 ) -> CInt {
 #if ENABLE_MOCKING
   if mockingEnabled {
@@ -44,7 +45,7 @@ public func system_open(
 }
 
 // close
-public func system_close(_ fd: Int32) -> Int32 {
+internal func system_close(_ fd: Int32) -> Int32 {
 #if ENABLE_MOCKING
   if mockingEnabled { return _mock(fd) }
 #endif
@@ -52,7 +53,7 @@ public func system_close(_ fd: Int32) -> Int32 {
 }
 
 // read
-public func system_read(
+internal func system_read(
   _ fd: Int32, _ buf: UnsafeMutableRawPointer!, _ nbyte: Int
 ) -> Int {
 #if ENABLE_MOCKING
@@ -62,7 +63,7 @@ public func system_read(
 }
 
 // pread
-public func system_pread(
+internal func system_pread(
   _ fd: Int32, _ buf: UnsafeMutableRawPointer!, _ nbyte: Int, _ offset: off_t
 ) -> Int {
 #if ENABLE_MOCKING
@@ -72,7 +73,7 @@ public func system_pread(
 }
 
 // lseek
-public func system_lseek(
+internal func system_lseek(
   _ fd: Int32, _ off: off_t, _ whence: Int32
 ) -> off_t {
 #if ENABLE_MOCKING
@@ -82,7 +83,7 @@ public func system_lseek(
 }
 
 // write
-public func system_write(
+internal func system_write(
   _ fd: Int32, _ buf: UnsafeRawPointer!, _ nbyte: Int
 ) -> Int {
 #if ENABLE_MOCKING
@@ -92,7 +93,7 @@ public func system_write(
 }
 
 // pwrite
-public func system_pwrite(
+internal func system_pwrite(
   _ fd: Int32, _ buf: UnsafeRawPointer!, _ nbyte: Int, _ offset: off_t
 ) -> Int {
 #if ENABLE_MOCKING

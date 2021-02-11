@@ -8,54 +8,6 @@
 */
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
-extension CInterop {
-  #if os(Windows)
-  /// The platform's preferred character type. On Unix, this is an 8-bit C
-  /// `char` (which may be signed or unsigned, depending on platform). On
-  /// Windows, this is `UInt16` (a "wide" character).
-  public typealias PlatformChar = UInt16
-  #else
-  /// The platform's preferred character type. On Unix, this is an 8-bit C
-  /// `char` (which may be signed or unsigned, depending on platform). On
-  /// Windows, this is `UInt16` (a "wide" character).
-  public typealias PlatformChar = CInterop.Char
-  #endif
-
-  #if os(Windows)
-  /// The platform's preferred Unicode encoding. On Unix this is UTF-8 and on
-  /// Windows it is UTF-16. Native strings may contain invalid Unicode,
-  /// which will be handled by either error-correction or failing, depending
-  /// on API.
-  public typealias PlatformUnicodeEncoding = UTF16
-  #else
-  /// The platform's preferred Unicode encoding. On Unix this is UTF-8 and on
-  /// Windows it is UTF-16. Native strings may contain invalid Unicode,
-  /// which will be handled by either error-correction or failing, depending
-  /// on API.
-  public typealias PlatformUnicodeEncoding = UTF8
-  #endif
-}
-
-extension CInterop.PlatformChar {
-  internal var _platformCodeUnit: CInterop.PlatformUnicodeEncoding.CodeUnit {
-    #if os(Windows)
-    return self
-    #else
-    return CInterop.PlatformUnicodeEncoding.CodeUnit(bitPattern: self)
-    #endif
-  }
-}
-extension CInterop.PlatformUnicodeEncoding.CodeUnit {
-  internal var _platformChar: CInterop.PlatformChar {
-    #if os(Windows)
-    return self
-    #else
-    return CInterop.PlatformChar(bitPattern: self)
-    #endif
-  }
-}
-
-// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension String {
   /// Creates a string by interpreting the null-terminated platform string as
   /// UTF-8 on Unix and UTF-16 on Windows.
@@ -104,6 +56,25 @@ extension String {
     try _withPlatformString(body)
   }
 
+}
+
+extension CInterop.PlatformChar {
+  internal var _platformCodeUnit: CInterop.PlatformUnicodeEncoding.CodeUnit {
+    #if os(Windows)
+    return self
+    #else
+    return CInterop.PlatformUnicodeEncoding.CodeUnit(bitPattern: self)
+    #endif
+  }
+}
+extension CInterop.PlatformUnicodeEncoding.CodeUnit {
+  internal var _platformChar: CInterop.PlatformChar {
+    #if os(Windows)
+    return self
+    #else
+    return CInterop.PlatformChar(bitPattern: self)
+    #endif
+  }
 }
 
 internal protocol _PlatformStringable {

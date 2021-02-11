@@ -9,12 +9,10 @@
 
 import XCTest
 
-@testable import SystemInternals
-
 #if SYSTEM_PACKAGE
-import SystemPackage
+@testable import SystemPackage
 #else
-import System
+@testable import System
 #endif
 
 // To aid debugging, force failures to fatal error

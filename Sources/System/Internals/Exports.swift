@@ -15,32 +15,26 @@ import CSystem
 // TODO: Should CSystem just include all the header files we need?
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
-import Darwin
+@_implementationOnly import Darwin
 #elseif os(Linux) || os(FreeBSD) || os(Android)
-import Glibc
+@_implementationOnly import Glibc
 #elseif os(Windows)
-import ucrt
+@_implementationOnly import ucrt
 #else
 #error("Unsupported Platform")
 #endif
 
-public typealias COffT = off_t
-
-#if os(Windows)
-public typealias CModeT = CInt
-#else
-public typealias CModeT = mode_t
-#endif
+internal typealias _COffT = off_t
 
 // MARK: syscalls and variables
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
-public var system_errno: CInt {
+internal var system_errno: CInt {
   get { Darwin.errno }
   set { Darwin.errno = newValue }
 }
 #elseif os(Windows)
-public var system_errno: CInt {
+internal var system_errno: CInt {
   get {
     var value: CInt = 0
     // TODO(compnerd) handle the error?
@@ -52,7 +46,7 @@ public var system_errno: CInt {
   }
 }
 #else
-public var system_errno: CInt {
+internal var system_errno: CInt {
   get { Glibc.errno }
   set { Glibc.errno = newValue }
 }
@@ -62,25 +56,13 @@ public var system_errno: CInt {
 
 // Convention: `system_foo` is system's wrapper for `foo`.
 
-public func system_strerror(_ __errnum: Int32) -> UnsafeMutablePointer<Int8>! {
+internal func system_strerror(_ __errnum: Int32) -> UnsafeMutablePointer<Int8>! {
   strerror(__errnum)
 }
 
-public func system_strlen(_ s: UnsafePointer<Int8>) -> Int {
+internal func system_strlen(_ s: UnsafePointer<Int8>) -> Int {
   strlen(s)
 }
-
-#if os(Windows)
-public typealias _PlatformChar = UInt16
-#else
-public typealias _PlatformChar = CChar
-#endif
-#if os(Windows)
-public typealias _PlatformUnicodeEncoding = UTF16
-#else
-public typealias _PlatformUnicodeEncoding = UTF8
-#endif
-
 
 // Convention: `system_platform_foo` is a
 // platform-representation-abstracted wrapper around `foo`-like functionality.
@@ -88,7 +70,7 @@ public typealias _PlatformUnicodeEncoding = UTF8
 //
 
 // strlen for the platform string
-public func system_platform_strlen(_ s: UnsafePointer<_PlatformChar>) -> Int {
+internal func system_platform_strlen(_ s: UnsafePointer<CInterop.PlatformChar>) -> Int {
   #if os(Windows)
   return wcslen(s)
   #else
@@ -98,8 +80,8 @@ public func system_platform_strlen(_ s: UnsafePointer<_PlatformChar>) -> Int {
 
 // Interop between String and platfrom string
 extension String {
-  public func _withPlatformString<Result>(
-    _ body: (UnsafePointer<_PlatformChar>) throws -> Result
+  internal func _withPlatformString<Result>(
+    _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
   ) rethrows -> Result {
     // Need to #if because CChar may be signed
     #if os(Windows)
@@ -109,7 +91,7 @@ extension String {
     #endif
   }
 
-  public init?(_platformString platformString: UnsafePointer<_PlatformChar>) {
+  internal init?(_platformString platformString: UnsafePointer<CInterop.PlatformChar>) {
     // Need to #if because CChar may be signed
     #if os(Windows)
     guard let strRes = String.decodeCString(
@@ -126,8 +108,8 @@ extension String {
     #endif
   }
 
-  public init(
-    _errorCorrectingPlatformString platformString: UnsafePointer<_PlatformChar>
+  internal init(
+    _errorCorrectingPlatformString platformString: UnsafePointer<CInterop.PlatformChar>
   ) {
     // Need to #if because CChar may be signed
     #if os(Windows)

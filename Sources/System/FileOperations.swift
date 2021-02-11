@@ -7,8 +7,6 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-@_implementationOnly import SystemInternals
-
 // @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
 extension FileDescriptor {
   /// Opens or creates a file for reading or writing.
@@ -122,7 +120,7 @@ extension FileDescriptor {
   internal func _seek(
     offset: Int64, from whence: FileDescriptor.SeekOrigin
   ) -> Result<Int64, Errno> {
-    let newOffset = system_lseek(self.rawValue, COffT(offset), whence.rawValue)
+    let newOffset = system_lseek(self.rawValue, _COffT(offset), whence.rawValue)
     return valueOrErrno(Int64(newOffset))
   }
 
@@ -210,7 +208,7 @@ extension FileDescriptor {
     retryOnInterrupt: Bool
   ) -> Result<Int, Errno> {
     valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
-      system_pread(self.rawValue, buffer.baseAddress, buffer.count, COffT(offset))
+      system_pread(self.rawValue, buffer.baseAddress, buffer.count, _COffT(offset))
     }
   }
 
@@ -292,7 +290,7 @@ extension FileDescriptor {
     retryOnInterrupt: Bool
   ) -> Result<Int, Errno> {
     valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
-      system_pwrite(self.rawValue, buffer.baseAddress, buffer.count, COffT(offset))
+      system_pwrite(self.rawValue, buffer.baseAddress, buffer.count, _COffT(offset))
     }
   }
 

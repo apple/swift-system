@@ -322,7 +322,6 @@ extension FilePath {
 }
 
 // Whether we are providing Windows paths
-@_implementationOnly import var SystemInternals.forceWindowsPaths
 @inline(__always)
 internal var _windowsPaths: Bool {
   #if os(Windows)

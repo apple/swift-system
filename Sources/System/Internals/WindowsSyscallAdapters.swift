@@ -9,12 +9,12 @@
 
 #if os(Windows)
 
-import ucrt
-import WinSDK
+@_implementationOnly import ucrt
+@_implementationOnly import WinSDK
 
 @inline(__always)
 internal func open(
-  _ path: UnsafePointer<_PlatformChar>, _ oflag: Int32
+  _ path: UnsafePointer<CInterop.PlatformChar>, _ oflag: Int32
 ) -> CInt {
   var fh: CInt = -1
   _ = _wsopen_s(&fh, path, oflag, _SH_DENYNO, _S_IREAD | _S_IWRITE)
@@ -23,7 +23,7 @@ internal func open(
 
 @inline(__always)
 internal func open(
-  _ path: UnsafePointer<_PlatformChar>, _ oflag: Int32, _ mode: CModeT
+  _ path: UnsafePointer<CInterop.PlatformChar>, _ oflag: Int32, _ mode: CModeT
 ) -> CInt {
   // TODO(compnerd): Apply read/write permissions
   var fh: CInt = -1

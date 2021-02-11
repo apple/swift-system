@@ -10,12 +10,10 @@
 import XCTest
 
 #if SYSTEM_PACKAGE
-import SystemPackage
+@testable import SystemPackage
 #else
-import System
+@testable import System
 #endif
-
-@testable import SystemInternals
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 final class MockingTest: XCTestCase {

@@ -53,7 +53,7 @@ internal enum ForceErrno: Equatable {
 }
 
 // Provide access to the driver, context, and trace stack of mocking
-public class MockingDriver {
+internal class MockingDriver {
   // Record syscalls and their arguments
   internal var trace = Trace()
 
@@ -109,7 +109,7 @@ private var contextualMockingEnabled: Bool {
 extension MockingDriver {
   internal static var enabled: Bool { mockingEnabled }
 
-  public static var forceWindowsPaths: Bool {
+  internal static var forceWindowsPaths: Bool {
     currentMockingDriver?.forceWindowsSyntaxForPaths ?? false
   }
 }
@@ -126,8 +126,8 @@ internal var mockingEnabled: Bool {
   #endif
 }
 
-@inline(__always) @inlinable
-public var forceWindowsPaths: Bool {
+@inline(__always)
+internal var forceWindowsPaths: Bool {
   #if !ENABLE_MOCKING
   return false
   #else
@@ -183,8 +183,8 @@ internal func _mockInt(
 
 internal func _mockOffT(
   name: String = #function, _ args: AnyHashable...
-) -> COffT {
-  COffT(mockImpl(name: name, args))
+) -> _COffT {
+  _COffT(mockImpl(name: name, args))
 }
 #endif // ENABLE_MOCKING
 

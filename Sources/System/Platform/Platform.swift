@@ -7,9 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-@_implementationOnly import SystemInternals
-
-// Public typealiases that can't be reexported from SystemInternals
+// MARK: - Public typealiases
 
 /// The C `mode_t` type.
 // @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
@@ -32,4 +30,30 @@ public enum CInterop {
 
   /// The C `char` type
   public typealias Char = CChar
+
+  #if os(Windows)
+  /// The platform's preferred character type. On Unix, this is an 8-bit C
+  /// `char` (which may be signed or unsigned, depending on platform). On
+  /// Windows, this is `UInt16` (a "wide" character).
+  public typealias PlatformChar = UInt16
+  #else
+  /// The platform's preferred character type. On Unix, this is an 8-bit C
+  /// `char` (which may be signed or unsigned, depending on platform). On
+  /// Windows, this is `UInt16` (a "wide" character).
+  public typealias PlatformChar = CInterop.Char
+  #endif
+
+  #if os(Windows)
+  /// The platform's preferred Unicode encoding. On Unix this is UTF-8 and on
+  /// Windows it is UTF-16. Native strings may contain invalid Unicode,
+  /// which will be handled by either error-correction or failing, depending
+  /// on API.
+  public typealias PlatformUnicodeEncoding = UTF16
+  #else
+  /// The platform's preferred Unicode encoding. On Unix this is UTF-8 and on
+  /// Windows it is UTF-16. Native strings may contain invalid Unicode,
+  /// which will be handled by either error-correction or failing, depending
+  /// on API.
+  public typealias PlatformUnicodeEncoding = UTF8
+  #endif
 }
