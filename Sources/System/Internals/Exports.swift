@@ -7,7 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-import CSystem
+@_implementationOnly import CSystem
 
 // Internal wrappers and typedefs which help reduce #if littering in System's
 // code base.
