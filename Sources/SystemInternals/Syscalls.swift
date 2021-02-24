@@ -19,9 +19,10 @@ import ucrt
 
 #if ENABLE_MOCKING
 // Strip the mock_system prefix and the arg list suffix
-private func originalSyscallName(_ s: String) -> String {
-  precondition(s.starts(with: "system_"))
-  return String(s.dropFirst("system_".count).prefix { $0.isLetter })
+private func originalSyscallName(_ function: String) -> String {
+  // `function` must be of format `system_<name>(<parameters>)`
+  precondition(function.starts(with: "system_"))
+  return String(function.dropFirst("system_".count).prefix { $0 != "(" })
 }
 
 private func mockImpl(
@@ -152,3 +153,16 @@ public func system_pwrite(
   return pwrite(fd, buf, nbyte, offset)
 }
 
+public func system_dup(_ fd: Int32) -> Int32 {
+  #if ENABLE_MOCKING
+  if mockingEnabled { return mock(fd) }
+  #endif
+  return dup(fd)
+}
+
+public func system_dup2(_ fd: Int32, _ fd2: Int32) -> Int32 {
+  #if ENABLE_MOCKING
+  if mockingEnabled { return mock(fd, fd2) }
+  #endif
+  return dup2(fd, fd2)
+}
