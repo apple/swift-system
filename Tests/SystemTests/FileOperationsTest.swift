@@ -111,5 +111,20 @@ final class FileOperationsTest: XCTestCase {
       fatalError("FATAL: `testAdHocOpen`")
     }
   }
+
+  func testGithubIssues() {
+    // https://github.com/apple/swift-system/issues/26
+    let issue26 = MockTestCase(
+      name: "open", "a path", O_WRONLY | O_CREAT, 0o020, interruptable: true
+    ) {
+      retryOnInterrupt in
+      _ = try FileDescriptor.open(
+        "a path", .writeOnly, options: [.create],
+        permissions: [.groupWrite],
+        retryOnInterrupt: retryOnInterrupt)
+    }
+    issue26.runAllTests()
+
+  }
 }
 
