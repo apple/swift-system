@@ -52,7 +52,7 @@ extension Signal {
   public static var unknownSystemCall: Signal { Signal(SIGSYS) }
 
   /// SIGPIPE (13): write on a pipe with no reader (default behavior: terminate process)
-  public static var pipe: Signal { Signal(SIGPIPE) }
+  public static var brokenPipe: Signal { Signal(SIGPIPE) }
 
   /// SIGALRM (14): real-time timer expired (default behavior: terminate process)
   public static var alarm: Signal { Signal(SIGALRM) }
