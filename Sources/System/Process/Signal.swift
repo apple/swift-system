@@ -10,7 +10,7 @@ import Darwin
 
 extension Signal {
   #if os(Linux)
-  public static var unused: Singal { Signal(SIGUNUSED) }
+  public static var unused: Signal { Signal(SIGUNUSED) }
   #endif
 
   // TODO: better names
@@ -111,4 +111,3 @@ extension Signal {
 }
 
 // TODO: unavailable renamed
-
