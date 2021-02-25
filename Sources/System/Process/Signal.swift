@@ -73,7 +73,7 @@ extension Signal {
   public static var `continue`: Signal { Signal(SIGCONT) }
 
   /// SIGCHLD (20): child status has changed (default behavior: discard signal)
-  public static var childProcessTerminate: Signal { Signal(SIGCHLD) }
+  public static var childProcessStatusChange: Signal { Signal(SIGCHLD) }
 
   /// SIGTTIN (21): background read attempted from control terminal (default behavior: stop process)
   public static var ttyIn: Signal { Signal(SIGTTIN) }
