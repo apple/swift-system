@@ -46,7 +46,7 @@ extension Signal {
   public static var busError: Signal { Signal(SIGBUS) }
 
   /// SIGSEGV (11): segmentation violation (default behavior: create core image)
-  public static var segfault: Signal { Signal(SIGSEGV) }
+  public static var segmentationViolation: Signal { Signal(SIGSEGV) }
 
   /// SIGSYS (12): non-existent system call invoked (default behavior: create core image)
   public static var badSyscall: Signal { Signal(SIGSYS) }
