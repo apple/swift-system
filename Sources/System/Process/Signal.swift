@@ -79,7 +79,7 @@ extension Signal {
   public static var backgroundReadFromControllingTerminal: Signal { Signal(SIGTTIN) }
 
   /// SIGTTOU (22): background write attempted to control terminal (default behavior: stop process)
-  public static var ttyOut: Signal { Signal(SIGTTOU) }
+  public static var backgroundWriteToControllingTerminal: Signal { Signal(SIGTTOU) }
 
   /// SIGIO (23): I/O is possible on a descriptor (see fcntl(2)) (default behavior: discard signal)
   public static var ioAvailable: Signal { Signal(SIGIO) }
