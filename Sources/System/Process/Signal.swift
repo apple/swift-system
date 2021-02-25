@@ -76,7 +76,7 @@ extension Signal {
   public static var childProcessStatusChange: Signal { Signal(SIGCHLD) }
 
   /// SIGTTIN (21): background read attempted from control terminal (default behavior: stop process)
-  public static var ttyIn: Signal { Signal(SIGTTIN) }
+  public static var backgroundReadFromControllingTerminal: Signal { Signal(SIGTTIN) }
 
   /// SIGTTOU (22): background write attempted to control terminal (default behavior: stop process)
   public static var ttyOut: Signal { Signal(SIGTTOU) }
