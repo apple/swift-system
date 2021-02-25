@@ -7,16 +7,10 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-#ifdef __linux__
-
-#include <CSystemLinux.h>
-
-#endif
-
-#if defined(_WIN32)
-#include <CSystemWindows.h>
-#endif
-
 #ifdef __MACH__
-#include <CSystemDarwin.h>
+#include "libproc.h"
+#else
+#error "whoops"
 #endif
+
+//
