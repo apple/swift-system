@@ -68,6 +68,14 @@ final class FileOperationsTest: XCTestCase {
         _ = try fd.close()
       },
 
+      MockTestCase(name: "dup", rawFD, interruptable: true) { retryOnInterrupt in
+        _ = try fd.duplicate(retryOnInterrupt: retryOnInterrupt)
+      },
+
+      MockTestCase(name: "dup2", rawFD, 42, interruptable: true) { retryOnInterrupt in
+        _ = try fd.duplicate(as: FileDescriptor(rawValue: 42),
+                             retryOnInterrupt: retryOnInterrupt)
+      },
     ]
 
     for test in syscallTestCases { test.runAllTests() }
