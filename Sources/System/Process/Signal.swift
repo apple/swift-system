@@ -25,7 +25,7 @@ extension Signal {
   public static var quit: Signal { Signal(SIGQUIT) }
 
   /// SIGILL (4): illegal instruction (default behavior: create core image)
-  public static var illegalInsruction: Signal { Signal(SIGILL) }
+  public static var illegalInstruction: Signal { Signal(SIGILL) }
 
   /// SIGTRAP (5): trace trap (default behavior: create core image)
   public static var traceTrap: Signal { Signal(SIGTRAP) }
