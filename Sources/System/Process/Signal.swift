@@ -61,7 +61,7 @@ extension Signal {
   public static var terminate: Signal { Signal(SIGTERM) }
 
   /// SIGURG (16): urgent condition present on socket (default behavior: discard signal)
-  public static var urgent: Signal { Signal(SIGURG) }
+  public static var urgentCondition: Signal { Signal(SIGURG) }
 
   /// SIGSTOP (17): stop (cannot be caught or ignored) (default behavior: stop process)
   public static var stop: Signal { Signal(SIGSTOP) }
