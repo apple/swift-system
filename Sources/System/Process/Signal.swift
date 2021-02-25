@@ -49,7 +49,7 @@ extension Signal {
   public static var segmentationViolation: Signal { Signal(SIGSEGV) }
 
   /// SIGSYS (12): non-existent system call invoked (default behavior: create core image)
-  public static var badSyscall: Signal { Signal(SIGSYS) }
+  public static var unknownSystemCall: Signal { Signal(SIGSYS) }
 
   /// SIGPIPE (13): write on a pipe with no reader (default behavior: terminate process)
   public static var pipe: Signal { Signal(SIGPIPE) }
