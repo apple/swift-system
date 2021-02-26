@@ -8,11 +8,11 @@
 */
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
-@_implementationOnly import Darwin
+import Darwin
 #elseif os(Linux) || os(FreeBSD) || os(Android)
-@_implementationOnly import Glibc
+import Glibc
 #elseif os(Windows)
-@_implementationOnly import ucrt
+import ucrt
 #else
 #error("Unsupported Platform")
 #endif

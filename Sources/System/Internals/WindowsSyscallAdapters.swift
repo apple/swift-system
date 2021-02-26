@@ -9,8 +9,8 @@
 
 #if os(Windows)
 
-@_implementationOnly import ucrt
-@_implementationOnly import WinSDK
+import ucrt
+import WinSDK
 
 @inline(__always)
 internal func open(
