@@ -14,19 +14,21 @@
 @available(*, deprecated, renamed: "CInterop.Mode")
 public typealias CModeT =  CInterop.Mode
 
+import CSystem
+#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+import Darwin
+#elseif os(Linux) || os(FreeBSD) || os(Android)
+import Glibc
+#elseif os(Windows)
+import ucrt
+#else
+#error("Unsupported Platform")
+#endif
+
 /// A namespace for C and platform types
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 public enum CInterop {
-  #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
-  /// The C `mode_t` type.
-  public typealias Mode = UInt16
-  #elseif os(Windows)
-  /// The C `mode_t` type.
-  public typealias Mode = Int32
-  #else
-  /// The C `mode_t` type.
-  public typealias Mode = UInt32
-  #endif
+  public typealias Mode = mode_t
 
   /// The C `char` type
   public typealias Char = CChar
