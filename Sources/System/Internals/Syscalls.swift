@@ -115,3 +115,10 @@ internal func system_dup2(_ fd: Int32, _ fd2: Int32) -> Int32 {
   #endif
   return dup2(fd, fd2)
 }
+
+internal func system_socket(_ domain: CInt, type: CInt, protocol: CInt) -> CInt {
+  #if ENABLE_MOCKING
+  if mockingEnabled { return _mock(domain, type, `protocol`) }
+  #endif
+  return socket(domain, type, `protocol`)
+}

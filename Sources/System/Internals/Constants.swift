@@ -530,3 +530,47 @@ internal var _SEEK_HOLE: CInt { SEEK_HOLE }
 internal var _SEEK_DATA: CInt { SEEK_DATA }
 #endif
 
+@_alwaysEmitIntoClient
+internal var _PF_LOCAL: CInt { PF_LOCAL }
+
+@_alwaysEmitIntoClient
+internal var _PF_UNIX: CInt { PF_UNIX }
+
+@_alwaysEmitIntoClient
+internal var _PF_INET: CInt { PF_INET }
+
+@_alwaysEmitIntoClient
+internal var _PF_ROUTE: CInt { PF_ROUTE }
+
+@_alwaysEmitIntoClient
+internal var _PF_KEY: CInt { PF_KEY }
+
+@_alwaysEmitIntoClient
+internal var _PF_INET6: CInt { PF_INET6 }
+
+@_alwaysEmitIntoClient
+internal var _PF_SYSTEM: CInt { PF_SYSTEM }
+
+@_alwaysEmitIntoClient
+internal var _PF_NDRV: CInt { PF_NDRV }
+
+@_alwaysEmitIntoClient
+internal var _SOCK_STREAM: CInt { SOCK_STREAM }
+
+@_alwaysEmitIntoClient
+internal var _SOCK_DGRAM: CInt { SOCK_DGRAM }
+
+@_alwaysEmitIntoClient
+internal var _SOCK_RAW: CInt { SOCK_RAW }
+
+@_alwaysEmitIntoClient
+internal var _MSG_OOB: CInt { MSG_OOB }
+
+@_alwaysEmitIntoClient
+internal var _MSG_DONTROUTE: CInt { MSG_DONTROUTE }
+
+@_alwaysEmitIntoClient
+internal var _MSG_PEEK: CInt { MSG_PEEK }
+
+@_alwaysEmitIntoClient
+internal var _MSG_WAITALL: CInt { MSG_WAITALL }
