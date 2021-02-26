@@ -48,5 +48,23 @@ extension SocketDescriptor {
     }.map(SocketDescriptor.init(rawValue:))
   }
 
+  /// Deletes a socket's file descriptor.
+  ///
+  /// This is equivalent to `socket.fileDescriptor.close()`
+  @_alwaysEmitIntoClient
+  public func close() throws { try fileDescriptor.close() }
+
+  /// Shutdown part of a full-duplex connection
+  ///
+  /// The corresponding C function is `shutdown`
+  @_alwaysEmitIntoClient
+  public func shutdown(_ how: ShutdownKind) throws {
+    try _shutdown(how).get()
+  }
+
+  @usableFromInline
+  internal func _shutdown(_ how: ShutdownKind) -> Result<(), Errno> {
+    nothingOrErrno(system_shutdown(self.rawValue, how.rawValue))
+  }
 
 }

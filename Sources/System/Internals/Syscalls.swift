@@ -122,3 +122,10 @@ internal func system_socket(_ domain: CInt, type: CInt, protocol: CInt) -> CInt 
   #endif
   return socket(domain, type, `protocol`)
 }
+
+internal func system_shutdown(_ socket: CInt, _ how: CInt) -> CInt {
+  #if ENABLE_MOCKING
+  if mockingEnabled { return _mock(socket, how) }
+  #endif
+  return shutdown(socket, how)
+}

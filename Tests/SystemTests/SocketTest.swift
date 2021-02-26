@@ -20,10 +20,17 @@ final class SocketTest: XCTestCase {
 
   func testSyscalls() {
 
+    let socket = SocketDescriptor(rawValue: 3)
+    let rawSocket = socket.rawValue
+
     let syscallTestCases: Array<MockTestCase> = [
       MockTestCase(name: "socket", PF_INET6, SOCK_STREAM, 0, interruptable: true) {
         retryOnInterrupt in
         _ = try SocketDescriptor.open(.ipv6, .stream, retryOnInterrupt: retryOnInterrupt)
+      },
+      MockTestCase(name: "shutdown", rawSocket, SHUT_RD, interruptable: false) {
+        retryOnInterrupt in
+        _ = try socket.shutdown(.read)
       },
     ]
 

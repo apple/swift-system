@@ -574,3 +574,13 @@ internal var _MSG_PEEK: CInt { MSG_PEEK }
 
 @_alwaysEmitIntoClient
 internal var _MSG_WAITALL: CInt { MSG_WAITALL }
+
+@_alwaysEmitIntoClient
+internal var _SHUT_RD: CInt { SHUT_RD }
+
+@_alwaysEmitIntoClient
+internal var _SHUT_WR: CInt { SHUT_WR }
+
+@_alwaysEmitIntoClient
+internal var _SHUT_RDWR: CInt { SHUT_RDWR }
+

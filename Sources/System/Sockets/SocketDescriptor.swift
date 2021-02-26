@@ -184,6 +184,29 @@ extension SocketDescriptor {
     // TODO: MSG_NOSIGNAL
   }
 
+  public struct ShutdownKind: RawRepresentable, Hashable, Codable {
+    @_alwaysEmitIntoClient
+    public var rawValue: CInt
+
+    @_alwaysEmitIntoClient
+    public init(rawValue: CInt) { self.rawValue = rawValue }
+
+    /// Further receives will be disallowed
+    ///
+    /// The corresponding C constant is `SHUT_RD`
+    public static var read: ShutdownKind { ShutdownKind(rawValue: _SHUT_RD) }
+
+    /// Further sends will be disallowed
+    ///
+    /// The corresponding C constant is `SHUT_RD`
+    public static var write: ShutdownKind { ShutdownKind(rawValue: _SHUT_WR) }
+
+    /// Further sends and receives will be disallowed
+    ///
+    /// The corresponding C constant is `SHUT_RDWR`
+    public static var readWrite: ShutdownKind { ShutdownKind(rawValue: _SHUT_RDWR) }
+  }
+
 }
 
 extension SocketDescriptor {
