@@ -35,10 +35,12 @@ extension UnsafeBufferPointer where Element == CChar {
 
 
 import XCTest
-import SystemPackage
 
+#if SYSTEM_PACKAGE
 @testable import SystemPackage
-import SystemInternals
+#else
+@testable import System
+#endif
 
 private func makeRaw(
   _ str: String

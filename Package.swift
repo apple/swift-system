@@ -15,21 +15,20 @@ import PackageDescription
 let targets: [PackageDescription.Target] = [
   .target(
     name: "SystemPackage",
-    dependencies: ["SystemInternals"],
-    path: "Sources/System"),
-  .target(
-    name: "SystemInternals",
     dependencies: ["CSystem"],
+    path: "Sources/System",
     swiftSettings: [
       .define("ENABLE_MOCKING", .when(configuration: .debug))
     ]),
   .target(
     name: "CSystem",
     dependencies: []),
-
   .testTarget(
     name: "SystemTests",
-    dependencies: ["SystemPackage"]),
+    dependencies: ["SystemPackage"],
+    swiftSettings: [
+      .define("SYSTEM_PACKAGE")
+    ]),
 ]
 
 let package = Package(

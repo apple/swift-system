@@ -8,10 +8,14 @@
 */
 
 import XCTest
-import SystemPackage
-@testable import SystemInternals
 
-// @available...
+#if SYSTEM_PACKAGE
+@testable import SystemPackage
+#else
+@testable import System
+#endif
+
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 final class MockingTest: XCTestCase {
   func testMocking() {
     XCTAssertFalse(mockingEnabled)

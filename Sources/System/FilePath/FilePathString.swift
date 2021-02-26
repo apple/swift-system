@@ -9,7 +9,7 @@
 
 // MARK: - Platform string
 
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension FilePath {
   /// Creates a file path by copying bytes from a null-terminated platform
   /// string.
@@ -39,6 +39,7 @@ extension FilePath {
   }
 }
 
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension FilePath.Component {
   /// Creates a file path component by copying bytes from a null-terminated
   /// platform string.
@@ -75,6 +76,7 @@ extension FilePath.Component {
   }
 }
 
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension FilePath.Root {
   /// Creates a file path root by copying bytes from a null-terminated platform
   /// string.
@@ -234,6 +236,7 @@ extension FilePath.Root: CustomStringConvertible, CustomDebugStringConvertible {
 // MARK: - Convenience helpers
 
 // Convenience helpers
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension FilePath {
   /// Creates a string by interpreting the path’s content as UTF-8 on Unix
   /// and UTF-16 on Windows.
@@ -244,6 +247,7 @@ extension FilePath {
   }
 }
 
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension FilePath.Component {
   /// Creates a string by interpreting the component’s content as UTF-8 on Unix
   /// and UTF-16 on Windows.
@@ -254,6 +258,7 @@ extension FilePath.Component {
   }
 }
 
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension FilePath.Root {
   /// On Unix, this returns `"/"`.
   ///
@@ -380,6 +385,7 @@ extension String {
 
 // MARK: - Deprecations
 
+// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
 extension String {
   @available(*, deprecated, renamed: "init(decoding:)")
   public init(_ path: FilePath) { self.init(decoding: path) }
@@ -388,6 +394,7 @@ extension String {
   public init?(validatingUTF8 path: FilePath) { self.init(validating: path) }
 }
 
+// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
 extension FilePath {
   @available(*, deprecated, renamed: "init(platformString:)")
   public init(cString: UnsafePointer<CChar>) {

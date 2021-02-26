@@ -8,8 +8,12 @@
 */
 
 import XCTest
-import SystemInternals
-import SystemPackage
+
+#if SYSTEM_PACKAGE
+@testable import SystemPackage
+#else
+@testable import System
+#endif
 
 // To aid debugging, force failures to fatal error
 internal var forceFatalFailures = false
@@ -172,13 +176,6 @@ internal struct MockTestCase: TestCase {
   }
 }
 
-// Force paths to be treated as Windows syntactically if `enabled` is
-// true.
 internal func withWindowsPaths(enabled: Bool, _ body: () -> ()) {
-  guard enabled else { return body() }
-  MockingDriver.withMockingEnabled { driver in
-    driver.forceWindowsSyntaxForPaths = true
-    body()
-  }
+  _withWindowsPaths(enabled: enabled, body)
 }
-

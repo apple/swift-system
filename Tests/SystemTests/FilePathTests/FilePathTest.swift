@@ -8,7 +8,12 @@
 */
 
 import XCTest
+
+#if SYSTEM_PACKAGE
 import SystemPackage
+#else
+import System
+#endif
 
 // @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
 func filePathFromUnterminatedBytes<S: Sequence>(_ bytes: S) -> FilePath where S.Element == UInt8 {
@@ -22,7 +27,7 @@ func filePathFromUnterminatedBytes<S: Sequence>(_ bytes: S) -> FilePath where S.
 }
 let invalidBytes: [UInt8] = [0x2F, 0x61, 0x2F, 0x62, 0x2F, 0x83]
 
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 final class FilePathTest: XCTestCase {
   struct TestPath {
     let filePath: FilePath

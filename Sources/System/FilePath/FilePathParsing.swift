@@ -111,7 +111,6 @@ extension SystemString {
   }
 }
 
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
 extension FilePath {
   internal mutating func _removeTrailingSeparator() {
     _storage._removeTrailingSeparator()
@@ -323,7 +322,6 @@ extension FilePath {
 }
 
 // Whether we are providing Windows paths
-@_implementationOnly import var SystemInternals.forceWindowsPaths
 @inline(__always)
 internal var _windowsPaths: Bool {
   #if os(Windows)

@@ -73,6 +73,7 @@ extension FilePath {
   }
 }
 
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension FilePath.Component {
 
   /// Whether a component is a regular file or directory name, or a special
@@ -253,7 +254,6 @@ extension FilePath.Root {
 
 // MARK: - Invariants
 
-// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension FilePath.Component {
   // TODO: ensure this all gets easily optimized away in release...
   internal func _invariantCheck() {

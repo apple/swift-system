@@ -8,12 +8,14 @@
 */
 
 import XCTest
-import SystemPackage
 
-@testable
-import SystemPackage
+#if SYSTEM_PACKAGE
+@testable import SystemPackage
+#else
+@testable import System
+#endif
 
-// @available(9999....)
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 struct TestPathComponents: TestCase {
   var path: FilePath
   var expectedRoot: FilePath.Root?
@@ -98,9 +100,7 @@ struct TestPathComponents: TestCase {
   }
 }
 
-// TODO: Note that double-reversal will drop root if FilePath is constructed in between ...
-
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 final class FilePathComponentsTest: XCTestCase {
   func testAdHocRRC() {
     var path: FilePath = "/usr/local/bin"
