@@ -102,14 +102,14 @@ internal func system_pwrite(
   return pwrite(fd, buf, nbyte, offset)
 }
 
-public func system_dup(_ fd: Int32) -> Int32 {
+internal func system_dup(_ fd: Int32) -> Int32 {
   #if ENABLE_MOCKING
   if mockingEnabled { return _mock(fd) }
   #endif
   return dup(fd)
 }
 
-public func system_dup2(_ fd: Int32, _ fd2: Int32) -> Int32 {
+internal func system_dup2(_ fd: Int32, _ fd2: Int32) -> Int32 {
   #if ENABLE_MOCKING
   if mockingEnabled { return _mock(fd, fd2) }
   #endif
