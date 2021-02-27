@@ -48,12 +48,6 @@ extension SocketDescriptor {
     }.map(SocketDescriptor.init(rawValue:))
   }
 
-  /// Deletes a socket's file descriptor.
-  ///
-  /// This is equivalent to `socket.fileDescriptor.close()`
-  @_alwaysEmitIntoClient
-  public func close() throws { try fileDescriptor.close() }
-
   /// Shutdown part of a full-duplex connection
   ///
   /// The corresponding C function is `shutdown`
@@ -86,4 +80,58 @@ extension SocketDescriptor {
   }
 
 
+}
+
+// MARK: - Forward FileDescriptor methods
+extension SocketDescriptor {
+  /// Deletes a socket's file descriptor.
+  ///
+  /// This is equivalent to calling `fileDescriptor.close()`
+  @_alwaysEmitIntoClient
+  public func close() throws { try fileDescriptor.close() }
+
+  /// Reads bytes from a socket.
+  ///
+  /// This is equivalent to calling `fileDescriptor.read(into:retryOnInterrupt:)`
+  ///
+  /// - Parameters:
+  ///   - buffer: The region of memory to read into.
+  ///   - retryOnInterrupt: Whether to retry the read operation
+  ///     if it throws ``Errno/interrupted``.
+  ///     The default is `true`.
+  ///     Pass `false` to try only once and throw an error upon interruption.
+  /// - Returns: The number of bytes that were read.
+  ///
+  /// The corresponding C function is `read`.
+  @_alwaysEmitIntoClient
+  public func read(
+    into buffer: UnsafeMutableRawBufferPointer, retryOnInterrupt: Bool = true
+  ) throws -> Int {
+    try fileDescriptor.read(into: buffer, retryOnInterrupt: retryOnInterrupt)
+  }
+
+  /// Writes the contents of a buffer to the socket.
+  ///
+  /// This is equivalent to `fileDescriptor.write(_:retryOnInterrupt:)`
+  ///
+  /// - Parameters:
+  ///   - buffer: The region of memory that contains the data being written.
+  ///   - retryOnInterrupt: Whether to retry the write operation
+  ///     if it throws ``Errno/interrupted``.
+  ///     The default is `true`.
+  ///     Pass `false` to try only once and throw an error upon interruption.
+  /// - Returns: The number of bytes that were written.
+  ///
+  /// After writing,
+  /// this method increments the file's offset by the number of bytes written.
+  /// To change the file's offset,
+  /// call the ``seek(offset:from:)`` method.
+  ///
+  /// The corresponding C function is `write`.
+  @_alwaysEmitIntoClient
+  public func write(
+    _ buffer: UnsafeRawBufferPointer, retryOnInterrupt: Bool = true
+  ) throws -> Int {
+    try fileDescriptor.write(buffer, retryOnInterrupt: retryOnInterrupt)
+  }
 }
