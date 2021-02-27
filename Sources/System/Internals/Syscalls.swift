@@ -136,3 +136,21 @@ internal func system_listen(_ socket: CInt, _ backlog: CInt) -> CInt {
   #endif
   return listen(socket, backlog)
 }
+
+internal func system_send(
+  _ socket: Int32, _ buffer: UnsafeRawPointer!, _ len: Int, _ flags: Int32
+) -> Int {
+  #if ENABLE_MOCKING
+  if mockingEnabled { return _mockInt(socket, buffer, len, flags) }
+  #endif
+  return send(socket, buffer, len, flags)
+}
+
+internal func system_recv(
+  _ socket: Int32, _ buffer: UnsafeMutableRawPointer!, _ len: Int, _ flags: Int32
+) -> Int {
+  #if ENABLE_MOCKING
+  if mockingEnabled { return _mockInt(socket, buffer, len, flags) }
+  #endif
+  return recv(socket, buffer, len, flags)
+}

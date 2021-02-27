@@ -79,7 +79,69 @@ extension SocketDescriptor {
     nothingOrErrno(system_listen(self.rawValue, CInt(backlog)))
   }
 
+  /// Send a message from a socket
+  ///
+  /// - Parameters:
+  ///   - buffear: The region of memory that contains the data being sent.
+  ///   - flags: see `send(2)`
+  ///   - retryOnInterrupt: Whether to retry the send operation
+  ///     if it throws ``Errno/interrupted``.
+  ///     The default is `true`.
+  ///     Pass `false` to try only once and throw an error upon interruption.
+  /// - Returns: The number of bytes that were sent.
+  ///
+  /// The corresponding C function is `send`
+  public func send(
+    _ buffer: UnsafeRawBufferPointer,
+    flags: MessageFlags = .none,
+    retryOnInterrupt: Bool = true
+  ) throws -> Int {
+    try _send(buffer, flags: flags, retryOnInterrupt: retryOnInterrupt).get()
+  }
 
+  @usableFromInline
+  internal func _send(
+    _ buffer: UnsafeRawBufferPointer,
+    flags: MessageFlags,
+    retryOnInterrupt: Bool
+  ) -> Result<Int, Errno> {
+    valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+      system_send(self.rawValue, buffer.baseAddress!, buffer.count, flags.rawValue)
+    }
+  }
+
+  /// Receive a message from a socket
+  ///
+  /// - Parameters:
+  ///   - buffer: The region of memory to receive into.
+  ///   - flags: see `recv(2)`
+  ///   - retryOnInterrupt: Whether to retry the receive operation
+  ///     if it throws ``Errno/interrupted``.
+  ///     The default is `true`.
+  ///     Pass `false` to try only once and throw an error upon interruption.
+  /// - Returns: The number of bytes that were received.
+  ///
+  /// The corresponding C function is `recv`
+  public func receive(
+    into buffer: UnsafeMutableRawBufferPointer,
+    flags: MessageFlags = .none,
+    retryOnInterrupt: Bool = true
+  ) throws -> Int {
+    try _receive(
+      into: buffer, flags: flags, retryOnInterrupt: retryOnInterrupt
+    ).get()
+  }
+
+  @usableFromInline
+  internal func _receive(
+    into buffer: UnsafeMutableRawBufferPointer,
+    flags: MessageFlags,
+    retryOnInterrupt: Bool
+  ) -> Result<Int, Errno> {
+    valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+      system_recv(self.rawValue, buffer.baseAddress!, buffer.count, flags.rawValue)
+    }
+  }
 }
 
 // MARK: - Forward FileDescriptor methods

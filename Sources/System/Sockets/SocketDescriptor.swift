@@ -150,8 +150,7 @@ extension SocketDescriptor {
 
   // TODO: option flags (SO_DEBUG)?
 
-  // TODO: address families? Should we jus do INET and INET6?
-
+  // TODO:
   @frozen
   public struct MessageFlags: OptionSet {
     @_alwaysEmitIntoClient
@@ -162,6 +161,9 @@ extension SocketDescriptor {
 
     @_alwaysEmitIntoClient
     private init(_ raw: CInt) { self.init(rawValue: raw) }
+
+    @_alwaysEmitIntoClient
+    public static var none: MessageFlags { MessageFlags(0) }
 
     // MSG_OOB: process out-of-band data
     @_alwaysEmitIntoClient
@@ -179,9 +181,7 @@ extension SocketDescriptor {
     @_alwaysEmitIntoClient
     public static var waitForAll: MessageFlags { MessageFlags(_MSG_WAITALL) }
 
-    // TODO: MSG_EOR MSG_TRUNC MSG_CTRUNC MSG_DONTWAIT MSG_EOF MSG_WAITSTREAM
-    // TODO: MSG_FLUSH MSG_HOLD MSG_SEND MSG_HAVEMORE MSG_RCVMORE MSG_NEEDSA
-    // TODO: MSG_NOSIGNAL
+    // TODO: any of the others? I'm going off of man pagees...
   }
 
   public struct ShutdownKind: RawRepresentable, Hashable, Codable {
