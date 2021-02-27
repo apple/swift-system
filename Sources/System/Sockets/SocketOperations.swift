@@ -67,4 +67,23 @@ extension SocketDescriptor {
     nothingOrErrno(system_shutdown(self.rawValue, how.rawValue))
   }
 
+  /// Listen for connections on a socket.
+  ///
+  /// Only applies to sockets of connection type `.stream`.
+  ///
+  /// - Parameters:
+  ///   - backlog: the maximum length for the queue of pending connections
+  ///
+  /// The corresponding C function is `listen`.
+  @_alwaysEmitIntoClient
+  public func listen(backlog: Int) throws {
+    try _listen(backlog: backlog).get()
+  }
+
+  @usableFromInline
+  internal func _listen(backlog: Int) -> Result<(), Errno> {
+    nothingOrErrno(system_listen(self.rawValue, CInt(backlog)))
+  }
+
+
 }

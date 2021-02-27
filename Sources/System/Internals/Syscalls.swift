@@ -129,3 +129,10 @@ internal func system_shutdown(_ socket: CInt, _ how: CInt) -> CInt {
   #endif
   return shutdown(socket, how)
 }
+
+internal func system_listen(_ socket: CInt, _ backlog: CInt) -> CInt {
+  #if ENABLE_MOCKING
+  if mockingEnabled { return _mock(socket, backlog) }
+  #endif
+  return listen(socket, backlog)
+}

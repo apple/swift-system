@@ -32,6 +32,10 @@ final class SocketTest: XCTestCase {
         retryOnInterrupt in
         _ = try socket.shutdown(.read)
       },
+      MockTestCase(name: "listen", rawSocket, 999, interruptable: false) {
+        retryOnInterrupt in
+      _ = try socket.listen(backlog: 999)
+      },
     ]
 
     syscallTestCases.forEach { $0.runAllTests() }
