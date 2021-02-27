@@ -584,3 +584,203 @@ internal var _SHUT_WR: CInt { SHUT_WR }
 @_alwaysEmitIntoClient
 internal var _SHUT_RDWR: CInt { SHUT_RDWR }
 
+@_alwaysEmitIntoClient
+internal var _SO_DEBUG: CInt { SO_DEBUG }
+
+@_alwaysEmitIntoClient
+internal var _SO_REUSEADDR: CInt { SO_REUSEADDR }
+
+@_alwaysEmitIntoClient
+internal var _SO_REUSEPORT: CInt { SO_REUSEPORT }
+
+@_alwaysEmitIntoClient
+internal var _SO_KEEPALIVE: CInt { SO_KEEPALIVE }
+
+@_alwaysEmitIntoClient
+internal var _SO_DONTROUTE: CInt { SO_DONTROUTE }
+
+@_alwaysEmitIntoClient
+internal var _SO_LINGER: CInt { SO_LINGER }
+
+@_alwaysEmitIntoClient
+internal var _SO_BROADCAST: CInt { SO_BROADCAST }
+
+@_alwaysEmitIntoClient
+internal var _SO_OOBINLINE: CInt { SO_OOBINLINE }
+
+@_alwaysEmitIntoClient
+internal var _SO_SNDBUF: CInt { SO_SNDBUF }
+
+@_alwaysEmitIntoClient
+internal var _SO_RCVBUF: CInt { SO_RCVBUF }
+
+@_alwaysEmitIntoClient
+internal var _SO_SNDLOWAT: CInt { SO_SNDLOWAT }
+
+@_alwaysEmitIntoClient
+internal var _SO_RCVLOWAT: CInt { SO_RCVLOWAT }
+
+@_alwaysEmitIntoClient
+internal var _SO_SNDTIMEO: CInt { SO_SNDTIMEO }
+
+@_alwaysEmitIntoClient
+internal var _SO_RCVTIMEO: CInt { SO_RCVTIMEO }
+
+@_alwaysEmitIntoClient
+internal var _SO_TYPE: CInt { SO_TYPE }
+
+@_alwaysEmitIntoClient
+internal var _SO_ERROR: CInt { SO_ERROR }
+
+@_alwaysEmitIntoClient
+internal var _SO_NOSIGPIPE: CInt { SO_NOSIGPIPE }
+
+@_alwaysEmitIntoClient
+internal var _SO_NREAD: CInt { SO_NREAD }
+
+@_alwaysEmitIntoClient
+internal var _SO_NWRITE: CInt { SO_NWRITE }
+
+@_alwaysEmitIntoClient
+internal var _SO_LINGER_SEC: CInt { SO_LINGER_SEC }
+
+@_alwaysEmitIntoClient
+internal var _TCP_NODELAY: CInt { TCP_NODELAY }
+
+@_alwaysEmitIntoClient
+internal var _TCP_MAXSEG: CInt { TCP_MAXSEG }
+
+@_alwaysEmitIntoClient
+internal var _TCP_NOOPT: CInt { TCP_NOOPT }
+
+@_alwaysEmitIntoClient
+internal var _TCP_NOPUSH: CInt { TCP_NOPUSH }
+
+@_alwaysEmitIntoClient
+internal var _TCP_KEEPALIVE: CInt { TCP_KEEPALIVE }
+
+@_alwaysEmitIntoClient
+internal var _TCP_CONNECTIONTIMEOUT: CInt { TCP_CONNECTIONTIMEOUT }
+
+@_alwaysEmitIntoClient
+internal var _TCP_KEEPINTVL: CInt { TCP_KEEPINTVL }
+
+@_alwaysEmitIntoClient
+internal var _TCP_KEEPCNT: CInt { TCP_KEEPCNT }
+
+@_alwaysEmitIntoClient
+internal var _TCP_SENDMOREACKS: CInt { TCP_SENDMOREACKS }
+
+@_alwaysEmitIntoClient
+internal var _TCP_ENABLE_ECN: CInt { TCP_ENABLE_ECN }
+
+@_alwaysEmitIntoClient
+internal var _TCP_NOTSENT_LOWAT: CInt { TCP_NOTSENT_LOWAT }
+
+@_alwaysEmitIntoClient
+internal var _TCP_FASTOPEN: CInt { TCP_FASTOPEN }
+
+@_alwaysEmitIntoClient
+internal var _TCP_CONNECTION_INFO: CInt { TCP_CONNECTION_INFO }
+
+@_alwaysEmitIntoClient
+internal var _IP_OPTIONS: CInt { IP_OPTIONS }
+
+@_alwaysEmitIntoClient
+internal var _IP_TOS: CInt { IP_TOS }
+
+@_alwaysEmitIntoClient
+internal var _IP_TTL: CInt { IP_TTL }
+
+@_alwaysEmitIntoClient
+internal var _IP_RECVDSTADDR: CInt { IP_RECVDSTADDR }
+
+@_alwaysEmitIntoClient
+internal var _IP_RECVTOS: CInt { IP_RECVTOS }
+
+@_alwaysEmitIntoClient
+internal var _IP_MULTICAST_TTL: CInt { IP_MULTICAST_TTL }
+
+@_alwaysEmitIntoClient
+internal var _IP_MULTICAST_IF: CInt { IP_MULTICAST_IF }
+
+@_alwaysEmitIntoClient
+internal var _IP_MULTICAST_LOOP: CInt { IP_MULTICAST_LOOP }
+
+@_alwaysEmitIntoClient
+internal var _IP_ADD_MEMBERSHIP: CInt { IP_ADD_MEMBERSHIP }
+
+@_alwaysEmitIntoClient
+internal var _IP_DROP_MEMBERSHIP: CInt { IP_DROP_MEMBERSHIP }
+
+@_alwaysEmitIntoClient
+internal var _IP_HDRINCL: CInt { IP_HDRINCL }
+
+@_alwaysEmitIntoClient
+internal var _IPV6_UNICAST_HOPS: CInt { IPV6_UNICAST_HOPS }
+
+@_alwaysEmitIntoClient
+internal var _IPV6_MULTICAST_IF: CInt { IPV6_MULTICAST_IF }
+
+@_alwaysEmitIntoClient
+internal var _IPV6_MULTICAST_HOPS: CInt { IPV6_MULTICAST_HOPS }
+
+@_alwaysEmitIntoClient
+internal var _IPV6_MULTICAST_LOOP: CInt { IPV6_MULTICAST_LOOP }
+
+@_alwaysEmitIntoClient
+internal var _IPV6_JOIN_GROUP: CInt { IPV6_JOIN_GROUP }
+
+@_alwaysEmitIntoClient
+internal var _IPV6_LEAVE_GROUP: CInt { IPV6_LEAVE_GROUP }
+
+@_alwaysEmitIntoClient
+internal var _IPV6_PORTRANGE: CInt { IPV6_PORTRANGE }
+
+//@_alwaysEmitIntoClient
+//internal var _IPV6_PKTINFO: CInt { IPV6_PKTINFO }
+//
+//@_alwaysEmitIntoClient
+//internal var _IPV6_HOPLIMIT: CInt { IPV6_HOPLIMIT }
+//
+//@_alwaysEmitIntoClient
+//internal var _IPV6_HOPOPTS: CInt { IPV6_HOPOPTS }
+//
+//@_alwaysEmitIntoClient
+//internal var _IPV6_DSTOPTS: CInt { IPV6_DSTOPTS }
+
+@_alwaysEmitIntoClient
+internal var _IPV6_TCLASS: CInt { IPV6_TCLASS }
+
+@_alwaysEmitIntoClient
+internal var _IPV6_RECVTCLASS: CInt { IPV6_RECVTCLASS }
+
+//@_alwaysEmitIntoClient
+//internal var _IPV6_RTHDR: CInt { IPV6_RTHDR }
+//
+//@_alwaysEmitIntoClient
+//internal var _IPV6_PKTOPTIONS: CInt { IPV6_PKTOPTIONS }
+
+@_alwaysEmitIntoClient
+internal var _IPV6_CHECKSUM: CInt { IPV6_CHECKSUM }
+
+@_alwaysEmitIntoClient
+internal var _IPV6_V6ONLY: CInt { IPV6_V6ONLY }
+
+//@_alwaysEmitIntoClient
+//internal var _IPV6_USE_MIN_MTU: CInt { IPV6_USE_MIN_MTU }
+
+@_alwaysEmitIntoClient
+internal var _IPPROTO_IP: CInt { IPPROTO_IP }
+
+@_alwaysEmitIntoClient
+internal var _IPPROTO_IPV6: CInt { IPPROTO_IPV6 }
+
+@_alwaysEmitIntoClient
+internal var _IPPROTO_TCP: CInt { IPPROTO_TCP }
+
+@_alwaysEmitIntoClient
+internal var _SOL_SOCKET: CInt { SOL_SOCKET }
+
+
+

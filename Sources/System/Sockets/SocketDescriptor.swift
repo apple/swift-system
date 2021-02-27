@@ -184,6 +184,7 @@ extension SocketDescriptor {
     // TODO: any of the others? I'm going off of man pagees...
   }
 
+  @frozen
   public struct ShutdownKind: RawRepresentable, Hashable, Codable {
     @_alwaysEmitIntoClient
     public var rawValue: CInt
@@ -194,16 +195,19 @@ extension SocketDescriptor {
     /// Further receives will be disallowed
     ///
     /// The corresponding C constant is `SHUT_RD`
+    @_alwaysEmitIntoClient
     public static var read: ShutdownKind { ShutdownKind(rawValue: _SHUT_RD) }
 
     /// Further sends will be disallowed
     ///
     /// The corresponding C constant is `SHUT_RD`
+    @_alwaysEmitIntoClient
     public static var write: ShutdownKind { ShutdownKind(rawValue: _SHUT_WR) }
 
     /// Further sends and receives will be disallowed
     ///
     /// The corresponding C constant is `SHUT_RDWR`
+    @_alwaysEmitIntoClient
     public static var readWrite: ShutdownKind { ShutdownKind(rawValue: _SHUT_RDWR) }
   }
 
