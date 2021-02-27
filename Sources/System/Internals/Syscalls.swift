@@ -154,3 +154,30 @@ internal func system_recv(
   #endif
   return recv(socket, buffer, len, flags)
 }
+
+internal func system_getsockopt(
+  _ socket: CInt,
+  _ level: CInt,
+  _ option: CInt,
+  _ value: UnsafeMutableRawPointer!,
+  _ length: UnsafeMutablePointer<socklen_t>!
+) -> CInt {
+  #if ENABLE_MOCKING
+  if mockingEnabled { return _mock(socket, level, option, value, length) }
+  #endif
+  return getsockopt(socket, level, option, value, length)
+}
+
+internal func system_setsockopt(
+  _ socket: CInt,
+  _ level: CInt,
+  _ option: CInt,
+  _ value: UnsafeRawPointer!,
+  _ length: socklen_t
+) -> CInt {
+  #if ENABLE_MOCKING
+  if mockingEnabled { return _mock(socket, level, option, value, length) }
+  #endif
+  return setsockopt(socket, level, option, value, length)
+}
+

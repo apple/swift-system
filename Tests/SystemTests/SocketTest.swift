@@ -40,23 +40,24 @@ final class SocketTest: XCTestCase {
       },
       MockTestCase(name: "listen", rawSocket, 999, interruptable: false) {
         retryOnInterrupt in
-      _ = try socket.listen(backlog: 999)
+        _ = try socket.listen(backlog: 999)
       },
       MockTestCase(
         name: "recv", rawSocket, bufAddr, bufCount, MSG_PEEK, interruptable: true
       ) {
         retryOnInterrupt in
-      _ = try socket.receive(
-        into: rawBuf, flags: .peek, retryOnInterrupt: retryOnInterrupt)
+        _ = try socket.receive(
+          into: rawBuf, flags: .peek, retryOnInterrupt: retryOnInterrupt)
       },
       MockTestCase(
         name: "send", rawSocket, writeBufAddr, bufCount, MSG_DONTROUTE,
         interruptable: true
       ) {
         retryOnInterrupt in
-      _ = try socket.send(
-        writeBuf, flags: .doNotRoute, retryOnInterrupt: retryOnInterrupt)
+        _ = try socket.send(
+          writeBuf, flags: .doNotRoute, retryOnInterrupt: retryOnInterrupt)
       },
+
     ]
 
     syscallTestCases.forEach { $0.runAllTests() }

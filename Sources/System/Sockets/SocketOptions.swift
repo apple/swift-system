@@ -8,7 +8,7 @@
 */
 
 extension SocketDescriptor {
-	@frozen
+  @frozen
   public struct Option: RawRepresentable, Hashable {
     @_alwaysEmitIntoClient
     public var rawValue: CInt
@@ -317,129 +317,129 @@ extension SocketDescriptor {
     /// A value of -1 resets to the default value.
     ///
     /// The corresponding C constant is `IPV6_UNICAST_HOPS`.
-		@_alwaysEmitIntoClient
-		public static var ipv6UnicastHops: Option { Option(_IPV6_UNICAST_HOPS) }
+    @_alwaysEmitIntoClient
+    public static var ipv6UnicastHops: Option { Option(_IPV6_UNICAST_HOPS) }
 
-		/// The interface from which multicast packets will be sent.
-		///
-		/// A value of 0 specifies the default interface.
-		///
-		/// The corresponding C constant is `IPV6_MULTICAST_IF`.
-		@_alwaysEmitIntoClient
-		public static var ipv6MulticastInterface: Option { Option(_IPV6_MULTICAST_IF) }
+    /// The interface from which multicast packets will be sent.
+    ///
+    /// A value of 0 specifies the default interface.
+    ///
+    /// The corresponding C constant is `IPV6_MULTICAST_IF`.
+    @_alwaysEmitIntoClient
+    public static var ipv6MulticastInterface: Option { Option(_IPV6_MULTICAST_IF) }
 
-		/// The default hop limit header field for outgoing multicast datagrams.
-		///
-		/// The corresponding C constant is `IPV6_MULTICAST_HOPS`.
-		@_alwaysEmitIntoClient
-		public static var ipv6MulticastHops: Option { Option(_IPV6_MULTICAST_HOPS) }
+    /// The default hop limit header field for outgoing multicast datagrams.
+    ///
+    /// The corresponding C constant is `IPV6_MULTICAST_HOPS`.
+    @_alwaysEmitIntoClient
+    public static var ipv6MulticastHops: Option { Option(_IPV6_MULTICAST_HOPS) }
 
-		/// Whether multicast datagrams will be looped back.
-		///
-		/// The corresponding C constant is `IPV6_MULTICAST_LOOP`.
-		@_alwaysEmitIntoClient
-		public static var ipv6MulticastLoop: Option { Option(_IPV6_MULTICAST_LOOP) }
+    /// Whether multicast datagrams will be looped back.
+    ///
+    /// The corresponding C constant is `IPV6_MULTICAST_LOOP`.
+    @_alwaysEmitIntoClient
+    public static var ipv6MulticastLoop: Option { Option(_IPV6_MULTICAST_LOOP) }
 
-		/// Join a multicast group.
-		///
-		/// The corresponding C constant is `IPV6_JOIN_GROUP`.
-		@_alwaysEmitIntoClient
-		public static var ipv6JoinGroup: Option { Option(_IPV6_JOIN_GROUP) }
+    /// Join a multicast group.
+    ///
+    /// The corresponding C constant is `IPV6_JOIN_GROUP`.
+    @_alwaysEmitIntoClient
+    public static var ipv6JoinGroup: Option { Option(_IPV6_JOIN_GROUP) }
 
-		/// Leave a multicast group.
-		///
-		/// The corresponding C constant is `IPV6_LEAVE_GROUP`.
-		@_alwaysEmitIntoClient
-		public static var ipv6LeaveGroup: Option { Option(_IPV6_LEAVE_GROUP) }
+    /// Leave a multicast group.
+    ///
+    /// The corresponding C constant is `IPV6_LEAVE_GROUP`.
+    @_alwaysEmitIntoClient
+    public static var ipv6LeaveGroup: Option { Option(_IPV6_LEAVE_GROUP) }
 
-		/// Allocation policy of ephemeral ports for when the kernel automatically
-		/// binds a local address to this socket.
-		///
-		/// TODO: portrange struct somewhere, with _DEFAULT, _HIGH, _LOW
-		///
-		/// The corresponding C constant is `IPV6_PORTRANGE`.
-		@_alwaysEmitIntoClient
-		public static var ipv6PortRange: Option { Option(_IPV6_PORTRANGE) }
+    /// Allocation policy of ephemeral ports for when the kernel automatically
+    /// binds a local address to this socket.
+    ///
+    /// TODO: portrange struct somewhere, with _DEFAULT, _HIGH, _LOW
+    ///
+    /// The corresponding C constant is `IPV6_PORTRANGE`.
+    @_alwaysEmitIntoClient
+    public static var ipv6PortRange: Option { Option(_IPV6_PORTRANGE) }
 
-//		/// Whether additional information about subsequent packets will be
-//		/// provided in `recvmsg` calls.
-//		///
-//		/// The corresponding C constant is `IPV6_PKTINFO`.
-//		@_alwaysEmitIntoClient
-//		public static var ipv6ReceivePacketInfo: Option { Option(_IPV6_PKTINFO) }
+//    /// Whether additional information about subsequent packets will be
+//    /// provided in `recvmsg` calls.
+//    ///
+//    /// The corresponding C constant is `IPV6_PKTINFO`.
+//    @_alwaysEmitIntoClient
+//    public static var ipv6ReceivePacketInfo: Option { Option(_IPV6_PKTINFO) }
 //
-//		/// Whether the hop limit header field from subsequent packets will
-//		/// be provided in `recvmsg` calls.
-//		///
-//		/// The corresponding C constant is `IPV6_HOPLIMIT`.
-//		@_alwaysEmitIntoClient
-//		public static var ipv6ReceiveHopLimit: Option { Option(_IPV6_HOPLIMIT) }
+//    /// Whether the hop limit header field from subsequent packets will
+//    /// be provided in `recvmsg` calls.
+//    ///
+//    /// The corresponding C constant is `IPV6_HOPLIMIT`.
+//    @_alwaysEmitIntoClient
+//    public static var ipv6ReceiveHopLimit: Option { Option(_IPV6_HOPLIMIT) }
 //
-//		/// Whether hop-by-hop options from subsequent packets will
-//		/// be provided in `recvmsg` calls.
-//		///
-//		/// The corresponding C constant is `IPV6_HOPOPTS`.
-//		@_alwaysEmitIntoClient
-//		public static var ipv6ReceiveHopOptions: Option { Option(_IPV6_HOPOPTS) }
+//    /// Whether hop-by-hop options from subsequent packets will
+//    /// be provided in `recvmsg` calls.
+//    ///
+//    /// The corresponding C constant is `IPV6_HOPOPTS`.
+//    @_alwaysEmitIntoClient
+//    public static var ipv6ReceiveHopOptions: Option { Option(_IPV6_HOPOPTS) }
 //
-//		/// Whether destination options from subsequent packets will
-//		/// be provided in `recvmsg` calls.
-//		///
-//		/// The corresponding C constant is `IPV6_DSTOPTS`.
-//		@_alwaysEmitIntoClient
-//		public static var ipv6ReceiveDestinationOptions: Option { Option(_IPV6_DSTOPTS) }
+//    /// Whether destination options from subsequent packets will
+//    /// be provided in `recvmsg` calls.
+//    ///
+//    /// The corresponding C constant is `IPV6_DSTOPTS`.
+//    @_alwaysEmitIntoClient
+//    public static var ipv6ReceiveDestinationOptions: Option { Option(_IPV6_DSTOPTS) }
 
-		/// The value of the traffic class field for outgoing datagrams.
-		///
-		/// The corresponding C constant is `IPV6_TCLASS`.
-		@_alwaysEmitIntoClient
-		public static var ipv6TrafficClass: Option { Option(_IPV6_TCLASS) }
+    /// The value of the traffic class field for outgoing datagrams.
+    ///
+    /// The corresponding C constant is `IPV6_TCLASS`.
+    @_alwaysEmitIntoClient
+    public static var ipv6TrafficClass: Option { Option(_IPV6_TCLASS) }
 
-		/// Whether traffic class header field from subsequent packets will
-		/// be provided in `recvmsg` calls.
-		///
-		/// The corresponding C constant is `IPV6_RECVTCLASS`.
-		@_alwaysEmitIntoClient
-		public static var ipv6ReceiveTrafficClass: Option { Option(_IPV6_RECVTCLASS) }
+    /// Whether traffic class header field from subsequent packets will
+    /// be provided in `recvmsg` calls.
+    ///
+    /// The corresponding C constant is `IPV6_RECVTCLASS`.
+    @_alwaysEmitIntoClient
+    public static var ipv6ReceiveTrafficClass: Option { Option(_IPV6_RECVTCLASS) }
 
-//		/// Whether the routing header from subsequent packets will
-//		/// be provided in `recvmsg` calls.
-//		///
-//		/// The corresponding C constant is `IPV6_RTHDR`.
-//		@_alwaysEmitIntoClient
-//		public static var ipv6ReceiveRoutingHeader: Option { Option(_IPV6_RTHDR) }
+//    /// Whether the routing header from subsequent packets will
+//    /// be provided in `recvmsg` calls.
+//    ///
+//    /// The corresponding C constant is `IPV6_RTHDR`.
+//    @_alwaysEmitIntoClient
+//    public static var ipv6ReceiveRoutingHeader: Option { Option(_IPV6_RTHDR) }
 //
-//		/// Get or set all header options and extension headers at one time
-//		/// on the last packet sent or received.
-//		///
-//		/// The corresponding C constant is `IPV6_PKTOPTIONS`.
-//		@_alwaysEmitIntoClient
-//		public static var ipv6PacketOptions: Option { Option(_IPV6_PKTOPTIONS) }
+//    /// Get or set all header options and extension headers at one time
+//    /// on the last packet sent or received.
+//    ///
+//    /// The corresponding C constant is `IPV6_PKTOPTIONS`.
+//    @_alwaysEmitIntoClient
+//    public static var ipv6PacketOptions: Option { Option(_IPV6_PKTOPTIONS) }
 
-		/// The byte offset into a packet where 16-bit checksum is located.
-		///
-		/// The corresponding C constant is `IPV6_CHECKSUM`.
-		@_alwaysEmitIntoClient
-		public static var ipv6Checksum: Option { Option(_IPV6_CHECKSUM) }
+    /// The byte offset into a packet where 16-bit checksum is located.
+    ///
+    /// The corresponding C constant is `IPV6_CHECKSUM`.
+    @_alwaysEmitIntoClient
+    public static var ipv6Checksum: Option { Option(_IPV6_CHECKSUM) }
 
-		/// Whether only IPv6 connections can be made to this socket.
-		///
-		/// The corresponding C constant is `IPV6_V6ONLY`.
-		@_alwaysEmitIntoClient
-		public static var ipv6Only: Option { Option(_IPV6_V6ONLY) }
+    /// Whether only IPv6 connections can be made to this socket.
+    ///
+    /// The corresponding C constant is `IPV6_V6ONLY`.
+    @_alwaysEmitIntoClient
+    public static var ipv6Only: Option { Option(_IPV6_V6ONLY) }
 
-//		/// Whether the minimal IPv6 maximum transmission unit (MTU) size
-//		/// will be used to avoid fragmentation for subsequenet outgoing
-//		/// datagrams.
-//		///
-//		/// The corresponding C constant is `IPV6_USE_MIN_MTU`.
-//		@_alwaysEmitIntoClient
-//		public static var ipv6UseMinimalMTU: Option { Option(_IPV6_USE_MIN_MTU) }
+//    /// Whether the minimal IPv6 maximum transmission unit (MTU) size
+//    /// will be used to avoid fragmentation for subsequenet outgoing
+//    /// datagrams.
+//    ///
+//    /// The corresponding C constant is `IPV6_USE_MIN_MTU`.
+//    @_alwaysEmitIntoClient
+//    public static var ipv6UseMinimalMTU: Option { Option(_IPV6_USE_MIN_MTU) }
   }
 }
 
 extension SocketDescriptor.Option {
-	/// The level at which a socket option resides
+  /// The level at which a socket option resides
   @frozen
   public struct Level: RawRepresentable, Hashable {
     @_alwaysEmitIntoClient
@@ -453,27 +453,87 @@ extension SocketDescriptor.Option {
 
     /// Socket options that only apply to IP sockets.
     ///
-		/// The corresponding C constant is `IPPROTO_IP`.
+    /// The corresponding C constant is `IPPROTO_IP`.
     @_alwaysEmitIntoClient
     public static var ip: Level { Level(_IPPROTO_IP) }
 
     /// Socket options that only apply to IPv6 sockets
     ///
-		/// The corresponding C constant is `IPPROTO_IPV6`.
+    /// The corresponding C constant is `IPPROTO_IPV6`.
     @_alwaysEmitIntoClient
     public static var ipv6: Level { Level(_IPPROTO_IPV6) }
 
     /// Socket options that only apply to TCP sockets
     ///
-		/// The corresponding C constant is `IPPROTO_TCP`.
+    /// The corresponding C constant is `IPPROTO_TCP`.
     @_alwaysEmitIntoClient
     public static var tcp: Level { Level(_IPPROTO_TCP) }
 
     /// Socket options that apply to all sockets.
     ///
-		/// The corresponding C constant is `SOL_SOCKET`.
+    /// The corresponding C constant is `SOL_SOCKET`.
     @_alwaysEmitIntoClient
     public static var socket: Level { Level(_SOL_SOCKET) }
   }
 }
 
+extension SocketDescriptor {
+  // TODO: Convenience/performance overloads for `Bool` and other concrete types
+
+  @_alwaysEmitIntoClient
+  public func getOption<T>(
+    _ level: Option.Level, _ option: Option
+  ) throws -> T {
+    try _getOption(level, option).get()
+  }
+
+  @usableFromInline
+  internal func _getOption<T>(
+    _ level: Option.Level, _ option: Option
+  ) -> Result<T, Errno> {
+    // We can't zero-initialize `T` directly, nor can we pass an uninitialized `T`
+    // to `withUnsafeMutableBytes(of:)`. Instead, we will allocate :-(
+    let rawBuf = UnsafeMutableRawBufferPointer.allocate(
+      byteCount: MemoryLayout<T>.stride,
+      alignment: MemoryLayout<T>.alignment)
+    rawBuf.initializeMemory(as: UInt8.self, repeating: 0)
+    let resultPtr = rawBuf.baseAddress!.bindMemory(to: T.self, capacity: 1)
+    defer {
+      resultPtr.deinitialize(count: 1)
+      rawBuf.deallocate()
+    }
+
+    var length: _CSockLenT = 0
+
+    let success = system_getsockopt(
+      self.rawValue,
+      level.rawValue,
+      option.rawValue,
+      resultPtr, &length)
+
+    return nothingOrErrno(success).map { resultPtr.pointee }
+  }
+
+  @_alwaysEmitIntoClient
+  public func setOption<T>(
+    _ level: Option.Level, _ option: Option, to value: T
+  ) throws {
+    try _setOption(level, option, to: value).get()
+  }
+
+  @usableFromInline
+  internal func _setOption<T>(
+    _ level: Option.Level, _ option: Option, to value: T
+  ) -> Result<(), Errno> {
+    let len = _CSockLenT(MemoryLayout<T>.stride)
+    let success = withUnsafeBytes(of: value) {
+      return system_setsockopt(
+        self.rawValue,
+        level.rawValue,
+        option.rawValue,
+        $0.baseAddress,
+        len)
+    }
+    return nothingOrErrno(success)
+  }
+}

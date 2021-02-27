@@ -25,6 +25,7 @@ import ucrt
 #endif
 
 internal typealias _COffT = off_t
+internal typealias _CSockLenT = socklen_t
 
 // MARK: syscalls and variables
 
