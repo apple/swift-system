@@ -7,8 +7,6 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-import CSystem
-
 // Internal wrappers and typedefs which help reduce #if littering in System's
 // code base.
 
@@ -17,8 +15,10 @@ import CSystem
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
 import Darwin
 #elseif os(Linux) || os(FreeBSD) || os(Android)
+import CSystem
 import Glibc
 #elseif os(Windows)
+import CSystem
 import ucrt
 #else
 #error("Unsupported Platform")

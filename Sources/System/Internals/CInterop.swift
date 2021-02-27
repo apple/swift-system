@@ -14,12 +14,13 @@
 @available(*, deprecated, renamed: "CInterop.Mode")
 public typealias CModeT =  CInterop.Mode
 
-import CSystem
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
 import Darwin
 #elseif os(Linux) || os(FreeBSD) || os(Android)
+import CSystem
 import Glibc
 #elseif os(Windows)
+import CSystem
 import ucrt
 #else
 #error("Unsupported Platform")
