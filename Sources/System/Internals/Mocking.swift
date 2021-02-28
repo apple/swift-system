@@ -138,10 +138,10 @@ internal var forceWindowsPaths: Bool {
 
 #if ENABLE_MOCKING
 // Strip the mock_system prefix and the arg list suffix
-private func originalSyscallName(_ s: String) -> String {
+private func originalSyscallName(_ function: String) -> String {
   // `function` must be of format `system_<name>(<parameters>)`
-  precondition(s.starts(with: "system_"))
-  return String(s.dropFirst("system_".count).prefix { $0.isLetter })
+  precondition(function.starts(with: "system_"))
+  return String(function.dropFirst("system_".count).prefix { $0 != "(" })
 }
 
 private func mockImpl(

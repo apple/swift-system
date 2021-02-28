@@ -7,19 +7,19 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-@_implementationOnly import CSystem
-
 // Internal wrappers and typedefs which help reduce #if littering in System's
 // code base.
 
 // TODO: Should CSystem just include all the header files we need?
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
-@_implementationOnly import Darwin
+import Darwin
 #elseif os(Linux) || os(FreeBSD) || os(Android)
-@_implementationOnly import Glibc
+import CSystem
+import Glibc
 #elseif os(Windows)
-@_implementationOnly import ucrt
+import CSystem
+import ucrt
 #else
 #error("Unsupported Platform")
 #endif
