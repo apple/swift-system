@@ -142,6 +142,60 @@ extension SocketDescriptor {
       system_recv(self.rawValue, buffer.baseAddress!, buffer.count, flags.rawValue)
     }
   }
+
+  /// Accept a connection on a socket
+  ///
+  /// The corresponding C function is `accept`
+  @_alwaysEmitIntoClient
+  public func accept(retryOnInterrupt: Bool = true) throws -> SocketDescriptor {
+    try _accept(retryOnInterrupt: retryOnInterrupt).get()
+  }
+
+  @usableFromInline
+  internal func _accept(
+    retryOnInterrupt: Bool = true
+  ) -> Result<SocketDescriptor, Errno> {
+    let fd = valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+      system_accept(self.rawValue, nil, nil)
+    }
+    return fd.map { SocketDescriptor(rawValue: $0) }
+  }
+
+  // TODO: acceptAndSockaddr or something that (tries to) returns the sockaddr
+  // at least, for sockaddrs up to some sane length
+
+  /// Bind a name to a socket
+  ///
+  /// The corresponding C function is `bind`
+  @_alwaysEmitIntoClient
+  public func bind(to address: SocketAddress) throws {
+    try _bind(to: address).get()
+  }
+
+  @usableFromInline
+  internal func _bind(to address: SocketAddress) -> Result<(), Errno> {
+    let success = address.withRawAddress { addr, len in
+      system_bind(self.rawValue, addr, len)
+    }
+    return nothingOrErrno(success)
+  }
+
+  /// Initiate a connection on a socket
+  ///
+  /// The corresponding C function is `connect`
+  @_alwaysEmitIntoClient
+  public func connect(to address: SocketAddress) throws {
+    try _connect(to: address).get()
+  }
+
+  @usableFromInline
+  internal func _connect(to address: SocketAddress) -> Result<(), Errno> {
+    let success = address.withRawAddress { addr, len in
+      system_connect(self.rawValue, addr, len)
+    }
+    return nothingOrErrno(success)
+  }
+
 }
 
 // MARK: - Forward FileDescriptor methods
