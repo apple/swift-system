@@ -42,19 +42,10 @@ internal func complain(_ message: String) {
 
 extension SocketAddress {
   var niceDescription: String {
-    switch family {
-    case .ipv4:
-      if let ipv4 = IPv4(self) { return ipv4.description }
-      return self.description
-    case .ipv6:
-      if let ipv6 = IPv6(self) { return ipv6.description }
-      return self.description
-    case .local:
-      if let local = Local(self) { return local.description }
-      return self.description
-    default:
-      return self.description
-    }
+    if let ipv4 = self.ipv4 { return ipv4.description }
+    if let ipv6 = self.ipv6 { return ipv6.description }
+    if let local = self.local { return local.description }
+    return self.description
   }
 }
 

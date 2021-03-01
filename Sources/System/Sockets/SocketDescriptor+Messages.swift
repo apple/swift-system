@@ -165,15 +165,65 @@ extension SocketDescriptor {
   }
 }
 
-
+// Optional mapper helpers, for use in setting up message header structs.
 extension Optional where Wrapped == SocketDescriptor.AncillaryMessageBuffer {
-  internal func _withUnsafeBytes<R>(
+  fileprivate func _withUnsafeBytesOrNull<R>(
     _ body: (UnsafeRawBufferPointer) throws -> R
   ) rethrows -> R {
     guard let buffer = self else {
       return try body(UnsafeRawBufferPointer(start: nil, count: 0))
     }
     return try buffer._withUnsafeBytes(body)
+  }
+}
+
+extension Optional where Wrapped == SocketAddress {
+  fileprivate func _withUnsafeBytesOrNull<R>(
+    _ body: (UnsafeRawBufferPointer) throws -> R
+  ) rethrows -> R {
+    guard let address = self else {
+      return try body(UnsafeRawBufferPointer(start: nil, count: 0))
+    }
+    return try address.withUnsafeBytes(body)
+  }
+}
+extension Optional where Wrapped == UnsafeMutablePointer<SocketAddress> {
+  fileprivate func _withMutableCInteropOrNull<R>(
+    entireCapacity: Bool,
+    _ body: (
+      UnsafeMutablePointer<CInterop.SockAddr>?,
+      inout CInterop.SockLen
+    ) throws -> R
+  ) rethrows -> R {
+    guard let ptr = self else {
+      var c: CInterop.SockLen = 0
+      let result = try body(nil, &c)
+      precondition(c == 0)
+      return result
+    }
+    return try ptr.pointee._withMutableCInterop(
+      entireCapacity: entireCapacity,
+      body)
+  }
+}
+
+extension Optional
+where Wrapped == UnsafeMutablePointer<SocketDescriptor.AncillaryMessageBuffer>
+{
+  internal func _withMutableCInterop<R>(
+    entireCapacity: Bool,
+    _ body: (UnsafeMutableRawPointer?, inout CInterop.SockLen) throws -> R
+  ) rethrows -> R {
+    guard let buffer = self else {
+      var length: CInterop.SockLen = 0
+      let r = try body(nil, &length)
+      precondition(length == 0)
+      return r
+    }
+    return try buffer.pointee._withMutableCInterop(
+      entireCapacity: entireCapacity,
+      body
+    )
   }
 }
 
@@ -365,8 +415,8 @@ extension SocketDescriptor {
     flags: MessageFlags,
     retryOnInterrupt: Bool
   ) -> Result<Int, Errno> {
-    recipient._withUnsafeBytes { recipient in
-      ancillary._withUnsafeBytes { ancillary in
+    recipient._withUnsafeBytesOrNull { recipient in
+      ancillary._withUnsafeBytesOrNull { ancillary in
         var iov = CInterop.IOVec()
         iov.iov_base = UnsafeMutableRawPointer(mutating: bytes.baseAddress)
         iov.iov_len = bytes.count
@@ -487,46 +537,6 @@ extension SocketDescriptor {
   }
 }
 
-extension Optional where Wrapped == UnsafeMutablePointer<SocketAddress> {
-  internal func _withMutableCInterop<R>(
-    entireCapacity: Bool,
-    _ body: (
-      UnsafeMutablePointer<CInterop.SockAddr>?,
-      inout CInterop.SockLen
-    ) throws -> R
-  ) rethrows -> R {
-    guard let ptr = self else {
-      var c: CInterop.SockLen = 0
-      let result = try body(nil, &c)
-      precondition(c == 0)
-      return result
-    }
-    return try ptr.pointee._withMutableCInterop(
-      entireCapacity: entireCapacity,
-      body)
-  }
-}
-
-extension Optional
-where Wrapped == UnsafeMutablePointer<SocketDescriptor.AncillaryMessageBuffer>
-{
-  internal func _withMutableCInterop<R>(
-    entireCapacity: Bool,
-    _ body: (UnsafeMutableRawPointer?, inout CInterop.SockLen) throws -> R
-  ) rethrows -> R {
-    guard let buffer = self else {
-      var length: CInterop.SockLen = 0
-      let r = try body(nil, &length)
-      precondition(length == 0)
-      return r
-    }
-    return try buffer.pointee._withMutableCInterop(
-      entireCapacity: entireCapacity,
-      body
-    )
-  }
-}
-
 extension SocketDescriptor {
   @usableFromInline
   internal func _receiveMessage(
@@ -539,7 +549,7 @@ extension SocketDescriptor {
     let result: Result<Int, Errno>
     let receivedFlags: CInt
     (result, receivedFlags) =
-      sender._withMutableCInterop(entireCapacity: true) { adr, adrlen in
+      sender._withMutableCInteropOrNull(entireCapacity: true) { adr, adrlen in
         ancillary._withMutableCInterop(entireCapacity: true) { anc, anclen in
           var iov = CInterop.IOVec()
           iov.iov_base = bytes.baseAddress

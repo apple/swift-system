@@ -97,7 +97,7 @@ struct Listen: ParsableCommand {
     try socket.closeAfter {
       if udp {
         while true {
-          let (count, flags) = try socket.receiveMessage(bytes: buffer, sender: &client)
+          let (count, flags) = try socket.receiveMessage(into: buffer, sender: &client)
           print(prefix(client: client, flags: flags), terminator: "")
           try FileDescriptor.standardOutput.writeAll(buffer[..<count])
         }
@@ -105,7 +105,7 @@ struct Listen: ParsableCommand {
         let conn = try socket.accept(client: &client)
         complain("Connection from \(client.niceDescription)")
         while true {
-          let (count, flags) = try conn.receiveMessage(bytes: buffer, sender: &client)
+          let (count, flags) = try conn.receiveMessage(into: buffer, sender: &client)
           guard count > 0 else { break }
           print(prefix(client: client, flags: flags), terminator: "")
           try FileDescriptor.standardOutput.writeAll(buffer[..<count])
