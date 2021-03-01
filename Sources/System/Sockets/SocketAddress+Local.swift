@@ -14,31 +14,26 @@ private var _pathOffset: Int {
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress {
+  /// A "local" (i.e. UNIX domain) socket address, for inter-process
+  /// communication on the same machine.
+  ///
+  /// The corresponding C type is `sockaddr_un`.
   public struct Local {
     internal let _path: FilePath
 
+    /// A "local" (i.e. UNIX domain) socket address, for inter-process
+    /// communication on the same machine.
+    ///
+    /// The corresponding C type is `sockaddr_un`.
     public init(_ path: FilePath) {
       self._path = path
-    }
-
-    public init?(_ address: SocketAddress) {
-      guard address.family == .local else { return nil }
-      let path: FilePath? = address.withUnsafeBytes { buffer in
-        guard buffer.count >= _pathOffset + 1 else {
-          return nil
-        }
-        let path = (buffer.baseAddress! + _pathOffset)
-          .assumingMemoryBound(to: CInterop.PlatformChar.self)
-        return FilePath(platformString: path)
-      }
-      guard path != nil else { return nil }
-      self._path = path!
     }
   }
 }
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress {
+  /// Create a SocketAddress from a local (i.e. UNIX domain) socket address.
   public init(_ local: Local) {
     let offset = _pathOffset
     let length = offset + local._path.length + 1
@@ -57,10 +52,28 @@ extension SocketAddress {
       return length
     }
   }
+
+  /// If `self` holds a local address, extract it, otherwise return `nil`.
+  public var local: Local? {
+    guard family == .local else { return nil }
+    let path: FilePath? = self.withUnsafeBytes { buffer in
+      guard buffer.count >= _pathOffset + 1 else {
+        return nil
+      }
+      let path = (buffer.baseAddress! + _pathOffset)
+        .assumingMemoryBound(to: CInterop.PlatformChar.self)
+      return FilePath(platformString: path)
+    }
+    guard path != nil else { return nil }
+    return Local(path!)
+  }
 }
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress.Local {
+  /// The path to the file used to advertise the socket name to clients.
+  ///
+  /// The corresponding C struct member is `sun_path`.
   public var path: FilePath { _path }
 }
 

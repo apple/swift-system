@@ -71,7 +71,7 @@ final class SocketAddressTest: XCTestCase {
       XCTFail("IPv4 address in big representation")
     }
     XCTAssertEqual(address.family, .ipv4)
-    if let extracted = SocketAddress.IPv4(address) {
+    if let extracted = address.ipv4 {
       XCTAssertEqual(extracted, ipv4)
     } else {
       XCTFail("Cannot extract IPv4 address")
@@ -135,7 +135,7 @@ final class SocketAddressTest: XCTestCase {
       XCTFail("IPv6 address in big representation")
     }
     XCTAssertEqual(address.family, .ipv6)
-    if let extracted = SocketAddress.IPv6(address) {
+    if let extracted = address.ipv6 {
       XCTAssertEqual(extracted, ipv6)
     } else {
       XCTFail("Cannot extract IPv6 address")
@@ -201,7 +201,7 @@ final class SocketAddressTest: XCTestCase {
       XCTFail("Local address with short path in big representation")
     }
     XCTAssertEqual(smol.family, .local)
-    if let extracted = SocketAddress.Local(smol) {
+    if let extracted = smol.local {
       XCTAssertEqual(extracted, smolLocal)
     } else {
       XCTFail("Cannot extract Local address")
@@ -216,7 +216,7 @@ final class SocketAddressTest: XCTestCase {
       XCTFail("Local address with long path in small representation")
     }
     XCTAssertEqual(large.family, .local)
-    if let extracted = SocketAddress.Local(large) {
+    if let extracted = large.local {
       XCTAssertEqual(extracted, largeLocal)
     } else {
       XCTFail("Cannot extract Local address")

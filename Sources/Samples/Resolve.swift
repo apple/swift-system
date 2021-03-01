@@ -40,9 +40,7 @@ struct Resolve: ParsableCommand {
   var ipv6: Bool = false
 
   func run() throws {
-    var flags = SocketAddress.ResolverFlags()
-    flags.insert(.default)
-    flags.insert(.all)
+    var flags: SocketAddress.ResolverFlags = [.default, .all]
     if canonicalName { flags.insert(.canonicalName) }
     if passive { flags.insert(.passive) }
     if numericHost { flags.insert(.numericHost) }

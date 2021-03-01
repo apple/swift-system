@@ -19,18 +19,6 @@ extension SocketAddress {
       self.rawValue = rawValue
       self.rawValue.sin_family = Family.ipv4.rawValue
     }
-
-    public init?(_ address: SocketAddress) {
-      guard address.family == .ipv4 else { return nil }
-      let value: CInterop.SockAddrIn? = address.withUnsafeBytes { buffer in
-        guard buffer.count >= MemoryLayout<CInterop.SockAddrIn>.size else {
-          return nil
-        }
-        return buffer.baseAddress!.load(as: CInterop.SockAddrIn.self)
-      }
-      guard let value = value else { return nil }
-      self.rawValue = value
-    }
   }
 }
 
@@ -43,21 +31,36 @@ extension SocketAddress {
       SocketAddress(buffer)
     }
   }
+
+  /// If `self` holds an IPv4 address, extract it, otherwise return `nil`.
+  @_alwaysEmitIntoClient
+  public var ipv4: IPv4? {
+    guard family == .ipv4 else { return nil }
+    let value: CInterop.SockAddrIn? = self.withUnsafeBytes { buffer in
+      guard buffer.count >= MemoryLayout<CInterop.SockAddrIn>.size else {
+        return nil
+      }
+      return buffer.baseAddress!.load(as: CInterop.SockAddrIn.self)
+    }
+    guard let value = value else { return nil }
+    return IPv4(rawValue: value)
+  }
 }
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress.IPv4 {
   /// Create a socket address from a given Internet address and port number.
   @_alwaysEmitIntoClient
-  public init(address: Address, port: Port) {
+  public init(address: Address, port: SocketAddress.Port) {
     rawValue = CInterop.SockAddrIn()
     rawValue.sin_family = CInterop.SAFamily(SocketDescriptor.Domain.ipv4.rawValue);
     rawValue.sin_port = port.rawValue._networkOrder
     rawValue.sin_addr = CInterop.InAddr(s_addr: address.rawValue._networkOrder)
   }
 
+  /// TODO: doc
   @_alwaysEmitIntoClient
-  public init?(address: String, port: Port) {
+  public init?(address: String, port: SocketAddress.Port) {
     guard let address = Address(address) else { return nil }
     self.init(address: address, port: port)
   }
@@ -87,44 +90,6 @@ extension SocketAddress.IPv4: CustomStringConvertible {
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress.IPv4 {
   @frozen
-  /// The port number on which the socket is listening.
-  public struct Port: RawRepresentable, ExpressibleByIntegerLiteral, Hashable {
-    /// The port number, in host byte order.
-    public var rawValue: CInterop.InPort
-
-    @_alwaysEmitIntoClient
-    public init(_ value: CInterop.InPort) {
-      self.rawValue = value
-    }
-
-    @_alwaysEmitIntoClient
-    public init(rawValue: CInterop.InPort) {
-      self.init(rawValue)
-    }
-
-    @_alwaysEmitIntoClient
-    public init(integerLiteral value: CInterop.InPort) {
-      self.init(value)
-    }
-  }
-
-  @_alwaysEmitIntoClient
-  public var port: Port {
-    get { Port(CInterop.InPort(_networkOrder: rawValue.sin_port)) }
-    set { rawValue.sin_port = newValue.rawValue._networkOrder }
-  }
-}
-
-// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
-extension SocketAddress.IPv4.Port: CustomStringConvertible {
-  public var description: String {
-    rawValue.description
-  }
-}
-
-// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
-extension SocketAddress.IPv4 {
-  @frozen
   /// A 32-bit IPv4 address.
   public struct Address: RawRepresentable, Hashable {
     /// The raw internet address value, in host byte order.
@@ -134,13 +99,9 @@ extension SocketAddress.IPv4 {
     public init(rawValue: CInterop.InAddrT) {
       self.rawValue = rawValue
     }
-
-    @_alwaysEmitIntoClient
-    public init(_ value: CInterop.InAddrT) {
-      self.rawValue = value
-    }
   }
 
+  /// The 32-bit IPv4 address.
   @_alwaysEmitIntoClient
   public var address: Address {
     get {
@@ -151,6 +112,12 @@ extension SocketAddress.IPv4 {
       rawValue.sin_addr.s_addr = newValue.rawValue._networkOrder
     }
   }
+
+  @_alwaysEmitIntoClient
+  public var port: SocketAddress.Port {
+    get { SocketAddress.Port(CInterop.InPort(_networkOrder: rawValue.sin_port)) }
+    set { rawValue.sin_port = newValue.rawValue._networkOrder }
+  }
 }
 
 extension SocketAddress.IPv4.Address {
@@ -158,31 +125,27 @@ extension SocketAddress.IPv4.Address {
   ///
   /// This corresponds to the C constant `INADDR_ANY`.
   @_alwaysEmitIntoClient
-  public static var any: Self { Self(_INADDR_ANY) }
+  public static var any: Self { Self(rawValue: _INADDR_ANY) }
 
   /// The IPv4 loopback address 127.0.0.1.
   ///
-  /// This corresponds to the C constant `INADDR_ANY`.
+  /// This corresponds to the C constant `INADDR_LOOPBACK`.
   @_alwaysEmitIntoClient
-  public static var loopback: Self { Self(_INADDR_LOOPBACK) }
+  public static var loopback: Self { Self(rawValue: _INADDR_LOOPBACK) }
 
   /// The IPv4 broadcast address 255.255.255.255.
   ///
   /// This corresponds to the C constant `INADDR_BROADCAST`.
   @_alwaysEmitIntoClient
-  public static var broadcast: Self { Self(_INADDR_BROADCAST) }
+  public static var broadcast: Self { Self(rawValue: _INADDR_BROADCAST) }
 }
-
-
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress.IPv4.Address: CustomStringConvertible {
-  @_alwaysEmitIntoClient
   public var description: String {
     _inet_ntop()
   }
 
-  @usableFromInline
   internal func _inet_ntop() -> String {
     let addr = CInterop.InAddr(s_addr: rawValue._networkOrder)
     return withUnsafeBytes(of: addr) { src in
@@ -211,13 +174,11 @@ extension SocketAddress.IPv4.Address: CustomStringConvertible {
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress.IPv4.Address: LosslessStringConvertible {
-  @_alwaysEmitIntoClient
   public init?(_ description: String) {
     guard let value = Self._inet_pton(description) else { return nil }
     self = value
   }
 
-  @usableFromInline
   internal static func _inet_pton(_ string: String) -> Self? {
     string.withCString { ptr in
       var addr = CInterop.InAddr()

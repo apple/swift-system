@@ -335,7 +335,11 @@ extension SocketDescriptor.AncillaryMessageBuffer.Message {
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketDescriptor {
-
+  /// Send a message from a socket.
+  ///
+  /// TODO: describe every parameter and option.
+  ///
+  /// The corresponding C function is `sendmsg`.
   @_alwaysEmitIntoClient
   public func sendMessage(
     bytes: UnsafeRawBufferPointer,
@@ -398,14 +402,19 @@ extension SocketDescriptor {
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketDescriptor {
 
+  /// Receive a message from a socket.
+  ///
+  /// TODO: describe every parameter and option.
+  ///
+  /// The corresponding C function is `recvmsg`.
   @_alwaysEmitIntoClient
   public func receiveMessage(
-    bytes: UnsafeMutableRawBufferPointer,
+    into bytes: UnsafeMutableRawBufferPointer,
     flags: MessageFlags = [],
     retryOnInterrupt: Bool = true
   ) throws -> (received: Int, flags: MessageFlags) {
     return try _receiveMessage(
-      bytes: bytes,
+      into: bytes,
       sender: nil,
       ancillary: nil,
       flags: flags,
@@ -413,15 +422,20 @@ extension SocketDescriptor {
     ).get()
   }
 
+  /// Receive a message from a socket.
+  ///
+  /// TODO: describe every parameter and option.
+  ///
+  /// The corresponding C function is `recvmsg`.
   @_alwaysEmitIntoClient
   public func receiveMessage(
-    bytes: UnsafeMutableRawBufferPointer,
+    into bytes: UnsafeMutableRawBufferPointer,
     sender: inout SocketAddress,
     flags: MessageFlags = [],
     retryOnInterrupt: Bool = true
   ) throws -> (received: Int, flags: MessageFlags) {
     return try _receiveMessage(
-      bytes: bytes,
+      into: bytes,
       sender: &sender,
       ancillary: nil,
       flags: flags,
@@ -429,15 +443,20 @@ extension SocketDescriptor {
     ).get()
   }
 
+  /// Receive a message from a socket.
+  ///
+  /// TODO: describe every parameter and option.
+  ///
+  /// The corresponding C function is `recvmsg`.
   @_alwaysEmitIntoClient
   public func receiveMessage(
-    bytes: UnsafeMutableRawBufferPointer,
+    into bytes: UnsafeMutableRawBufferPointer,
     ancillary: inout AncillaryMessageBuffer,
     flags: MessageFlags = [],
     retryOnInterrupt: Bool = true
   ) throws -> (received: Int, flags: MessageFlags) {
     return try _receiveMessage(
-      bytes: bytes,
+      into: bytes,
       sender: nil,
       ancillary: &ancillary,
       flags: flags,
@@ -445,16 +464,21 @@ extension SocketDescriptor {
     ).get()
   }
 
+  /// Receive a message from a socket.
+  ///
+  /// TODO: describe every parameter and option.
+  ///
+  /// The corresponding C function is `recvmsg`.
   @_alwaysEmitIntoClient
   public func receiveMessage(
-    bytes: UnsafeMutableRawBufferPointer,
+    into bytes: UnsafeMutableRawBufferPointer,
     sender: inout SocketAddress,
     ancillary: inout AncillaryMessageBuffer,
     flags: MessageFlags = [],
     retryOnInterrupt: Bool = true
   ) throws -> (received: Int, flags: MessageFlags) {
     return try _receiveMessage(
-      bytes: bytes,
+      into: bytes,
       sender: &sender,
       ancillary: &ancillary,
       flags: flags,
@@ -506,7 +530,7 @@ where Wrapped == UnsafeMutablePointer<SocketDescriptor.AncillaryMessageBuffer>
 extension SocketDescriptor {
   @usableFromInline
   internal func _receiveMessage(
-    bytes: UnsafeMutableRawBufferPointer,
+    into bytes: UnsafeMutableRawBufferPointer,
     sender: UnsafeMutablePointer<SocketAddress>?,
     ancillary: UnsafeMutablePointer<AncillaryMessageBuffer>?,
     flags: MessageFlags,
@@ -546,7 +570,7 @@ extension SocketDescriptor {
     return result.map { ($0, MessageFlags(rawValue: receivedFlags)) }
   }
 
-  internal func _recvmsg(
+  private func _recvmsg(
     _ message: UnsafeMutablePointer<CInterop.MsgHdr>,
     _ flags: CInt,
     retryOnInterrupt: Bool

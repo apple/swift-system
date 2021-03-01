@@ -16,6 +16,7 @@
 public struct SocketAddress {
   internal var _variant: _Variant
 
+  /// TODO: doc
   public init(
     address: UnsafePointer<CInterop.SockAddr>,
     length: CInterop.SockLen
@@ -23,6 +24,7 @@ public struct SocketAddress {
     self.init(UnsafeRawBufferPointer(start: address, count: Int(length)))
   }
 
+  /// TODO: doc
   public init(_ buffer: UnsafeRawBufferPointer) {
     self.init(unsafeUninitializedCapacity: buffer.count) { target in
       target.baseAddress!.copyMemory(
@@ -81,6 +83,7 @@ extension SocketAddress {
     self._length = 0
   }
 
+  /// TODO: doc
   public init(
     unsafeUninitializedCapacity capacity: Int,
     initializingWith body: (UnsafeMutableRawBufferPointer) throws -> Int
@@ -277,22 +280,46 @@ extension SocketAddress {
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress: CustomStringConvertible {
   public var description: String {
-    switch family {
-    case .ipv4:
-      if let address = IPv4(self) {
-        return "SocketAddress(family: \(family), address: \(address))"
-      }
-    case .ipv6:
-      if let address = IPv6(self) {
-        return "SocketAddress(family: \(family), address: \(address))"
-      }
-    case .local:
-      if let address = Local(self) {
-        return "SocketAddress(family: \(family), address: \(address))"
-      }
-    default:
-      break
+    if let address = self.ipv4 {
+      return "SocketAddress(family: \(family), address: \(address))"
+    }
+    if let address = self.ipv6 {
+      return "SocketAddress(family: \(family), address: \(address))"
+    }
+    if let address = self.local {
+      return "SocketAddress(family: \(family), address: \(address))"
     }
     return "SocketAddress(family: \(family), \(self._length) bytes)"
+  }
+}
+
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+extension SocketAddress {
+  @frozen
+  /// The port number on which the socket is listening.
+  public struct Port: RawRepresentable, ExpressibleByIntegerLiteral, Hashable {
+    /// The port number, in host byte order.
+    public var rawValue: CInterop.InPort
+
+    @_alwaysEmitIntoClient
+    public init(_ value: CInterop.InPort) {
+      self.rawValue = value
+    }
+
+    @_alwaysEmitIntoClient
+    public init(rawValue: CInterop.InPort) {
+      self.init(rawValue)
+    }
+
+    @_alwaysEmitIntoClient
+    public init(integerLiteral value: CInterop.InPort) {
+      self.init(value)
+    }
+  }
+}
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+extension SocketAddress.Port: CustomStringConvertible {
+  public var description: String {
+    rawValue.description
   }
 }

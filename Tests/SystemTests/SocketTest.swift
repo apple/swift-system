@@ -61,7 +61,7 @@ final class SocketTest: XCTestCase {
         name: "recvmsg", rawSocket, Wildcard(), 42,
         interruptable: true
       ) { retryOnInterrupt in
-        _ = try socket.receiveMessage(bytes: rawBuf,
+        _ = try socket.receiveMessage(into: rawBuf,
                                       flags: .init(rawValue: 42),
                                       retryOnInterrupt: retryOnInterrupt)
       },

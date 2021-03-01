@@ -52,6 +52,7 @@ extension SocketAddress {
   /// Address resolution flags.
   @frozen
   public struct ResolverFlags: OptionSet, RawRepresentable {
+    @_alwaysEmitIntoClient
     public let rawValue: CInt
 
     @_alwaysEmitIntoClient
@@ -120,7 +121,6 @@ extension SocketAddress {
     /// `SocketAddress.IPv4.Address.loopback`, or
     /// `SocketAddress.IPv6.Address.loopback`.
     ///
-    ///
     /// This corresponds to the C constant `AI_PASSIVE`.
     @_alwaysEmitIntoClient
     public static var passive: Self { Self(_AI_PASSIVE) }
@@ -163,10 +163,14 @@ extension SocketAddress {
 }
 
 extension SocketAddress {
+  /// An address resolution failure.
+  ///
+  /// This corresponds to the error returned by the C function `getaddrinfo`.
   @frozen
   public struct ResolverError
   : Error, RawRepresentable, Hashable, CustomStringConvertible
   {
+    @_alwaysEmitIntoClient
     public var rawValue: CInt
 
     @_alwaysEmitIntoClient
@@ -175,7 +179,7 @@ extension SocketAddress {
     }
 
     @_alwaysEmitIntoClient
-    public init(_ raw: CInt) {
+    private init(_ raw: CInt) {
       self.init(rawValue: raw)
     }
 
@@ -259,6 +263,10 @@ extension SocketAddress {
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress {
+  /// Get a list of IP addresses and port numbers for a host and service.
+  ///
+  /// TODO: communicate that on failure, this throws a `ResolverError`.
+  ///
   /// The method corresponds to the C function `getaddrinfo`.
   @_alwaysEmitIntoClient
   public static func resolve(
@@ -369,7 +377,7 @@ extension SocketAddress {
   ) -> (ResolverError, Errno?)? {
     let r = system_getaddrinfo(hostname, servname, hints, &res)
     if r == 0 { return nil }
-    let error = ResolverError(r)
+    let error = ResolverError(rawValue: r)
     if error == .system {
       return (error, Errno.current)
     }
