@@ -11,13 +11,13 @@ extension SocketDescriptor {
   /// Create an endpoint for communication.
   ///
   /// - Parameters:
-  ///    - domain: Select the protocol family which should be used for
-  ///      communication
-  ///    - type: Specify the semantics of communication
-  ///    - protocol: Specify a particular protocol to use with the socket.
-  ///      Normally, there is only one protocol for a particular connection
-  ///      type within a protocol family, so a default argument of `.default`
-  ///      is provided
+  ///   - domain: Select the protocol family which should be used for
+  ///     communication
+  ///   - type: Specify the semantics of communication
+  ///   - protocol: Specify a particular protocol to use with the socket.
+  ///     Normally, there is only one protocol for a particular connection
+  ///     type within a protocol family, so a default argument of `.default`
+  ///     is provided
   ///   - retryOnInterrupt: Whether to retry the open operation
   ///     if it throws ``Errno/interrupted``.
   ///     The default is `true`.
