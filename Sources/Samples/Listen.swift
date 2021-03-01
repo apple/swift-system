@@ -94,10 +94,12 @@ struct Listen: ParsableCommand {
     let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 1024, alignment: 1)
     defer { buffer.deallocate() }
 
+    var ancillary = SocketDescriptor.AncillaryMessageBuffer()
     try socket.closeAfter {
       if udp {
         while true {
-          let (count, flags) = try socket.receive(into: buffer, sender: &client)
+          let (count, flags) =
+            try socket.receive(into: buffer, sender: &client, ancillary: &ancillary)
           print(prefix(client: client, flags: flags), terminator: "")
           try FileDescriptor.standardOutput.writeAll(buffer[..<count])
         }
@@ -105,7 +107,8 @@ struct Listen: ParsableCommand {
         let conn = try socket.accept(client: &client)
         complain("Connection from \(client.niceDescription)")
         while true {
-          let (count, flags) = try conn.receive(into: buffer, sender: &client)
+          let (count, flags) =
+            try conn.receive(into: buffer, sender: &client, ancillary: &ancillary)
           guard count > 0 else { break }
           print(prefix(client: client, flags: flags), terminator: "")
           try FileDescriptor.standardOutput.writeAll(buffer[..<count])

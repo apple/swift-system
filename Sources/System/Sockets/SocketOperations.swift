@@ -91,6 +91,7 @@ extension SocketDescriptor {
   /// - Returns: The number of bytes that were sent.
   ///
   /// The corresponding C function is `send`
+  @_alwaysEmitIntoClient
   public func send(
     _ buffer: UnsafeRawBufferPointer,
     flags: MessageFlags = .none,
@@ -110,6 +111,54 @@ extension SocketDescriptor {
     }
   }
 
+  /// Send a message from a socket
+  ///
+  /// - Parameters:
+  ///   - buffer: The region of memory that contains the data being sent.
+  ///   - recipient: The socket address of the recipient.
+  ///   - flags: see `send(2)`
+  ///   - retryOnInterrupt: Whether to retry the send operation
+  ///     if it throws ``Errno/interrupted``.
+  ///     The default is `true`.
+  ///     Pass `false` to try only once and throw an error upon interruption.
+  /// - Returns: The number of bytes that were sent.
+  ///
+  /// The corresponding C function is `sendto`
+  @_alwaysEmitIntoClient
+  public func send(
+    _ buffer: UnsafeRawBufferPointer,
+    to recipient: SocketAddress,
+    flags: MessageFlags = .none,
+    retryOnInterrupt: Bool = true
+  ) throws -> Int {
+    try _send(
+      buffer,
+      to: recipient,
+      flags: flags,
+      retryOnInterrupt: retryOnInterrupt
+    ).get()
+  }
+
+  @usableFromInline
+  internal func _send(
+    _ buffer: UnsafeRawBufferPointer,
+    to recipient: SocketAddress,
+    flags: MessageFlags,
+    retryOnInterrupt: Bool
+  ) throws -> Result<Int, Errno> {
+    recipient.withUnsafeCInterop { adr, adrlen in
+      valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+        system_sendto(
+          self.rawValue,
+          buffer.baseAddress,
+          buffer.count,
+          flags.rawValue,
+          adr,
+          adrlen)
+      }
+    }
+  }
+
   /// Receive a message from a socket
   ///
   /// - Parameters:
@@ -122,6 +171,7 @@ extension SocketDescriptor {
   /// - Returns: The number of bytes that were received.
   ///
   /// The corresponding C function is `recv`
+  @_alwaysEmitIntoClient
   public func receive(
     into buffer: UnsafeMutableRawBufferPointer,
     flags: MessageFlags = .none,
@@ -143,12 +193,69 @@ extension SocketDescriptor {
     }
   }
 
+  /// Receive a message from a socket
+  ///
+  /// - Parameters:
+  ///   - buffer: The region of memory to receive into.
+  ///   - flags: see `recv(2)`
+  ///   - retryOnInterrupt: Whether to retry the receive operation
+  ///     if it throws ``Errno/interrupted``.
+  ///     The default is `true`.
+  ///     Pass `false` to try only once and throw an error upon interruption.
+  /// - Returns: The number of bytes that were received.
+  ///
+  /// The corresponding C function is `recvfrom`
+  @_alwaysEmitIntoClient
+  public func receive(
+    into buffer: UnsafeMutableRawBufferPointer,
+    sender: inout SocketAddress,
+    flags: MessageFlags = .none,
+    retryOnInterrupt: Bool = true
+  ) throws -> Int {
+    try _receive(
+      into: buffer,
+      sender: &sender,
+      flags: flags,
+      retryOnInterrupt: retryOnInterrupt
+    ).get()
+  }
+
+  @usableFromInline
+  internal func _receive(
+    into buffer: UnsafeMutableRawBufferPointer,
+    sender: inout SocketAddress,
+    flags: MessageFlags,
+    retryOnInterrupt: Bool
+  ) throws -> Result<Int, Errno> {
+    sender._withMutableCInterop(entireCapacity: true) { adr, adrlen in
+      valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+        system_recvfrom(
+          self.rawValue,
+          buffer.baseAddress,
+          buffer.count,
+          flags.rawValue,
+          adr,
+          &adrlen)
+      }
+    }
+  }
+
   /// Accept a connection on a socket.
   ///
   /// The corresponding C function is `accept`.
   @_alwaysEmitIntoClient
   public func accept(retryOnInterrupt: Bool = true) throws -> SocketDescriptor {
-    try _accept(nil, nil, retryOnInterrupt: retryOnInterrupt).get()
+    try _accept(retryOnInterrupt: retryOnInterrupt).get()
+  }
+
+  @usableFromInline
+  internal func _accept(
+    retryOnInterrupt: Bool
+  ) -> Result<SocketDescriptor, Errno> {
+    let fd = valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+      return system_accept(self.rawValue, nil, nil)
+    }
+    return fd.map { SocketDescriptor(rawValue: $0) }
   }
 
   /// Accept a connection on a socket.
@@ -161,25 +268,25 @@ extension SocketDescriptor {
   ///
   ///    Having this as an inout parameter allows you to reuse the same address
   ///    value across multiple connections, without reallocating it.
+  @_alwaysEmitIntoClient
   public func accept(
     client: inout SocketAddress,
     retryOnInterrupt: Bool = true
   ) throws -> SocketDescriptor {
-    try client._withMutableCInterop(entireCapacity: true) { adr, adrlen in
-      try _accept(adr, &adrlen, retryOnInterrupt: retryOnInterrupt).get()
-    }
+    try _accept(client: &client, retryOnInterrupt: retryOnInterrupt).get()
   }
 
   @usableFromInline
   internal func _accept(
-    _ address: UnsafeMutablePointer<CInterop.SockAddr>?,
-    _ addressLength: UnsafeMutablePointer<CInterop.SockLen>?,
-    retryOnInterrupt: Bool = true
+    client: inout SocketAddress,
+    retryOnInterrupt: Bool
   ) -> Result<SocketDescriptor, Errno> {
-    let fd = valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
-      return system_accept(self.rawValue, address, addressLength)
+    client._withMutableCInterop(entireCapacity: true) { adr, adrlen in
+      let fd = valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+        return system_accept(self.rawValue, adr, &adrlen)
+      }
+      return fd.map { SocketDescriptor(rawValue: $0) }
     }
-    return fd.map { SocketDescriptor(rawValue: $0) }
   }
 
   // TODO: acceptAndSockaddr or something that (tries to) returns the sockaddr

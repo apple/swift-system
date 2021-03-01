@@ -67,6 +67,12 @@ extension SocketAddress {
     guard path != nil else { return nil }
     return Local(path!)
   }
+
+  /// Construct an address in the Local domain from the given file path.
+  @_alwaysEmitIntoClient
+  public init(local path: FilePath) {
+    self.init(Local(path))
+  }
 }
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)

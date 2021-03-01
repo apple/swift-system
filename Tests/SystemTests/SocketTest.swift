@@ -58,7 +58,7 @@ final class SocketTest: XCTestCase {
           writeBuf, flags: .doNotRoute, retryOnInterrupt: retryOnInterrupt)
       },
       MockTestCase(
-        name: "recvmsg", rawSocket, Wildcard(), 42,
+        name: "recvfrom", rawSocket, Wildcard(), Wildcard(), 42, Wildcard(), Wildcard(),
         interruptable: true
       ) { retryOnInterrupt in
         var sender = SocketAddress()
@@ -68,12 +68,36 @@ final class SocketTest: XCTestCase {
                                retryOnInterrupt: retryOnInterrupt)
       },
       MockTestCase(
-        name: "sendmsg", rawSocket, Wildcard(), 42,
+        name: "sendto", rawSocket, Wildcard(), Wildcard(), 42, Wildcard(), Wildcard(),
         interruptable: true
       ) { retryOnInterrupt in
         let recipient = SocketAddress(ipv4: .loopback, port: 123)
         _ = try socket.send(UnsafeRawBufferPointer(rawBuf),
                             to: recipient,
+                            flags: .init(rawValue: 42),
+                            retryOnInterrupt: retryOnInterrupt)
+      },
+      MockTestCase(
+        name: "recvmsg", rawSocket, Wildcard(), 42,
+        interruptable: true
+      ) { retryOnInterrupt in
+        var sender = SocketAddress()
+        var ancillary = SocketDescriptor.AncillaryMessageBuffer()
+        _ = try socket.receive(into: rawBuf,
+                               sender: &sender,
+                               ancillary: &ancillary,
+                               flags: .init(rawValue: 42),
+                               retryOnInterrupt: retryOnInterrupt)
+      },
+      MockTestCase(
+        name: "sendmsg", rawSocket, Wildcard(), 42,
+        interruptable: true
+      ) { retryOnInterrupt in
+        let recipient = SocketAddress(ipv4: .loopback, port: 123)
+        let ancillary = SocketDescriptor.AncillaryMessageBuffer()
+        _ = try socket.send(UnsafeRawBufferPointer(rawBuf),
+                            to: recipient,
+                            ancillary: ancillary,
                             flags: .init(rawValue: 42),
                             retryOnInterrupt: retryOnInterrupt)
       },

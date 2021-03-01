@@ -158,6 +158,37 @@ internal func system_recv(
   return recv(socket, buffer, len, flags)
 }
 
+internal func system_sendto(
+  _ socket: CInt,
+  _ buffer: UnsafeRawPointer?,
+  _ length: Int,
+  _ flags: CInt,
+  _ dest_addr: UnsafePointer<CInterop.SockAddr>?,
+  _ dest_len: CInterop.SockLen
+) -> Int {
+  #if ENABLE_MOCKING
+  if mockingEnabled {
+    return _mockInt(socket, buffer, length, flags, dest_addr, dest_len)
+  }
+  #endif
+  return sendto(socket, buffer, length, flags, dest_addr, dest_len)
+}
+
+internal func system_recvfrom(
+  _ socket: CInt,
+  _ buffer: UnsafeMutableRawPointer?,
+  _ length: Int,
+  _ flags: CInt,
+  _ address: UnsafeMutablePointer<CInterop.SockAddr>?,
+  _ addres_len: UnsafeMutablePointer<CInterop.SockLen>?
+) -> Int {
+  #if ENABLE_MOCKING
+  if mockingEnabled {
+    return _mockInt(socket, buffer, length, flags, address, addres_len)
+  }
+  #endif
+  return recvfrom(socket, buffer, length, flags, address, addres_len)
+}
 
 internal func system_sendmsg(
   _ socket: CInt,

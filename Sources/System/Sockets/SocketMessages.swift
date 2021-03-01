@@ -21,7 +21,7 @@ extension SocketDescriptor {
 
     /// Initialize a new empty ancillary message buffer with no preallocated
     /// storage.
-    internal init() {
+    public init() {
       _buffer = _RawBuffer()
       _endOffset = 0
     }
@@ -394,8 +394,8 @@ extension SocketDescriptor {
   public func send(
     _ bytes: UnsafeRawBufferPointer,
     to recipient: SocketAddress? = nil,
-    ancillary: AncillaryMessageBuffer? = nil,
-    flags: MessageFlags = [],
+    ancillary: AncillaryMessageBuffer,
+    flags: MessageFlags = .none,
     retryOnInterrupt: Bool = true
   ) throws -> Int {
     try _send(
@@ -451,27 +451,6 @@ extension SocketDescriptor {
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketDescriptor {
-  /// Receive a message from a socket.
-  ///
-  /// TODO: describe every parameter and option.
-  ///
-  /// The corresponding C function is `recvmsg`.
-  @_alwaysEmitIntoClient
-  public func receive(
-    into bytes: UnsafeMutableRawBufferPointer,
-    sender: inout SocketAddress,
-    flags: MessageFlags = [],
-    retryOnInterrupt: Bool = true
-  ) throws -> (received: Int, flags: MessageFlags) {
-    return try _receive(
-      into: bytes,
-      sender: &sender,
-      ancillary: nil,
-      flags: flags,
-      retryOnInterrupt: retryOnInterrupt
-    ).get()
-  }
-
   /// Receive a message from a socket.
   ///
   /// TODO: describe every parameter and option.
