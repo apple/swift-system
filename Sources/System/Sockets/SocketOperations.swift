@@ -82,7 +82,7 @@ extension SocketDescriptor {
   /// Send a message from a socket
   ///
   /// - Parameters:
-  ///   - buffear: The region of memory that contains the data being sent.
+  ///   - buffer: The region of memory that contains the data being sent.
   ///   - flags: see `send(2)`
   ///   - retryOnInterrupt: Whether to retry the send operation
   ///     if it throws ``Errno/interrupted``.
