@@ -12,6 +12,7 @@ extension SocketAddress {
   /// An IPv6 address and port number.
   @frozen
   public struct IPv6: RawRepresentable {
+    @_alwaysEmitIntoClient
     public var rawValue: CInterop.SockAddrIn6
 
     @_alwaysEmitIntoClient
@@ -117,6 +118,7 @@ extension SocketAddress.IPv6 {
   @frozen
   public struct Address: RawRepresentable {
     /// The raw internet address value, in host byte order.
+    @_alwaysEmitIntoClient
     public var rawValue: CInterop.In6Addr
 
     @_alwaysEmitIntoClient

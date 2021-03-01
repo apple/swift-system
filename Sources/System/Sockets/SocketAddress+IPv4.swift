@@ -12,6 +12,7 @@ extension SocketAddress {
   @frozen
   /// An IPv4 address and port number.
   public struct IPv4: RawRepresentable {
+    @_alwaysEmitIntoClient
     public var rawValue: CInterop.SockAddrIn
 
     @_alwaysEmitIntoClient
@@ -99,6 +100,7 @@ extension SocketAddress.IPv4 {
   /// A 32-bit IPv4 address.
   public struct Address: RawRepresentable, Hashable {
     /// The raw internet address value, in host byte order.
+    @_alwaysEmitIntoClient
     public var rawValue: CInterop.InAddrT
 
     @_alwaysEmitIntoClient

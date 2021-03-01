@@ -287,6 +287,7 @@ extension SocketAddress {
   /// The port number on which the socket is listening.
   public struct Port: RawRepresentable, ExpressibleByIntegerLiteral, Hashable {
     /// The port number, in host byte order.
+    @_alwaysEmitIntoClient
     public var rawValue: CInterop.InPort
 
     @_alwaysEmitIntoClient

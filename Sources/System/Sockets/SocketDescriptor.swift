@@ -60,59 +60,59 @@ extension SocketDescriptor {
     public init(rawValue: CInt) { self.rawValue = rawValue }
 
     @_alwaysEmitIntoClient
-    public init(_ rawValue: CInt) { self.rawValue = rawValue }
+    internal init(_ rawValue: CInt) { self.rawValue = rawValue }
 
     /// Unspecified protocol.
     ///
     /// The corresponding C constant is `PF_UNSPEC`
     @_alwaysEmitIntoClient
-    public static var unspecified: Domain { Domain(rawValue: _PF_UNSPEC) }
+    public static var unspecified: Domain { Domain(_PF_UNSPEC) }
 
     /// Host-internal protocols, formerly called PF_UNIX,
     ///
     /// The corresponding C constant is `PF_LOCAL`
     @_alwaysEmitIntoClient
-    public static var local: Domain { Domain(rawValue: _PF_LOCAL) }
+    public static var local: Domain { Domain(_PF_LOCAL) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "local")
-    public static var unix: Domain { Domain(rawValue: _PF_UNIX) }
+    public static var unix: Domain { Domain(_PF_UNIX) }
 
     /// Internet version 4 protocols,
     ///
     /// The corresponding C constant is `PF_INET`
     @_alwaysEmitIntoClient
-    public static var ipv4: Domain { Domain(rawValue: _PF_INET) }
+    public static var ipv4: Domain { Domain(_PF_INET) }
 
     /// Internal Routing protocol,
     ///
     /// The corresponding C constant is `PF_ROUTE`
     @_alwaysEmitIntoClient
-    public static var routing: Domain { Domain(rawValue: _PF_ROUTE) }
+    public static var routing: Domain { Domain(_PF_ROUTE) }
 
     /// Internal key-management function,
     ///
     /// The corresponding C constant is `PF_KEY`
     @_alwaysEmitIntoClient
-    public static var keyManagement: Domain { Domain(rawValue: _PF_KEY) }
+    public static var keyManagement: Domain { Domain(_PF_KEY) }
 
     /// Internet version 6 protocols,
     ///
     /// The corresponding C constant is `PF_INET6`
     @_alwaysEmitIntoClient
-    public static var ipv6: Domain { Domain(rawValue: _PF_INET6) }
+    public static var ipv6: Domain { Domain(_PF_INET6) }
 
     /// System domain,
     ///
     /// The corresponding C constant is `PF_SYSTEM`
     @_alwaysEmitIntoClient
-    public static var system: Domain { Domain(rawValue: _PF_SYSTEM) }
+    public static var system: Domain { Domain(_PF_SYSTEM) }
 
     /// Raw access to network device
     ///
     /// The corresponding C constant is `PF_NDRV`
     @_alwaysEmitIntoClient
-    public static var networkDevice: Domain { Domain(rawValue: _PF_NDRV) }
+    public static var networkDevice: Domain { Domain(_PF_NDRV) }
 
     public var description: String {
       switch self {
@@ -139,32 +139,32 @@ extension SocketDescriptor {
     public init(rawValue: CInt) { self.rawValue = rawValue }
 
     @_alwaysEmitIntoClient
-    public init(_ rawValue: CInt) { self.rawValue = rawValue }
+    internal init(_ rawValue: CInt) { self.rawValue = rawValue }
 
     /// Sequenced, reliable, two-way connection based byte streams.
     ///
     /// The corresponding C constant is `SOCK_STREAM`
     @_alwaysEmitIntoClient
-    public static var stream: ConnectionType { ConnectionType(rawValue: _SOCK_STREAM) }
+    public static var stream: ConnectionType { ConnectionType(_SOCK_STREAM) }
 
     /// Datagrams (connectionless, unreliable messages of a fixed (typically small) maximum length)
     ///
     /// The corresponding C constant is `SOCK_DGRAM`
     @_alwaysEmitIntoClient
-    public static var datagram: ConnectionType { ConnectionType(rawValue: _SOCK_DGRAM) }
+    public static var datagram: ConnectionType { ConnectionType(_SOCK_DGRAM) }
 
     /// Raw protocol interface. Only available to the super user
     ///
     /// The corresponding C constant is `SOCK_RAW`
     @_alwaysEmitIntoClient
-    public static var raw: ConnectionType { ConnectionType(rawValue: _SOCK_RAW) }
+    public static var raw: ConnectionType { ConnectionType(_SOCK_RAW) }
 
     /// Reliably delivered message.
     ///
     /// The corresponding C constant is `SOCK_RDM`
     @_alwaysEmitIntoClient
     public static var reliablyDeliveredMessage: ConnectionType {
-      ConnectionType(rawValue: _SOCK_RDM)
+      ConnectionType(_SOCK_RDM)
     }
 
     /// Sequenced packet stream.
@@ -172,7 +172,7 @@ extension SocketDescriptor {
     /// The corresponding C constant is `SOCK_SEQPACKET`
     @_alwaysEmitIntoClient
     public static var sequencedPacketStream: ConnectionType {
-      ConnectionType(rawValue: _SOCK_SEQPACKET)
+      ConnectionType(_SOCK_SEQPACKET)
     }
 
     public var description: String {
@@ -202,7 +202,7 @@ extension SocketDescriptor {
     public init(rawValue: CInt) { self.rawValue = rawValue }
 
     @_alwaysEmitIntoClient
-    public init(_ rawValue: CInt) { self.rawValue = rawValue }
+    internal init(_ rawValue: CInt) { self.rawValue = rawValue }
 
     /// The default protocol for the domain and connection type combination.
     @_alwaysEmitIntoClient
