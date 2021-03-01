@@ -50,7 +50,7 @@ extension SocketAddress {
 }
 
 extension SocketDescriptor.ConnectionType {
-  var isConnectionLess: Bool {
+  var isConnectionless: Bool {
     self == .datagram || self == .reliablyDeliveredMessage
   }
 }

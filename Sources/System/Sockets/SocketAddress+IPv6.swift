@@ -46,6 +46,11 @@ extension SocketAddress {
     return IPv6(rawValue: value)
   }
 
+  /// Construct a `SocketAddress` holding an IPv4 address and port
+  @_alwaysEmitIntoClient
+  public init(ipv6 address: IPv6.Address, port: Port) {
+    self.init(IPv6(address: address, port: port))
+  }
 }
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)

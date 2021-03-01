@@ -82,7 +82,7 @@ struct Connect: ParsableCommand {
         try line.withUTF8 { buffer in
           var buffer = UnsafeRawBufferPointer(buffer)
           while !buffer.isEmpty {
-            let c = try socket.sendMessage(bytes: buffer, flags: flags)
+            let c = try socket.send(buffer, flags: flags)
             buffer = .init(rebasing: buffer[c...])
           }
         }

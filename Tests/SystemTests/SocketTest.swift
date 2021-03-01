@@ -61,17 +61,21 @@ final class SocketTest: XCTestCase {
         name: "recvmsg", rawSocket, Wildcard(), 42,
         interruptable: true
       ) { retryOnInterrupt in
-        _ = try socket.receiveMessage(into: rawBuf,
-                                      flags: .init(rawValue: 42),
-                                      retryOnInterrupt: retryOnInterrupt)
+        var sender = SocketAddress()
+        _ = try socket.receive(into: rawBuf,
+                               sender: &sender,
+                               flags: .init(rawValue: 42),
+                               retryOnInterrupt: retryOnInterrupt)
       },
       MockTestCase(
         name: "sendmsg", rawSocket, Wildcard(), 42,
         interruptable: true
       ) { retryOnInterrupt in
-        _ = try socket.sendMessage(bytes: UnsafeRawBufferPointer(rawBuf),
-                                   flags: .init(rawValue: 42),
-                                   retryOnInterrupt: retryOnInterrupt)
+        let recipient = SocketAddress(ipv4: .loopback, port: 123)
+        _ = try socket.send(UnsafeRawBufferPointer(rawBuf),
+                            to: recipient,
+                            flags: .init(rawValue: 42),
+                            retryOnInterrupt: retryOnInterrupt)
       },
     ]
 

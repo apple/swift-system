@@ -144,7 +144,7 @@ extension SocketAddress {
       }
     }
     set {
-      assert(newValue < _capacity)
+      assert(newValue <= _capacity)
       switch _variant {
       case let .small(length: _, bytes: bytes):
         self._variant = .small(length: UInt8(newValue), bytes: bytes)
