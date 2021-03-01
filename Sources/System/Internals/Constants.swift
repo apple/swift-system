@@ -531,6 +531,41 @@ internal var _SEEK_DATA: CInt { SEEK_DATA }
 #endif
 
 @_alwaysEmitIntoClient
+@inline(__always)
+internal var _AF_UNSPEC: CInterop.SAFamily { CInterop.SAFamily(AF_UNSPEC) }
+
+@_alwaysEmitIntoClient
+@inline(__always)
+internal var _AF_LOCAL: CInterop.SAFamily { CInterop.SAFamily(AF_LOCAL) }
+
+@_alwaysEmitIntoClient
+@inline(__always)
+internal var _AF_UNIX: CInterop.SAFamily { CInterop.SAFamily(AF_UNIX) }
+
+@_alwaysEmitIntoClient
+@inline(__always)
+internal var _AF_INET: CInterop.SAFamily { CInterop.SAFamily(AF_INET) }
+
+@_alwaysEmitIntoClient
+@inline(__always)
+internal var _AF_ROUTE: CInterop.SAFamily { CInterop.SAFamily(AF_ROUTE) }
+
+@_alwaysEmitIntoClient
+@inline(__always)
+internal var _AF_INET6: CInterop.SAFamily { CInterop.SAFamily(AF_INET6) }
+
+@_alwaysEmitIntoClient
+@inline(__always)
+internal var _AF_SYSTEM: CInterop.SAFamily { CInterop.SAFamily(AF_SYSTEM) }
+
+@_alwaysEmitIntoClient
+@inline(__always)
+internal var _AF_NDRV: CInterop.SAFamily { CInterop.SAFamily(AF_NDRV) }
+
+@_alwaysEmitIntoClient
+internal var _PF_UNSPEC: CInt { PF_UNSPEC }
+
+@_alwaysEmitIntoClient
 internal var _PF_LOCAL: CInt { PF_LOCAL }
 
 @_alwaysEmitIntoClient
@@ -564,6 +599,12 @@ internal var _SOCK_DGRAM: CInt { SOCK_DGRAM }
 internal var _SOCK_RAW: CInt { SOCK_RAW }
 
 @_alwaysEmitIntoClient
+internal var _SOCK_RDM: CInt { SOCK_RDM }
+
+@_alwaysEmitIntoClient
+internal var _SOCK_SEQPACKET: CInt { SOCK_SEQPACKET }
+
+@_alwaysEmitIntoClient
 internal var _MSG_OOB: CInt { MSG_OOB }
 
 @_alwaysEmitIntoClient
@@ -574,6 +615,15 @@ internal var _MSG_PEEK: CInt { MSG_PEEK }
 
 @_alwaysEmitIntoClient
 internal var _MSG_WAITALL: CInt { MSG_WAITALL }
+
+@_alwaysEmitIntoClient
+internal var _MSG_EOR: CInt { MSG_EOR }
+
+@_alwaysEmitIntoClient
+internal var _MSG_TRUNC: CInt { MSG_TRUNC }
+
+@_alwaysEmitIntoClient
+internal var _MSG_CTRUNC: CInt { MSG_CTRUNC }
 
 @_alwaysEmitIntoClient
 internal var _SHUT_RD: CInt { SHUT_RD }
@@ -774,10 +824,19 @@ internal var _IPV6_V6ONLY: CInt { IPV6_V6ONLY }
 internal var _IPPROTO_IP: CInt { IPPROTO_IP }
 
 @_alwaysEmitIntoClient
+internal var _IPPROTO_TCP: CInt { IPPROTO_TCP }
+
+@_alwaysEmitIntoClient
+internal var _IPPROTO_UDP: CInt { IPPROTO_UDP }
+
+@_alwaysEmitIntoClient
+internal var _IPPROTO_IPV4: CInt { IPPROTO_IPV4 }
+
+@_alwaysEmitIntoClient
 internal var _IPPROTO_IPV6: CInt { IPPROTO_IPV6 }
 
 @_alwaysEmitIntoClient
-internal var _IPPROTO_TCP: CInt { IPPROTO_TCP }
+internal var _IPPROTO_RAW: CInt { IPPROTO_RAW }
 
 @_alwaysEmitIntoClient
 internal var _SOL_SOCKET: CInt { SOL_SOCKET }
@@ -787,3 +846,85 @@ internal var _INET_ADDRSTRLEN: CInt { INET_ADDRSTRLEN }
 
 @_alwaysEmitIntoClient
 internal var _INET6_ADDRSTRLEN: CInt { INET6_ADDRSTRLEN }
+
+@_alwaysEmitIntoClient
+internal var _INADDR_ANY: CInterop.InAddrT { INADDR_ANY }
+
+@_alwaysEmitIntoClient
+internal var _INADDR_LOOPBACK: CInterop.InAddrT { INADDR_LOOPBACK }
+
+@_alwaysEmitIntoClient
+internal var _INADDR_BROADCAST: CInterop.InAddrT { INADDR_BROADCAST }
+
+@_alwaysEmitIntoClient
+internal var _AI_ADDRCONFIG: CInt { AI_ADDRCONFIG }
+
+@_alwaysEmitIntoClient
+internal var _AI_ALL: CInt { AI_ALL }
+
+@_alwaysEmitIntoClient
+internal var _AI_CANONNAME: CInt { AI_CANONNAME }
+
+@_alwaysEmitIntoClient
+internal var _AI_NUMERICHOST: CInt { AI_NUMERICHOST }
+
+@_alwaysEmitIntoClient
+internal var _AI_NUMERICSERV: CInt { AI_NUMERICSERV }
+
+@_alwaysEmitIntoClient
+internal var _AI_PASSIVE: CInt { AI_PASSIVE }
+
+@_alwaysEmitIntoClient
+internal var _AI_V4MAPPED: CInt { AI_V4MAPPED }
+
+@_alwaysEmitIntoClient
+internal var _AI_V4MAPPED_CFG: CInt { AI_V4MAPPED_CFG }
+
+@_alwaysEmitIntoClient
+internal var _AI_DEFAULT: CInt { AI_DEFAULT }
+
+@_alwaysEmitIntoClient
+internal var _AI_UNUSABLE: CInt { AI_UNUSABLE }
+
+@_alwaysEmitIntoClient
+internal var _EAI_ADDRFAMILY: CInt { EAI_ADDRFAMILY }
+
+@_alwaysEmitIntoClient
+internal var _EAI_AGAIN: CInt { EAI_AGAIN }
+
+@_alwaysEmitIntoClient
+internal var _EAI_BADFLAGS: CInt { EAI_BADFLAGS }
+
+@_alwaysEmitIntoClient
+internal var _EAI_FAIL: CInt { EAI_FAIL }
+
+@_alwaysEmitIntoClient
+internal var _EAI_FAMILY: CInt { EAI_FAMILY }
+
+@_alwaysEmitIntoClient
+internal var _EAI_MEMORY: CInt { EAI_MEMORY }
+
+@_alwaysEmitIntoClient
+internal var _EAI_NODATA: CInt { EAI_NODATA }
+
+@_alwaysEmitIntoClient
+internal var _EAI_NONAME: CInt { EAI_NONAME }
+
+@_alwaysEmitIntoClient
+internal var _EAI_SERVICE: CInt { EAI_SERVICE }
+
+@_alwaysEmitIntoClient
+internal var _EAI_SOCKTYPE: CInt { EAI_SOCKTYPE }
+
+@_alwaysEmitIntoClient
+internal var _EAI_SYSTEM: CInt { EAI_SYSTEM }
+
+@_alwaysEmitIntoClient
+internal var _EAI_BADHINTS: CInt { EAI_BADHINTS }
+
+@_alwaysEmitIntoClient
+internal var _EAI_PROTOCOL: CInt { EAI_PROTOCOL }
+
+@_alwaysEmitIntoClient
+internal var _EAI_OVERFLOW: CInt { EAI_OVERFLOW }
+

@@ -57,7 +57,22 @@ final class SocketTest: XCTestCase {
         _ = try socket.send(
           writeBuf, flags: .doNotRoute, retryOnInterrupt: retryOnInterrupt)
       },
-
+      MockTestCase(
+        name: "recvmsg", rawSocket, Wildcard(), 42,
+        interruptable: true
+      ) { retryOnInterrupt in
+        _ = try socket.receiveMessage(bytes: rawBuf,
+                                      flags: .init(rawValue: 42),
+                                      retryOnInterrupt: retryOnInterrupt)
+      },
+      MockTestCase(
+        name: "sendmsg", rawSocket, Wildcard(), 42,
+        interruptable: true
+      ) { retryOnInterrupt in
+        _ = try socket.sendMessage(bytes: UnsafeRawBufferPointer(rawBuf),
+                                   flags: .init(rawValue: 42),
+                                   retryOnInterrupt: retryOnInterrupt)
+      },
     ]
 
     syscallTestCases.forEach { $0.runAllTests() }

@@ -78,6 +78,15 @@ internal func system_platform_strlen(_ s: UnsafePointer<CInterop.PlatformChar>) 
   #endif
 }
 
+// memset for raw buffers
+// FIXME: Do we really not have something like this in the stdlib already?
+internal func system_memset(
+  _ buffer: UnsafeMutableRawBufferPointer,
+  to byte: UInt8
+) {
+  memset(buffer.baseAddress, CInt(byte), buffer.count)
+}
+
 // Interop between String and platfrom string
 extension String {
   internal func _withPlatformString<Result>(

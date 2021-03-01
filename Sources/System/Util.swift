@@ -127,3 +127,14 @@ extension MutableCollection where Element: Equatable {
     }
   }
 }
+
+internal func _withOptionalUnsafePointer<T, R>(
+  to value: T?,
+  _ body: (UnsafePointer<T>?) throws -> R
+) rethrows -> R {
+  guard let value = value else {
+    return try body(nil)
+  }
+  return try withUnsafePointer(to: value, body)
+}
+

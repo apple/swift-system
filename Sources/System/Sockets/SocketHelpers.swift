@@ -35,6 +35,7 @@ extension SocketDescriptor {
   /// If `body` throws an error
   /// or an error occurs while closing the socket,
   /// this method rethrows that error.
+  @_alwaysEmitIntoClient
   public func closeAfter<R>(_ body: () throws -> R) throws -> R {
     try fileDescriptor.closeAfter(body)
   }

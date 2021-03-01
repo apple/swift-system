@@ -8,10 +8,14 @@
 */
 
 extension FixedWidthInteger {
+  @_alwaysEmitIntoClient
+  @inline(__always)
   internal var _networkOrder: Self {
     bigEndian
   }
 
+  @_alwaysEmitIntoClient
+  @inline(__always)
   internal init(_networkOrder value: Self) {
     self.init(bigEndian: value)
   }

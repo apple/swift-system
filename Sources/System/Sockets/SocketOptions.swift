@@ -9,7 +9,7 @@
 
 extension SocketDescriptor {
   @frozen
-  public struct Option: RawRepresentable, Hashable {
+  public struct Option: RawRepresentable, Hashable, CustomStringConvertible {
     @_alwaysEmitIntoClient
     public var rawValue: CInt
 
@@ -18,6 +18,8 @@ extension SocketDescriptor {
 
     @_alwaysEmitIntoClient
     private init(_ rawValue: CInt) { self.init(rawValue: rawValue) }
+
+    public var description: String { rawValue.description }
 
     // MARK: - Socket-level
 
@@ -438,58 +440,19 @@ extension SocketDescriptor {
   }
 }
 
-extension SocketDescriptor.Option {
-  /// The level at which a socket option resides
-  @frozen
-  public struct Level: RawRepresentable, Hashable {
-    @_alwaysEmitIntoClient
-    public var rawValue: CInt
-
-    @_alwaysEmitIntoClient
-    public init(rawValue: CInt) { self.rawValue = rawValue }
-
-    @_alwaysEmitIntoClient
-    private init(_ rawValue: CInt) { self.init(rawValue: rawValue) }
-
-    /// Socket options that only apply to IP sockets.
-    ///
-    /// The corresponding C constant is `IPPROTO_IP`.
-    @_alwaysEmitIntoClient
-    public static var ip: Level { Level(_IPPROTO_IP) }
-
-    /// Socket options that only apply to IPv6 sockets
-    ///
-    /// The corresponding C constant is `IPPROTO_IPV6`.
-    @_alwaysEmitIntoClient
-    public static var ipv6: Level { Level(_IPPROTO_IPV6) }
-
-    /// Socket options that only apply to TCP sockets
-    ///
-    /// The corresponding C constant is `IPPROTO_TCP`.
-    @_alwaysEmitIntoClient
-    public static var tcp: Level { Level(_IPPROTO_TCP) }
-
-    /// Socket options that apply to all sockets.
-    ///
-    /// The corresponding C constant is `SOL_SOCKET`.
-    @_alwaysEmitIntoClient
-    public static var socket: Level { Level(_SOL_SOCKET) }
-  }
-}
-
 extension SocketDescriptor {
   // TODO: Convenience/performance overloads for `Bool` and other concrete types
 
   @_alwaysEmitIntoClient
   public func getOption<T>(
-    _ level: Option.Level, _ option: Option
+    _ level: ProtocolID, _ option: Option
   ) throws -> T {
     try _getOption(level, option).get()
   }
 
   @usableFromInline
   internal func _getOption<T>(
-    _ level: Option.Level, _ option: Option
+    _ level: ProtocolID, _ option: Option
   ) -> Result<T, Errno> {
     // We can't zero-initialize `T` directly, nor can we pass an uninitialized `T`
     // to `withUnsafeMutableBytes(of:)`. Instead, we will allocate :-(
@@ -516,14 +479,14 @@ extension SocketDescriptor {
 
   @_alwaysEmitIntoClient
   public func setOption<T>(
-    _ level: Option.Level, _ option: Option, to value: T
+    _ level: ProtocolID, _ option: Option, to value: T
   ) throws {
     try _setOption(level, option, to: value).get()
   }
 
   @usableFromInline
   internal func _setOption<T>(
-    _ level: Option.Level, _ option: Option, to value: T
+    _ level: ProtocolID, _ option: Option, to value: T
   ) -> Result<(), Errno> {
     let len = CInterop.SockLen(MemoryLayout<T>.stride)
     let success = withUnsafeBytes(of: value) {

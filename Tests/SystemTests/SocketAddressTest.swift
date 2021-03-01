@@ -51,13 +51,15 @@ final class SocketAddressTest: XCTestCase {
   func test_description() {
     let ipv4 = SocketAddress(SocketAddress.IPv4(address: "1.2.3.4", port: 80)!)
     let desc4 = "\(ipv4)"
-    XCTAssertTrue(desc4.hasPrefix("SocketAddress(family: "), desc4)
-    XCTAssertTrue(desc4.hasSuffix(") 1.2.3.4:80"), desc4)
+    XCTAssertEqual(desc4, "SocketAddress(family: ipv4, address: 1.2.3.4:80)")
 
     let ipv6 = SocketAddress(SocketAddress.IPv6(address: "1234::ff", port: 80)!)
     let desc6 = "\(ipv6)"
-    XCTAssertTrue(desc6.hasPrefix("SocketAddress(family: "), desc6)
-    XCTAssertTrue(desc6.hasSuffix(") [1234::ff]:80"), desc6)
+    XCTAssertEqual(desc6, "SocketAddress(family: ipv6, address: [1234::ff]:80)")
+
+    let local = SocketAddress(SocketAddress.Local("/tmp/test.sock"))
+    let descl = "\(local)"
+    XCTAssertEqual(descl, "SocketAddress(family: local, address: /tmp/test.sock)")
   }
 
   // MARK: IPv4
@@ -189,4 +191,36 @@ final class SocketAddressTest: XCTestCase {
     let a2 = SocketAddress.IPv6(address: "2001::42", port: 80)!
     XCTAssertEqual("\(a2)", "[2001::42]:80")
   }
+
+  // MARK: Local
+
+  func test_addressWithLocalAddress_smol() {
+    let smolLocal = SocketAddress.Local("/tmp/test.sock")
+    let smol = SocketAddress(smolLocal)
+    if case .large = smol._variant {
+      XCTFail("Local address with short path in big representation")
+    }
+    XCTAssertEqual(smol.family, .local)
+    if let extracted = SocketAddress.Local(smol) {
+      XCTAssertEqual(extracted, smolLocal)
+    } else {
+      XCTFail("Cannot extract Local address")
+    }
+  }
+
+  func test_addressWithLocalAddress_large() {
+    let largeLocal = SocketAddress.Local(
+      "This is a really long filename, it almost doesn't fit on one line.sock")
+    let large = SocketAddress(largeLocal)
+    if case .small = large._variant {
+      XCTFail("Local address with long path in small representation")
+    }
+    XCTAssertEqual(large.family, .local)
+    if let extracted = SocketAddress.Local(large) {
+      XCTAssertEqual(extracted, largeLocal)
+    } else {
+      XCTFail("Cannot extract Local address")
+    }
+  }
+
 }

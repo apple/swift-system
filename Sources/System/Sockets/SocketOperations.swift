@@ -11,13 +11,13 @@ extension SocketDescriptor {
   /// Create an endpoint for communication.
   ///
   /// - Parameters:
-  ///   - domain: Select the protocol family which should be used for
-  ///     communication
-  ///   - type: Specify the semantics of communication
-  ///   - protocol: Specify a particular protocol to use with the socket.
-  ///     Normally, there is only one protocol for a particular connection
-  ///     type within a protocol family, so a default argument of `.default`
-  ///     is provided
+  ///    - domain: Select the protocol family which should be used for
+  ///      communication
+  ///    - type: Specify the semantics of communication
+  ///    - protocol: Specify a particular protocol to use with the socket.
+  ///      (Zero by default, which often indicates a wildcard value in
+  ///      domain/type combinations that only support a single protocol,
+  ///      such as TCP for IPv4/stream.)
   ///   - retryOnInterrupt: Whether to retry the open operation
   ///     if it throws ``Errno/interrupted``.
   ///     The default is `true`.
@@ -28,7 +28,7 @@ extension SocketDescriptor {
   public static func open(
     _ domain: Domain,
     _ type: ConnectionType,
-    _ protocol: ProtocolID = .default,
+    _ protocol: ProtocolID = ProtocolID(rawValue: 0),
     retryOnInterrupt: Bool = true
   ) throws -> SocketDescriptor {
     try SocketDescriptor._open(
@@ -40,7 +40,7 @@ extension SocketDescriptor {
   internal static func _open(
     _ domain: Domain,
     _ type: ConnectionType,
-    _ protocol: ProtocolID = .default,
+    _ protocol: ProtocolID,
     retryOnInterrupt: Bool
   ) -> Result<SocketDescriptor, Errno> {
     valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
@@ -143,20 +143,41 @@ extension SocketDescriptor {
     }
   }
 
-  /// Accept a connection on a socket
+  /// Accept a connection on a socket.
   ///
-  /// The corresponding C function is `accept`
+  /// The corresponding C function is `accept`.
   @_alwaysEmitIntoClient
   public func accept(retryOnInterrupt: Bool = true) throws -> SocketDescriptor {
-    try _accept(retryOnInterrupt: retryOnInterrupt).get()
+    try _accept(nil, nil, retryOnInterrupt: retryOnInterrupt).get()
+  }
+
+  /// Accept a connection on a socket.
+  ///
+  /// The corresponding C function is `accept`.
+  ///
+  /// - Parameter client: A socket address with enough capacity to hold an
+  ///    address for the current socket domain/type. On return, `accept`
+  ///    overwrites the contents with the address of the remote client.
+  ///
+  ///    Having this as an inout parameter allows you to reuse the same address
+  ///    value across multiple connections, without reallocating it.
+  public func accept(
+    client: inout SocketAddress,
+    retryOnInterrupt: Bool = true
+  ) throws -> SocketDescriptor {
+    try client._withMutableCInterop(entireCapacity: true) { adr, adrlen in
+      try _accept(adr, &adrlen, retryOnInterrupt: retryOnInterrupt).get()
+    }
   }
 
   @usableFromInline
   internal func _accept(
+    _ address: UnsafeMutablePointer<CInterop.SockAddr>?,
+    _ addressLength: UnsafeMutablePointer<CInterop.SockLen>?,
     retryOnInterrupt: Bool = true
   ) -> Result<SocketDescriptor, Errno> {
     let fd = valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
-      system_accept(self.rawValue, nil, nil)
+      return system_accept(self.rawValue, address, addressLength)
     }
     return fd.map { SocketDescriptor(rawValue: $0) }
   }
@@ -174,7 +195,7 @@ extension SocketDescriptor {
 
   @usableFromInline
   internal func _bind(to address: SocketAddress) -> Result<(), Errno> {
-    let success = address.withRawAddress { addr, len in
+    let success = address.withUnsafeCInterop { addr, len in
       system_bind(self.rawValue, addr, len)
     }
     return nothingOrErrno(success)
@@ -190,7 +211,7 @@ extension SocketDescriptor {
 
   @usableFromInline
   internal func _connect(to address: SocketAddress) -> Result<(), Errno> {
-    let success = address.withRawAddress { addr, len in
+    let success = address.withUnsafeCInterop { addr, len in
       system_connect(self.rawValue, addr, len)
     }
     return nothingOrErrno(success)

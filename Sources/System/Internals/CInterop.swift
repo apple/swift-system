@@ -59,7 +59,10 @@ public enum CInterop {
   #endif
 
   public typealias Mode = mode_t
+}
 
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+extension CInterop {
   public typealias SockAddr = sockaddr
   public typealias SockLen = socklen_t
   public typealias SAFamily = sa_family_t
@@ -74,4 +77,10 @@ public enum CInterop {
 
   public typealias SockAddrIn6 = sockaddr_in6
   public typealias SockAddrUn = sockaddr_un
+
+  public typealias IOVec = iovec
+  public typealias MsgHdr = msghdr
+  public typealias CMsgHdr = cmsghdr  // Note: c is for "control", not "C"
+
+  public typealias AddrInfo = addrinfo
 }
