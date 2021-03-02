@@ -18,56 +18,56 @@ extension SocketAddress {
     public init(rawValue: CInterop.SAFamily) { self.rawValue = rawValue }
 
     @_alwaysEmitIntoClient
-    public init(_ rawValue: CInterop.SAFamily) { self.rawValue = rawValue }
+    private init(_ rawValue: CInterop.SAFamily) { self.init(rawValue: rawValue) }
 
     /// Unspecified address family.
     ///
     /// The corresponding C constant is `AF_UNSPEC`.
     @_alwaysEmitIntoClient
-    public static var unspecified: Family { Family(rawValue: _AF_UNSPEC) }
+    public static var unspecified: Family { Family(_AF_UNSPEC) }
 
     /// Local address family.
     ///
     /// The corresponding C constant is `AF_LOCAL`.
     @_alwaysEmitIntoClient
-    public static var local: Family { Family(rawValue: _AF_LOCAL) }
+    public static var local: Family { Family(_AF_LOCAL) }
 
     /// UNIX address family. (Renamed `local`.)
     ///
     /// The corresponding C constant is `AF_UNIX`.
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "local")
-    public static var unix: Family { Family(rawValue: _AF_UNIX) }
+    public static var unix: Family { Family(_AF_UNIX) }
 
     /// IPv4 address family.
     ///
     /// The corresponding C constant is `AF_INET`.
     @_alwaysEmitIntoClient
-    public static var ipv4: Family { Family(rawValue: _AF_INET) }
+    public static var ipv4: Family { Family(_AF_INET) }
 
     /// Internal routing address family.
     ///
     /// The corresponding C constant is `AF_ROUTE`.
     @_alwaysEmitIntoClient
-    public static var routing: Family { Family(rawValue: _AF_ROUTE) }
+    public static var routing: Family { Family(_AF_ROUTE) }
 
     /// IPv6 address family.
     ///
     /// The corresponding C constant is `AF_INET6`.
     @_alwaysEmitIntoClient
-    public static var ipv6: Family { Family(rawValue: _AF_INET6) }
+    public static var ipv6: Family { Family(_AF_INET6) }
 
     /// System address family.
     ///
     /// The corresponding C constant is `AF_SYSTEM`.
     @_alwaysEmitIntoClient
-    public static var system: Family { Family(rawValue: _AF_SYSTEM) }
+    public static var system: Family { Family(_AF_SYSTEM) }
 
     /// Raw network device address family.
     ///
     /// The corresponding C constant is `AF_NDRV`
     @_alwaysEmitIntoClient
-    public static var networkDevice: Family { Family(rawValue: _AF_NDRV) }
+    public static var networkDevice: Family { Family(_AF_NDRV) }
   }
 }
 

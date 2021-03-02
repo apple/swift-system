@@ -70,6 +70,8 @@ extension SocketAddress.IPv6 {
     rawValue.sin6_scope_id = 0
   }
 
+  /// Create a socket address by parsing an IPv6 address from `address` and a
+  /// given port number.
   @_alwaysEmitIntoClient
   public init?(address: String, port: SocketAddress.Port) {
     guard let address = Address(address) else { return nil }
@@ -105,6 +107,7 @@ extension SocketAddress.IPv6: CustomStringConvertible {
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress.IPv6 {
+  /// The port on which this socket is listening.
   @_alwaysEmitIntoClient
   public var port: SocketAddress.Port {
     get { SocketAddress.Port(CInterop.InPort(_networkOrder: rawValue.sin6_port)) }
@@ -130,12 +133,8 @@ extension SocketAddress.IPv6 {
   /// The 128-bit IPv6 address.
   @_alwaysEmitIntoClient
   public var address: Address {
-    get {
-      return Address(rawValue: rawValue.sin6_addr)
-    }
-    set {
-      rawValue.sin6_addr = newValue.rawValue
-    }
+    get { Address(rawValue: rawValue.sin6_addr) }
+    set { rawValue.sin6_addr = newValue.rawValue }
   }
 }
 
@@ -196,9 +195,7 @@ extension SocketAddress.IPv6.Address: Hashable {
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress.IPv6.Address: CustomStringConvertible {
-  public var description: String {
-    _inet_ntop()
-  }
+  public var description: String { _inet_ntop() }
 
   internal func _inet_ntop() -> String {
     return withUnsafeBytes(of: rawValue) { src in

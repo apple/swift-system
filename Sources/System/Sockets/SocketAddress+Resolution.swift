@@ -300,59 +300,87 @@ extension SocketAddress {
       return lhs == value
     }
 
-    /// Address family not supported for the specific hostname (`EAI_ADDRFAMILY`).
+    /// Address family not supported for the specific hostname.
+    ///
+    /// The corresponding C constant is `EAI_ADDRFAMILY`.
     @_alwaysEmitIntoClient
     public static var unsupportedAddressFamilyForHost: Self { Self(_EAI_ADDRFAMILY) }
 
-    /// Temporary failure in name resolution (`EAI_AGAIN`).
+    /// Temporary failure in name resolution.
+    ///
+    /// The corresponding C constant is `EAI_AGAIN`.
     @_alwaysEmitIntoClient
     public static var temporaryFailure: Self { Self(_EAI_AGAIN) }
 
-    /// Invalid resolver flags (`EAI_BADFLAGS`).
+    /// Invalid resolver flags.
+    ///
+    /// The corresponding C constant is `EAI_BADFLAGS`.
     @_alwaysEmitIntoClient
     public static var badFlags: Self { Self(_EAI_BADFLAGS) }
 
-    /// Non-recoverable failure in name resolution (`EAI_FAIL`).
+    /// Non-recoverable failure in name resolution.
+    ///
+    /// The corresponding C constant is `EAI_FAIL`.
     @_alwaysEmitIntoClient
     public static var nonrecoverableFailure: Self { Self(_EAI_FAIL) }
 
-    /// Unsupported address family (`EAI_FAMILY`).
+    /// Unsupported address family.
+    ///
+    /// The corresponding C constant is `EAI_FAMILY`.
     @_alwaysEmitIntoClient
     public static var unsupportedAddressFamily: Self { Self(_EAI_FAMILY) }
 
-    /// Memory allocation failure (`EAI_MEMORY`).
+    /// Memory allocation failure.
+    ///
+    /// The corresponding C constant is `EAI_MEMORY`.
     @_alwaysEmitIntoClient
     public static var memoryAllocation: Self { Self(_EAI_MEMORY) }
 
-    /// No data associated with hostname (`EAI_NODATA`).
+    /// No data associated with hostname.
+    ///
+    /// The corresponding C constant is `EAI_NODATA`.
     @_alwaysEmitIntoClient
     public static var noData: Self { Self(_EAI_NODATA) }
 
-    /// Hostname nor service name provided, or not known (`EAI_NONAME`).
+    /// Hostname nor service name provided, or not known.
+    ///
+    /// The corresponding C constant is `EAI_NONAME`.
     @_alwaysEmitIntoClient
     public static var noName: Self { Self(_EAI_NONAME) }
 
-    /// Service name not supported for specified socket type (`EAI_SERVICE`).
+    /// Service name not supported for specified socket type.
+    ///
+    /// The corresponding C constant is `EAI_SERVICE`.
     @_alwaysEmitIntoClient
     public static var unsupportedServiceForSocketType: Self { Self(_EAI_SERVICE) }
 
-    /// Socket type not supported (`EAI_SOCKTYPE`).
+    /// Socket type not supported.
+    ///
+    /// The corresponding C constant is `EAI_SOCKTYPE`.
     @_alwaysEmitIntoClient
     public static var unsupportedSocketType: Self { Self(_EAI_SOCKTYPE) }
 
-    /// System error (`EAI_SYSTEM`).
+    /// System error.
+    ///
+    /// The corresponding C constant is `EAI_SYSTEM`.
     @_alwaysEmitIntoClient
     public static var system: Self { Self(_EAI_SYSTEM) }
 
-    /// Invalid hints (`EAI_BADHINTS`).
+    /// Invalid hints.
+    ///
+    /// The corresponding C constant is `EAI_BADHINTS`.
     @_alwaysEmitIntoClient
     public static var badHints: Self { Self(_EAI_BADHINTS) }
 
-    /// Unsupported protocol value (`EAI_PROTOCOL`).
+    /// Unsupported protocol value.
+    ///
+    /// The corresponding C constant is `EAI_PROTOCOL`.
     @_alwaysEmitIntoClient
     public static var unsupportedProtocol: Self { Self(_EAI_PROTOCOL) }
 
-    /// Argument buffer overflow (`EAI_OVERFLOW`).
+    /// Argument buffer overflow.
+    ///
+    /// The corresponding C constant is `EAI_OVERFLOW`.
     @_alwaysEmitIntoClient
     public static var overflow: Self { Self(_EAI_OVERFLOW) }
   }
@@ -365,7 +393,6 @@ extension SocketAddress {
   /// TODO: communicate that on failure, this throws a `ResolverError`.
   ///
   /// The method corresponds to the C function `getaddrinfo`.
-  @_alwaysEmitIntoClient
   public static func resolveName(
     hostname: String?,
     service: String?,
@@ -391,7 +418,6 @@ extension SocketAddress {
   }
 
   /// The method corresponds to the C function `getaddrinfo`.
-  @usableFromInline
   internal static func _resolve(
     hostname: String?,
     service: String?,
@@ -420,15 +446,10 @@ extension SocketAddress {
     }
 
     var entries: UnsafeMutablePointer<CInterop.AddrInfo>? = nil
-    let error = _withOptionalUnsafePointer(
+    let error = _withOptionalUnsafePointerOrNull(
       to: haveHints ? hints : nil
     ) { hints in
-      _getaddrinfo(
-        hostname,
-        service,
-        hints,
-        &entries
-      )
+      _getaddrinfo(hostname, service, hints, &entries)
     }
 
     // Handle errors.
@@ -484,7 +505,9 @@ extension SocketAddress {
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress {
-  @_alwaysEmitIntoClient
+  /// Resolve a socket address to hostname and service name.
+  ///
+  /// This method corresponds to the C function `getnameinfo`.
   public static func resolveAddress(
     _ address: SocketAddress,
     flags: AddressResolverFlags = []
@@ -497,7 +520,6 @@ extension SocketAddress {
     return result
   }
 
-  @usableFromInline
   internal static func _resolveAddress(
     _ address: SocketAddress,
     _ flags: AddressResolverFlags

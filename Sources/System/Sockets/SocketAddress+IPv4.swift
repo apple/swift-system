@@ -65,7 +65,8 @@ extension SocketAddress.IPv4 {
     rawValue.sin_addr = CInterop.InAddr(s_addr: address.rawValue._networkOrder)
   }
 
-  /// TODO: doc
+  /// Create a socket address by parsing an IPv4 address from `address`
+  /// and a port number.
   @_alwaysEmitIntoClient
   public init?(address: String, port: SocketAddress.Port) {
     guard let address = Address(address) else { return nil }
@@ -89,9 +90,7 @@ extension SocketAddress.IPv4: Hashable {
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress.IPv4: CustomStringConvertible {
-  public var description: String {
-    "\(address):\(port)"
-  }
+  public var description: String { "\(address):\(port)" }
 }
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
@@ -121,6 +120,7 @@ extension SocketAddress.IPv4 {
     }
   }
 
+  /// The port this socket is listening on.
   @_alwaysEmitIntoClient
   public var port: SocketAddress.Port {
     get { SocketAddress.Port(CInterop.InPort(_networkOrder: rawValue.sin_port)) }
@@ -150,9 +150,7 @@ extension SocketAddress.IPv4.Address {
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress.IPv4.Address: CustomStringConvertible {
-  public var description: String {
-    _inet_ntop()
-  }
+  public var description: String { _inet_ntop() }
 
   internal func _inet_ntop() -> String {
     let addr = CInterop.InAddr(s_addr: rawValue._networkOrder)

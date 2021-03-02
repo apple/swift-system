@@ -8,6 +8,7 @@
 */
 
 extension SocketDescriptor {
+  // Options associated with a socket.
   @frozen
   public struct Option: RawRepresentable, Hashable, CustomStringConvertible {
     @_alwaysEmitIntoClient
@@ -25,97 +26,97 @@ extension SocketDescriptor {
 
     /// Enables recording of debugging information.
     ///
-    /// The corresponding C constant is `SO_DEBUG`
+    /// The corresponding C constant is `SO_DEBUG`.
     @_alwaysEmitIntoClient
     public static var debug: Option { Option(_SO_DEBUG) }
 
     /// Enables local address reuse.
     ///
-    /// The corresponding C constant is `SO_REUSEADDR`
+    /// The corresponding C constant is `SO_REUSEADDR`.
     @_alwaysEmitIntoClient
     public static var reuseAddress: Option { Option(_SO_REUSEADDR) }
 
     /// Enables duplicate address and port bindings.
     ///
-    /// The corresponding C constant is `SO_REUSEPORT`
+    /// The corresponding C constant is `SO_REUSEPORT`.
     @_alwaysEmitIntoClient
     public static var reusePort: Option { Option(_SO_REUSEPORT) }
 
     /// Enables keep connections alive.
     ///
-    /// The corresponding C constant is `SO_KEEPALIVE`
+    /// The corresponding C constant is `SO_KEEPALIVE`.
     @_alwaysEmitIntoClient
     public static var keepAlive: Option { Option(_SO_KEEPALIVE) }
 
     /// Enables routing bypass for outgoing messages.
     ///
-    /// The corresponding C constant is `SO_DONTROUTE`
+    /// The corresponding C constant is `SO_DONTROUTE`.
     @_alwaysEmitIntoClient
     public static var doNotRoute: Option { Option(_SO_DONTROUTE) }
 
     /// linger on close if data present
     ///
-    /// The corresponding C constant is `SO_LINGER`
+    /// The corresponding C constant is `SO_LINGER`.
     @_alwaysEmitIntoClient
     public static var linger: Option { Option(_SO_LINGER) }
 
     /// Enables permission to transmit broadcast messages.
     ///
-    /// The corresponding C constant is `SO_BROADCAST`
+    /// The corresponding C constant is `SO_BROADCAST`.
     @_alwaysEmitIntoClient
     public static var broadcast: Option { Option(_SO_BROADCAST) }
 
     /// Enables reception of out-of-band data in band.
     ///
-    /// The corresponding C constant is `SO_OOBINLINE`
+    /// The corresponding C constant is `SO_OOBINLINE`.
     @_alwaysEmitIntoClient
     public static var outOfBand: Option { Option(_SO_OOBINLINE) }
 
     /// Set buffer size for output.
     ///
-    /// The corresponding C constant is `SO_SNDBUF`
+    /// The corresponding C constant is `SO_SNDBUF`.
     @_alwaysEmitIntoClient
     public static var sendBufferSize: Option { Option(_SO_SNDBUF) }
 
     /// Set buffer size for input.
     ///
-    /// The corresponding C constant is `SO_RCVBUF`
+    /// The corresponding C constant is `SO_RCVBUF`.
     @_alwaysEmitIntoClient
     public static var receiveBufferSize: Option { Option(_SO_RCVBUF) }
 
     /// Set minimum count for output.
     ///
-    /// The corresponding C constant is `SO_SNDLOWAT`
+    /// The corresponding C constant is `SO_SNDLOWAT`.
     @_alwaysEmitIntoClient
     public static var sendLowWaterMark: Option { Option(_SO_SNDLOWAT) }
 
     /// Set minimum count for input.
     ///
-    /// The corresponding C constant is `SO_RCVLOWAT`
+    /// The corresponding C constant is `SO_RCVLOWAT`.
     @_alwaysEmitIntoClient
     public static var receiveLowWaterMark: Option { Option(_SO_RCVLOWAT) }
 
     /// Set timeout value for output.
     ///
-    /// The corresponding C constant is `SO_SNDTIMEO`
+    /// The corresponding C constant is `SO_SNDTIMEO`.
     @_alwaysEmitIntoClient
     public static var sendTimeout: Option { Option(_SO_SNDTIMEO) }
 
     /// Set timeout value for input.
     ///
-    /// The corresponding C constant is `SO_RCVTIMEO`
+    /// The corresponding C constant is `SO_RCVTIMEO`.
     @_alwaysEmitIntoClient
     public static var receiveTimeout: Option { Option(_SO_RCVTIMEO) }
 
     /// Get the type of the socket (get only).
     ///
-    /// The corresponding C constant is `SO_TYPE`
+    /// The corresponding C constant is `SO_TYPE`.
     @_alwaysEmitIntoClient
     public static var getType: Option { Option(_SO_TYPE) }
 
     /// Get and clear error on the socket (get only).
     ///
-    /// The corresponding C constant is `SO_ERROR`
+    /// The corresponding C constant is `SO_ERROR`.
     @_alwaysEmitIntoClient
     public static var getError: Option { Option(_SO_ERROR) }
 
@@ -123,29 +124,29 @@ extension SocketDescriptor {
     ///
     /// TODO: better name...
     ///
-    /// The corresponding C constant is `SO_NOSIGPIPE`
+    /// The corresponding C constant is `SO_NOSIGPIPE`.
     @_alwaysEmitIntoClient
     public static var noSignal: Option { Option(_SO_NOSIGPIPE) }
 
     /// Number of bytes to be read (get only).
     ///
-    /// For datagram oriented sockets, returns the size of the first packet
+    /// For datagram oriented sockets, returns the size of the first packet.
     ///
     /// TODO: better name...
     ///
-    /// The corresponding C constant is `SO_NREAD`
+    /// The corresponding C constant is `SO_NREAD`.
     @_alwaysEmitIntoClient
     public static var getNumBytesToReceive: Option { Option(_SO_NREAD) }
 
     /// Number of bytes written not yet sent by the protocol (get only).
     ///
-    /// The corresponding C constant is `SO_NWRITE`
+    /// The corresponding C constant is `SO_NWRITE`.
     @_alwaysEmitIntoClient
     public static var getNumByteToSend: Option { Option(_SO_NWRITE) }
 
     /// Linger on close if data present with timeout in seconds.
     ///
-    /// The corresponding C constant is `SO_LINGER_SEC`
+    /// The corresponding C constant is `SO_LINGER_SEC`.
     @_alwaysEmitIntoClient
     public static var longerSeconds: Option { Option(_SO_LINGER_SEC) }
 
@@ -443,6 +444,7 @@ extension SocketDescriptor {
 extension SocketDescriptor {
   // TODO: Convenience/performance overloads for `Bool` and other concrete types
 
+  /// Get an option associated with this socket.
   @_alwaysEmitIntoClient
   public func getOption<T>(
     _ level: ProtocolID, _ option: Option
@@ -454,7 +456,7 @@ extension SocketDescriptor {
   internal func _getOption<T>(
     _ level: ProtocolID, _ option: Option
   ) -> Result<T, Errno> {
-    // We can't zero-initialize `T` directly, nor can we pass an uninitialized `T`
+    // We can't zero-initialize `T` directly, nor can we pass an uninitialized `T`.
     // to `withUnsafeMutableBytes(of:)`. Instead, we will allocate :-(
     let rawBuf = UnsafeMutableRawBufferPointer.allocate(
       byteCount: MemoryLayout<T>.stride,
@@ -477,6 +479,7 @@ extension SocketDescriptor {
     return nothingOrErrno(success).map { resultPtr.pointee }
   }
 
+  /// Set an option associated with this socket.
   @_alwaysEmitIntoClient
   public func setOption<T>(
     _ level: ProtocolID, _ option: Option, to value: T

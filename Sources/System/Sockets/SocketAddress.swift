@@ -16,7 +16,7 @@
 public struct SocketAddress {
   internal var _variant: _Variant
 
-  /// TODO: doc
+  /// Create an address from raw bytes
   public init(
     address: UnsafePointer<CInterop.SockAddr>,
     length: CInterop.SockLen
@@ -24,7 +24,7 @@ public struct SocketAddress {
     self.init(UnsafeRawBufferPointer(start: address, count: Int(length)))
   }
 
-  /// TODO: doc
+  /// Create an address from raw bytes
   public init(_ buffer: UnsafeRawBufferPointer) {
     self.init(unsafeUninitializedCapacity: buffer.count) { target in
       target.baseAddress!.copyMemory(
@@ -83,7 +83,9 @@ extension SocketAddress {
     self._length = 0
   }
 
-  /// TODO: doc
+  /// Creates a socket address with the specified capacity, then calls the
+  /// given closure with a buffer covering the socket address's uninitialized
+  /// memory.
   public init(
     unsafeUninitializedCapacity capacity: Int,
     initializingWith body: (UnsafeMutableRawBufferPointer) throws -> Int
@@ -127,7 +129,6 @@ extension SocketAddress {
   }
 }
 
-// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress {
   internal enum _Variant {
     case small(length: UInt8, bytes: _InlineStorage)
@@ -256,7 +257,7 @@ extension SocketAddress {
   }
 
 
-   /// The address family identifier of this socket address.
+  /// The address family identifier of this socket address.
   public var family: Family {
     withUnsafeCInterop { addr, length in
       guard let addr = addr else { return .unspecified }

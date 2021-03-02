@@ -18,16 +18,14 @@ extension SocketAddress {
   /// communication on the same machine.
   ///
   /// The corresponding C type is `sockaddr_un`.
-  public struct Local {
+  public struct Local: Hashable {
     internal let _path: FilePath
 
     /// A "local" (i.e. UNIX domain) socket address, for inter-process
     /// communication on the same machine.
     ///
     /// The corresponding C type is `sockaddr_un`.
-    public init(_ path: FilePath) {
-      self._path = path
-    }
+    public init(_ path: FilePath) { self._path = path }
   }
 }
 
@@ -84,12 +82,6 @@ extension SocketAddress.Local {
 }
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
-extension SocketAddress.Local: Hashable {
-}
-
-// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress.Local: CustomStringConvertible {
-  public var description: String {
-    _path.description
-  }
+  public var description: String { _path.description }
 }
