@@ -387,7 +387,16 @@ extension SocketDescriptor.AncillaryMessageBuffer.Message {
 extension SocketDescriptor {
   /// Send a message from a socket.
   ///
-  /// TODO: describe every parameter and option.
+  /// - Parameters:
+  ///   - buffer: The region of memory that contains the data being sent.
+  ///   - recipient: The socket address of the recipient.
+  ///   - ancillary: A buffer of ancillary/control messages.
+  ///   - flags: see `send(2)`
+  ///   - retryOnInterrupt: Whether to retry the send operation
+  ///     if it throws ``Errno/interrupted``.
+  ///     The default is `true`.
+  ///     Pass `false` to try only once and throw an error upon interruption.
+  /// - Returns: The number of bytes that were sent.
   ///
   /// The corresponding C function is `sendmsg`.
   @_alwaysEmitIntoClient
@@ -453,7 +462,17 @@ extension SocketDescriptor {
 extension SocketDescriptor {
   /// Receive a message from a socket.
   ///
-  /// TODO: describe every parameter and option.
+  /// - Parameters:
+  ///   - buffer: The region of memory to receive into.
+  ///   - flags: see `recv(2)`
+  ///   - ancillary: A buffer of ancillary messages. On return, `receive`
+  ///      overwrites the contents with received ancillary messages (if any).
+  ///   - retryOnInterrupt: Whether to retry the receive operation
+  ///     if it throws ``Errno/interrupted``.
+  ///     The default is `true`.
+  ///     Pass `false` to try only once and throw an error upon interruption.
+  /// - Returns: The number of bytes that were received, and the flags that
+  ///     describe the received message.
   ///
   /// The corresponding C function is `recvmsg`.
   @_alwaysEmitIntoClient
@@ -474,7 +493,20 @@ extension SocketDescriptor {
 
   /// Receive a message from a socket.
   ///
-  /// TODO: describe every parameter and option.
+  /// - Parameters:
+  ///   - buffer: The region of memory to receive into.
+  ///   - flags: see `recv(2)`
+  ///   - sender: A socket address with enough capacity to hold an
+  ///      address for the current socket domain/type. On return, `receive`
+  ///      overwrites the contents with the address of the remote client.
+  ///   - ancillary: A buffer of ancillary messages. On return, `receive`
+  ///      overwrites the contents with received ancillary messages (if any).
+  ///   - retryOnInterrupt: Whether to retry the receive operation
+  ///     if it throws ``Errno/interrupted``.
+  ///     The default is `true`.
+  ///     Pass `false` to try only once and throw an error upon interruption.
+  /// - Returns: The number of bytes that were received, and the flags that
+  ///     describe the received message.
   ///
   /// The corresponding C function is `recvmsg`.
   @_alwaysEmitIntoClient

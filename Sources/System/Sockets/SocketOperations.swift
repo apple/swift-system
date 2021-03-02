@@ -79,7 +79,7 @@ extension SocketDescriptor {
     nothingOrErrno(system_listen(self.rawValue, CInt(backlog)))
   }
 
-  /// Send a message from a socket
+  /// Send a message from a socket.
   ///
   /// - Parameters:
   ///   - buffer: The region of memory that contains the data being sent.
@@ -90,7 +90,7 @@ extension SocketDescriptor {
   ///     Pass `false` to try only once and throw an error upon interruption.
   /// - Returns: The number of bytes that were sent.
   ///
-  /// The corresponding C function is `send`
+  /// The corresponding C function is `send`.
   @_alwaysEmitIntoClient
   public func send(
     _ buffer: UnsafeRawBufferPointer,
@@ -111,7 +111,7 @@ extension SocketDescriptor {
     }
   }
 
-  /// Send a message from a socket
+  /// Send a message from a socket.
   ///
   /// - Parameters:
   ///   - buffer: The region of memory that contains the data being sent.
@@ -123,7 +123,7 @@ extension SocketDescriptor {
   ///     Pass `false` to try only once and throw an error upon interruption.
   /// - Returns: The number of bytes that were sent.
   ///
-  /// The corresponding C function is `sendto`
+  /// The corresponding C function is `sendto`.
   @_alwaysEmitIntoClient
   public func send(
     _ buffer: UnsafeRawBufferPointer,
@@ -159,7 +159,7 @@ extension SocketDescriptor {
     }
   }
 
-  /// Receive a message from a socket
+  /// Receive a message from a socket.
   ///
   /// - Parameters:
   ///   - buffer: The region of memory to receive into.
@@ -170,7 +170,7 @@ extension SocketDescriptor {
   ///     Pass `false` to try only once and throw an error upon interruption.
   /// - Returns: The number of bytes that were received.
   ///
-  /// The corresponding C function is `recv`
+  /// The corresponding C function is `recv`.
   @_alwaysEmitIntoClient
   public func receive(
     into buffer: UnsafeMutableRawBufferPointer,
@@ -193,18 +193,21 @@ extension SocketDescriptor {
     }
   }
 
-  /// Receive a message from a socket
+  /// Receive a message from a socket.
   ///
   /// - Parameters:
   ///   - buffer: The region of memory to receive into.
   ///   - flags: see `recv(2)`
+  ///   - sender: A socket address with enough capacity to hold an
+  ///      address for the current socket domain/type. On return, `receive`
+  ///      overwrites the contents with the address of the remote client.
   ///   - retryOnInterrupt: Whether to retry the receive operation
   ///     if it throws ``Errno/interrupted``.
   ///     The default is `true`.
   ///     Pass `false` to try only once and throw an error upon interruption.
   /// - Returns: The number of bytes that were received.
   ///
-  /// The corresponding C function is `recvfrom`
+  /// The corresponding C function is `recvfrom`.
   @_alwaysEmitIntoClient
   public func receive(
     into buffer: UnsafeMutableRawBufferPointer,
@@ -289,12 +292,9 @@ extension SocketDescriptor {
     }
   }
 
-  // TODO: acceptAndSockaddr or something that (tries to) returns the sockaddr
-  // at least, for sockaddrs up to some sane length
-
-  /// Bind a name to a socket
+  /// Bind a name to a socket.
   ///
-  /// The corresponding C function is `bind`
+  /// The corresponding C function is `bind`.
   @_alwaysEmitIntoClient
   public func bind(to address: SocketAddress) throws {
     try _bind(to: address).get()
@@ -308,9 +308,9 @@ extension SocketDescriptor {
     return nothingOrErrno(success)
   }
 
-  /// Initiate a connection on a socket
+  /// Initiate a connection on a socket.
   ///
-  /// The corresponding C function is `connect`
+  /// The corresponding C function is `connect`.
   @_alwaysEmitIntoClient
   public func connect(to address: SocketAddress) throws {
     try _connect(to: address).get()
