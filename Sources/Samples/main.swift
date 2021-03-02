@@ -6,6 +6,7 @@ internal struct SystemSamples: ParsableCommand {
     abstract: "A collection of little programs exercising some System features.",
     subcommands: [
       Resolve.self,
+      ReverseResolve.self,
       Connect.self,
       Listen.self,
     ])

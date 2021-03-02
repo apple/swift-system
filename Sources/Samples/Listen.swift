@@ -76,7 +76,7 @@ struct Listen: ParsableCommand {
   }
 
   func run() throws {
-    let addresses = try SocketAddress.resolve(
+    let addresses = try SocketAddress.resolveName(
       hostname: nil,
       service: service,
       flags: .canonicalName,

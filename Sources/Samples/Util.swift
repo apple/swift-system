@@ -40,6 +40,18 @@ internal func complain(_ message: String) {
   }
 }
 
+extension SocketAddress.Info {
+  var niceDescription: String {
+    var proto = ""
+    switch self.protocol {
+    case .udp: proto = "udp"
+    case .tcp: proto = "tcp"
+    default: proto = "\(self.protocol)"
+    }
+    return "\(address.niceDescription) (\(proto))"
+  }
+}
+
 extension SocketAddress {
   var niceDescription: String {
     if let ipv4 = self.ipv4 { return ipv4.description }

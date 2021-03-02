@@ -49,9 +49,11 @@ extension SocketAddress {
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress {
-  /// Address resolution flags.
+  /// Name resolution flags.
   @frozen
-  public struct ResolverFlags: OptionSet, RawRepresentable {
+  public struct NameResolverFlags:
+    OptionSet, RawRepresentable, CustomStringConvertible
+  {
     @_alwaysEmitIntoClient
     public let rawValue: CInt
 
@@ -159,6 +161,101 @@ extension SocketAddress {
     /// This corresponds to the C constant `AI_UNUSABLE`.
     @_alwaysEmitIntoClient
     public static var unusable: Self { Self(_AI_UNUSABLE) }
+
+    public var description: String {
+      let descriptions: [(Element, StaticString)] = [
+        (.configuredAddress, ".configuredAddress"),
+        (.all, ".all"),
+        (.canonicalName, ".canonicalName"),
+        (.numericHost, ".numericHost"),
+        (.numericService, ".numericService"),
+        (.passive, ".passive"),
+        (.ipv4Mapped, ".ipv4Mapped"),
+        (.ipv4MappedIfSupported, ".ipv4MappedIfSupported"),
+        (.default, ".default"),
+        (.unusable, ".unusable"),
+      ]
+      return _buildDescription(descriptions)
+    }
+
+  }
+
+  /// Address resolution flags.
+  @frozen
+  public struct AddressResolverFlags:
+    OptionSet, RawRepresentable, CustomStringConvertible
+  {
+    @_alwaysEmitIntoClient
+    public let rawValue: CInt
+
+    @_alwaysEmitIntoClient
+    public init(rawValue: CInt) {
+      self.rawValue = rawValue
+    }
+
+    @_alwaysEmitIntoClient
+    private init(_ raw: CInt) {
+      self.init(rawValue: raw)
+    }
+
+    @_alwaysEmitIntoClient
+    public init() {
+      self.rawValue = 0
+    }
+
+    /// A fully qualified domain name is not required for local hosts.
+    ///
+    /// This corresponds to the C constant `NI_NOFQDN`.
+    @_alwaysEmitIntoClient
+    public static var noFullyQualifiedDomain: Self { Self(_NI_NOFQDN) }
+
+    /// Return the address in numeric form, instead of a host name.
+    ///
+    /// This corresponds to the C constant `NI_NUMERICHOST`.
+    @_alwaysEmitIntoClient
+    public static var numericHost: Self { Self(_NI_NUMERICHOST) }
+
+    /// Indicates that a name is required; if the host name cannot be found,
+    /// an error will be thrown. If this option is not present, then a
+    /// numerical address is returned.
+    ///
+    /// This corresponds to the C constant `NI_NAMEREQD`.
+    @_alwaysEmitIntoClient
+    public static var nameRequired: Self { Self(_NI_NAMEREQD) }
+
+    /// The service name is returned as a digit string representing the port
+    /// number.
+    ///
+    /// This corresponds to the C constant `NI_NUMERICSERV`.
+    @_alwaysEmitIntoClient
+    public static var numericService: Self { Self(_NI_NUMERICSERV) }
+
+    /// Specifies that the service being looked up is a datagram service.
+    /// This is useful in case a port number is used for different services
+    /// over TCP & UDP.
+    ///
+    /// This corresponds to the C constant `NI_DGRAM`.
+    @_alwaysEmitIntoClient
+    public static var datagram: Self { Self(_NI_DGRAM) }
+
+    /// Enable IPv6 address notation with scope identifiers.
+    ///
+    /// This corresponds to the C constant `NI_WITHSCOPEID`.
+    @_alwaysEmitIntoClient
+    public static var scopeIdentifier: Self { Self(_NI_WITHSCOPEID) }
+
+    public var description: String {
+      let descriptions: [(Element, StaticString)] = [
+        (.noFullyQualifiedDomain, ".noFullyQualifiedDomain"),
+        (.numericHost, ".numericHost"),
+        (.nameRequired, ".nameRequired"),
+        (.numericService, ".numericService"),
+        (.datagram, ".datagram"),
+        (.scopeIdentifier, ".scopeIdentifier"),
+      ]
+      return _buildDescription(descriptions)
+    }
+
   }
 }
 
@@ -269,10 +366,10 @@ extension SocketAddress {
   ///
   /// The method corresponds to the C function `getaddrinfo`.
   @_alwaysEmitIntoClient
-  public static func resolve(
+  public static func resolveName(
     hostname: String?,
     service: String?,
-    flags: ResolverFlags? = nil,
+    flags: NameResolverFlags? = nil,
     family: Family? = nil,
     type: SocketDescriptor.ConnectionType? = nil,
     protocol: SocketDescriptor.ProtocolID? = nil
@@ -298,10 +395,10 @@ extension SocketAddress {
   internal static func _resolve(
     hostname: String?,
     service: String?,
-    flags: ResolverFlags? = nil,
-    family: Family? = nil,
-    type: SocketDescriptor.ConnectionType? = nil,
-    protocol: SocketDescriptor.ProtocolID? = nil
+    flags: NameResolverFlags?,
+    family: Family?,
+    type: SocketDescriptor.ConnectionType?,
+    protocol: SocketDescriptor.ProtocolID?
   ) -> (results: [Info], error: (Error, Errno?)?) {
     var hints: CInterop.AddrInfo = CInterop.AddrInfo()
     var haveHints = false
@@ -385,3 +482,52 @@ extension SocketAddress {
   }
 }
 
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+extension SocketAddress {
+  @_alwaysEmitIntoClient
+  public static func resolveAddress(
+    _ address: SocketAddress,
+    flags: AddressResolverFlags = []
+  ) throws -> (hostname: String, service: String) {
+    let (result, error) = _resolveAddress(address, flags)
+    if let error = error {
+      if let errno = error.1 { throw errno }
+      throw error.0
+    }
+    return result
+  }
+
+  @usableFromInline
+  internal static func _resolveAddress(
+    _ address: SocketAddress,
+    _ flags: AddressResolverFlags
+  ) -> (results: (hostname: String, service: String), error: (ResolverError, Errno?)?) {
+    address.withUnsafeCInterop { adr, adrlen in
+      var r: CInt = 0
+      var service: String = ""
+      let host = String(_unsafeUninitializedCapacity: Int(_NI_MAXHOST)) { host in
+        let h = UnsafeMutableRawPointer(host.baseAddress!)
+          .assumingMemoryBound(to: CChar.self)
+        service = String(_unsafeUninitializedCapacity: Int(_NI_MAXSERV)) { serv in
+          let s = UnsafeMutableRawPointer(serv.baseAddress!)
+            .assumingMemoryBound(to: CChar.self)
+          r = system_getnameinfo(
+            adr, adrlen,
+            h, CInterop.SockLen(host.count),
+            s, CInterop.SockLen(serv.count),
+            flags.rawValue)
+          if r != 0 { return 0 }
+          return system_strlen(s)
+        }
+        if r != 0 { return 0 }
+        return system_strlen(h)
+      }
+      var error: (ResolverError, Errno?)? = nil
+      if r != 0 {
+        let err = ResolverError(rawValue: r)
+        error = (err, err == .system ? Errno.current : nil)
+      }
+      return ((host, service), error)
+    }
+  }
+}

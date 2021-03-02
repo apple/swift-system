@@ -64,7 +64,7 @@ struct Connect: ParsableCommand {
   }
 
   func run() throws {
-    let addresses = try SocketAddress.resolve(
+    let addresses = try SocketAddress.resolveName(
       hostname: nil,
       service: service,
       family: ipv6 ? .ipv6 : .ipv4,

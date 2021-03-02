@@ -60,7 +60,10 @@ internal func system_strerror(_ __errnum: Int32) -> UnsafeMutablePointer<Int8>! 
   strerror(__errnum)
 }
 
-internal func system_strlen(_ s: UnsafePointer<Int8>) -> Int {
+internal func system_strlen(_ s: UnsafePointer<CChar>) -> Int {
+  strlen(s)
+}
+internal func system_strlen(_ s: UnsafeMutablePointer<CChar>) -> Int {
   strlen(s)
 }
 

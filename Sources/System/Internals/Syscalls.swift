@@ -307,6 +307,23 @@ internal func system_getaddrinfo(
   return getaddrinfo(hostname, servname, hints, res)
 }
 
+internal func system_getnameinfo(
+  _ sa: UnsafePointer<CInterop.SockAddr>?,
+  _ salen: CInterop.SockLen,
+  _ host: UnsafeMutablePointer<CChar>?,
+  _ hostlen: CInterop.SockLen,
+  _ serv: UnsafeMutablePointer<CChar>?,
+  _ servlen: CInterop.SockLen,
+  _ flags: CInt
+) -> CInt {
+  #if ENABLE_MOCKING
+  if mockingEnabled {
+    return _mock(sa, salen, host, hostlen, serv, servlen, flags)
+  }
+  #endif
+  return getnameinfo(sa, salen, host, hostlen, serv, servlen, flags)
+}
+
 internal func system_freeaddrinfo(
   _ addrinfo: UnsafeMutablePointer<CInterop.AddrInfo>?
 ) {

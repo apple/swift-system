@@ -15,6 +15,11 @@ import System
 #endif
 
 struct Resolve: ParsableCommand {
+  static var configuration = CommandConfiguration(
+    commandName: "resolve",
+    abstract: "Resolve a pair of hostname/servicename strings to a list of socket addresses."
+  )
+
   @Argument(help: "The hostname to resolve")
   var hostname: String?
 
@@ -39,8 +44,11 @@ struct Resolve: ParsableCommand {
   @Flag(help: "Resolve IPv6 addresses")
   var ipv6: Bool = false
 
+  @Flag(help: "Print the raw SocketAddress structures")
+  var raw: Bool = false
+
   func run() throws {
-    var flags: SocketAddress.ResolverFlags = [.default, .all]
+    var flags: SocketAddress.NameResolverFlags = [.default, .all]
     if canonicalName { flags.insert(.canonicalName) }
     if passive { flags.insert(.passive) }
     if numericHost { flags.insert(.numericHost) }
@@ -50,7 +58,7 @@ struct Resolve: ParsableCommand {
     if ipv4 { family = .ipv4 }
     if ipv6 { family = .ipv6 }
 
-    let results = try SocketAddress.resolve(
+    let results = try SocketAddress.resolveName(
       hostname: hostname, service: service,
       flags: flags,
       family: family
@@ -59,7 +67,11 @@ struct Resolve: ParsableCommand {
       print("No results found")
     } else {
       for entry in results {
-        print(entry)
+        if raw {
+          print(entry)
+        } else {
+          print(entry.niceDescription)
+        }
       }
     }
   }

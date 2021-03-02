@@ -887,6 +887,30 @@ internal var _AI_DEFAULT: CInt { AI_DEFAULT }
 internal var _AI_UNUSABLE: CInt { AI_UNUSABLE }
 
 @_alwaysEmitIntoClient
+internal var _NI_NOFQDN: CInt { NI_NOFQDN }
+
+@_alwaysEmitIntoClient
+internal var _NI_NUMERICHOST: CInt { NI_NUMERICHOST }
+
+@_alwaysEmitIntoClient
+internal var _NI_NAMEREQD: CInt { NI_NAMEREQD }
+
+@_alwaysEmitIntoClient
+internal var _NI_NUMERICSERV: CInt { NI_NUMERICSERV }
+
+@_alwaysEmitIntoClient
+internal var _NI_DGRAM: CInt { NI_DGRAM }
+
+@_alwaysEmitIntoClient
+internal var _NI_WITHSCOPEID: CInt { NI_WITHSCOPEID }
+
+@_alwaysEmitIntoClient
+internal var _NI_MAXHOST: CInt { NI_MAXHOST }
+
+@_alwaysEmitIntoClient
+internal var _NI_MAXSERV: CInt { NI_MAXSERV }
+
+@_alwaysEmitIntoClient
 internal var _EAI_ADDRFAMILY: CInt { EAI_ADDRFAMILY }
 
 @_alwaysEmitIntoClient
