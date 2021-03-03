@@ -38,34 +38,53 @@ struct Connect: ParsableCommand {
   @Flag(help: "Send data out-of-band")
   var outOfBand: Bool = false
 
+  @Option(help: "TCP connection timeout, in seconds")
+  var connectionTimeout: CInt?
+
+  @Option(help: "Socket send timeout, in seconds")
+  var sendTimeout: CInt?
+
+  @Option(help: "Socket receive timeout, in seconds")
+  var receiveTimeout: CInt?
+
+  @Option(help: "TCP connection keepalive interval, in seconds")
+  var keepalive: CInt?
+
   func connect(
     to addresses: [SocketAddress.Info]
   ) throws -> (SocketDescriptor, SocketAddress)? {
-    for addressinfo in addresses {
-      do {
-        let socket = try SocketDescriptor.open(
-          addressinfo.domain,
-          addressinfo.type,
-          addressinfo.protocol)
-        do {
-          try socket.connect(to: addressinfo.address)
-          return (socket, addressinfo.address)
-        }
-        catch {
-          try? socket.close()
-          throw error
-        }
+    // Only try the first address for now
+    guard let addressinfo = addresses.first else { return nil }
+    print(addressinfo)
+    let socket = try SocketDescriptor.open(
+      addressinfo.domain,
+      addressinfo.type,
+      addressinfo.protocol)
+    do {
+      if let connectionTimeout = connectionTimeout {
+        try socket.setOption(.tcp, .tcpConnectionTimeout, to: connectionTimeout)
       }
-      catch {
-        continue
+      if let sendTimeout = sendTimeout {
+        try socket.setOption(.socketOption, .sendTimeout, to: sendTimeout)
       }
+      if let receiveTimeout = receiveTimeout {
+        try socket.setOption(.socketOption, .receiveTimeout, to: receiveTimeout)
+      }
+      if let keepalive = keepalive {
+        try socket.setOption(.tcp, .tcpKeepAlive, to: keepalive)
+      }
+      try socket.connect(to: addressinfo.address)
+      return (socket, addressinfo.address)
     }
-    return nil
+    catch {
+      try? socket.close()
+      throw error
+    }
   }
 
   func run() throws {
     let addresses = try SocketAddress.resolveName(
-      hostname: nil,
+      hostname: hostname,
       service: service,
       family: ipv6 ? .ipv6 : .ipv4,
       type: udp ? .datagram : .stream)

@@ -47,7 +47,7 @@ extension SocketAddress {
     return IPv6(rawValue: value)
   }
 
-  /// Construct a `SocketAddress` holding an IPv4 address and port
+  /// Construct a `SocketAddress` holding an IPv6 address and port
   @_alwaysEmitIntoClient
   public init(ipv6 address: IPv6.Address, port: Port) {
     self.init(IPv6(address: address, port: port))
@@ -107,7 +107,7 @@ extension SocketAddress.IPv6: CustomStringConvertible {
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress.IPv6 {
-  /// The port on which this socket is listening.
+  /// The port number associated with this address.
   @_alwaysEmitIntoClient
   public var port: SocketAddress.Port {
     get { SocketAddress.Port(CInterop.InPort(_networkOrder: rawValue.sin6_port)) }
@@ -120,7 +120,7 @@ extension SocketAddress.IPv6 {
   /// A 128-bit IPv6 address.
   @frozen
   public struct Address: RawRepresentable {
-    /// The raw internet address value, in host byte order.
+    /// The raw IPv6 address value. (16 bytes in network byte order.)
     @_alwaysEmitIntoClient
     public var rawValue: CInterop.In6Addr
 
@@ -147,7 +147,7 @@ extension SocketAddress.IPv6.Address {
     Self(rawValue: CInterop.In6Addr())
   }
 
-  /// The IPv4 loopback address "::1".
+  /// The IPv6 loopback address "::1".
   ///
   /// This corresponds to the C constant `IN6ADDR_LOOPBACK_INIT`.
   @_alwaysEmitIntoClient

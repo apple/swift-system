@@ -442,64 +442,164 @@ extension SocketDescriptor {
 }
 
 extension SocketDescriptor {
-  // TODO: Convenience/performance overloads for `Bool` and other concrete types
+  // TODO: Wrappers and convenience overloads for other concrete types
+  // (timeval, linger)
+  // For now, clients can use the UMRBP-based variants below.
 
-  /// Get an option associated with this socket.
+  /// Copy an option associated with this socket into the specified buffer.
+  ///
+  /// The method corresponds to the C function `getsockopt`.
+  ///
+  /// - Parameters:
+  ///    - level: The option level. To get a socket-level option, specify `.socketLevel`.
+  ///       Otherwise use the protocol value that defines your desired option.
+  ///    - option: The option identifier within the level.
+  ///    - buffer: The buffer into which to copy the option value.
+  ///
+  /// - Returns: The number of bytes copied into the supplied buffer.
   @_alwaysEmitIntoClient
-  public func getOption<T>(
-    _ level: ProtocolID, _ option: Option
-  ) throws -> T {
-    try _getOption(level, option).get()
+  public func getOption(
+    _ level: ProtocolID,
+    _ option: Option,
+    into buffer: UnsafeMutableRawBufferPointer
+  ) throws -> Int {
+    try _getOption(level, option, into: buffer).get()
+  }
+
+  /// Return the value of an option associated with this socket as a `CInt` value.
+  ///
+  /// The method corresponds to the C function `getsockopt`.
+  ///
+  /// - Parameters:
+  ///    - level: The option level. To get a socket-level option, specify `.socketLevel`.
+  ///       Otherwise use the protocol value that defines your desired option.
+  ///    - option: The option identifier within the level.
+  ///    - type: The type to return. Must be set to `CInt.self` (the default).
+  ///
+  /// - Returns: The current value of the option.
+  @_alwaysEmitIntoClient
+  public func getOption(
+    _ level: ProtocolID,
+    _ option: Option,
+    as type: CInt.Type = CInt.self
+  ) throws -> CInt {
+    var value: CInt = 0
+    try withUnsafeMutableBytes(of: &value) { buffer in
+      // Note: return value is intentionally ignored.
+      _ = try _getOption(level, option, into: buffer).get()
+    }
+    return value
+  }
+
+  /// Return the value of an option associated with this socket as a `Bool` value.
+  ///
+  /// The method corresponds to the C function `getsockopt`.
+  ///
+  /// - Parameters:
+  ///    - level: The option level. To get a socket-level option, specify `.socketLevel`.
+  ///       Otherwise use the protocol value that defines your desired option.
+  ///    - option: The option identifier within the level.
+  ///    - type: The type to return. Must be set to `Bool.self` (the default).
+  ///
+  /// - Returns: True if the current value is not zero; otherwise false.
+  @_alwaysEmitIntoClient
+  public func getOption(
+    _ level: ProtocolID,
+    _ option: Option,
+    as type: Bool.Type = Bool.self
+  ) throws -> Bool {
+    try 0 != getOption(level, option, as: CInt.self)
   }
 
   @usableFromInline
-  internal func _getOption<T>(
-    _ level: ProtocolID, _ option: Option
-  ) -> Result<T, Errno> {
-    // We can't zero-initialize `T` directly, nor can we pass an uninitialized `T`.
-    // to `withUnsafeMutableBytes(of:)`. Instead, we will allocate :-(
-    let rawBuf = UnsafeMutableRawBufferPointer.allocate(
-      byteCount: MemoryLayout<T>.stride,
-      alignment: MemoryLayout<T>.alignment)
-    rawBuf.initializeMemory(as: UInt8.self, repeating: 0)
-    let resultPtr = rawBuf.baseAddress!.bindMemory(to: T.self, capacity: 1)
-    defer {
-      resultPtr.deinitialize(count: 1)
-      rawBuf.deallocate()
-    }
-
-    var length: CInterop.SockLen = 0
-
+  internal func _getOption(
+    _ level: ProtocolID,
+    _ option: Option,
+    into buffer: UnsafeMutableRawBufferPointer
+  ) -> Result<Int, Errno> {
+    var length = CInterop.SockLen(buffer.count)
     let success = system_getsockopt(
       self.rawValue,
       level.rawValue,
       option.rawValue,
-      resultPtr, &length)
+      buffer.baseAddress, &length)
+    return nothingOrErrno(success).map { _ in Int(length) }
+  }
+}
 
-    return nothingOrErrno(success).map { resultPtr.pointee }
+extension SocketDescriptor {
+  /// Set the value of an option associated with this socket to the contents
+  /// of the specified buffer.
+  ///
+  /// The method corresponds to the C function `setsockopt`.
+  ///
+  /// - Parameters:
+  ///    - level: The option level. To set a socket-level option, specify `.socketLevel`.
+  ///       Otherwise use the protocol value that defines your desired option.
+  ///    - option: The option identifier within the level.
+  ///    - buffer: The buffer that contains the desired option value.
+  @_alwaysEmitIntoClient
+  public func setOption(
+    _ level: ProtocolID,
+    _ option: Option,
+    from buffer: UnsafeRawBufferPointer
+  ) throws {
+    try _setOption(level, option, from: buffer).get()
   }
 
-  /// Set an option associated with this socket.
+  /// Set the value of an option associated with this socket to the supplied
+  /// `CInt` value.
+  ///
+  /// The method corresponds to the C function `setsockopt`.
+  ///
+  /// - Parameters:
+  ///    - level: The option level. To set a socket-level option, specify `.socketLevel`.
+  ///       Otherwise use the protocol value that defines your desired option.
+  ///    - option: The option identifier within the level.
+  ///    - value: The desired new value for the option.
   @_alwaysEmitIntoClient
-  public func setOption<T>(
-    _ level: ProtocolID, _ option: Option, to value: T
+  public func setOption(
+    _ level: ProtocolID,
+    _ option: Option,
+    to value: CInt
   ) throws {
-    try _setOption(level, option, to: value).get()
+    return try withUnsafeBytes(of: value) { buffer in
+      // Note: return value is intentionally ignored.
+      _ = try _setOption(level, option, from: buffer).get()
+    }
+  }
+
+  /// Set the value of an option associated with this socket to the supplied
+  /// `Bool` value.
+  ///
+  /// The method corresponds to the C function `setsockopt`.
+  ///
+  /// - Parameters:
+  ///    - level: The option level. To set a socket-level option, specify `.socketLevel`.
+  ///       Otherwise use the protocol value that defines your desired option.
+  ///    - option: The option identifier within the level.
+  ///    - value: The desired new value for the option. (`true` gets stored
+  ///       as `(1 as CInt)`. `false` is represented by `(0 as CInt)`).
+  @_alwaysEmitIntoClient
+  public func setOption(
+    _ level: ProtocolID,
+    _ option: Option,
+    to value: Bool
+  ) throws {
+    try setOption(level, option, to: (value ? 1 : 0) as CInt)
   }
 
   @usableFromInline
-  internal func _setOption<T>(
-    _ level: ProtocolID, _ option: Option, to value: T
-  ) -> Result<(), Errno> {
-    let len = CInterop.SockLen(MemoryLayout<T>.stride)
-    let success = withUnsafeBytes(of: value) {
-      return system_setsockopt(
-        self.rawValue,
-        level.rawValue,
-        option.rawValue,
-        $0.baseAddress,
-        len)
-    }
+  internal func _setOption(
+    _ level: ProtocolID,
+    _ option: Option,
+    from buffer: UnsafeRawBufferPointer
+  ) -> Result<Void, Errno> {
+    let success = system_setsockopt(
+      self.rawValue,
+      level.rawValue,
+      option.rawValue,
+      buffer.baseAddress, CInterop.SockLen(buffer.count))
     return nothingOrErrno(success)
   }
 }

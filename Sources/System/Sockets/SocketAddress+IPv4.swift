@@ -120,7 +120,7 @@ extension SocketAddress.IPv4 {
     }
   }
 
-  /// The port this socket is listening on.
+  /// The port number associated with this address.
   @_alwaysEmitIntoClient
   public var port: SocketAddress.Port {
     get { SocketAddress.Port(CInterop.InPort(_networkOrder: rawValue.sin_port)) }

@@ -14,15 +14,15 @@ private var _pathOffset: Int {
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress {
-  /// A "local" (i.e. UNIX domain) socket address, for inter-process
+  /// A socket address in the local (a.k.a. UNIX) domain, for inter-process
   /// communication on the same machine.
   ///
   /// The corresponding C type is `sockaddr_un`.
   public struct Local: Hashable {
     internal let _path: FilePath
 
-    /// A "local" (i.e. UNIX domain) socket address, for inter-process
-    /// communication on the same machine.
+    /// Creates a socket address in the local (a.k.a. UNIX) domain,
+    /// for inter-process communication on the same machine.
     ///
     /// The corresponding C type is `sockaddr_un`.
     public init(_ path: FilePath) { self._path = path }
@@ -31,7 +31,7 @@ extension SocketAddress {
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress {
-  /// Create a SocketAddress from a local (i.e. UNIX domain) socket address.
+  /// Create a `SocketAddress` from a local (i.e. UNIX domain) socket address.
   public init(_ local: Local) {
     let offset = _pathOffset
     let length = offset + local._path.length + 1
@@ -75,7 +75,7 @@ extension SocketAddress {
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress.Local {
-  /// The path to the file used to advertise the socket name to clients.
+  /// The path representing the socket name in the local filesystem namespace.
   ///
   /// The corresponding C struct member is `sun_path`.
   public var path: FilePath { _path }

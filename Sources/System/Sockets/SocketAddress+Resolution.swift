@@ -12,7 +12,8 @@ extension SocketAddress {
   /// Information about a resolved address.
   ///
   /// The members of this struct can be passed directly to
-  /// `SocketDescriptor.connect()` or `SocketDescriptor.bind().
+  /// `SocketDescriptor.open()`, `SocketDescriptor.connect()`
+  /// or `SocketDescriptor.bind()` to initiate connections.
   ///
   /// This loosely corresponds to the C `struct addrinfo`.
   public struct Info {
@@ -390,7 +391,9 @@ extension SocketAddress {
 extension SocketAddress {
   /// Get a list of IP addresses and port numbers for a host and service.
   ///
-  /// TODO: communicate that on failure, this throws a `ResolverError`.
+  /// On failure, this throws either a `ResolverError` or an `Errno`,
+  /// depending on the error code returned by the underlying `getaddrinfo`
+  /// function.
   ///
   /// The method corresponds to the C function `getaddrinfo`.
   public static func resolveName(
@@ -506,6 +509,10 @@ extension SocketAddress {
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress {
   /// Resolve a socket address to hostname and service name.
+  ///
+  /// On failure, this throws either a `ResolverError` or an `Errno`,
+  /// depending on the error code returned by the underlying `getnameinfo`
+  /// function.
   ///
   /// This method corresponds to the C function `getnameinfo`.
   public static func resolveAddress(
