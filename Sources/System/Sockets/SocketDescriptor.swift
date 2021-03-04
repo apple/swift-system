@@ -330,7 +330,7 @@ extension SocketDescriptor {
 
   /// Specify the part (or all) of a full-duplex connection to shutdown.
   @frozen
-  public struct ShutdownKind: RawRepresentable, Hashable, Codable, CustomStringConvertible {
+  public struct ShutdownKind: RawRepresentable, Hashable, CustomStringConvertible {
     @_alwaysEmitIntoClient
     public var rawValue: CInt
 

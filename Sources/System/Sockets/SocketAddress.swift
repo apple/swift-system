@@ -8,11 +8,57 @@
 */
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
-/// An opaque type holding a socket address and port number in some address family.
+/// An opaque type representing a socket address in some address family,
+/// such as an IP address along with a port number.
 ///
-/// TODO: Show examples of creating an ipv4 and ipv6 address
+/// `SocketAddress` values can be passed directly to `SocketDescriptor.connect`
+/// or `.bind` to establish a network connection.
 ///
-/// The corresponding C type is `sockaddr_t`
+/// We can use the `SocketAddress.resolveName` method resolve a pair of
+/// host/service name strings to a list of socket addresses:
+///
+///     let results =
+///       try SocketAddress.resolveName(hostname: "swift.org", service: "https")
+///     for result in results {
+///       let try socket =
+///         SocketDescriptor.open(result.domain, result.type, result.protocol)
+///       do {
+///         try socket.connect(to: result.address)
+///       } catch {
+///         try? socket.close()
+///         throw error
+///       }
+///       return socket
+///     }
+///
+/// To create an IPv4, IPv6 or Local domain address, we can use convenience
+/// initializers that take the corresponding information:
+///
+///     let ipv4 = SocketAddress(ipv4: "127.0.0.1", port: 8080)!
+///     let ipv6 = SocketAddress(ipv6: "::1", port: 80)!
+///     let local = SocketAddress(local: "/var/run/example.sock")
+///
+/// (Note that you may prefer to use the concrete address types
+/// `SocketAddress.IPv4`, `SocketAddress.IPv6` and `SocketAddress.Local`
+/// instead -- they provide easy access to the address parameters.)
+///
+/// `SocketAddress` also provides ways to access its underlying contents
+/// as a raw unsafe memory buffer. This is useful for dealing with address
+/// families that `System` doesn't model, or for passing the socket address
+/// to C functions that expect a pointer to a `sockaddr` value.
+///
+/// `SocketAddress` stores its contents in a managed storage buffer, and
+/// it can serve as a reusable receptacle for addresses that are returned
+/// by system calls. You can use the `init(minimumCapacity:)` initializer
+/// to create an empty socket address with the specified storage capacity,
+/// then you can pass it to functions like `.accept(client:)` to retrieve
+/// addresses without repeatedly allocating memory.
+///
+/// `SocketAddress` is able to hold any IPv4 or IPv6 address without allocating
+/// any memory. For other address families, it may need to heap allocate a
+/// storage buffer, depending on the size of the stored value.
+///
+/// The corresponding C type is `sockaddr_t`.
 public struct SocketAddress {
   internal var _variant: _Variant
 

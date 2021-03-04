@@ -48,12 +48,36 @@ extension SocketDescriptor {
     }.map(SocketDescriptor.init(rawValue:))
   }
 
-  /// Bind a name to a socket.
+  /// Bind a socket to an address.
   ///
   /// The corresponding C function is `bind`.
   @_alwaysEmitIntoClient
   public func bind(to address: SocketAddress) throws {
     try _bind(to: address).get()
+  }
+
+  /// Bind a socket to an IPv4 address.
+  ///
+  /// The corresponding C function is `bind`.
+  @_alwaysEmitIntoClient
+  public func bind(to address: SocketAddress.IPv4) throws {
+    try _bind(to: SocketAddress(address)).get()
+  }
+
+  /// Bind a socket to an IPv6 address.
+  ///
+  /// The corresponding C function is `bind`.
+  @_alwaysEmitIntoClient
+  public func bind(to address: SocketAddress.IPv6) throws {
+    try _bind(to: SocketAddress(address)).get()
+  }
+
+  /// Bind a socket to an address in the local domain.
+  ///
+  /// The corresponding C function is `bind`.
+  @_alwaysEmitIntoClient
+  public func bind(to address: SocketAddress.Local) throws {
+    try _bind(to: SocketAddress(address)).get()
   }
 
   @usableFromInline
@@ -137,6 +161,30 @@ extension SocketDescriptor {
   @_alwaysEmitIntoClient
   public func connect(to address: SocketAddress) throws {
     try _connect(to: address).get()
+  }
+
+  /// Initiate a connection to an IPv4 address.
+  ///
+  /// The corresponding C function is `connect`.
+  @_alwaysEmitIntoClient
+  public func connect(to address: SocketAddress.IPv4) throws {
+    try _connect(to: SocketAddress(address)).get()
+  }
+
+  /// Initiate a connection to an IPv6 address.
+  ///
+  /// The corresponding C function is `connect`.
+  @_alwaysEmitIntoClient
+  public func connect(to address: SocketAddress.IPv6) throws {
+    try _connect(to: SocketAddress(address)).get()
+  }
+
+  /// Initiate a connection to an address in the local domain.
+  ///
+  /// The corresponding C function is `connect`.
+  @_alwaysEmitIntoClient
+  public func connect(to address: SocketAddress.Local) throws {
+    try _connect(to: SocketAddress(address)).get()
   }
 
   @usableFromInline

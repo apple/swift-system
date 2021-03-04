@@ -47,7 +47,7 @@ extension SocketAddress {
     return IPv4(rawValue: value)
   }
 
-  /// Construct a `SocketAddress` holding an IPv4 address and port
+  /// Construct a `SocketAddress` holding an IPv4 address and port number.
   @_alwaysEmitIntoClient
   public init(ipv4 address: IPv4.Address, port: Port) {
     self.init(IPv4(address: address, port: port))
@@ -192,5 +192,15 @@ extension SocketAddress.IPv4.Address: LosslessStringConvertible {
       guard res == 1 else { return nil }
       return Self(rawValue: CInterop.InAddrT(_networkOrder: addr.s_addr))
     }
+  }
+}
+
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+extension SocketAddress.IPv4.Address: ExpressibleByStringLiteral {
+  public init(stringLiteral value: String) {
+    guard let address = Self(value) else {
+      preconditionFailure("'\(value)' is not a valid IPv4 address string")
+    }
+    self = address
   }
 }

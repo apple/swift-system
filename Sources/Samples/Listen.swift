@@ -106,12 +106,14 @@ struct Listen: ParsableCommand {
       } else {
         let conn = try socket.accept(client: &client)
         complain("Connection from \(client.niceDescription)")
-        while true {
-          let (count, flags) =
+        try conn.closeAfter {
+          while true {
+            let (count, flags) =
             try conn.receive(into: buffer, sender: &client, ancillary: &ancillary)
-          guard count > 0 else { break }
-          print(prefix(client: client, flags: flags), terminator: "")
-          try FileDescriptor.standardOutput.writeAll(buffer[..<count])
+            guard count > 0 else { break }
+            print(prefix(client: client, flags: flags), terminator: "")
+            try FileDescriptor.standardOutput.writeAll(buffer[..<count])
+          }
         }
       }
     }

@@ -238,3 +238,13 @@ extension SocketAddress.IPv6.Address: LosslessStringConvertible {
     }
   }
 }
+
+// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+extension SocketAddress.IPv6.Address: ExpressibleByStringLiteral {
+  public init(stringLiteral value: String) {
+    guard let address = Self(value) else {
+      preconditionFailure("'\(value)' is not a valid IPv6 address string")
+    }
+    self = address
+  }
+}
