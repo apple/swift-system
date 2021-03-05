@@ -40,15 +40,6 @@ extension SocketDescriptor {
   }
 }
 
-extension FileDescriptor {
-  /// Treat `self` as a socket descriptor, without checking with the operating
-  /// system that it actually refers to a socket.
-  @_alwaysEmitIntoClient
-  public var uncheckedSocket: SocketDescriptor {
-    SocketDescriptor(unchecked: self)
-  }
-}
-
 extension SocketDescriptor {
   /// Communications domain, identifying the protocol family that is being used.
   @frozen
