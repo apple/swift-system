@@ -17,6 +17,7 @@ extension FileDescriptorTest {
     // to regenerate.
     static let __allTests__FileDescriptorTest = [
         ("testConstants", testConstants),
+        ("testStandardDescriptors", testStandardDescriptors),
     ]
 }
 
@@ -26,6 +27,7 @@ extension FileOperationsTest {
     // to regenerate.
     static let __allTests__FileOperationsTest = [
         ("testAdHocOpen", testAdHocOpen),
+        ("testGithubIssues", testGithubIssues),
         ("testHelpers", testHelpers),
         ("testSyscalls", testSyscalls),
     ]
@@ -38,7 +40,6 @@ extension FilePathComponentsTest {
     static let __allTests__FilePathComponentsTest = [
         ("testAdHocRRC", testAdHocRRC),
         ("testCases", testCases),
-        ("testConcatenation", testConcatenation),
         ("testSeparatorNormalization", testSeparatorNormalization),
     ]
 }
