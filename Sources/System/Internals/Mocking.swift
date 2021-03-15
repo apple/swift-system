@@ -146,13 +146,20 @@ private func originalSyscallName(_ function: String) -> String {
 
 private func mockImpl(
   name: String,
+  path: UnsafePointer<CChar>?,
   _ args: [AnyHashable]
 ) -> CInt {
+  precondition(mockingEnabled)
   let origName = originalSyscallName(name)
   guard let driver = currentMockingDriver else {
     fatalError("Mocking requested from non-mocking context")
   }
-  driver.trace.add(Trace.Entry(name: origName, args))
+  var mockArgs: Array<AnyHashable> = []
+  if let p = path {
+    mockArgs.append(String(_errorCorrectingPlatformString: p))
+  }
+  mockArgs.append(contentsOf: args)
+  driver.trace.add(Trace.Entry(name: origName, mockArgs))
 
   switch driver.forceErrno {
   case .none: break
@@ -170,21 +177,20 @@ private func mockImpl(
 }
 
 internal func _mock(
-  name: String = #function, _ args: AnyHashable...
+  name: String = #function, path: UnsafePointer<CChar>? = nil, _ args: AnyHashable...
 ) -> CInt {
-  precondition(mockingEnabled)
-  return mockImpl(name: name, args)
+  return mockImpl(name: name, path: path, args)
 }
 internal func _mockInt(
-  name: String = #function, _ args: AnyHashable...
+  name: String = #function, path: UnsafePointer<CChar>? = nil, _ args: AnyHashable...
 ) -> Int {
-  Int(mockImpl(name: name, args))
+  Int(mockImpl(name: name, path: path, args))
 }
 
 internal func _mockOffT(
-  name: String = #function, _ args: AnyHashable...
+  name: String = #function, path: UnsafePointer<CChar>? = nil, _ args: AnyHashable...
 ) -> _COffT {
-  _COffT(mockImpl(name: name, args))
+  _COffT(mockImpl(name: name, path: path, args))
 }
 #endif // ENABLE_MOCKING
 

@@ -26,7 +26,7 @@ internal func system_open(
 ) -> CInt {
 #if ENABLE_MOCKING
   if mockingEnabled {
-    return _mock(String(_errorCorrectingPlatformString: path), oflag)
+    return _mock(path: path, oflag)
   }
 #endif
   return open(path, oflag)
@@ -38,7 +38,7 @@ internal func system_open(
 ) -> CInt {
 #if ENABLE_MOCKING
   if mockingEnabled {
-    return _mock(String(_errorCorrectingPlatformString: path), oflag, mode)
+    return _mock(path: path, oflag, mode)
   }
 #endif
   return open(path, oflag, mode)
