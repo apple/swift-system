@@ -115,3 +115,30 @@ internal func system_dup2(_ fd: Int32, _ fd2: Int32) -> Int32 {
   #endif
   return dup2(fd, fd2)
 }
+
+internal func system_sysconf(_ name: CInt) -> Int {
+  #if ENABLE_MOCKING
+  if mockingEnabled { return _mockInt(name) }
+  #endif
+  return sysconf(name)
+}
+
+internal func system_pathconf(
+  _ path: UnsafePointer<CChar>, _ name: CInt
+) -> Int {
+#if ENABLE_MOCKING
+  if mockingEnabled {
+    return _mockInt(path: path, name)
+  }
+#endif
+  return pathconf(path, name)
+}
+
+internal func system_fpathconf(
+  _ fd: CInt, _ name: CInt
+) -> Int {
+#if ENABLE_MOCKING
+  if mockingEnabled { return _mockInt(fd, name) }
+#endif
+  return fpathconf(fd, name)
+}
