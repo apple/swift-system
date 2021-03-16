@@ -634,7 +634,6 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "socketTypeNotSupported")
   public static var ESOCKTNOSUPPORT: Errno { socketTypeNotSupported }
 
-#if !os(Windows)
   /// Not supported.
   ///
   /// The attempted operation isn't supported
@@ -647,7 +646,6 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "notSupported")
   public static var ENOTSUP: Errno { notSupported }
-#endif
 
   /// Protocol family not supported.
   ///

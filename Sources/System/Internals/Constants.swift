@@ -166,15 +166,31 @@ internal var _ENOPROTOOPT: CInt { ENOPROTOOPT }
 internal var _EPROTONOSUPPORT: CInt { EPROTONOSUPPORT }
 
 @_alwaysEmitIntoClient
-internal var _ESOCKTNOSUPPORT: CInt { ESOCKTNOSUPPORT }
-
-#if !os(Windows)
-@_alwaysEmitIntoClient
-internal var _ENOTSUP: CInt { ENOTSUP }
+internal var _ESOCKTNOSUPPORT: CInt {
+#if os(Windows)
+  return WSAESOCKTNOSUPPORT
+#else
+  return ESOCKTNOSUPPORT
 #endif
+}
 
 @_alwaysEmitIntoClient
-internal var _EPFNOSUPPORT: CInt { EPFNOSUPPORT }
+internal var _ENOTSUP: CInt {
+#if os(Windows)
+  return WSAEOPNOTSUPP
+#else
+  return ENOTSUP
+#endif
+}
+
+@_alwaysEmitIntoClient
+internal var _EPFNOSUPPORT: CInt {
+#if os(Windows)
+  return WSAEPFNOSUPPORT
+#else
+  return EPFNOSUPPORT
+#endif
+}
 
 @_alwaysEmitIntoClient
 internal var _EAFNOSUPPORT: CInt { EAFNOSUPPORT }
@@ -210,10 +226,22 @@ internal var _EISCONN: CInt { EISCONN }
 internal var _ENOTCONN: CInt { ENOTCONN }
 
 @_alwaysEmitIntoClient
-internal var _ESHUTDOWN: CInt { ESHUTDOWN }
+internal var _ESHUTDOWN: CInt {
+#if os(Windows)
+  return WSAESHUTDOWN
+#else
+  return ESHUTDOWN
+#endif
+}
 
 @_alwaysEmitIntoClient
-internal var _ETOOMANYREFS: CInt { ETOOMANYREFS }
+internal var _ETOOMANYREFS: CInt {
+#if os(Windows)
+  return WSAETOOMANYREFS
+#else
+  return ETOOMANYREFS
+#endif
+}
 
 @_alwaysEmitIntoClient
 internal var _ETIMEDOUT: CInt { ETIMEDOUT }
@@ -228,7 +256,13 @@ internal var _ELOOP: CInt { ELOOP }
 internal var _ENAMETOOLONG: CInt { ENAMETOOLONG }
 
 @_alwaysEmitIntoClient
-internal var _EHOSTDOWN: CInt { EHOSTDOWN }
+internal var _EHOSTDOWN: CInt {
+#if os(Windows)
+  return WSAEHOSTDOWN
+#else
+  return EHOSTDOWN
+#endif
+}
 
 @_alwaysEmitIntoClient
 internal var _EHOSTUNREACH: CInt { EHOSTUNREACH }
@@ -242,16 +276,40 @@ internal var _EPROCLIM: CInt { EPROCLIM }
 #endif
 
 @_alwaysEmitIntoClient
-internal var _EUSERS: CInt { EUSERS }
+internal var _EUSERS: CInt {
+#if os(Windows)
+  return WSAEUSERS
+#else
+  return EUSERS
+#endif
+}
 
 @_alwaysEmitIntoClient
-internal var _EDQUOT: CInt { EDQUOT }
+internal var _EDQUOT: CInt {
+#if os(Windows)
+  return WSAEDQUOT
+#else
+  return EDQUOT
+#endif
+}
 
 @_alwaysEmitIntoClient
-internal var _ESTALE: CInt { ESTALE }
+internal var _ESTALE: CInt {
+#if os(Windows)
+  return WSAESTALE
+#else
+  return ESTALE
+#endif
+}
 
 @_alwaysEmitIntoClient
-internal var _EREMOTE: CInt { EREMOTE }
+internal var _EREMOTE: CInt {
+#if os(Windows)
+  return WSAEREMOTE
+#else
+  return EREMOTE
+#endif
+}
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
 @_alwaysEmitIntoClient
@@ -392,11 +450,11 @@ internal var _O_WRONLY: CInt { O_WRONLY }
 @_alwaysEmitIntoClient
 internal var _O_RDWR: CInt { O_RDWR }
 
+#if !os(Windows)
 // TODO: API?
 @_alwaysEmitIntoClient
 internal var _O_ACCMODE: CInt { O_ACCMODE }
 
-#if !os(Windows)
 @_alwaysEmitIntoClient
 internal var _O_NONBLOCK: CInt { O_NONBLOCK }
 #endif
@@ -412,11 +470,11 @@ internal var _O_SHLOCK: CInt { O_SHLOCK }
 internal var _O_EXLOCK: CInt { O_EXLOCK }
 #endif
 
+#if !os(Windows)
 // TODO: API?
 @_alwaysEmitIntoClient
 internal var _O_ASYNC: CInt { O_ASYNC }
 
-#if !os(Windows)
 @_alwaysEmitIntoClient
 internal var _O_NOFOLLOW: CInt { O_NOFOLLOW }
 #endif
@@ -435,6 +493,7 @@ internal var _O_EXCL: CInt { O_EXCL }
 internal var _O_EVTONLY: CInt { O_EVTONLY }
 #endif
 
+#if !os(Windows)
 // TODO: API?
 @_alwaysEmitIntoClient
 internal var _O_NOCTTY: CInt { O_NOCTTY }
@@ -442,6 +501,7 @@ internal var _O_NOCTTY: CInt { O_NOCTTY }
 // TODO: API?
 @_alwaysEmitIntoClient
 internal var _O_DIRECTORY: CInt { O_DIRECTORY }
+#endif
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
 @_alwaysEmitIntoClient
