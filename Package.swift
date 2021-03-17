@@ -18,6 +18,7 @@ let targets: [PackageDescription.Target] = [
     dependencies: ["CSystem"],
     path: "Sources/System",
     swiftSettings: [
+      .define("SYSTEM_PACKAGE"),
       .define("ENABLE_MOCKING", .when(configuration: .debug))
     ]),
   .target(

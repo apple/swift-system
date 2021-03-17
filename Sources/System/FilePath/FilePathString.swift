@@ -32,10 +32,15 @@ extension FilePath {
   /// The pointer passed as an argument to `body` is valid
   /// only during the execution of this method.
   /// Don't try to store the pointer for later use.
+  @_alwaysEmitIntoClient
   public func withPlatformString<Result>(
     _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
   ) rethrows -> Result {
-    try _withPlatformString(body)
+    #if !os(Windows)
+    return try withCString(body)
+    #else
+    return try _withPlatformString(body)
+    #endif
   }
 }
 
@@ -412,7 +417,7 @@ extension FilePath {
     #if os(Windows)
     fatalError("FilePath.withCString() unsupported on Windows ")
     #else
-    return try withPlatformString(body)
+    return try _withPlatformString(body)
     #endif
   }
 }
