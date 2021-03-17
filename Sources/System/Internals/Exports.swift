@@ -85,7 +85,7 @@ extension String {
   ) rethrows -> Result {
     // Need to #if because CChar may be signed
     #if os(Windows)
-    return try withCString(encodedAs: _PlatformUnicodeEncoding.self, body)
+    return try withCString(encodedAs: CInterop.PlatformUnicodeEncoding.self, body)
     #else
     return try withCString(body)
     #endif
@@ -96,7 +96,7 @@ extension String {
     #if os(Windows)
     guard let strRes = String.decodeCString(
       platformString,
-      as: _PlatformUnicodeEncoding.self,
+      as: CInterop.PlatformUnicodeEncoding.self,
       repairingInvalidCodeUnits: false
     ) else { return nil }
     assert(strRes.repairsMade == false)
@@ -115,7 +115,7 @@ extension String {
     #if os(Windows)
     let strRes = String.decodeCString(
       platformString,
-      as: _PlatformUnicodeEncoding.self,
+      as: CInterop.PlatformUnicodeEncoding.self,
       repairingInvalidCodeUnits: true)
     self = strRes!.result
     return
