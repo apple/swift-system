@@ -29,7 +29,11 @@ import ucrt
 /// A namespace for C and platform types
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 public enum CInterop {
+#if os(Windows)
+  public typealias Mode = CInt
+#else
   public typealias Mode = mode_t
+#endif
 
   /// The C `char` type
   public typealias Char = CChar
