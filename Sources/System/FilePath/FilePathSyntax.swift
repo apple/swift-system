@@ -320,8 +320,8 @@ extension FilePath {
   /// Example:
   ///
   ///     var path = "/tmp/file"
-  ///     path.extension = ".txt" // path is "/tmp/file.txt"
-  ///     path.extension = ".o"   // path is "/tmp/file.o"
+  ///     path.extension = "txt" // path is "/tmp/file.txt"
+  ///     path.extension = "o"   // path is "/tmp/file.o"
   ///     path.extension = nil    // path is "/tmp/file"
   ///     path.extension = ""     // path is "/tmp/file."
   ///
