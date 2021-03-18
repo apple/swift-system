@@ -1,0 +1,5 @@
+module CSystem {
+  header "CSystemLinux.h"
+  header "CSystemWindows.h"
+  export *
+}
