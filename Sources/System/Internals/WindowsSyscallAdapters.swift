@@ -23,7 +23,8 @@ internal func open(
 
 @inline(__always)
 internal func open(
-  _ path: UnsafePointer<CInterop.PlatformChar>, _ oflag: Int32, _ mode: CModeT
+  _ path: UnsafePointer<CInterop.PlatformChar>, _ oflag: Int32,
+  _ mode: CInterop.Mode
 ) -> CInt {
   // TODO(compnerd): Apply read/write permissions
   var fh: CInt = -1
