@@ -190,6 +190,7 @@ extension FilePath.Root: _PathSlice {
   }
 }
 extension FilePath: _PlatformStringable {
+  @usableFromInline
   func _withPlatformString<Result>(_ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result) rethrows -> Result {
     try _storage.withPlatformString(body)
   }
