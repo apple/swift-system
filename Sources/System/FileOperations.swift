@@ -70,7 +70,7 @@ extension FileDescriptor {
     _ mode: FileDescriptor.AccessMode,
     options: FileDescriptor.OpenOptions,
     permissions: FilePermissions?,
-    retryOnInterrupt: Bool = true
+    retryOnInterrupt: Bool
   ) -> Result<FileDescriptor, Errno> {
     let oFlag = mode.rawValue | options.rawValue
     let descOrError: Result<CInt, Errno> = valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
@@ -96,7 +96,7 @@ extension FileDescriptor {
 
   @usableFromInline
   internal func _close() -> Result<(), Errno> {
-    nothingOrErrno(system_close(self.rawValue))
+    nothingOrErrno(retryOnInterrupt: false) { system_close(self.rawValue) }
   }
 
   /// Reposition the offset for the given file descriptor.
@@ -120,8 +120,9 @@ extension FileDescriptor {
   internal func _seek(
     offset: Int64, from whence: FileDescriptor.SeekOrigin
   ) -> Result<Int64, Errno> {
-    let newOffset = system_lseek(self.rawValue, _COffT(offset), whence.rawValue)
-    return valueOrErrno(Int64(newOffset))
+    valueOrErrno(retryOnInterrupt: false) {
+      Int64(system_lseek(self.rawValue, _COffT(offset), whence.rawValue))
+    }
   }
 
 
@@ -163,7 +164,7 @@ extension FileDescriptor {
   @usableFromInline
   internal func _read(
     into buffer: UnsafeMutableRawBufferPointer,
-    retryOnInterrupt: Bool = true
+    retryOnInterrupt: Bool
   ) throws -> Result<Int, Errno> {
     valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
       system_read(self.rawValue, buffer.baseAddress, buffer.count)
