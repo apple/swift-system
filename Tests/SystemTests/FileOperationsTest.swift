@@ -29,13 +29,13 @@ final class FileOperationsTest: XCTestCase {
     let writeBufAddr = writeBuf.baseAddress
 
     let syscallTestCases: Array<MockTestCase> = [
-      MockTestCase(name: "open", "a path", O_RDWR | O_APPEND, interruptable: true) {
+      MockTestCase(name: "open", .interruptable, "a path", O_RDWR | O_APPEND) {
         retryOnInterrupt in
         _ = try FileDescriptor.open(
           "a path", .readWrite, options: [.append], retryOnInterrupt: retryOnInterrupt)
       },
 
-      MockTestCase(name: "open", "a path", O_WRONLY | O_CREAT | O_APPEND, 0o777, interruptable: true) {
+      MockTestCase(name: "open", .interruptable, "a path", O_WRONLY | O_CREAT | O_APPEND, 0o777) {
         retryOnInterrupt in
         _ = try FileDescriptor.open(
           "a path", .writeOnly, options: [.create, .append],
@@ -43,41 +43,41 @@ final class FileOperationsTest: XCTestCase {
           retryOnInterrupt: retryOnInterrupt)
       },
 
-      MockTestCase(name: "read", rawFD, bufAddr, bufCount, interruptable: true) {
+      MockTestCase(name: "read", .interruptable, rawFD, bufAddr, bufCount) {
         retryOnInterrupt in
         _ = try fd.read(into: rawBuf, retryOnInterrupt: retryOnInterrupt)
       },
 
-      MockTestCase(name: "pread", rawFD, bufAddr, bufCount, 5, interruptable: true) {
+      MockTestCase(name: "pread", .interruptable, rawFD, bufAddr, bufCount, 5) {
         retryOnInterrupt in
         _ = try fd.read(fromAbsoluteOffset: 5, into: rawBuf, retryOnInterrupt: retryOnInterrupt)
       },
 
-      MockTestCase(name: "lseek", rawFD, -2, SEEK_END, interruptable: false) {
+      MockTestCase(name: "lseek", .noInterrupt, rawFD, -2, SEEK_END) {
         _ in
         _ = try fd.seek(offset: -2, from: .end)
       },
 
-      MockTestCase(name: "write", rawFD, writeBufAddr, bufCount, interruptable: true) {
+      MockTestCase(name: "write", .interruptable, rawFD, writeBufAddr, bufCount) {
         retryOnInterrupt in
         _ = try fd.write(writeBuf, retryOnInterrupt: retryOnInterrupt)
       },
 
-      MockTestCase(name: "pwrite", rawFD, writeBufAddr, bufCount, 7, interruptable: true) {
+      MockTestCase(name: "pwrite", .interruptable, rawFD, writeBufAddr, bufCount, 7) {
         retryOnInterrupt in
         _ = try fd.write(toAbsoluteOffset: 7, writeBuf, retryOnInterrupt: retryOnInterrupt)
       },
 
-      MockTestCase(name: "close", rawFD, interruptable: false) {
+      MockTestCase(name: "close", .noInterrupt, rawFD) {
         _ in
         _ = try fd.close()
       },
 
-      MockTestCase(name: "dup", rawFD, interruptable: true) { retryOnInterrupt in
+      MockTestCase(name: "dup", .interruptable, rawFD) { retryOnInterrupt in
         _ = try fd.duplicate(retryOnInterrupt: retryOnInterrupt)
       },
 
-      MockTestCase(name: "dup2", rawFD, 42, interruptable: true) { retryOnInterrupt in
+      MockTestCase(name: "dup2", .interruptable, rawFD, 42) { retryOnInterrupt in
         _ = try fd.duplicate(as: FileDescriptor(rawValue: 42),
                              retryOnInterrupt: retryOnInterrupt)
       },
@@ -128,7 +128,7 @@ final class FileOperationsTest: XCTestCase {
   func testGithubIssues() {
     // https://github.com/apple/swift-system/issues/26
     let issue26 = MockTestCase(
-      name: "open", "a path", O_WRONLY | O_CREAT, 0o020, interruptable: true
+      name: "open", .interruptable, "a path", O_WRONLY | O_CREAT, 0o020
     ) {
       retryOnInterrupt in
       _ = try FileDescriptor.open(
