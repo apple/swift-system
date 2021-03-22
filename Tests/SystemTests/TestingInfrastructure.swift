@@ -107,7 +107,20 @@ internal struct MockTestCase: TestCase {
   var line: UInt
 
   var expected: Trace.Entry
-  var interruptable: Bool
+  var interruptBehavior: InterruptBehavior
+
+  var interruptable: Bool { return interruptBehavior == .interruptable }
+
+  internal enum InterruptBehavior {
+    // Retry the syscall on EINTR
+    case interruptable
+
+    // Cannot return EINTR
+    case noInterrupt
+
+    // Cannot error at all
+    case noError
+  }
 
   var body: (_ retryOnInterrupt: Bool) throws -> ()
 
@@ -115,14 +128,14 @@ internal struct MockTestCase: TestCase {
     _ file: StaticString = #file,
     _ line: UInt = #line,
     name: String,
+    _ interruptable: InterruptBehavior,
     _ args: AnyHashable...,
-    interruptable: Bool,
-    _ body: @escaping (_ retryOnInterrupt: Bool) throws -> ()
+    body: @escaping (_ retryOnInterrupt: Bool) throws -> ()
   ) {
     self.file = file
     self.line = line
     self.expected = Trace.Entry(name: name, args)
-    self.interruptable = interruptable
+    self.interruptBehavior = interruptable
     self.body = body
   }
 
@@ -139,6 +152,19 @@ internal struct MockTestCase: TestCase {
         self.expectEqual(self.expected, mocking.trace.dequeue())
       } catch {
         self.fail()
+      }
+
+      // Non-error-ing syscalls shouldn't ever throw
+      guard interruptBehavior != .noError else {
+        do {
+          try body(interruptable)
+          self.expectEqual(self.expected, mocking.trace.dequeue())
+          try body(!interruptable)
+          self.expectEqual(self.expected, mocking.trace.dequeue())
+        } catch {
+          self.fail()
+        }
+        return
       }
 
       // Test interupt behavior. Interruptable calls will be told not to
