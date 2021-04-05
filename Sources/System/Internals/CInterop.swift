@@ -63,4 +63,18 @@ public enum CInterop {
   /// on API.
   public typealias PlatformUnicodeEncoding = UTF8
   #endif
+
+  /// The C `flock` type
+  public typealias FileLock = flock
+
+  /// The C `pid_t` type
+  public typealias PID = pid_t
+
+  /// The C `off_t` type.
+  ///
+  /// Note that in System, we generally standardize on `Int64` where `off_t`
+  /// might otherwise appear. This typealias allows conversion code to be
+  /// emitted into client.
+  public typealias Offset = off_t
+
 }
