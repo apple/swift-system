@@ -82,10 +82,11 @@ extension SocketDescriptor {
 
   @usableFromInline
   internal func _bind(to address: SocketAddress) -> Result<(), Errno> {
-    let success = address.withUnsafeCInterop { addr, len in
-      system_bind(self.rawValue, addr, len)
+    nothingOrErrno(retryOnInterrupt: false) {
+      address.withUnsafeCInterop { addr, len in
+        system_bind(self.rawValue, addr, len)
+      }
     }
-    return nothingOrErrno(success)
   }
 
   /// Listen for connections on a socket.
@@ -103,7 +104,9 @@ extension SocketDescriptor {
 
   @usableFromInline
   internal func _listen(backlog: Int) -> Result<(), Errno> {
-    nothingOrErrno(system_listen(self.rawValue, CInt(backlog)))
+    nothingOrErrno(retryOnInterrupt: false) {
+      system_listen(self.rawValue, CInt(backlog))
+    }
   }
 
   /// Accept a connection on a socket.
@@ -189,10 +192,11 @@ extension SocketDescriptor {
 
   @usableFromInline
   internal func _connect(to address: SocketAddress) -> Result<(), Errno> {
-    let success = address.withUnsafeCInterop { addr, len in
-      system_connect(self.rawValue, addr, len)
+    nothingOrErrno(retryOnInterrupt: false) {
+      address.withUnsafeCInterop { addr, len in
+        system_connect(self.rawValue, addr, len)
+      }
     }
-    return nothingOrErrno(success)
   }
 
   /// Shutdown part of a full-duplex connection
@@ -205,7 +209,9 @@ extension SocketDescriptor {
 
   @usableFromInline
   internal func _shutdown(_ how: ShutdownKind) -> Result<(), Errno> {
-    nothingOrErrno(system_shutdown(self.rawValue, how.rawValue))
+    nothingOrErrno(retryOnInterrupt: false) {
+      system_shutdown(self.rawValue, how.rawValue)
+    }
   }
 
   // MARK: - Send and receive

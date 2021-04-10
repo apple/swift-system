@@ -198,9 +198,9 @@ internal struct MockTestCase: TestCase {
       guard interruptBehavior != .noError else {
         do {
           try body(interruptable)
-          self.expectEqual(self.expected, mocking.trace.dequeue())
+          self.expectMatch(self.expected, mocking.trace.dequeue())
           try body(!interruptable)
-          self.expectEqual(self.expected, mocking.trace.dequeue())
+          self.expectMatch(self.expected, mocking.trace.dequeue())
         } catch {
           self.fail()
         }

@@ -518,12 +518,13 @@ extension SocketDescriptor {
     into buffer: UnsafeMutableRawBufferPointer
   ) -> Result<Int, Errno> {
     var length = CInterop.SockLen(buffer.count)
-    let success = system_getsockopt(
-      self.rawValue,
-      level.rawValue,
-      option.rawValue,
-      buffer.baseAddress, &length)
-    return nothingOrErrno(success).map { _ in Int(length) }
+    return nothingOrErrno(retryOnInterrupt: false) {
+      system_getsockopt(
+        self.rawValue,
+        level.rawValue,
+        option.rawValue,
+        buffer.baseAddress, &length)
+    }.map { _ in Int(length) }
   }
 }
 
@@ -595,11 +596,12 @@ extension SocketDescriptor {
     _ option: Option,
     from buffer: UnsafeRawBufferPointer
   ) -> Result<Void, Errno> {
-    let success = system_setsockopt(
-      self.rawValue,
-      level.rawValue,
-      option.rawValue,
-      buffer.baseAddress, CInterop.SockLen(buffer.count))
-    return nothingOrErrno(success)
+    nothingOrErrno(retryOnInterrupt: false) {
+      system_setsockopt(
+        self.rawValue,
+        level.rawValue,
+        option.rawValue,
+        buffer.baseAddress, CInterop.SockLen(buffer.count))
+    }
   }
 }

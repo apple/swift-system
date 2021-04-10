@@ -30,36 +30,34 @@ final class SocketTest: XCTestCase {
     let writeBufAddr = writeBuf.baseAddress
 
     let syscallTestCases: Array<MockTestCase> = [
-      MockTestCase(name: "socket", PF_INET6, SOCK_STREAM, 0, interruptable: true) {
+      MockTestCase(name: "socket", .interruptable, PF_INET6, SOCK_STREAM, 0) {
         retryOnInterrupt in
         _ = try SocketDescriptor.open(.ipv6, .stream, retryOnInterrupt: retryOnInterrupt)
       },
-      MockTestCase(name: "shutdown", rawSocket, SHUT_RD, interruptable: false) {
+      MockTestCase(name: "shutdown", .noInterrupt, rawSocket, SHUT_RD) {
         retryOnInterrupt in
         _ = try socket.shutdown(.read)
       },
-      MockTestCase(name: "listen", rawSocket, 999, interruptable: false) {
+      MockTestCase(name: "listen", .noInterrupt, rawSocket, 999) {
         retryOnInterrupt in
         _ = try socket.listen(backlog: 999)
       },
       MockTestCase(
-        name: "recv", rawSocket, bufAddr, bufCount, MSG_PEEK, interruptable: true
+        name: "recv", .interruptable, rawSocket, bufAddr, bufCount, MSG_PEEK
       ) {
         retryOnInterrupt in
         _ = try socket.receive(
           into: rawBuf, flags: .peek, retryOnInterrupt: retryOnInterrupt)
       },
       MockTestCase(
-        name: "send", rawSocket, writeBufAddr, bufCount, MSG_DONTROUTE,
-        interruptable: true
+        name: "send", .interruptable, rawSocket, writeBufAddr, bufCount, MSG_DONTROUTE
       ) {
         retryOnInterrupt in
         _ = try socket.send(
           writeBuf, flags: .doNotRoute, retryOnInterrupt: retryOnInterrupt)
       },
       MockTestCase(
-        name: "recvfrom", rawSocket, Wildcard(), Wildcard(), 42, Wildcard(), Wildcard(),
-        interruptable: true
+        name: "recvfrom", .interruptable, rawSocket, Wildcard(), Wildcard(), 42, Wildcard(), Wildcard()
       ) { retryOnInterrupt in
         var sender = SocketAddress()
         _ = try socket.receive(into: rawBuf,
@@ -68,8 +66,7 @@ final class SocketTest: XCTestCase {
                                retryOnInterrupt: retryOnInterrupt)
       },
       MockTestCase(
-        name: "sendto", rawSocket, Wildcard(), Wildcard(), 42, Wildcard(), Wildcard(),
-        interruptable: true
+        name: "sendto", .interruptable, rawSocket, Wildcard(), Wildcard(), 42, Wildcard(), Wildcard()
       ) { retryOnInterrupt in
         let recipient = SocketAddress(ipv4: .loopback, port: 123)
         _ = try socket.send(UnsafeRawBufferPointer(rawBuf),
@@ -78,8 +75,7 @@ final class SocketTest: XCTestCase {
                             retryOnInterrupt: retryOnInterrupt)
       },
       MockTestCase(
-        name: "recvmsg", rawSocket, Wildcard(), 42,
-        interruptable: true
+        name: "recvmsg", .interruptable, rawSocket, Wildcard(), 42
       ) { retryOnInterrupt in
         var sender = SocketAddress()
         var ancillary = SocketDescriptor.AncillaryMessageBuffer()
@@ -90,8 +86,7 @@ final class SocketTest: XCTestCase {
                                retryOnInterrupt: retryOnInterrupt)
       },
       MockTestCase(
-        name: "sendmsg", rawSocket, Wildcard(), 42,
-        interruptable: true
+        name: "sendmsg", .interruptable, rawSocket, Wildcard(), 42
       ) { retryOnInterrupt in
         let recipient = SocketAddress(ipv4: .loopback, port: 123)
         let ancillary = SocketDescriptor.AncillaryMessageBuffer()
