@@ -35,9 +35,15 @@ let targets: [PackageDescription.Target] = [
 
   .testTarget(
     name: "SystemTests",
-    dependencies: ["SystemPackage", "SystemSockets"],
+    dependencies: ["SystemPackage"],
     swiftSettings: settings
   ),
+
+  .testTarget(
+      name: "SystemSocketsTests",
+      dependencies: ["SystemSockets"],
+      swiftSettings: settings
+    ),
 
   .target(
     name: "Samples",
