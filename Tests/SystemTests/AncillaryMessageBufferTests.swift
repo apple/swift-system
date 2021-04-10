@@ -11,8 +11,10 @@ import XCTest
 
 #if SYSTEM_PACKAGE
 @testable import SystemPackage
+@testable import SystemSockets
 #else
-@testable import System
+import System
+#error("No socket support")
 #endif
 
 // @available(...)

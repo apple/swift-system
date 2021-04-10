@@ -7,6 +7,8 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
+import SystemPackage
+
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 /// An opaque type representing a socket address in some address family,
 /// such as an IP address along with a port number.

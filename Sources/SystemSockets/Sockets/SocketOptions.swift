@@ -7,6 +7,8 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
+@testable import SystemPackage
+
 extension SocketDescriptor {
   // Options associated with a socket.
   @frozen

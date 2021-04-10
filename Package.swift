@@ -28,6 +28,11 @@ let targets: [PackageDescription.Target] = [
   .target(
     name: "CSystem",
     dependencies: []),
+
+  .target(
+    name: "SystemSockets",
+    dependencies: ["SystemPackage"]),
+
   .testTarget(
     name: "SystemTests",
     dependencies: ["SystemPackage"],
@@ -38,6 +43,7 @@ let targets: [PackageDescription.Target] = [
     name: "Samples",
     dependencies: [
       "SystemPackage",
+      "SystemSockets",
       .product(name: "ArgumentParser", package: "swift-argument-parser"),
     ],
     path: "Sources/Samples",

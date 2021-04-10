@@ -7,6 +7,8 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
+@testable import SystemPackage
+
 private var _pathOffset: Int {
   // FIXME: If this isn't just a constant, use `offsetof` in C.
   MemoryLayout<CInterop.SockAddrUn>.offset(of: \CInterop.SockAddrUn.sun_path)!

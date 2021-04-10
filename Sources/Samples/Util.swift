@@ -9,8 +9,10 @@
 
 #if SYSTEM_PACKAGE
 import SystemPackage
+import SystemSockets
 #else
 import System
+#error("No socket support")
 #endif
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)

@@ -7,6 +7,8 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
+@testable import SystemPackage
+
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketDescriptor {
   /// A reusable collection of variable-sized ancillary messages

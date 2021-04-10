@@ -10,9 +10,11 @@
 import XCTest
 
 #if SYSTEM_PACKAGE
-@testable import SystemPackage
+import SystemPackage
+@testable import SystemSockets
 #else
-@testable import System
+import System
+#error("No socket support")
 #endif
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
