@@ -7,7 +7,19 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-@testable import SystemPackage
+#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+import Darwin
+#elseif os(Linux) || os(FreeBSD) || os(Android)
+import CSystem
+import Glibc
+#elseif os(Windows)
+import CSystem
+import ucrt
+#else
+#error("Unsupported Platform")
+#endif
+
+import SystemPackage
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress {
@@ -26,65 +38,65 @@ extension SocketAddress {
     ///
     /// The corresponding C constant is `AF_UNSPEC`.
     @_alwaysEmitIntoClient
-    public static var unspecified: Family { Family(_AF_UNSPEC) }
+    public static var unspecified: Family { Family(CInterop.SAFamily(AF_UNSPEC)) }
 
     /// Local address family.
     ///
     /// The corresponding C constant is `AF_LOCAL`.
     @_alwaysEmitIntoClient
-    public static var local: Family { Family(_AF_LOCAL) }
+    public static var local: Family { Family(CInterop.SAFamily(AF_LOCAL)) }
 
     /// UNIX address family. (Renamed `local`.)
     ///
     /// The corresponding C constant is `AF_UNIX`.
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "local")
-    public static var unix: Family { Family(_AF_UNIX) }
+    public static var unix: Family { Family(CInterop.SAFamily(AF_UNIX)) }
 
     /// IPv4 address family.
     ///
     /// The corresponding C constant is `AF_INET`.
     @_alwaysEmitIntoClient
-    public static var ipv4: Family { Family(_AF_INET) }
+    public static var ipv4: Family { Family(CInterop.SAFamily(AF_INET)) }
 
     /// Internal routing address family.
     ///
     /// The corresponding C constant is `AF_ROUTE`.
     @_alwaysEmitIntoClient
-    public static var routing: Family { Family(_AF_ROUTE) }
+    public static var routing: Family { Family(CInterop.SAFamily(AF_ROUTE)) }
 
     /// IPv6 address family.
     ///
     /// The corresponding C constant is `AF_INET6`.
     @_alwaysEmitIntoClient
-    public static var ipv6: Family { Family(_AF_INET6) }
+    public static var ipv6: Family { Family(CInterop.SAFamily(AF_INET6)) }
 
     /// System address family.
     ///
     /// The corresponding C constant is `AF_SYSTEM`.
     @_alwaysEmitIntoClient
-    public static var system: Family { Family(_AF_SYSTEM) }
+    public static var system: Family { Family(CInterop.SAFamily(AF_SYSTEM)) }
 
     /// Raw network device address family.
     ///
     /// The corresponding C constant is `AF_NDRV`
     @_alwaysEmitIntoClient
-    public static var networkDevice: Family { Family(_AF_NDRV) }
+    public static var networkDevice: Family { Family(CInterop.SAFamily(AF_NDRV)) }
   }
 }
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress.Family: CustomStringConvertible {
   public var description: String {
-    switch rawValue {
-    case _AF_UNSPEC: return "unspecified"
-    case _AF_LOCAL: return "local"
-    case _AF_UNIX: return "unix"
-    case _AF_INET: return "ipv4"
-    case _AF_ROUTE: return "routing"
-    case _AF_INET6: return "ipv6"
-    case _AF_SYSTEM: return "system"
-    case _AF_NDRV: return "networkDevice"
+    switch self {
+    case .unspecified: return "unspecified"
+    case .local: return "local"
+    //case .unix: return "unix"
+    case .ipv4: return "ipv4"
+    case .routing: return "routing"
+    case .ipv6: return "ipv6"
+    case .system: return "system"
+    case .networkDevice: return "networkDevice"
     default:
       return rawValue.description
     }

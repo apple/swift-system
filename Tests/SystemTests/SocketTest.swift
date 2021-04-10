@@ -17,6 +17,8 @@ import System
 #error("No socket support")
 #endif
 
+// FIXME: Need collaborative mocking between systempackage and systemsockets
+/*
 // @available(...)
 final class SocketTest: XCTestCase {
 
@@ -104,3 +106,4 @@ final class SocketTest: XCTestCase {
 
   }
 }
+*/

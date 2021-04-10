@@ -7,7 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-@testable import SystemPackage
+import SystemPackage
 
 private var _pathOffset: Int {
   // FIXME: If this isn't just a constant, use `offsetof` in C.
@@ -41,14 +41,12 @@ extension SocketAddress {
       let addr = target.baseAddress!.assumingMemoryBound(to: CInterop.SockAddr.self)
       addr.pointee.sa_len = UInt8(exactly: length) ?? 255
       addr.pointee.sa_family = CInterop.SAFamily(Family.local.rawValue)
-      // FIXME: It shouldn't be this difficult to get a null-terminated
-      // UBP<CChar> out of a FilePath
       let path = (target.baseAddress! + offset)
-        .assumingMemoryBound(to: SystemChar.self)
-      local._path._storage.nullTerminatedStorage.withUnsafeBufferPointer { source in
-        assert(source.count == length - offset)
-        path.initialize(from: source.baseAddress!, count: source.count)
+        .assumingMemoryBound(to: CInterop.PlatformChar.self)
+      local._path.withPlatformString {
+        path.initialize(from: $0, count: local._path.length)
       }
+      target[length-1] = 0
       return length
     }
   }

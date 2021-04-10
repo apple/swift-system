@@ -7,7 +7,19 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-@testable import SystemPackage
+#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+import Darwin
+#elseif os(Linux) || os(FreeBSD) || os(Android)
+import CSystem
+import Glibc
+#elseif os(Windows)
+import CSystem
+import ucrt
+#else
+#error("Unsupported Platform")
+#endif
+
+import SystemPackage
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress {
@@ -80,7 +92,7 @@ extension SocketAddress {
     ///
     /// This corresponds to the C constant `AI_ADDRCONFIG`.
     @_alwaysEmitIntoClient
-    public static var configuredAddress: Self { Self(_AI_ADDRCONFIG) }
+    public static var configuredAddress: Self { Self(AI_ADDRCONFIG) }
 
     /// If `.ipv4Mapped` is also present, then return also return all
     /// matching IPv4 addresses in addition to IPv6 addresses.
@@ -89,7 +101,7 @@ extension SocketAddress {
     ///
     /// This corresponds to the C constant `AI_ALL`.
     @_alwaysEmitIntoClient
-    public static var all: Self { Self(_AI_ALL) }
+    public static var all: Self { Self(AI_ALL) }
 
     /// If this flag is present, then name resolution returns the canonical
     /// name of the specified hostname in the `canonicalName` field of the
@@ -97,7 +109,7 @@ extension SocketAddress {
     ///
     /// This corresponds to the C constant `AI_CANONNAME`.
     @_alwaysEmitIntoClient
-    public static var canonicalName: Self { Self(_AI_CANONNAME) }
+    public static var canonicalName: Self { Self(AI_CANONNAME) }
 
     /// Indicates that the specified hostname string contains an IPv4 or
     /// IPv6 address in numeric string representation. No name resolution
@@ -105,7 +117,7 @@ extension SocketAddress {
     ///
     /// This corresponds to the C constant `AI_NUMERICHOST`.
     @_alwaysEmitIntoClient
-    public static var numericHost: Self { Self(_AI_NUMERICHOST) }
+    public static var numericHost: Self { Self(AI_NUMERICHOST) }
 
     /// Indicates that the specified service string contains a numerical port
     /// value. This prevents having to resolve the port number using a
@@ -113,7 +125,7 @@ extension SocketAddress {
     ///
     /// This corresponds to the C constant `AI_NUMERICSERV`.
     @_alwaysEmitIntoClient
-    public static var numericService: Self { Self(_AI_NUMERICSERV) }
+    public static var numericService: Self { Self(AI_NUMERICSERV) }
 
     /// Indicates that the returned address is intended for use in
     /// a call to `SocketDescriptor.bind()`. In this case, a
@@ -128,7 +140,7 @@ extension SocketAddress {
     ///
     /// This corresponds to the C constant `AI_PASSIVE`.
     @_alwaysEmitIntoClient
-    public static var passive: Self { Self(_AI_PASSIVE) }
+    public static var passive: Self { Self(AI_PASSIVE) }
 
     /// This flag indicates that name resolution should return IPv4-mapped
     /// IPv6 addresses if no matching IPv6 addresses are found.
@@ -138,14 +150,14 @@ extension SocketAddress {
     ///
     /// This corresponds to the C constant `AI_V4MAPPED`.
     @_alwaysEmitIntoClient
-    public static var ipv4Mapped: Self { Self(_AI_V4MAPPED) }
+    public static var ipv4Mapped: Self { Self(AI_V4MAPPED) }
 
     /// This behaves the same as `.ipv4Mapped` if the kernel supports
     /// IPv4-mapped IPv6 addresses. Otherwise this flag is ignored.
     ///
     /// This corresponds to the C constant `AI_V4MAPPED_CFG`.
     @_alwaysEmitIntoClient
-    public static var ipv4MappedIfSupported: Self { Self(_AI_V4MAPPED_CFG) }
+    public static var ipv4MappedIfSupported: Self { Self(AI_V4MAPPED_CFG) }
 
     /// This is the combination of the flags
     /// `.ipv4MappedIfSupported` and `.configuredAddress`,
@@ -155,7 +167,7 @@ extension SocketAddress {
     ///
     /// This corresponds to the C constant `AI_DEFAULT`.
     @_alwaysEmitIntoClient
-    public static var `default`: Self { Self(_AI_DEFAULT) }
+    public static var `default`: Self { Self(AI_DEFAULT) }
 
     /// Adding this flag suppresses the implicit default setting of
     /// `.ipv4MappedIfSupported` and `.configuredAddress` for an empty `Flags`
@@ -163,7 +175,7 @@ extension SocketAddress {
     ///
     /// This corresponds to the C constant `AI_UNUSABLE`.
     @_alwaysEmitIntoClient
-    public static var unusable: Self { Self(_AI_UNUSABLE) }
+    public static var unusable: Self { Self(AI_UNUSABLE) }
 
     public var description: String {
       let descriptions: [(Element, StaticString)] = [
@@ -210,13 +222,13 @@ extension SocketAddress {
     ///
     /// This corresponds to the C constant `NI_NOFQDN`.
     @_alwaysEmitIntoClient
-    public static var noFullyQualifiedDomain: Self { Self(_NI_NOFQDN) }
+    public static var noFullyQualifiedDomain: Self { Self(NI_NOFQDN) }
 
     /// Return the address in numeric form, instead of a host name.
     ///
     /// This corresponds to the C constant `NI_NUMERICHOST`.
     @_alwaysEmitIntoClient
-    public static var numericHost: Self { Self(_NI_NUMERICHOST) }
+    public static var numericHost: Self { Self(NI_NUMERICHOST) }
 
     /// Indicates that a name is required; if the host name cannot be found,
     /// an error will be thrown. If this option is not present, then a
@@ -224,14 +236,14 @@ extension SocketAddress {
     ///
     /// This corresponds to the C constant `NI_NAMEREQD`.
     @_alwaysEmitIntoClient
-    public static var nameRequired: Self { Self(_NI_NAMEREQD) }
+    public static var nameRequired: Self { Self(NI_NAMEREQD) }
 
     /// The service name is returned as a digit string representing the port
     /// number.
     ///
     /// This corresponds to the C constant `NI_NUMERICSERV`.
     @_alwaysEmitIntoClient
-    public static var numericService: Self { Self(_NI_NUMERICSERV) }
+    public static var numericService: Self { Self(NI_NUMERICSERV) }
 
     /// Specifies that the service being looked up is a datagram service.
     /// This is useful in case a port number is used for different services
@@ -239,13 +251,13 @@ extension SocketAddress {
     ///
     /// This corresponds to the C constant `NI_DGRAM`.
     @_alwaysEmitIntoClient
-    public static var datagram: Self { Self(_NI_DGRAM) }
+    public static var datagram: Self { Self(NI_DGRAM) }
 
     /// Enable IPv6 address notation with scope identifiers.
     ///
     /// This corresponds to the C constant `NI_WITHSCOPEID`.
     @_alwaysEmitIntoClient
-    public static var scopeIdentifier: Self { Self(_NI_WITHSCOPEID) }
+    public static var scopeIdentifier: Self { Self(NI_WITHSCOPEID) }
 
     public var description: String {
       let descriptions: [(Element, StaticString)] = [
@@ -307,85 +319,85 @@ extension SocketAddress {
     ///
     /// The corresponding C constant is `EAI_ADDRFAMILY`.
     @_alwaysEmitIntoClient
-    public static var unsupportedAddressFamilyForHost: Self { Self(_EAI_ADDRFAMILY) }
+    public static var unsupportedAddressFamilyForHost: Self { Self(EAI_ADDRFAMILY) }
 
     /// Temporary failure in name resolution.
     ///
     /// The corresponding C constant is `EAI_AGAIN`.
     @_alwaysEmitIntoClient
-    public static var temporaryFailure: Self { Self(_EAI_AGAIN) }
+    public static var temporaryFailure: Self { Self(EAI_AGAIN) }
 
     /// Invalid resolver flags.
     ///
     /// The corresponding C constant is `EAI_BADFLAGS`.
     @_alwaysEmitIntoClient
-    public static var badFlags: Self { Self(_EAI_BADFLAGS) }
+    public static var badFlags: Self { Self(EAI_BADFLAGS) }
 
     /// Non-recoverable failure in name resolution.
     ///
     /// The corresponding C constant is `EAI_FAIL`.
     @_alwaysEmitIntoClient
-    public static var nonrecoverableFailure: Self { Self(_EAI_FAIL) }
+    public static var nonrecoverableFailure: Self { Self(EAI_FAIL) }
 
     /// Unsupported address family.
     ///
     /// The corresponding C constant is `EAI_FAMILY`.
     @_alwaysEmitIntoClient
-    public static var unsupportedAddressFamily: Self { Self(_EAI_FAMILY) }
+    public static var unsupportedAddressFamily: Self { Self(EAI_FAMILY) }
 
     /// Memory allocation failure.
     ///
     /// The corresponding C constant is `EAI_MEMORY`.
     @_alwaysEmitIntoClient
-    public static var memoryAllocation: Self { Self(_EAI_MEMORY) }
+    public static var memoryAllocation: Self { Self(EAI_MEMORY) }
 
     /// No data associated with hostname.
     ///
     /// The corresponding C constant is `EAI_NODATA`.
     @_alwaysEmitIntoClient
-    public static var noData: Self { Self(_EAI_NODATA) }
+    public static var noData: Self { Self(EAI_NODATA) }
 
     /// Hostname nor service name provided, or not known.
     ///
     /// The corresponding C constant is `EAI_NONAME`.
     @_alwaysEmitIntoClient
-    public static var noName: Self { Self(_EAI_NONAME) }
+    public static var noName: Self { Self(EAI_NONAME) }
 
     /// Service name not supported for specified socket type.
     ///
     /// The corresponding C constant is `EAI_SERVICE`.
     @_alwaysEmitIntoClient
-    public static var unsupportedServiceForSocketType: Self { Self(_EAI_SERVICE) }
+    public static var unsupportedServiceForSocketType: Self { Self(EAI_SERVICE) }
 
     /// Socket type not supported.
     ///
     /// The corresponding C constant is `EAI_SOCKTYPE`.
     @_alwaysEmitIntoClient
-    public static var unsupportedSocketType: Self { Self(_EAI_SOCKTYPE) }
+    public static var unsupportedSocketType: Self { Self(EAI_SOCKTYPE) }
 
     /// System error.
     ///
     /// The corresponding C constant is `EAI_SYSTEM`.
     @_alwaysEmitIntoClient
-    public static var system: Self { Self(_EAI_SYSTEM) }
+    public static var system: Self { Self(EAI_SYSTEM) }
 
     /// Invalid hints.
     ///
     /// The corresponding C constant is `EAI_BADHINTS`.
     @_alwaysEmitIntoClient
-    public static var badHints: Self { Self(_EAI_BADHINTS) }
+    public static var badHints: Self { Self(EAI_BADHINTS) }
 
     /// Unsupported protocol value.
     ///
     /// The corresponding C constant is `EAI_PROTOCOL`.
     @_alwaysEmitIntoClient
-    public static var unsupportedProtocol: Self { Self(_EAI_PROTOCOL) }
+    public static var unsupportedProtocol: Self { Self(EAI_PROTOCOL) }
 
     /// Argument buffer overflow.
     ///
     /// The corresponding C constant is `EAI_OVERFLOW`.
     @_alwaysEmitIntoClient
-    public static var overflow: Self { Self(_EAI_OVERFLOW) }
+    public static var overflow: Self { Self(EAI_OVERFLOW) }
   }
 }
 
@@ -536,10 +548,10 @@ extension SocketAddress {
     address.withUnsafeCInterop { adr, adrlen in
       var r: CInt = 0
       var service: String = ""
-      let host = String(_unsafeUninitializedCapacity: Int(_NI_MAXHOST)) { host in
+      let host = String(_unsafeUninitializedCapacity: Int(NI_MAXHOST)) { host in
         let h = UnsafeMutableRawPointer(host.baseAddress!)
           .assumingMemoryBound(to: CChar.self)
-        service = String(_unsafeUninitializedCapacity: Int(_NI_MAXSERV)) { serv in
+        service = String(_unsafeUninitializedCapacity: Int(NI_MAXSERV)) { serv in
           let s = UnsafeMutableRawPointer(serv.baseAddress!)
             .assumingMemoryBound(to: CChar.self)
           r = system_getnameinfo(

@@ -7,7 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-@testable import SystemPackage
+import SystemPackage
 
 extension SocketDescriptor {
   /// Create an endpoint for communication.

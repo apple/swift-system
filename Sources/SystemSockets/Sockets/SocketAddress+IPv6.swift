@@ -7,7 +7,19 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-@testable import SystemPackage
+#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+import Darwin
+#elseif os(Linux) || os(FreeBSD) || os(Android)
+import CSystem
+import Glibc
+#elseif os(Windows)
+import CSystem
+import ucrt
+#else
+#error("Unsupported Platform")
+#endif
+
+import SystemPackage
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress {
@@ -201,22 +213,22 @@ extension SocketAddress.IPv6.Address: CustomStringConvertible {
 
   internal func _inet_ntop() -> String {
     return withUnsafeBytes(of: rawValue) { src in
-      String(_unsafeUninitializedCapacity: Int(_INET6_ADDRSTRLEN)) { dst in
+      String(_unsafeUninitializedCapacity: Int(INET6_ADDRSTRLEN)) { dst in
         dst.baseAddress!.withMemoryRebound(
           to: CChar.self,
-          capacity: Int(_INET6_ADDRSTRLEN)
+          capacity: Int(INET6_ADDRSTRLEN)
         ) { dst in
           let res = system_inet_ntop(
-              _PF_INET6,
+              PF_INET6,
               src.baseAddress!,
               dst,
-              CInterop.SockLen(_INET6_ADDRSTRLEN))
+              CInterop.SockLen(INET6_ADDRSTRLEN))
           if res == -1 {
             let errno = Errno.current
             fatalError("Failed to convert IPv6 address to string: \(errno)")
           }
           let length = system_strlen(dst)
-          assert(length <= _INET6_ADDRSTRLEN)
+          assert(length <= INET6_ADDRSTRLEN)
           return length
         }
       }
@@ -234,7 +246,7 @@ extension SocketAddress.IPv6.Address: LosslessStringConvertible {
   internal static func _inet_pton(_ string: String) -> Self? {
     string.withCString { ptr in
       var addr = CInterop.In6Addr()
-      let res = system_inet_pton(_PF_INET6, ptr, &addr)
+      let res = system_inet_pton(PF_INET6, ptr, &addr)
       guard res == 1 else { return nil }
       return Self(rawValue: addr)
     }

@@ -7,7 +7,17 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-@testable import SystemPackage
+import SystemPackage
+
+#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+import Darwin
+#elseif os(Linux) || os(FreeBSD) || os(Android)
+import Glibc
+#elseif os(Windows)
+import ucrt
+#else
+#error("Unsupported Platform")
+#endif
 
 // TODO: @available(...)
 
@@ -58,53 +68,53 @@ extension SocketDescriptor {
     ///
     /// The corresponding C constant is `PF_UNSPEC`.
     @_alwaysEmitIntoClient
-    public static var unspecified: Domain { Domain(_PF_UNSPEC) }
+    public static var unspecified: Domain { Domain(PF_UNSPEC) }
 
     /// Host-internal protocols, formerly called PF_UNIX.
     ///
     /// The corresponding C constant is `PF_LOCAL`.
     @_alwaysEmitIntoClient
-    public static var local: Domain { Domain(_PF_LOCAL) }
+    public static var local: Domain { Domain(PF_LOCAL) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "local")
-    public static var unix: Domain { Domain(_PF_UNIX) }
+    public static var unix: Domain { Domain(PF_UNIX) }
 
     /// Internet version 4 protocols.
     ///
     /// The corresponding C constant is `PF_INET`.
     @_alwaysEmitIntoClient
-    public static var ipv4: Domain { Domain(_PF_INET) }
+    public static var ipv4: Domain { Domain(PF_INET) }
 
     /// Internal Routing protocol.
     ///
     /// The corresponding C constant is `PF_ROUTE`.
     @_alwaysEmitIntoClient
-    public static var routing: Domain { Domain(_PF_ROUTE) }
+    public static var routing: Domain { Domain(PF_ROUTE) }
 
     /// Internal key-management function.
     ///
     /// The corresponding C constant is `PF_KEY`.
     @_alwaysEmitIntoClient
-    public static var keyManagement: Domain { Domain(_PF_KEY) }
+    public static var keyManagement: Domain { Domain(PF_KEY) }
 
     /// Internet version 6 protocols.
     ///
     /// The corresponding C constant is `PF_INET6`.
     @_alwaysEmitIntoClient
-    public static var ipv6: Domain { Domain(_PF_INET6) }
+    public static var ipv6: Domain { Domain(PF_INET6) }
 
     /// System domain.
     ///
     /// The corresponding C constant is `PF_SYSTEM`.
     @_alwaysEmitIntoClient
-    public static var system: Domain { Domain(_PF_SYSTEM) }
+    public static var system: Domain { Domain(PF_SYSTEM) }
 
     /// Raw access to network device.
     ///
     /// The corresponding C constant is `PF_NDRV`.
     @_alwaysEmitIntoClient
-    public static var networkDevice: Domain { Domain(_PF_NDRV) }
+    public static var networkDevice: Domain { Domain(PF_NDRV) }
 
     public var description: String {
       switch self {
@@ -137,27 +147,27 @@ extension SocketDescriptor {
     ///
     /// The corresponding C constant is `SOCK_STREAM`.
     @_alwaysEmitIntoClient
-    public static var stream: ConnectionType { ConnectionType(_SOCK_STREAM) }
+    public static var stream: ConnectionType { ConnectionType(SOCK_STREAM) }
 
     /// Datagrams (connectionless, unreliable messages of a fixed (typically
     /// small) maximum length).
     ///
     /// The corresponding C constant is `SOCK_DGRAM`.
     @_alwaysEmitIntoClient
-    public static var datagram: ConnectionType { ConnectionType(_SOCK_DGRAM) }
+    public static var datagram: ConnectionType { ConnectionType(SOCK_DGRAM) }
 
     /// Raw protocol interface. Only available to the super user.
     ///
     /// The corresponding C constant is `SOCK_RAW`.
     @_alwaysEmitIntoClient
-    public static var raw: ConnectionType { ConnectionType(_SOCK_RAW) }
+    public static var raw: ConnectionType { ConnectionType(SOCK_RAW) }
 
     /// Reliably delivered message.
     ///
     /// The corresponding C constant is `SOCK_RDM`.
     @_alwaysEmitIntoClient
     public static var reliablyDeliveredMessage: ConnectionType {
-      ConnectionType(_SOCK_RDM)
+      ConnectionType(SOCK_RDM)
     }
 
     /// Sequenced packet stream.
@@ -165,7 +175,7 @@ extension SocketDescriptor {
     /// The corresponding C constant is `SOCK_SEQPACKET`.
     @_alwaysEmitIntoClient
     public static var sequencedPacketStream: ConnectionType {
-      ConnectionType(_SOCK_SEQPACKET)
+      ConnectionType(SOCK_SEQPACKET)
     }
 
     public var description: String {
@@ -201,43 +211,43 @@ extension SocketDescriptor {
     ///
     /// This corresponds to the C constant `IPPROTO_IP`.
     @_alwaysEmitIntoClient
-    public static var ip: ProtocolID { Self(_IPPROTO_IP) }
+    public static var ip: ProtocolID { Self(IPPROTO_IP) }
 
     /// Transmission Control Protocol (TCP).
     ///
     /// This corresponds to the C constant `IPPROTO_TCP`.
     @_alwaysEmitIntoClient
-    public static var tcp: ProtocolID { Self(_IPPROTO_TCP) }
+    public static var tcp: ProtocolID { Self(IPPROTO_TCP) }
 
     /// User Datagram Protocol (UDP).
     ///
     /// This corresponds to the C constant `IPPROTO_UDP`.
     @_alwaysEmitIntoClient
-    public static var udp: ProtocolID { Self(_IPPROTO_UDP) }
+    public static var udp: ProtocolID { Self(IPPROTO_UDP) }
 
     /// IPv4 encapsulation.
     ///
     /// This corresponds to the C constant `IPPROTO_IPV4`.
     @_alwaysEmitIntoClient
-    public static var ipv4: ProtocolID { Self(_IPPROTO_IPV4) }
+    public static var ipv4: ProtocolID { Self(IPPROTO_IPV4) }
 
     /// IPv6 header.
     ///
     /// This corresponds to the C constant `IPPROTO_IPV6`.
     @_alwaysEmitIntoClient
-    public static var ipv6: ProtocolID { Self(_IPPROTO_IPV6) }
+    public static var ipv6: ProtocolID { Self(IPPROTO_IPV6) }
 
     /// Raw IP packet.
     ///
     /// This corresponds to the C constant `IPPROTO_RAW`.
     @_alwaysEmitIntoClient
-    public static var raw: ProtocolID { Self(_IPPROTO_RAW) }
+    public static var raw: ProtocolID { Self(IPPROTO_RAW) }
 
     /// Special protocol value representing socket-level options.
     ///
     /// The corresponding C constant is `SOL_SOCKET`.
     @_alwaysEmitIntoClient
-    public static var socketOption: ProtocolID { Self(_SOL_SOCKET) }
+    public static var socketOption: ProtocolID { Self(SOL_SOCKET) }
 
     public var description: String {
       // Note: Can't return symbolic names here -- values have multiple
@@ -265,46 +275,46 @@ extension SocketDescriptor {
     ///
     /// The corresponding C constant is `MSG_OOB`.
     @_alwaysEmitIntoClient
-    public static var outOfBand: MessageFlags { MessageFlags(_MSG_OOB) }
+    public static var outOfBand: MessageFlags { MessageFlags(MSG_OOB) }
 
     /// Bypass routing, use direct interface.
     ///
     /// The corresponding C constant is `MSG_DONTROUTE`.
     @_alwaysEmitIntoClient
-    public static var doNotRoute: MessageFlags { MessageFlags(_MSG_DONTROUTE) }
+    public static var doNotRoute: MessageFlags { MessageFlags(MSG_DONTROUTE) }
 
     /// Peek at incoming message.
     ///
     /// The corresponding C constant is `MSG_PEEK`.
     @_alwaysEmitIntoClient
-    public static var peek: MessageFlags { MessageFlags(_MSG_PEEK) }
+    public static var peek: MessageFlags { MessageFlags(MSG_PEEK) }
 
     /// Wait for full request or error.
     ///
     /// The corresponding C constant is `MSG_WAITALL`.
     @_alwaysEmitIntoClient
-    public static var waitForAll: MessageFlags { MessageFlags(_MSG_WAITALL) }
+    public static var waitForAll: MessageFlags { MessageFlags(MSG_WAITALL) }
 
     /// End-of-record condition -- the associated data completed a
     /// full record.
     ///
     /// The corresponding C constant is `MSG_EOR`.
     @_alwaysEmitIntoClient
-    public static var endOfRecord: MessageFlags { MessageFlags(_MSG_EOR) }
+    public static var endOfRecord: MessageFlags { MessageFlags(MSG_EOR) }
 
     /// Datagram was truncated because it didn't fit in the supplied
     /// buffer.
     ///
     /// The corresponding C constant is `MSG_TRUNC`.
     @_alwaysEmitIntoClient
-    public static var dataTruncated: MessageFlags { MessageFlags(_MSG_TRUNC) }
+    public static var dataTruncated: MessageFlags { MessageFlags(MSG_TRUNC) }
 
     /// Some ancillary data was discarded because it didn't fit
     /// in the supplied buffer.
     ///
     /// The corresponding C constant is `MSG_CTRUNC`.
     @_alwaysEmitIntoClient
-    public static var ancillaryTruncated: MessageFlags { MessageFlags(_MSG_CTRUNC) }
+    public static var ancillaryTruncated: MessageFlags { MessageFlags(MSG_CTRUNC) }
 
     public var description: String {
       let descriptions: [(Element, StaticString)] = [
@@ -333,19 +343,19 @@ extension SocketDescriptor {
     ///
     /// The corresponding C constant is `SHUT_RD`.
     @_alwaysEmitIntoClient
-    public static var read: ShutdownKind { ShutdownKind(rawValue: _SHUT_RD) }
+    public static var read: ShutdownKind { ShutdownKind(rawValue: SHUT_RD) }
 
     /// Further sends will be disallowed
     ///
     /// The corresponding C constant is `SHUT_RD`.
     @_alwaysEmitIntoClient
-    public static var write: ShutdownKind { ShutdownKind(rawValue: _SHUT_WR) }
+    public static var write: ShutdownKind { ShutdownKind(rawValue: SHUT_WR) }
 
     /// Further sends and receives will be disallowed
     ///
     /// The corresponding C constant is `SHUT_RDWR`.
     @_alwaysEmitIntoClient
-    public static var readWrite: ShutdownKind { ShutdownKind(rawValue: _SHUT_RDWR) }
+    public static var readWrite: ShutdownKind { ShutdownKind(rawValue: SHUT_RDWR) }
 
     public var description: String {
       switch self {

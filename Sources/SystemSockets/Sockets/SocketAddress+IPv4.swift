@@ -7,7 +7,19 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-@testable import SystemPackage
+import SystemPackage
+
+#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+import Darwin
+#elseif os(Linux) || os(FreeBSD) || os(Android)
+import CSystem
+import Glibc
+#elseif os(Windows)
+import CSystem
+import ucrt
+#else
+#error("Unsupported Platform")
+#endif
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension SocketAddress {
@@ -135,19 +147,19 @@ extension SocketAddress.IPv4.Address {
   ///
   /// This corresponds to the C constant `INADDR_ANY`.
   @_alwaysEmitIntoClient
-  public static var any: Self { Self(rawValue: _INADDR_ANY) }
+  public static var any: Self { Self(rawValue: INADDR_ANY) }
 
   /// The IPv4 loopback address 127.0.0.1.
   ///
   /// This corresponds to the C constant `INADDR_LOOPBACK`.
   @_alwaysEmitIntoClient
-  public static var loopback: Self { Self(rawValue: _INADDR_LOOPBACK) }
+  public static var loopback: Self { Self(rawValue: INADDR_LOOPBACK) }
 
   /// The IPv4 broadcast address 255.255.255.255.
   ///
   /// This corresponds to the C constant `INADDR_BROADCAST`.
   @_alwaysEmitIntoClient
-  public static var broadcast: Self { Self(rawValue: _INADDR_BROADCAST) }
+  public static var broadcast: Self { Self(rawValue: INADDR_BROADCAST) }
 }
 
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
@@ -157,22 +169,22 @@ extension SocketAddress.IPv4.Address: CustomStringConvertible {
   internal func _inet_ntop() -> String {
     let addr = CInterop.InAddr(s_addr: rawValue._networkOrder)
     return withUnsafeBytes(of: addr) { src in
-      String(_unsafeUninitializedCapacity: Int(_INET_ADDRSTRLEN)) { dst in
+      String(_unsafeUninitializedCapacity: Int(INET_ADDRSTRLEN)) { dst in
         dst.baseAddress!.withMemoryRebound(
           to: CChar.self,
-          capacity: Int(_INET_ADDRSTRLEN)
+          capacity: Int(INET_ADDRSTRLEN)
         ) { dst in
           let res = system_inet_ntop(
-              _PF_INET,
+              PF_INET,
               src.baseAddress!,
               dst,
-              CInterop.SockLen(_INET_ADDRSTRLEN))
+              CInterop.SockLen(INET_ADDRSTRLEN))
           if res == -1 {
             let errno = Errno.current
             fatalError("Failed to convert IPv4 address to string: \(errno)")
           }
           let length = system_strlen(dst)
-          assert(length <= _INET_ADDRSTRLEN)
+          assert(length <= INET_ADDRSTRLEN)
           return length
         }
       }
@@ -190,7 +202,7 @@ extension SocketAddress.IPv4.Address: LosslessStringConvertible {
   internal static func _inet_pton(_ string: String) -> Self? {
     string.withCString { ptr in
       var addr = CInterop.InAddr()
-      let res = system_inet_pton(_PF_INET, ptr, &addr)
+      let res = system_inet_pton(PF_INET, ptr, &addr)
       guard res == 1 else { return nil }
       return Self(rawValue: CInterop.InAddrT(_networkOrder: addr.s_addr))
     }

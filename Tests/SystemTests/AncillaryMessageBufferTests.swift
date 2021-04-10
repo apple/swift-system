@@ -10,7 +10,7 @@
 import XCTest
 
 #if SYSTEM_PACKAGE
-@testable import SystemPackage
+import SystemPackage
 @testable import SystemSockets
 #else
 import System
