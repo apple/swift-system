@@ -52,7 +52,7 @@ extension FileDescriptor {
 extension SocketDescriptor {
   /// Communications domain: the protocol family which should be used
   @frozen
-  public struct Domain: RawRepresentable {
+  public struct Domain: RawRepresentable, Hashable {
     @_alwaysEmitIntoClient
     public let rawValue: CInt
 

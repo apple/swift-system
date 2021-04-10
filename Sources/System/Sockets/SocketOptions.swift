@@ -503,7 +503,7 @@ extension SocketDescriptor {
       rawBuf.deallocate()
     }
 
-    var length: _CSockLenT = 0
+    var length: CInterop.SockLen = 0
 
     let success = system_getsockopt(
       self.rawValue,
@@ -525,7 +525,7 @@ extension SocketDescriptor {
   internal func _setOption<T>(
     _ level: Option.Level, _ option: Option, to value: T
   ) -> Result<(), Errno> {
-    let len = _CSockLenT(MemoryLayout<T>.stride)
+    let len = CInterop.SockLen(MemoryLayout<T>.stride)
     let success = withUnsafeBytes(of: value) {
       return system_setsockopt(
         self.rawValue,

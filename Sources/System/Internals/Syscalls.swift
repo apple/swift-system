@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2021 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -181,3 +181,28 @@ internal func system_setsockopt(
   return setsockopt(socket, level, option, value, length)
 }
 
+internal func system_inet_ntop(
+  _ af: CInt,
+  _ src: UnsafeRawPointer,
+  _ dst: UnsafeMutablePointer<CChar>,
+  _ size: CInterop.SockLen
+) -> CInt { // Note: returns 0 on success, -1 on failure, unlike the original
+  #if ENABLE_MOCKING
+  if mockingEnabled { return _mock(af, src, dst, size) }
+  #endif
+  let res = inet_ntop(af, src, dst, size)
+  if Int(bitPattern: res) == 0 { return -1 }
+  assert(Int(bitPattern: res) == Int(bitPattern: dst))
+  return 0
+}
+
+internal func system_inet_pton(
+  _ af: CInt,
+  _ src: UnsafePointer<CChar>,
+  _ dst: UnsafeMutableRawPointer
+) -> CInt {
+  #if ENABLE_MOCKING
+  if mockingEnabled { return _mock(af, src, dst) }
+  #endif
+  return inet_pton(af, src, dst)
+}

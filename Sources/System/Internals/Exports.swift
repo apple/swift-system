@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2021 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -25,7 +25,6 @@ import ucrt
 #endif
 
 internal typealias _COffT = off_t
-internal typealias _CSockLenT = socklen_t
 
 // MARK: syscalls and variables
 

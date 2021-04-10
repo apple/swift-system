@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2021 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -782,5 +782,8 @@ internal var _IPPROTO_TCP: CInt { IPPROTO_TCP }
 @_alwaysEmitIntoClient
 internal var _SOL_SOCKET: CInt { SOL_SOCKET }
 
+@_alwaysEmitIntoClient
+internal var _INET_ADDRSTRLEN: CInt { INET_ADDRSTRLEN }
 
-
+@_alwaysEmitIntoClient
+internal var _INET6_ADDRSTRLEN: CInt { INET6_ADDRSTRLEN }
