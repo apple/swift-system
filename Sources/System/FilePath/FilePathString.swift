@@ -36,6 +36,7 @@ extension FilePath {
   public func withPlatformString<Result>(
     _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
   ) rethrows -> Result {
+    // For backwards deployment, call withCString if available.
     #if !os(Windows)
     return try withCString(body)
     #else
@@ -399,25 +400,21 @@ extension String {
   public init?(validatingUTF8 path: FilePath) { self.init(validating: path) }
 }
 
+#if !os(Windows)
 // @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
 extension FilePath {
-  @available(*, deprecated, renamed: "init(platformString:)")
+  /// For backwards compatibility only. This initializer is equivalent to
+  /// the preferred `FilePath(platformString:)`.
   public init(cString: UnsafePointer<CChar>) {
-    #if os(Windows)
-    fatalError("FilePath.init(cString:) unsupported on Windows ")
-    #else
     self.init(platformString: cString)
-    #endif
   }
 
-  @available(*, deprecated, renamed: "withPlatformString(_:)")
+  /// For backwards compatibility only. This function is equivalent to
+  /// the preferred `withPlatformString`.
   public func withCString<Result>(
     _ body: (UnsafePointer<CChar>) throws -> Result
   ) rethrows -> Result {
-    #if os(Windows)
-    fatalError("FilePath.withCString() unsupported on Windows ")
-    #else
     return try _withPlatformString(body)
-    #endif
   }
 }
+#endif
