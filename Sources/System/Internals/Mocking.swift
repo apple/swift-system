@@ -193,6 +193,13 @@ internal func _mockOffT(
 ) -> _COffT {
   _COffT(mockImpl(name: name, path: path, args))
 }
+
+internal func _mockModeT(
+  name: String = #function, _ args: AnyHashable...
+) -> CInterop.Mode {
+  CInterop.Mode(mockImpl(name: name, path: nil, args))
+}
+
 #endif // ENABLE_MOCKING
 
 // Force paths to be treated as Windows syntactically if `enabled` is

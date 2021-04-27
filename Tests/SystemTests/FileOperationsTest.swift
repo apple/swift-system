@@ -28,7 +28,8 @@ final class FileOperationsTest: XCTestCase {
     let writeBuf = UnsafeRawBufferPointer(rawBuf)
     let writeBufAddr = writeBuf.baseAddress
 
-    let syscallTestCases: Array<MockTestCase> = [
+    var syscallTestCases: Array<MockTestCase> = []
+    syscallTestCases += [
       MockTestCase(name: "open", .interruptable, "a path", O_RDWR | O_APPEND) {
         retryOnInterrupt in
         _ = try FileDescriptor.open(
@@ -82,6 +83,49 @@ final class FileOperationsTest: XCTestCase {
                              retryOnInterrupt: retryOnInterrupt)
       },
     ]
+
+#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+    let fp = FilePath("/")
+    let rawFP = fp.withPlatformString { strdup($0) }
+    defer { free(rawFP) }
+
+    let stat = UnsafeMutablePointer<stat>.allocate(capacity: 1)
+    defer { stat.deallocate() }
+
+    syscallTestCases += [
+//      MockTestCase(name: "stat", .interruptable, rawFP) { retryOnInterrupt in
+//        _ = try fp.stat(followSymlinks: false, retryOnInterrupt: retryOnInterrupt)
+//      },
+//      MockTestCase(name: "lstat", .interruptable, rawFP) { retryOnInterrupt in
+//        _ = try fp.stat(followSymlinks: true, retryOnInterrupt: retryOnInterrupt)
+//      },
+//      MockTestCase(name: "fstat", .interruptable, rawFP) { retryOnInterrupt in
+//        _ = try fd.stat(retryOnInterrupt: retryOnInterrupt)
+//      },
+//      MockTestCase(name: "fstatat", .interruptable, rawFP) { retryOnInterrupt in
+//        _ = try fp.stat(relativeTo: fd, fcntrl: .none, retryOnInterrupt: retryOnInterrupt)
+//      },
+      // fstatat
+      // chmod
+      // lchmod
+      // fchmod
+      // fchmodat
+      // chown
+      // lchown
+      // fchown
+      // fchownat
+      // chflags
+      // lchflags
+      // fchflags
+      // umask
+      // mkfifo
+      // mknod
+      // mkdir
+      // mkdirat
+      // futimens
+      // utimensat
+    ]
+#endif
 
     for test in syscallTestCases { test.runAllTests() }
   }
