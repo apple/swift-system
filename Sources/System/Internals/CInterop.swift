@@ -38,29 +38,45 @@ public enum CInterop {
   /// The C `char` type
   public typealias Char = CChar
 
-  #if os(Windows)
+#if os(Windows)
   /// The platform's preferred character type. On Unix, this is an 8-bit C
   /// `char` (which may be signed or unsigned, depending on platform). On
   /// Windows, this is `UInt16` (a "wide" character).
   public typealias PlatformChar = UInt16
-  #else
+#else
   /// The platform's preferred character type. On Unix, this is an 8-bit C
   /// `char` (which may be signed or unsigned, depending on platform). On
   /// Windows, this is `UInt16` (a "wide" character).
   public typealias PlatformChar = CInterop.Char
-  #endif
+#endif
 
-  #if os(Windows)
+#if os(Windows)
   /// The platform's preferred Unicode encoding. On Unix this is UTF-8 and on
   /// Windows it is UTF-16. Native strings may contain invalid Unicode,
   /// which will be handled by either error-correction or failing, depending
   /// on API.
   public typealias PlatformUnicodeEncoding = UTF16
-  #else
+#else
   /// The platform's preferred Unicode encoding. On Unix this is UTF-8 and on
   /// Windows it is UTF-16. Native strings may contain invalid Unicode,
   /// which will be handled by either error-correction or failing, depending
   /// on API.
   public typealias PlatformUnicodeEncoding = UTF8
-  #endif
+#endif
+
+#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+  // FIXME: Document
+  public typealias Stat = stat
+  public typealias UserId = uid_t
+  public typealias GroupId = gid_t
+  public typealias DeviceId = dev_t
+  public typealias NumberOfLinks = nlink_t
+  public typealias INodeNumber = ino_t
+  public typealias TimeSpec = timespec
+  public typealias Offset = off_t
+  public typealias BlockCount = blkcnt_t
+  public typealias BlockSize = blksize_t
+  public typealias GenerationId = UInt32
+  public typealias FileFlags = UInt32
+#endif
 }
