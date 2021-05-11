@@ -78,6 +78,7 @@ extension FilePath.Component {
 
   /// Whether a component is a regular file or directory name, or a special
   /// directory `.` or `..`
+  @frozen
   public enum Kind {
     /// The special directory `.`, representing the current directory.
     case currentDirectory
