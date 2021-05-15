@@ -39,7 +39,7 @@ extension FileDescriptor {
     public static var closeOnExec: Flags { Flags(rawValue: FD_CLOEXEC) }
   }
 
-  /// File status flags.
+  /// File descriptor status flags.
   @frozen
   public struct StatusFlags: OptionSet {
     @_alwaysEmitIntoClient
