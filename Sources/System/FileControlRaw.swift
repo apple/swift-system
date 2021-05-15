@@ -57,7 +57,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_NONBLOCK`.
     @_alwaysEmitIntoClient
-    public static var nonblocking: StatusFlags { StatusFlags(O_NONBLOCK) }
+    public static var nonBlocking: StatusFlags { StatusFlags(O_NONBLOCK) }
 
     /// Force each write to append at the end of file; corre-
     /// sponds to `OpenOptions.append`.
