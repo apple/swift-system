@@ -369,7 +369,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `F_LOG2PHYS`.
     @_alwaysEmitIntoClient
-    public static var log2phys: Command { Command(F_LOG2PHYS) }
+    public static var logicalToPhysical: Command { Command(F_LOG2PHYS) }
 
     /// Return the full path of the fd.
     ///
