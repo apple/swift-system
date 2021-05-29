@@ -116,6 +116,12 @@ extension FileDescriptor {
     try _seek(offset: offset, from: whence).get()
   }
 
+  /// Return the current offset for the given file descriptor.
+  @_alwaysEmitIntoClient
+  public var currentOffset: Int64 {
+    try! _seek(offset: 0, from: .current).get()
+  }
+
   @usableFromInline
   internal func _seek(
     offset: Int64, from whence: FileDescriptor.SeekOrigin
