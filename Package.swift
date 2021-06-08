@@ -12,11 +12,19 @@
 
 import PackageDescription
 
-let targets: [PackageDescription.Target] = [
+var windowsPlatform: [Platform] = []
+#if os(Windows)
+windowsPlatform.append(.windows)
+#endif
+
+let targets: [Target] = [
   .target(
     name: "SystemPackage",
     dependencies: ["CSystem"],
     path: "Sources/System",
+    cSettings: [
+      .define("_CRT_SECURE_NO_WARNINGS", .when(platforms: windowsPlatform)),
+    ],
     swiftSettings: [
       .define("SYSTEM_PACKAGE"),
       .define("ENABLE_MOCKING", .when(configuration: .debug))
