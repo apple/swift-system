@@ -28,9 +28,6 @@
 ///     let fd = try FileDescriptor.open(path, .writeOnly, options: .append)
 ///     try fd.closeAfter { try fd.writeAll(message.utf8) }
 ///
-/// TODO(docs): Section on all the new syntactic operations, lexical normalization, decomposition,
-/// components, etc.
-///
 /// File paths conform to the
 /// and <doc://com.apple.documentation/documentation/swift/equatable>
 /// and <doc://com.apple.documentation/documentation/swift/hashable> protocols
@@ -40,6 +37,9 @@
 /// However, the rules for path equivalence
 /// are file-system–specific and have additional considerations
 /// like case insensitivity, Unicode normalization, and symbolic links.
+///
+// TODO(docs): Section on all the new syntactic operations, lexical normalization, decomposition,
+// components, etc.
 // @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
 public struct FilePath {
   internal var _storage: SystemString
