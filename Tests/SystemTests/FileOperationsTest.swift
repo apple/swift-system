@@ -90,6 +90,17 @@ final class FileOperationsTest: XCTestCase {
     // TODO: Test writeAll, writeAll(toAbsoluteOffset), closeAfter
   }
 
+  func testCurrentOffset() throws {
+    let fd = try FileDescriptor.open("/tmp/a.txt", .readWrite, options: [.create, .truncate], permissions: .ownerReadWrite)
+    XCTAssertEqual(fd.currentOffset, 0)
+
+    try fd.writeAll("abc".utf8)
+    XCTAssertEqual(fd.currentOffset, 3)
+
+    try fd.seek(offset: -1, from: .current)
+    XCTAssertEqual(fd.currentOffset, 2)
+  }
+
   func testAdHocOpen() {
     // Ad-hoc test touching a file system.
     do {
