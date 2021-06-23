@@ -577,7 +577,7 @@ extension FilePath {
     _append(unchecked: other._storage[...])
   }
 
-  /// Non-mutating version of `push()`
+  /// Non-mutating version of `push()`.
   ///
   // TODO(Windows docs): examples and docs with roots
   public __consuming func pushing(_ other: __owned FilePath) -> FilePath {
