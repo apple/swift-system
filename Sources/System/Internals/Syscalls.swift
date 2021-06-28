@@ -115,3 +115,26 @@ internal func system_dup2(_ fd: Int32, _ fd2: Int32) -> Int32 {
   #endif
   return dup2(fd, fd2)
 }
+
+internal func system_fcntl(_ fd: Int32, _ cmd: Int32) -> Int32 {
+  #if ENABLE_MOCKING
+  if mockingEnabled { return _mock(fd, cmd) }
+  #endif
+  return fcntl(fd, cmd)
+}
+
+internal func system_fcntl(_ fd: Int32, _ cmd: Int32, _ arg: Int32) -> Int32 {
+  #if ENABLE_MOCKING
+  if mockingEnabled { return _mock(fd, cmd, arg) }
+  #endif
+  return fcntl(fd, cmd, arg)
+}
+
+internal func system_fcntl(
+  _ fd: Int32, _ cmd: Int32, _ arg: UnsafeMutableRawPointer
+) -> Int32 {
+  #if ENABLE_MOCKING
+  if mockingEnabled { return _mock(fd, cmd, arg) }
+  #endif
+  return fcntl(fd, cmd, arg)
+}
