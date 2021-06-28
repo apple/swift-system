@@ -86,6 +86,48 @@ final class FileOperationsTest: XCTestCase {
     for test in syscallTestCases { test.runAllTests() }
   }
 
+  // Version 2 because availability...
+  func testSysCallsv2() {
+    let fd = FileDescriptor(rawValue: 1)
+
+    let rawBuf = UnsafeMutableRawBufferPointer.allocate(byteCount: 100, alignment: 4)
+    defer { rawBuf.deallocate() }
+    let rawFD = fd.rawValue
+
+    // NOTE: To workaround compiler liminations, we mock `at` after `path`.
+    let syscallTestCases: Array<MockTestCase> = [
+      MockTestCase(
+        name: "openat", .interruptable, "a path", rawFD, O_RDWR | O_APPEND
+      ) {
+        retry in
+        _ = try FileDescriptor.open(
+          "a path", at: fd, .readWrite,
+          options: [.append], retryOnInterrupt: retry)
+      },
+
+      MockTestCase(
+        name: "openat", .interruptable, "a path", rawFD, O_WRONLY | O_CREAT | O_APPEND, 0o777
+      ) {
+        retry in
+        _ = try FileDescriptor.open(
+          "a path", at: fd, .writeOnly,
+          options: [.create, .append],
+          permissions: [.groupReadWriteExecute, .ownerReadWriteExecute, .otherReadWriteExecute],
+          retryOnInterrupt: retry)
+      },
+
+      MockTestCase(name: "fsync", .interruptable, rawFD) { retry in
+        _ = try fd.sync(retryOnInterrupt: retry)
+      },
+
+      MockTestCase(name: "sync", .noError) { _ in
+        FileSystem.sync()
+      },
+    ]
+
+    syscallTestCases.forEach { $0.runAllTests() }
+  }
+
   func testHelpers() {
     // TODO: Test writeAll, writeAll(toAbsoluteOffset), closeAfter
   }
