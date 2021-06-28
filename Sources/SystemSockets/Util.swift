@@ -1,11 +1,11 @@
-/*
- This source file is part of the Swift System open source project
+import SystemPackage
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
- Licensed under Apache License v2.0 with Runtime Library Exception
-
- See https://swift.org/LICENSE.txt for license information
-*/
+extension Errno {
+  internal static var current: Errno {
+    get { Errno(rawValue: system_errno) }
+    set { system_errno = newValue.rawValue }
+  }
+}
 
 // Results in errno if i == -1
 // @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
@@ -56,26 +56,6 @@ internal func _debugPrecondition(
   }
 }
 
-extension OpaquePointer {
-  internal var _isNULL: Bool {
-    OpaquePointer(bitPattern: Int(bitPattern: self)) == nil
-  }
-}
-
-extension Sequence {
-  // Tries to recast contiguous pointer if available, otherwise allocates memory.
-  internal func _withRawBufferPointer<R>(
-    _ body: (UnsafeRawBufferPointer) throws -> R
-  ) rethrows -> R {
-    guard let result = try self.withContiguousStorageIfAvailable({
-      try body(UnsafeRawBufferPointer($0))
-    }) else {
-      return try Array(self).withUnsafeBytes(body)
-    }
-    return result
-  }
-}
-
 extension OptionSet {
   // Helper method for building up a comma-separated list of options
   //
@@ -105,26 +85,6 @@ extension OptionSet {
     }
     result += "]"
     return result
-  }
-}
-
-internal func _dropCommonPrefix<C: Collection>(
-  _ lhs: C, _ rhs: C
-) -> (C.SubSequence, C.SubSequence)
-where C.Element: Equatable {
-  var (lhs, rhs) = (lhs[...], rhs[...])
-  while lhs.first != nil && lhs.first == rhs.first {
-    lhs.removeFirst()
-    rhs.removeFirst()
-  }
-  return (lhs, rhs)
-}
-
-extension MutableCollection where Element: Equatable {
-  mutating func _replaceAll(_ e: Element, with new: Element) {
-    for idx in self.indices {
-      if self[idx] == e { self[idx] = new }
-    }
   }
 }
 

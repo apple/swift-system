@@ -12,6 +12,10 @@
 
 import PackageDescription
 
+let settings: [SwiftSetting]? = [
+  .define("SYSTEM_PACKAGE")
+]
+
 let targets: [PackageDescription.Target] = [
   .target(
     name: "SystemPackage",
@@ -24,19 +28,43 @@ let targets: [PackageDescription.Target] = [
   .target(
     name: "CSystem",
     dependencies: []),
+
+  .target(
+    name: "SystemSockets",
+    dependencies: ["SystemPackage"]),
+
   .testTarget(
     name: "SystemTests",
     dependencies: ["SystemPackage"],
-    swiftSettings: [
-      .define("SYSTEM_PACKAGE")
-    ]),
+    swiftSettings: settings
+  ),
+
+  .testTarget(
+      name: "SystemSocketsTests",
+      dependencies: ["SystemSockets"],
+      swiftSettings: settings
+    ),
+
+  .target(
+    name: "Samples",
+    dependencies: [
+      "SystemPackage",
+      "SystemSockets",
+      .product(name: "ArgumentParser", package: "swift-argument-parser"),
+    ],
+    path: "Sources/Samples",
+    swiftSettings: settings
+  ),
 ]
 
 let package = Package(
     name: "swift-system",
     products: [
-        .library(name: "SystemPackage", targets: ["SystemPackage"]),
+      .library(name: "SystemPackage", targets: ["SystemPackage"]),
+      .executable(name: "system-samples", targets: ["Samples"]),
     ],
-    dependencies: [],
+    dependencies: [
+      .package(url: "https://github.com/apple/swift-argument-parser", from: "0.3.0"),
+    ],
     targets: targets
 )
