@@ -498,7 +498,6 @@ internal var _O_EVTONLY: CInt { O_EVTONLY }
 @_alwaysEmitIntoClient
 internal var _O_NOCTTY: CInt { O_NOCTTY }
 
-// TODO: API?
 @_alwaysEmitIntoClient
 internal var _O_DIRECTORY: CInt { O_DIRECTORY }
 #endif
