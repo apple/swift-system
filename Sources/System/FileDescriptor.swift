@@ -234,6 +234,20 @@ extension FileDescriptor {
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "noFollow")
     public static var O_NOFOLLOW: OpenOptions { noFollow }
+
+    /// Indicates that opening the file only succeeds if the file is a directory.
+    ///
+    /// If you specify this option and the file path you pass to
+    /// <doc:System/FileDescriptor/open(_:_:options:permissions:)-10dcs>
+    /// is a not a directory, then that open operation fails.
+    ///
+    /// The corresponding C constant is `O_DIRECTORY`.
+    @_alwaysEmitIntoClient
+    public static var directory: OpenOptions { OpenOptions(_O_DIRECTORY) }
+
+    @_alwaysEmitIntoClient
+    @available(*, unavailable, renamed: "directory")
+    public static var O_DIRECTORY: OpenOptions { directory }
 #endif
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
