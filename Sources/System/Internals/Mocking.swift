@@ -146,7 +146,7 @@ private func originalSyscallName(_ function: String) -> String {
 
 private func mockImpl(
   name: String,
-  path: UnsafePointer<CChar>?,
+  path: UnsafePointer<CInterop.PlatformChar>?,
   _ args: [AnyHashable]
 ) -> CInt {
   precondition(mockingEnabled)
@@ -177,18 +177,18 @@ private func mockImpl(
 }
 
 internal func _mock(
-  name: String = #function, path: UnsafePointer<CChar>? = nil, _ args: AnyHashable...
+  name: String = #function, path: UnsafePointer<CInterop.PlatformChar>? = nil, _ args: AnyHashable...
 ) -> CInt {
   return mockImpl(name: name, path: path, args)
 }
 internal func _mockInt(
-  name: String = #function, path: UnsafePointer<CChar>? = nil, _ args: AnyHashable...
+  name: String = #function, path: UnsafePointer<CInterop.PlatformChar>? = nil, _ args: AnyHashable...
 ) -> Int {
   Int(mockImpl(name: name, path: path, args))
 }
 
 internal func _mockOffT(
-  name: String = #function, path: UnsafePointer<CChar>? = nil, _ args: AnyHashable...
+  name: String = #function, path: UnsafePointer<CInterop.PlatformChar>? = nil, _ args: AnyHashable...
 ) -> _COffT {
   _COffT(mockImpl(name: name, path: path, args))
 }
