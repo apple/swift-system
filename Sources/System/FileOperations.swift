@@ -370,4 +370,52 @@ extension FileDescriptor {
   public func dup2() throws -> FileDescriptor {
     fatalError("Not implemented")
   }
+  
+  /// A pair of `FileDescriptor` values represening a pipe.
+  ///
+  /// You are responsible for managing the lifetime and validity
+  /// of the `read` and `write` `FileDescriptor` values,
+  /// which can be closed independently or via helper methods on `Pipe`, but not both.
+  public struct Pipe {
+    /// The file descriptor for reading from this pipe
+    public let fileDescriptorForReading: FileDescriptor
+    
+    /// The file descriptor for writing to this pipe
+    public let fileDescriptorForWriting: FileDescriptor
+    
+    /// Create a pipe, a uniderctional data channel which can be used for interprocess communication.
+    ///
+    /// - Returns: A `Pipe` value representing the read and write ends of the created `Pipe`.
+    ///
+    /// The corresponding C function is `pipe`.
+    @_alwaysEmitIntoClient
+    // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+    public init(
+      retryOnInterrupt: Bool = true
+    ) throws {
+      self = try Self._create(retryOnInterrupt: retryOnInterrupt).get()
+    }
+    
+    // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+    @usableFromInline
+    internal static func _create(
+      retryOnInterrupt: Bool
+    ) -> Result<Pipe, Errno> {
+      var fds: [Int32] = [-1, -1]
+      return valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+        system_pipe(&fds)
+      }.map { _ in Pipe(fds: fds) }
+    }
+    
+    private init(fds: [Int32]) {
+      fileDescriptorForReading = FileDescriptor(rawValue: fds[0])
+      fileDescriptorForWriting = FileDescriptor(rawValue: fds[1])
+    }
+  }
+  
+  @_alwaysEmitIntoClient
+  @available(*, unavailable, renamed: "FileDescriptor.Pipe()")
+  public func pipe() throws -> FileDescriptor {
+    fatalError("Not implemented")
+  }
 }
