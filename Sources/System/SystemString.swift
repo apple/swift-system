@@ -53,8 +53,8 @@ extension SystemChar {
   internal var isLetter: Bool {
     guard isASCII else { return false }
     let asciiRaw: UInt8 = numericCast(rawValue)
-    return (UInt8(ascii: "a") ..< UInt8(ascii: "z")).contains(asciiRaw) ||
-           (UInt8(ascii: "A") ..< UInt8(ascii: "Z")).contains(asciiRaw)
+    return (UInt8(ascii: "a") ... UInt8(ascii: "z")).contains(asciiRaw) ||
+           (UInt8(ascii: "A") ... UInt8(ascii: "Z")).contains(asciiRaw)
   }
 }
 
