@@ -137,8 +137,8 @@ extension FileDescriptor.Pipe {
   /// or an error occurs while closing the file descriptor,
   /// this method rethrows that error.
   public func closeAfter<R>(_ body: () throws -> R) throws -> R {
-    try fileDescriptorForReading.closeAfter {
-      try fileDescriptorForWriting.closeAfter {
+    try input.closeAfter {
+      try output.closeAfter {
         try body()
       }
     }
@@ -149,8 +149,8 @@ extension FileDescriptor.Pipe {
   /// If both ends fail to close, the error from the read end is thrown.
   @_alwaysEmitIntoClient
   public func close() throws {
-    try fileDescriptorForWriting.closeAfter {
-      try fileDescriptorForReading.close()
+    try input.closeAfter {
+      try output.close()
     }
   }
 }
