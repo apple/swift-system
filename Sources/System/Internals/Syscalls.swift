@@ -44,6 +44,27 @@ internal func system_open(
   return open(path, oflag, mode)
 }
 
+// NOTE: To workaround compiler liminations, we mock `at` after `path`.
+internal func system_openat(
+  _ at: CInt, _ path: UnsafePointer<CInterop.PlatformChar>, _ oflag: Int32
+) -> CInt {
+#if ENABLE_MOCKING
+  if mockingEnabled { return _mock(path: path, at, oflag) }
+#endif
+  return openat(at, path, oflag)
+}
+
+internal func system_openat(
+  _ at: CInt,
+  _ path: UnsafePointer<CInterop.PlatformChar>,
+  _ oflag: Int32, _ mode: CInterop.Mode
+) -> CInt {
+#if ENABLE_MOCKING
+  if mockingEnabled { return _mock(path: path, at, oflag, mode) }
+#endif
+  return openat(at, path, oflag, mode)
+}
+
 // close
 internal func system_close(_ fd: Int32) -> Int32 {
 #if ENABLE_MOCKING
@@ -115,3 +136,18 @@ internal func system_dup2(_ fd: Int32, _ fd2: Int32) -> Int32 {
   #endif
   return dup2(fd, fd2)
 }
+
+internal func system_fsync(_ fd: Int32) -> Int32 {
+  #if ENABLE_MOCKING
+  if mockingEnabled { return _mock(fd) }
+  #endif
+  return fsync(fd)
+}
+
+internal func system_sync() {
+  #if ENABLE_MOCKING
+  if mockingEnabled { _ = _mock(); return }
+  #endif
+  return sync()
+}
+

@@ -371,3 +371,109 @@ extension FileDescriptor {
     fatalError("Not implemented")
   }
 }
+
+extension FileDescriptor {
+  /// Opens or creates a file for reading or writing.
+  ///
+  /// - Parameters:
+  ///   - path: The location of the file to open.
+  ///   - at: if `path` is relative, treat it as relative to this file descriptor
+  ///     rather than relative to the current working directory
+  ///   - mode: The read and write access to use.
+  ///   - options: The behavior for opening the file.
+  ///   - permissions: The file permissions to use for created files.
+  ///   - retryOnInterrupt: Whether to retry the open operation
+  ///     if it throws ``Errno/interrupted``.
+  ///     The default is `true`.
+  ///     Pass `false` to try only once and throw an error upon interruption.
+  /// - Returns: A file descriptor for the open file
+  ///
+  /// The corresponding C function is `openat`.
+  @_alwaysEmitIntoClient
+  public static func open(
+    _ path: FilePath,
+    at: FileDescriptor,
+    _ mode: FileDescriptor.AccessMode,
+    options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
+    permissions: FilePermissions? = nil,
+    retryOnInterrupt: Bool = true
+  ) throws -> FileDescriptor {
+    try path.withPlatformString {
+      try FileDescriptor._open(
+        $0, at: at, mode, options: options, permissions: permissions,
+        retryOnInterrupt: retryOnInterrupt
+      ).get()
+    }
+  }
+
+  @usableFromInline
+  internal static func _open(
+    _ path: UnsafePointer<CInterop.PlatformChar>,
+    at: FileDescriptor,
+    _ mode: FileDescriptor.AccessMode,
+    options: FileDescriptor.OpenOptions,
+    permissions: FilePermissions?,
+    retryOnInterrupt: Bool
+  ) -> Result<FileDescriptor, Errno> {
+    let oFlag = mode.rawValue | options.rawValue
+    let descOrError: Result<CInt, Errno> = valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+      if let permissions = permissions {
+        return system_openat(at.rawValue, path, oFlag, permissions.rawValue)
+      }
+      precondition(!options.contains(.create),
+        "Create must be given permissions")
+      return system_openat(at.rawValue, path, oFlag)
+    }
+    return descOrError.map { FileDescriptor(rawValue: $0) }
+  }
+
+  @_alwaysEmitIntoClient
+  @available(*, unavailable, renamed: "open")
+  public static func openat() throws -> FileDescriptor {
+    fatalError("Not implemented")
+  }
+
+  /// Synchronize a file's state with that on disk.
+  ///
+  /// Note that while this will flush all data from the host to the drive
+  /// (i.e. the "permanent storage device"), the drive itself may not
+  /// physically write the data to the platters for quite some time and it
+  /// may be written in an out-of-order sequence.
+  ///
+  /// For applications that require tighter guarantees about the integrity of
+  /// their data, Mac OS X provides the F_FULLFSYNC fcntl.
+  ///
+  /// The corresponding C function is `fsync`.
+  @_alwaysEmitIntoClient
+  public func sync(retryOnInterrupt: Bool = true) throws {
+    try _sync(retryOnInterrupt: retryOnInterrupt).get() }
+
+  @usableFromInline
+  internal func _sync(retryOnInterrupt: Bool) -> Result<(), Errno> {
+    nothingOrErrno(retryOnInterrupt: retryOnInterrupt) {
+      system_fsync(self.rawValue)
+    }
+  }
+
+  @_alwaysEmitIntoClient
+  @available(*, unavailable, renamed: "sync")
+  public static func fsync() throws -> FileDescriptor {
+    fatalError("Not implemented")
+  }
+
+  // TODO: Figure out the deal with fdatasync. Darwin does not have it available.
+
+}
+
+/// A namespace for global, file-system operations
+public
+enum FileSystem {}
+
+extension FileSystem {
+  /// Synchronize disk block status with that on disk.
+  ///
+  /// The corresponding C function is `sync`.
+  public static func sync() {
+    system_sync()
+  }
+}
