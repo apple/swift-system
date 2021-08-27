@@ -28,16 +28,7 @@ To use the `SystemPackage` library in a SwiftPM project,
 add the following line to the dependencies in your `Package.swift` file:
 
 ```swift
-.package(url: "https://github.com/apple/swift-system", from: "0.0.1"),
-```
-
-Because `SystemPackage` is under active development,
-source-stability is only guaranteed within minor versions (e.g. between `0.0.3` and `0.0.4`).
-If you don't want potentially source-breaking package updates,
-use this dependency specification instead:
-
-```swift
-.package(url: "https://github.com/apple/swift-system", .upToNextMinor(from: "0.0.1")),
+.package(url: "https://github.com/apple/swift-system", from: "1.0.0"),
 ```
 
 Finally, include `"SystemPackage"` as a dependency for your executable target:
@@ -46,7 +37,7 @@ Finally, include `"SystemPackage"` as a dependency for your executable target:
 let package = Package(
     // name, platforms, products, etc.
     dependencies: [
-        .package(url: "https://github.com/apple/swift-system", from: "0.0.1"),
+        .package(url: "https://github.com/apple/swift-system", from: "1.0.0"),
         // other dependencies
     ],
     targets: [
@@ -57,6 +48,12 @@ let package = Package(
     ]
 )
 ```
+
+## Source Stability
+
+The Swift System package is source stable. The version numbers follow [Semantic Versioning][semver] -- source breaking changes to public API can only land in a new major version.
+
+[semver]: https://semver.org
 
 ## Contributing
 
