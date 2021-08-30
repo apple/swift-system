@@ -378,10 +378,10 @@ extension FileDescriptor {
   /// which can be closed independently or via helper methods on `Pipe`, but not both.
   public struct Pipe {
     /// The file descriptor for reading from this pipe
-    public let input: FileDescriptor
+    public let fileDescriptorForReading: FileDescriptor
     
     /// The file descriptor for writing to this pipe
-    public let output: FileDescriptor
+    public let fileDescriptorForWriting: FileDescriptor
     
     /// Create a pipe, a uniderctional data channel which can be used for interprocess communication.
     ///
@@ -406,13 +406,13 @@ extension FileDescriptor {
         let fds = bytes.bindMemory(to: Int32.self)
         return valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
           system_pipe(fds.baseAddress!)
-        }.map { _ in Pipe(_input: fds[0], output: fds[1]) }
+        }.map { _ in Pipe(_fileDescriptorForReading: fds[0], fileDescriptorForWriting: fds[1]) }
       }
     }
     
-    private init(_input: Int32, output: Int32) {
-      self.input = FileDescriptor(rawValue: _input)
-      self.output = FileDescriptor(rawValue: output)
+    private init(_fileDescriptorForReading: Int32, fileDescriptorForWriting: Int32) {
+      self.fileDescriptorForReading = FileDescriptor(rawValue: _fileDescriptorForReading)
+      self.fileDescriptorForWriting = FileDescriptor(rawValue: fileDescriptorForWriting)
     }
   }
   
