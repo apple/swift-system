@@ -377,11 +377,11 @@ extension FileDescriptor {
   /// of the `read` and `write` `FileDescriptor` values,
   /// which can be closed independently or via helper methods on `Pipe`, but not both.
   public struct Pipe {
-    /// The file descriptor for reading from this pipe
-    public let fileDescriptorForReading: FileDescriptor
-    
     /// The file descriptor for writing to this pipe
-    public let fileDescriptorForWriting: FileDescriptor
+    public let inlet: FileDescriptor
+    
+    /// The file descriptor for reading from this pipe
+    public let outlet: FileDescriptor
     
     /// Create a pipe, a uniderctional data channel which can be used for interprocess communication.
     ///
@@ -411,8 +411,8 @@ extension FileDescriptor {
     }
     
     private init(_fileDescriptorForReading: Int32, fileDescriptorForWriting: Int32) {
-      self.fileDescriptorForReading = FileDescriptor(rawValue: _fileDescriptorForReading)
-      self.fileDescriptorForWriting = FileDescriptor(rawValue: fileDescriptorForWriting)
+      self.outlet = FileDescriptor(rawValue: _fileDescriptorForReading)
+      self.inlet = FileDescriptor(rawValue: fileDescriptorForWriting)
     }
   }
   

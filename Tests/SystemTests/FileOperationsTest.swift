@@ -94,15 +94,15 @@ final class FileOperationsTest: XCTestCase {
     // Ad-hoc test testing `Pipe` functionality.
     // We cannot test `Pipe` using `MockTestCase` because it calls `pipe` with a pointer to an array local to the `Pipe`, the address of which we do not know prior to invoking `Pipe`.
     let pipe = try FileDescriptor.Pipe()
-    try pipe.fileDescriptorForWriting.closeAfter {
-      try pipe.fileDescriptorForReading.closeAfter {
+    try pipe.inlet.closeAfter {
+      try pipe.outlet.closeAfter {
         var abc = "abc"
         try abc.withUTF8 {
-          _ = try pipe.fileDescriptorForWriting.write(UnsafeRawBufferPointer($0))
+          _ = try pipe.inlet.write(UnsafeRawBufferPointer($0))
         }
         let readLen = 3
         let readBytes = try Array<UInt8>(unsafeUninitializedCapacity: readLen) { buf, count in
-          count = try pipe.fileDescriptorForReading.read(into: UnsafeMutableRawBufferPointer(buf))
+          count = try pipe.outlet.read(into: UnsafeMutableRawBufferPointer(buf))
         }
         XCTAssertEqual(readBytes, Array(abc.utf8))
       }
