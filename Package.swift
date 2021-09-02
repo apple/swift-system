@@ -12,31 +12,32 @@
 
 import PackageDescription
 
-let targets: [PackageDescription.Target] = [
-  .target(
-    name: "SystemPackage",
-    dependencies: ["CSystem"],
-    path: "Sources/System",
-    swiftSettings: [
-      .define("SYSTEM_PACKAGE"),
-      .define("ENABLE_MOCKING", .when(configuration: .debug))
-    ]),
-  .target(
-    name: "CSystem",
-    dependencies: []),
-  .testTarget(
-    name: "SystemTests",
-    dependencies: ["SystemPackage"],
-    swiftSettings: [
-      .define("SYSTEM_PACKAGE")
-    ]),
-]
-
 let package = Package(
     name: "swift-system",
     products: [
         .library(name: "SystemPackage", targets: ["SystemPackage"]),
     ],
     dependencies: [],
-    targets: targets
+    targets: [
+      .target(
+        name: "CSystem",
+        dependencies: []),
+      .target(
+        name: "SystemPackage",
+        dependencies: ["CSystem"],
+        path: "Sources/System",
+        cSettings: [
+          .define("_CRT_SECURE_NO_WARNINGS")
+        ],
+        swiftSettings: [
+          .define("SYSTEM_PACKAGE"),
+          .define("ENABLE_MOCKING", .when(configuration: .debug))
+        ]),
+      .testTarget(
+        name: "SystemTests",
+        dependencies: ["SystemPackage"],
+        swiftSettings: [
+          .define("SYSTEM_PACKAGE")
+        ]),
+    ]
 )
