@@ -123,34 +123,3 @@ extension FileDescriptor {
     }
   }
 }
-
-extension FileDescriptor.Pipe {
-  /// Runs a closure and then closes both ends of this pipe, even if an error occurs.
-  ///
-  /// - Parameter body: The closure to run.
-  ///   If the closure throws an error,
-  ///   this method closes both ends of this pipe before it rethrows that error.
-  ///
-  /// - Returns: The value returned by the closure.
-  ///
-  /// If `body` throws an error
-  /// or an error occurs while closing the file descriptor,
-  /// this method rethrows that error.
-  public func closeAfter<R>(_ body: () throws -> R) throws -> R {
-    try outlet.closeAfter {
-      try inlet.closeAfter {
-        try body()
-      }
-    }
-  }
-  
-  /// Closes both ends of a Pipe
-  ///
-  /// If both ends fail to close, the error from the read end is thrown.
-  @_alwaysEmitIntoClient
-  public func close() throws {
-    try outlet.closeAfter {
-      try inlet.close()
-    }
-  }
-}

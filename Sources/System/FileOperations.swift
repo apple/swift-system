@@ -373,52 +373,34 @@ extension FileDescriptor {
   
   /// A pair of `FileDescriptor` values represening a pipe.
   ///
+  /// A pipe enables data written to `output` to be read from `input`.
   /// You are responsible for managing the lifetime and validity
-  /// of the `read` and `write` `FileDescriptor` values,
-  /// which can be closed independently or via helper methods on `Pipe`, but not both.
-  public struct Pipe {
-    /// The file descriptor for writing to this pipe
-    public let inlet: FileDescriptor
-    
-    /// The file descriptor for reading from this pipe
-    public let outlet: FileDescriptor
-    
-    /// Create a pipe, a uniderctional data channel which can be used for interprocess communication.
-    ///
-    /// - Returns: A `Pipe` value representing the read and write ends of the created `Pipe`.
-    ///
-    /// The corresponding C function is `pipe`.
-    @_alwaysEmitIntoClient
-    // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
-    public init(
-      retryOnInterrupt: Bool = true
-    ) throws {
-      self = try Self._create(retryOnInterrupt: retryOnInterrupt).get()
-    }
-    
-    // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
-    @usableFromInline
-    internal static func _create(
-      retryOnInterrupt: Bool
-    ) -> Result<Pipe, Errno> {
-      var fds: (Int32, Int32) = (-1, -1)
-      return withUnsafeMutableBytes(of: &fds) { bytes in
-        let fds = bytes.bindMemory(to: Int32.self)
-        return valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
-          system_pipe(fds.baseAddress!)
-        }.map { _ in Pipe(_fileDescriptorForReading: fds[0], fileDescriptorForWriting: fds[1]) }
-      }
-    }
-    
-    private init(_fileDescriptorForReading: Int32, fileDescriptorForWriting: Int32) {
-      self.outlet = FileDescriptor(rawValue: _fileDescriptorForReading)
-      self.inlet = FileDescriptor(rawValue: fileDescriptorForWriting)
-    }
+  /// of the `output` and `input` `FileDescriptor` values.
+  public typealias Pipe = (output: FileDescriptor, input: FileDescriptor)
+  
+  /// Create a pipe, a uniderctional data channel which can be used for interprocess communication.
+  ///
+  /// - Parameters:
+  ///   - retryOnInterrupt: Whether to retry the write operation
+  ///      if it throws ``Errno/interrupted``. The default is `true`.
+  ///      Pass `false` to try only once and throw an error upon interruption.
+  /// - Returns: The new file descriptor.
+  ///
+  /// The corresponding C function is `pipe`.
+  @_alwaysEmitIntoClient
+  // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+  public static func pipe(retryOnInterrupt: Bool = true) throws -> Pipe {
+    try _pipe(retryOnInterrupt: retryOnInterrupt).get()
   }
   
-  @_alwaysEmitIntoClient
-  @available(*, unavailable, renamed: "FileDescriptor.Pipe()")
-  public func pipe() throws -> FileDescriptor {
-    fatalError("Not implemented")
+  @usableFromInline
+  internal static func _pipe(retryOnInterrupt: Bool) -> Result<Pipe, Errno> {
+    var fds: (Int32, Int32) = (-1, -1)
+    return withUnsafeMutableBytes(of: &fds) { bytes in
+      let fds = bytes.bindMemory(to: Int32.self)
+      return valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+        system_pipe(fds.baseAddress!)
+      }.map { _ in (FileDescriptor(rawValue: fds[0]), FileDescriptor(rawValue: fds[1])) }
+    }
   }
 }
