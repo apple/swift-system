@@ -389,16 +389,16 @@ extension FileDescriptor {
   /// The corresponding C function is `pipe`.
   @_alwaysEmitIntoClient
   // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
-  public static func pipe(retryOnInterrupt: Bool = true) throws -> Pipe {
-    try _pipe(retryOnInterrupt: retryOnInterrupt).get()
+  public static func pipe() throws -> Pipe {
+    try _pipe().get()
   }
   
   @usableFromInline
-  internal static func _pipe(retryOnInterrupt: Bool) -> Result<Pipe, Errno> {
+  internal static func _pipe() -> Result<Pipe, Errno> {
     var fds: (Int32, Int32) = (-1, -1)
     return withUnsafeMutableBytes(of: &fds) { bytes in
       let fds = bytes.bindMemory(to: Int32.self)
-      return valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+      return valueOrErrno(retryOnInterrupt: false) {
         system_pipe(fds.baseAddress!)
       }.map { _ in (FileDescriptor(rawValue: fds[0]), FileDescriptor(rawValue: fds[1])) }
     }
