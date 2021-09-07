@@ -375,8 +375,8 @@ extension FileDescriptor {
   ///
   /// A pipe enables data written to `output` to be read from `input`.
   /// You are responsible for managing the lifetime and validity
-  /// of the `output` and `input` `FileDescriptor` values.
-  public typealias Pipe = (output: FileDescriptor, input: FileDescriptor)
+  /// of the `input` and `output` `FileDescriptor` values.
+  public typealias Pipe = (input: FileDescriptor, output: FileDescriptor)
   
   /// Create a pipe, a uniderctional data channel which can be used for interprocess communication.
   ///
