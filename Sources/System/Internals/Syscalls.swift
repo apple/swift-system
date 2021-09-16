@@ -116,7 +116,6 @@ internal func system_dup2(_ fd: Int32, _ fd2: Int32) -> Int32 {
   return dup2(fd, fd2)
 }
 
-// write
 internal func system_pipe(_ fds: UnsafeMutablePointer<Int32>) -> CInt {
 #if ENABLE_MOCKING
   if mockingEnabled { return _mock(fds) }
