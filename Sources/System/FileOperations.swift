@@ -371,30 +371,19 @@ extension FileDescriptor {
     fatalError("Not implemented")
   }
   
-  /// A pair of `FileDescriptor` values represening a pipe.
+  /// Create a pipe, a unidirectional data channel which can be used for interprocess communication.
   ///
-  /// A pipe enables data written to `output` to be read from `input`.
-  /// You are responsible for managing the lifetime and validity
-  /// of the `input` and `output` `FileDescriptor` values.
-  public typealias Pipe = (input: FileDescriptor, output: FileDescriptor)
-  
-  /// Create a pipe, a uniderctional data channel which can be used for interprocess communication.
-  ///
-  /// - Parameters:
-  ///   - retryOnInterrupt: Whether to retry the write operation
-  ///      if it throws ``Errno/interrupted``. The default is `true`.
-  ///      Pass `false` to try only once and throw an error upon interruption.
-  /// - Returns: The new file descriptor.
+  /// - Returns: The pair of file descriptors.
   ///
   /// The corresponding C function is `pipe`.
   @_alwaysEmitIntoClient
   // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
-  public static func pipe() throws -> Pipe {
+  public static func pipe() throws -> (readEnd: FileDescriptor, writeEnd: FileDescriptor) {
     try _pipe().get()
   }
   
   @usableFromInline
-  internal static func _pipe() -> Result<Pipe, Errno> {
+  internal static func _pipe() -> Result<(readEnd: FileDescriptor, writeEnd: FileDescriptor), Errno> {
     var fds: (Int32, Int32) = (-1, -1)
     return withUnsafeMutableBytes(of: &fds) { bytes in
       let fds = bytes.bindMemory(to: Int32.self)
