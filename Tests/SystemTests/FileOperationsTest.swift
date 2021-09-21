@@ -102,7 +102,7 @@ final class FileOperationsTest: XCTestCase {
         }
         let readLen = 3
         let readBytes = try Array<UInt8>(unsafeUninitializedCapacity: readLen) { buf, count in
-          count = try pipe.input.read(into: UnsafeMutableRawBufferPointer(buf))
+          count = try pipe.readEnd.read(into: UnsafeMutableRawBufferPointer(buf))
         }
         XCTAssertEqual(readBytes, Array(abc.utf8))
       }
