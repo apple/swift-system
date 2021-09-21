@@ -95,7 +95,7 @@ final class FileOperationsTest: XCTestCase {
     // We cannot test `Pipe` using `MockTestCase` because it calls `pipe` with a pointer to an array local to the `Pipe`, the address of which we do not know prior to invoking `Pipe`.
     let pipe = try FileDescriptor.pipe()
     try pipe.input.closeAfter {
-      try pipe.output.closeAfter {
+      try pipe.writeEnd.closeAfter {
         var abc = "abc"
         try abc.withUTF8 {
           _ = try pipe.writeEnd.write(UnsafeRawBufferPointer($0))
