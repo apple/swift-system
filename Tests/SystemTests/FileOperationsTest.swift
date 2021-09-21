@@ -98,7 +98,7 @@ final class FileOperationsTest: XCTestCase {
       try pipe.output.closeAfter {
         var abc = "abc"
         try abc.withUTF8 {
-          _ = try pipe.output.write(UnsafeRawBufferPointer($0))
+          _ = try pipe.writeEnd.write(UnsafeRawBufferPointer($0))
         }
         let readLen = 3
         let readBytes = try Array<UInt8>(unsafeUninitializedCapacity: readLen) { buf, count in
