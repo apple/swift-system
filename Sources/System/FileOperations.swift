@@ -371,6 +371,7 @@ extension FileDescriptor {
     fatalError("Not implemented")
   }
   
+  #if !os(Windows)
   /// Create a pipe, a unidirectional data channel which can be used for interprocess communication.
   ///
   /// - Returns: The pair of file descriptors.
@@ -392,4 +393,5 @@ extension FileDescriptor {
       }.map { _ in (FileDescriptor(rawValue: fds[0]), FileDescriptor(rawValue: fds[1])) }
     }
   }
+  #endif
 }

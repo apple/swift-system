@@ -90,6 +90,7 @@ final class FileOperationsTest: XCTestCase {
     // TODO: Test writeAll, writeAll(toAbsoluteOffset), closeAfter
   }
   
+#if !os(Windows)
   func testAdHocPipe() throws {
     // Ad-hoc test testing `Pipe` functionality.
     // We cannot test `Pipe` using `MockTestCase` because it calls `pipe` with a pointer to an array local to the `Pipe`, the address of which we do not know prior to invoking `Pipe`.
@@ -108,6 +109,7 @@ final class FileOperationsTest: XCTestCase {
       }
     }
   }
+#endif
 
   func testAdHocOpen() {
     // Ad-hoc test touching a file system.
