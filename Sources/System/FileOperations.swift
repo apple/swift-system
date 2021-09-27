@@ -370,4 +370,27 @@ extension FileDescriptor {
   public func dup2() throws -> FileDescriptor {
     fatalError("Not implemented")
   }
+  
+  #if !os(Windows)
+  /// Create a pipe, a unidirectional data channel which can be used for interprocess communication.
+  ///
+  /// - Returns: The pair of file descriptors.
+  ///
+  /// The corresponding C function is `pipe`.
+  @_alwaysEmitIntoClient
+  // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+  public static func pipe() throws -> (readEnd: FileDescriptor, writeEnd: FileDescriptor) {
+    try _pipe().get()
+  }
+  
+  @usableFromInline
+  internal static func _pipe() -> Result<(readEnd: FileDescriptor, writeEnd: FileDescriptor), Errno> {
+    var fds: (Int32, Int32) = (-1, -1)
+    return withUnsafeMutablePointer(to: &fds) { pointer in
+      valueOrErrno(retryOnInterrupt: false) {
+        system_pipe(UnsafeMutableRawPointer(pointer).assumingMemoryBound(to: Int32.self))
+      }
+    }.map { _ in (.init(rawValue: fds.0), .init(rawValue: fds.1)) }
+  }
+  #endif
 }
