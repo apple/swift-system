@@ -391,7 +391,6 @@ extension FileDescriptor {
         system_pipe(UnsafeMutableRawPointer(pointer).assumingMemoryBound(to: Int32.self))
       }
     }.map { _ in (.init(rawValue: fds.0), .init(rawValue: fds.1)) }
-    }
   }
   #endif
 }
