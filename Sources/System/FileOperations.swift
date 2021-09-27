@@ -386,11 +386,11 @@ extension FileDescriptor {
   @usableFromInline
   internal static func _pipe() -> Result<(readEnd: FileDescriptor, writeEnd: FileDescriptor), Errno> {
     var fds: (Int32, Int32) = (-1, -1)
-    return withUnsafeMutableBytes(of: &fds) { bytes in
-      let fds = bytes.bindMemory(to: Int32.self)
-      return valueOrErrno(retryOnInterrupt: false) {
-        system_pipe(fds.baseAddress!)
-      }.map { _ in (FileDescriptor(rawValue: fds[0]), FileDescriptor(rawValue: fds[1])) }
+    return withUnsafeMutablePointer(to: &fds) { pointer in
+      valueOrErrno(retryOnInterrupt: false) {
+        system_pipe(UnsafeMutableRawPointer(pointer).assumingMemoryBound(to: Int32.self))
+      }
+    }.map { _ in (.init(rawValue: fds.0), .init(rawValue: fds.1)) }
     }
   }
   #endif
