@@ -529,3 +529,42 @@ internal var _SEEK_HOLE: CInt { SEEK_HOLE }
 internal var _SEEK_DATA: CInt { SEEK_DATA }
 #endif
 
+
+#if os(macOS)
+@_alwaysEmitIntoClient
+internal var _TIOCFLUSH: CUnsignedLong { TIOCFLUSH }
+
+@_alwaysEmitIntoClient
+internal var _TIOCSDTR: CUnsignedLong { TIOCSDTR }
+
+@_alwaysEmitIntoClient
+internal var _TIOCCDTR: CUnsignedLong { TIOCCDTR }
+#endif
+
+#if os(Linux)
+@_alwaysEmitIntoClient
+internal var _TCGETS: CUnsignedLong { TCGETS }
+
+@_alwaysEmitIntoClient
+internal var _TIOCGEXCL: CUnsignedLong { TIOCGEXCL }
+#endif
+
+@_alwaysEmitIntoClient
+internal var _TIOCSBRK: CUnsignedLong { TIOCSBRK }
+
+@_alwaysEmitIntoClient
+internal var _TIOCCBRK: CUnsignedLong { TIOCCBRK }
+
+@_alwaysEmitIntoClient
+internal var _TIOCEXCL: CUnsignedLong { TIOCEXCL }
+
+@_alwaysEmitIntoClient
+internal var _TIOCNXCL: CUnsignedLong { TIOCNXCL }
+
+@_alwaysEmitIntoClient
+internal var _TIOCGETD: CUnsignedLong { TIOCGETD }
+
+@_alwaysEmitIntoClient
+internal var _TIOCSETD: CUnsignedLong { TIOCSETD }
+
+
