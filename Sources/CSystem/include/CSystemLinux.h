@@ -14,6 +14,7 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/sysinfo.h>
+#include <sys/ioctl.h>
 #include <sys/timerfd.h>
 #include <sys/types.h>
 #include <errno.h>
