@@ -1,0 +1,12 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Test",
+            "program": "./.build/debug/swift-systemPackageTests.xctest",
+            "preLaunchTask": "swift-build-tests"
+        }
+    ]
+}
