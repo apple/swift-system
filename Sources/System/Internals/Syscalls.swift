@@ -123,3 +123,20 @@ internal func system_pipe(_ fds: UnsafeMutablePointer<Int32>) -> CInt {
   return pipe(fds)
 }
 #endif
+
+internal func system_inet_pton(
+    _ family: Int32,
+    _ cString: UnsafePointer<CInterop.PlatformChar>,
+    _ address: UnsafeMutableRawPointer) -> Int32 {
+  #if ENABLE_MOCKING
+  if mockingEnabled { return _mock(family, cString, address) }
+  #endif
+  return inet_pton(family, cString, address)
+}
+
+internal func system_inet_ntop(_ family: Int32, _ pointer : UnsafeRawPointer, _ string: UnsafeMutablePointer<CChar>, _ length: UInt32) -> UnsafePointer<CChar>? {
+  #if ENABLE_MOCKING
+  //if mockingEnabled { return _mock(family, pointer, string, length) }
+  #endif
+  return inet_ntop(family, pointer, string, length)
+}

@@ -529,3 +529,26 @@ internal var _SEEK_HOLE: CInt { SEEK_HOLE }
 internal var _SEEK_DATA: CInt { SEEK_DATA }
 #endif
 
+@_alwaysEmitIntoClient
+internal var _INET_ADDRSTRLEN: CInt { INET_ADDRSTRLEN }
+
+@_alwaysEmitIntoClient
+internal var _INET6_ADDRSTRLEN: CInt { INET6_ADDRSTRLEN }
+
+@_alwaysEmitIntoClient
+internal var _INADDR_ANY: CInterop.IPv4Address {  CInterop.IPv4Address(s_addr: INADDR_ANY) }
+
+@_alwaysEmitIntoClient
+internal var _INADDR_LOOPBACK: CInterop.IPv4Address {  CInterop.IPv4Address(s_addr: INADDR_LOOPBACK) }
+
+@_alwaysEmitIntoClient
+internal var _INADDR6_ANY: CInterop.IPv6Address { in6addr_any }
+
+@_alwaysEmitIntoClient
+internal var _INADDR6_LOOPBACK: CInterop.IPv6Address { in6addr_loopback }
+
+@_alwaysEmitIntoClient
+internal var _AF_INET: CInt { AF_INET }
+
+@_alwaysEmitIntoClient
+internal var _AF_INET6: CInt { AF_INET6 }
