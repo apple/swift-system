@@ -49,7 +49,7 @@ public enum CInterop {
   /// Windows, this is `UInt16` (a "wide" character).
   public typealias PlatformChar = CInterop.Char
   #endif
-
+  
   #if os(Windows)
   /// The platform's preferred Unicode encoding. On Unix this is UTF-8 and on
   /// Windows it is UTF-16. Native strings may contain invalid Unicode,
@@ -63,4 +63,55 @@ public enum CInterop {
   /// on API.
   public typealias PlatformUnicodeEncoding = UTF8
   #endif
+
+  /// The platform file descriptor set.
+  public typealias FileDescriptorSet = fd_set
+  
+  public typealias PollFileDescriptor = pollfd
+  
+  public typealias FileDescriptorCount = nfds_t
+  
+  public typealias FileEvent = Int16
+  
+  #if os(Windows)
+  /// The platform socket descriptor.
+  public typealias SocketDescriptor = SOCKET
+  #else
+  /// The platform socket descriptor, which is the same as a file desciptor on Unix systems.
+  public typealias SocketDescriptor = CInt
+  #endif
+
+    /// The C `msghdr` type
+  public typealias MessageHeader = msghdr
+  
+  /// The C `sa_family_t` type
+  public typealias SocketAddressFamily = sa_family_t
+
+  /// Socket Type
+  #if os(Linux)
+  public typealias SocketType = __socket_type
+  #else
+  public typealias SocketType = CInt
+  #endif
+    
+  /// The C `addrinfo` type
+  public typealias AddressInfo = addrinfo
+    
+  /// The C `in_addr` type
+  public typealias IPv4Address = in_addr
+    
+  /// The C `in6_addr` type
+  public typealias IPv6Address = in6_addr
+    
+  /// The C `sockaddr_in` type
+  public typealias SocketAddress = sockaddr
+    
+  /// The C `sockaddr_in` type
+  public typealias UnixSocketAddress = sockaddr_un
+  
+  /// The C `sockaddr_in` type
+  public typealias IPv4SocketAddress = sockaddr_in
+    
+  /// The C `sockaddr_in6` type
+  public typealias IPv6SocketAddress = sockaddr_in6
 }

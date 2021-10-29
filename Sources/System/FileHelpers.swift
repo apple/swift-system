@@ -9,6 +9,7 @@
 
 // @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
 extension FileDescriptor {
+    
   /// Runs a closure and then closes the file descriptor, even if an error occurs.
   ///
   /// - Parameter body: The closure to run.
@@ -32,7 +33,36 @@ extension FileDescriptor {
     try self.close()
     return result
   }
-
+  
+  /// Runs a closure and then closes the file descriptor if an error occurs.
+  ///
+  /// - Parameter body: The closure to run.
+  ///   If the closure throws an error,
+  ///   this method closes the file descriptor before it rethrows that error.
+  ///
+  /// - Returns: The value returned by the closure.
+  ///
+  /// If `body` throws an error
+  /// this method rethrows that error.
+  @_alwaysEmitIntoClient
+  public func closeIfThrows<R>(_ body: () throws -> R) throws -> R {
+      do {
+        return try body()
+      } catch {
+        _ = self._close() // Squash close error and throw closure's
+        throw error
+      }
+  }
+  
+  @usableFromInline
+  internal func _closeIfThrows<R>(_ body: () -> Result<R, Errno>) -> Result<R, Errno> {
+      return body().mapError {
+          // close if error is thrown
+          let _ = _close()
+          return $0
+      }
+  }
+  
   /// Writes a sequence of bytes to the current offset
   /// and then updates the offset.
   ///
@@ -122,4 +152,16 @@ extension FileDescriptor {
       return .success(buffer.count)
     }
   }
+}
+
+internal extension Result where Success == FileDescriptor, Failure == Errno {
+    
+    @usableFromInline
+    func _closeIfThrows<R>(_ body: (FileDescriptor) -> Result<R, Errno>) -> Result<R, Errno> {
+        return flatMap { fileDescriptor in
+            fileDescriptor._closeIfThrows {
+                body(fileDescriptor)
+            }
+        }
+    }
 }

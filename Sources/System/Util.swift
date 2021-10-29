@@ -127,3 +127,16 @@ extension MutableCollection where Element: Equatable {
     }
   }
 }
+
+internal extension Bool {
+    
+    @usableFromInline
+    init(_ cInt: CInt) {
+        self = cInt != 0
+    }
+    
+    @usableFromInline
+    var cInt: CInt {
+        self ? 1 : 0
+    }
+}

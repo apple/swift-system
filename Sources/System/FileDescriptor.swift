@@ -25,6 +25,20 @@ public struct FileDescriptor: RawRepresentable, Hashable, Codable {
   public init(rawValue: CInt) { self.rawValue = rawValue }
 }
 
+internal extension FileDescriptor {
+    
+    init(socket: CInterop.SocketDescriptor) {
+        // On Unix a file descriptor can be a file, pipe, socket, etc
+        // On windows file descriptors and sockets are different types
+        #if os(Windows)
+        #warning("Windows sockets not implemented")
+        fatalError()
+        #else
+        self.init(rawValue: socket)
+        #endif
+    }
+}
+
 // Standard file descriptors
 extension FileDescriptor {
   /// The standard input file descriptor, with a numeric value of 0.
