@@ -63,4 +63,30 @@ public enum CInterop {
   /// on API.
   public typealias PlatformUnicodeEncoding = UTF8
   #endif
+  
+  /// The C `clock_t` type
+  public typealias Clock = clock_t
+  
+  /// The C `clockid_t` type
+  public typealias ClockID = clockid_t
+      
+  /// The C `time_t` type
+  public typealias Time = time_t
+  
+  /// The C `tm` type
+  public typealias TimeComponents = tm
+    
+  /// The C `timeval` type
+  public typealias TimeIntervalMicroseconds = timeval
+  
+  /// The C `timespec` type
+  public typealias TimeIntervalNanoseconds = timespec
+  
+  #if os(OSX) || os(iOS) || os(watchOS) || os(tvOS)
+  public typealias Microseconds = __darwin_suseconds_t
+  #elseif os(Linux)
+  public typealias Microseconds = __suseconds_t
+  #endif
+    
+  public typealias Nanoseconds = CLong
 }

@@ -123,3 +123,121 @@ internal func system_pipe(_ fds: UnsafeMutablePointer<Int32>) -> CInt {
   return pipe(fds)
 }
 #endif
+
+@inline(__always)
+internal func system_clock() -> CInterop.Clock {
+  return clock()
+}
+
+@available(macOS 10.12, iOS 10.0, watchOS 3.0, tvOS 10.0, *)
+@usableFromInline
+internal func system_clock_getres(
+    _ id: CInterop.ClockID,
+    _ time: UnsafeMutablePointer<CInterop.TimeIntervalNanoseconds>
+) -> Int32 {
+  #if ENABLE_MOCKING
+  if mockingEnabled { return _mock(id.rawValue, time) }
+  #endif
+  return clock_getres(id, time)
+}
+
+@available(macOS 10.12, iOS 10.0, watchOS 3.0, tvOS 10.0, *)
+@usableFromInline
+internal func system_clock_gettime(
+    _ id: CInterop.ClockID,
+    _ time: UnsafeMutablePointer<CInterop.TimeIntervalNanoseconds>
+) -> Int32 {
+  #if ENABLE_MOCKING
+    if mockingEnabled { return _mock(id.rawValue, time) }
+  #endif
+  return clock_gettime(id, time)
+}
+
+@available(macOS 10.12, *)
+@available(iOS, unavailable)
+@available(watchOS, unavailable)
+@available(tvOS, unavailable)
+@usableFromInline
+internal func system_clock_settime(
+    _ id: CInterop.ClockID,
+    _ time: UnsafePointer<CInterop.TimeIntervalNanoseconds>
+) -> Int32 {
+  #if ENABLE_MOCKING
+  if mockingEnabled { return _mock(id.rawValue, time) }
+  #endif
+  return clock_settime(id, time)
+}
+
+internal func system_gettimeofday(
+    _ time: UnsafeMutablePointer<CInterop.TimeIntervalMicroseconds>,
+    _ tz: UnsafeMutableRawPointer?
+) -> Int32 {
+  #if ENABLE_MOCKING
+  if mockingEnabled { return _mock(time, tz) }
+  #endif
+  return gettimeofday(time, tz)
+}
+
+internal func system_settimeofday(
+    _ time: UnsafePointer<CInterop.TimeIntervalMicroseconds>,
+    _ tz: UnsafePointer<timezone>?
+) -> Int32 {
+  #if ENABLE_MOCKING
+  if mockingEnabled { return _mock(time, tz) }
+  #endif
+  return settimeofday(time, tz)
+}
+
+@discardableResult
+internal func system_gmtime_r(
+    _ time: UnsafePointer<CInterop.Time>,
+    _ timeComponents: UnsafeMutablePointer<CInterop.TimeComponents>
+) -> UnsafeMutablePointer<CInterop.TimeComponents> {
+  #if ENABLE_MOCKING
+  if mockingEnabled {
+      let _ = _mock(time, timeComponents)
+      return timeComponents
+  }
+  #endif
+  return gmtime_r(time, timeComponents)
+}
+
+internal func system_timegm(
+    _ time: UnsafePointer<CInterop.TimeComponents>
+) -> CInterop.Time {
+    return timegm(.init(mutating: time))
+}
+
+@discardableResult
+internal func system_localtime_r(
+    _ time: UnsafePointer<CInterop.Time>,
+    _ timeComponents: UnsafeMutablePointer<CInterop.TimeComponents>
+) -> UnsafeMutablePointer<CInterop.TimeComponents> {
+  #if ENABLE_MOCKING
+  if mockingEnabled {
+      let _ = _mock(time, timeComponents)
+      return timeComponents
+  }
+  #endif
+  return localtime_r(time, timeComponents)
+}
+
+@discardableResult
+internal func system_asctime_r(
+    _ timeComponents: UnsafePointer<CInterop.TimeComponents>,
+    _ string: UnsafeMutablePointer<CChar>
+) -> UnsafeMutablePointer<CChar> {
+  return asctime_r(timeComponents, string)
+}
+
+internal func system_timelocal(
+    _ time: UnsafePointer<CInterop.TimeComponents>
+) -> CInterop.Time {
+  return timelocal(.init(mutating: time))
+}
+
+internal func system_modf(_ value: Double) -> (Double, Double) {
+    var integerValue: Double = 0
+    let decimalValue = modf(value, &integerValue)
+    return (integerValue, decimalValue)
+}
