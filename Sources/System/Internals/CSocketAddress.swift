@@ -41,15 +41,3 @@ extension CInterop.UnixSocketAddress: CSocketAddress {
     @_alwaysEmitIntoClient
     static var family: SocketAddressFamily { .unix }
 }
-
-extension CInterop.IPv4SocketAddress: CSocketAddress {
-    
-    @_alwaysEmitIntoClient
-    static var family: SocketAddressFamily { .ipv4 }
-}
-
-extension CInterop.IPv6SocketAddress: CSocketAddress {
-    
-    @_alwaysEmitIntoClient
-    static var family: SocketAddressFamily { .ipv6 }
-}

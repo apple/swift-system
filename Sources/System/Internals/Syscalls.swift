@@ -123,23 +123,6 @@ internal func system_dup2(_ fd: Int32, _ fd2: Int32) -> Int32 {
   return dup2(fd, fd2)
 }
 
-internal func system_inet_pton(
-    _ family: Int32,
-    _ cString: UnsafePointer<CInterop.PlatformChar>,
-    _ address: UnsafeMutableRawPointer) -> Int32 {
-  #if ENABLE_MOCKING
-  if mockingEnabled { return _mock(family, cString, address) }
-  #endif
-  return inet_pton(family, cString, address)
-}
-
-internal func system_inet_ntop(_ family: Int32, _ pointer : UnsafeRawPointer, _ string: UnsafeMutablePointer<CChar>, _ length: UInt32) -> UnsafePointer<CChar>? {
-  #if ENABLE_MOCKING
-  //if mockingEnabled { return _mock(family, pointer, string, length) }
-  #endif
-  return inet_ntop(family, pointer, string, length)
-}
-
 internal func system_socket(_ fd: Int32, _ fd2: Int32, _ fd3: Int32) -> Int32 {
   #if ENABLE_MOCKING
   if mockingEnabled { return _mock(fd, fd2, fd3) }

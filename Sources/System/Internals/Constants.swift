@@ -560,24 +560,6 @@ internal var _POLLHUP: CInt { POLLHUP }
 internal var _POLLNVAL: CInt { POLLNVAL }
 
 @_alwaysEmitIntoClient
-internal var _INET_ADDRSTRLEN: CInt { INET_ADDRSTRLEN }
-
-@_alwaysEmitIntoClient
-internal var _INET6_ADDRSTRLEN: CInt { INET6_ADDRSTRLEN }
-
-@_alwaysEmitIntoClient
-internal var _INADDR_ANY: CInterop.IPv4Address {  CInterop.IPv4Address(s_addr: INADDR_ANY) }
-
-@_alwaysEmitIntoClient
-internal var _INADDR_LOOPBACK: CInterop.IPv4Address {  CInterop.IPv4Address(s_addr: INADDR_LOOPBACK) }
-
-@_alwaysEmitIntoClient
-internal var _INADDR6_ANY: CInterop.IPv6Address { in6addr_any }
-
-@_alwaysEmitIntoClient
-internal var _INADDR6_LOOPBACK: CInterop.IPv6Address { in6addr_loopback }
-
-@_alwaysEmitIntoClient
 internal var _AF_UNIX: CInt { AF_UNIX }
 
 @_alwaysEmitIntoClient
