@@ -382,21 +382,6 @@ extension FileDescriptor {
             system_recv(self.rawValue, dataBuffer.baseAddress, dataBuffer.count, flags.rawValue)
         }
     }
-    /*
-    @usableFromInline
-    internal func _recieve<Address: SocketAddress>(
-        _ dataBuffer: UnsafeMutableRawBufferPointer,
-        from address: Address,
-        flags: MessageFlags,
-        retryOnInterrupt: Bool
-    ) -> Result<Int, Errno> {
-        valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
-            address.withUnsafePointer { (addressPointer, addressLength) in
-                var addressLength = addressLength
-                system_recvfrom(self.rawValue, dataBuffer.baseAddress, dataBuffer.count, flags.rawValue, addressPointer, &addressLength)
-            }
-        }
-    }*/
     
     /// Listen for connections on a socket.
     ///
