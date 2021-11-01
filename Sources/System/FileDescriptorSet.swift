@@ -110,8 +110,8 @@ internal extension CInterop.FileDescriptorSet {
     /// - Parameter fd:    The fd to add to the fd_set
     ///
     @usableFromInline
-    mutating func set(_ fd: Int32) {
-        let (index, mask) = Self.address(for: fd)
+    mutating func set(_ fd: CInt) {
+        let (index, mask) = Self.offset(for: fd)
         withUnsafeMutablePointer { $0[index] |= mask }
     }
     
@@ -121,8 +121,8 @@ internal extension CInterop.FileDescriptorSet {
     /// - Parameter fd:    The fd to clear from the fd_set
     ///
     @usableFromInline
-    mutating func clear(_ fd: Int32) {
-        let (index, mask) = Self.address(for: fd)
+    mutating func clear(_ fd: CInt) {
+        let (index, mask) = Self.offset(for: fd)
         withUnsafeMutablePointer { $0[index] &= ~mask }
     }
     
@@ -134,13 +134,13 @@ internal extension CInterop.FileDescriptorSet {
     ///    - Returns:    `True` if present, `false` otherwise.
     ///
     @usableFromInline
-    mutating func isSet(_ fd: Int32) -> Bool {
-        let (index, mask) = Self.address(for: fd)
+    mutating func isSet(_ fd: CInt) -> Bool {
+        let (index, mask) = Self.offset(for: fd)
         return withUnsafeMutablePointer { $0[index] & mask != 0 }
     }
     
     @usableFromInline
-    static func address(for fd: Int32) -> (Int, Int32) {
+    static func offset(for fd: CInt) -> (offset: Int, mask: CInt) {
         var intOffset = Int(fd) / _fd_set_count
         #if _endian(big)
         if intOffset % 2 == 0 {
@@ -150,29 +150,29 @@ internal extension CInterop.FileDescriptorSet {
         }
         #endif
         let bitOffset = Int(fd) % _fd_set_count
-        let mask = Int32(bitPattern: UInt32(1 << bitOffset))
+        let mask = CInt(bitPattern: UInt32(1 << bitOffset))
         return (intOffset, mask)
     }
     
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
     @usableFromInline
-    mutating func withUnsafeMutablePointer<T>(_ body: (UnsafeMutablePointer<Int32>) throws -> T) rethrows -> T {
+    mutating func withUnsafeMutablePointer<T>(_ body: (UnsafeMutablePointer<CInt>) throws -> T) rethrows -> T {
         return try Swift.withUnsafeMutablePointer(to: &fds_bits) {
-            try body(UnsafeMutableRawPointer($0).assumingMemoryBound(to: Int32.self))
+            try body(UnsafeMutableRawPointer($0).assumingMemoryBound(to: CInt.self))
         }
     }
 #elseif os(Linux) || os(FreeBSD) || os(Android)
     @usableFromInline
-    mutating func withUnsafeMutablePointer<T>(_ body: (UnsafeMutablePointer<Int32>) throws -> T) rethrows -> T {
+    mutating func withUnsafeMutablePointer<T>(_ body: (UnsafeMutablePointer<CInt>) throws -> T) rethrows -> T {
         return try Swift.withUnsafeMutablePointer(to: &__fds_bits) {
-            try body(UnsafeMutableRawPointer($0).assumingMemoryBound(to: Int32.self))
+            try body(UnsafeMutableRawPointer($0).assumingMemoryBound(to: CInt.self))
         }
     }
 #elseif os(Windows)
     @usableFromInline
-    mutating func withUnsafeMutablePointer<T>(_ body: (UnsafeMutablePointer<Int32>) throws -> T) rethrows -> T {
+    mutating func withUnsafeMutablePointer<T>(_ body: (UnsafeMutablePointer<CInt>) throws -> T) rethrows -> T {
         return try Swift.withUnsafeMutablePointer(to: &fds_bits) {
-            try body(UnsafeMutableRawPointer($0).assumingMemoryBound(to: Int32.self))
+            try body(UnsafeMutableRawPointer($0).assumingMemoryBound(to: CInt.self))
         }
     }
 #endif
