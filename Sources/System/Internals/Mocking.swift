@@ -181,18 +181,18 @@ private func mockImpl<T>(
 internal func _mock(
   name: String = #function, path: UnsafePointer<CInterop.PlatformChar>? = nil, _ args: AnyHashable...
 ) -> CInt {
-  return mockImpl(valueOnFail: -1, valueOnSuccess: 1, name: name, path: path, args)
+  return mockImpl(valueOnFail: -1, valueOnSuccess: 0, name: name, path: path, args)
 }
 internal func _mockInt(
   name: String = #function, path: UnsafePointer<CInterop.PlatformChar>? = nil, _ args: AnyHashable...
 ) -> Int {
-  Int(mockImpl(valueOnFail: -1, valueOnSuccess: 1, name: name, path: path, args))
+  Int(mockImpl(valueOnFail: -1, valueOnSuccess: 0, name: name, path: path, args))
 }
 
 internal func _mockOffT(
   name: String = #function, path: UnsafePointer<CInterop.PlatformChar>? = nil, _ args: AnyHashable...
 ) -> _COffT {
-  _COffT(mockImpl(valueOnFail: -1, valueOnSuccess: 1, name: name, path: path, args))
+  _COffT(mockImpl(valueOnFail: -1, valueOnSuccess: 0, name: name, path: path, args))
 }
 internal func _mock<T>(
   valueOnFail: T, valueOnSuccess: T, name: String = #function, path: UnsafePointer<CInterop.PlatformChar>? = nil, _ args: AnyHashable...
