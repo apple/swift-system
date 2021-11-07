@@ -144,11 +144,13 @@ private func originalSyscallName(_ function: String) -> String {
   return String(function.dropFirst("system_".count).prefix { $0 != "(" })
 }
 
-private func mockImpl(
+private func mockImpl<T>(
+  valueOnFail: T,
+  valueOnSuccess: T,
   name: String,
   path: UnsafePointer<CInterop.PlatformChar>?,
   _ args: [AnyHashable]
-) -> CInt {
+) -> T {
   precondition(mockingEnabled)
   let origName = originalSyscallName(name)
   guard let driver = currentMockingDriver else {
@@ -165,32 +167,37 @@ private func mockImpl(
   case .none: break
   case .always(let e):
     system_errno = e
-    return -1
+    return valueOnFail
   case .counted(let e, let count):
     assert(count >= 1)
     system_errno = e
     driver.forceErrno = count > 1 ? .counted(errno: e, count: count-1) : .none
-    return -1
+    return valueOnFail
   }
 
-  return 0
+  return valueOnSuccess
 }
 
 internal func _mock(
   name: String = #function, path: UnsafePointer<CInterop.PlatformChar>? = nil, _ args: AnyHashable...
 ) -> CInt {
-  return mockImpl(name: name, path: path, args)
+  return mockImpl(valueOnFail: -1, valueOnSuccess: 1, name: name, path: path, args)
 }
 internal func _mockInt(
   name: String = #function, path: UnsafePointer<CInterop.PlatformChar>? = nil, _ args: AnyHashable...
 ) -> Int {
-  Int(mockImpl(name: name, path: path, args))
+  Int(mockImpl(valueOnFail: -1, valueOnSuccess: 1, name: name, path: path, args))
 }
 
 internal func _mockOffT(
   name: String = #function, path: UnsafePointer<CInterop.PlatformChar>? = nil, _ args: AnyHashable...
 ) -> _COffT {
-  _COffT(mockImpl(name: name, path: path, args))
+  _COffT(mockImpl(valueOnFail: -1, valueOnSuccess: 1, name: name, path: path, args))
+}
+internal func _mock<T>(
+  valueOnFail: T, valueOnSuccess: T, name: String = #function, path: UnsafePointer<CInterop.PlatformChar>? = nil, _ args: AnyHashable...
+) -> T {
+  mockImpl(valueOnFail: valueOnFail, valueOnSuccess: valueOnSuccess, name: name, path: path, args)
 }
 #endif // ENABLE_MOCKING
 

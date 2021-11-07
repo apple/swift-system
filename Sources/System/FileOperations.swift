@@ -393,4 +393,187 @@ extension FileDescriptor {
     }.map { _ in (.init(rawValue: fds.0), .init(rawValue: fds.1)) }
   }
   #endif
+
+#if !os(Windows)
+  // MARK: Memory Mapping
+
+  /// Describes the desired memory protection of the
+  /// mapping (and must not conflict with the open mode of the file).
+  /// Flags can be the bitwise OR of one or more of each case.
+  @frozen
+  public struct MemoryProtection: RawRepresentable, Hashable, Codable {
+    /// The raw C protection number.
+    @_alwaysEmitIntoClient
+    public let rawValue: CInt
+
+    /// Creates a strongly typed error number from a raw C error number.
+    @_alwaysEmitIntoClient
+    public init(rawValue: CInt) { self.rawValue = rawValue }
+
+    @_alwaysEmitIntoClient
+    private init(_ raw: CInt) { self.init(rawValue: raw) }
+
+    /// Pages may not be accessed.
+    @_alwaysEmitIntoClient
+    public static var none: MemoryProtection { MemoryProtection(rawValue: _PROT_NONE) }
+    /// Pages may be read.
+    @_alwaysEmitIntoClient
+    public static var read: MemoryProtection { MemoryProtection(rawValue: _PROT_READ) }
+    /// Pages may be written.
+    @_alwaysEmitIntoClient
+    public static var write: MemoryProtection { MemoryProtection(rawValue: _PROT_WRITE) }
+    /// Pages may be executed.
+    @_alwaysEmitIntoClient
+    public static var executed: MemoryProtection { MemoryProtection(rawValue: _PROT_EXEC) }
+  }
+
+  /// Determines whether updates to the mapping are
+  /// visible to other processes mapping the same region, and whether
+  /// updates are carried through to the underlying file.  This
+  /// behavior is determined by exactly one flag.
+  public struct MemoryMapKind: RawRepresentable, Hashable, Codable {
+    /// The raw C flag number.
+    @_alwaysEmitIntoClient
+    public let rawValue: CInt
+
+    /// Creates a strongly typed error number from a raw C error number.
+    @_alwaysEmitIntoClient
+    public init(rawValue: CInt) { self.rawValue = rawValue }
+
+    @_alwaysEmitIntoClient
+    private init(_ raw: CInt) { self.init(rawValue: raw) }
+
+    /// Share this mapping.  Updates to the mapping are visible to
+    /// other processes mapping the same region, and (in the case
+    /// of file-backed mappings) are carried through to the
+    /// underlying file.
+    @_alwaysEmitIntoClient
+    public static var shared: MemoryMapKind { MemoryMapKind(rawValue: _MAP_SHARED) }
+    /// Create a private copy-on-write mapping.  Updates to the
+    /// mapping are not visible to other processes mapping the
+    /// same file, and are not carried through to the underlying
+    /// file.  It is unspecified whether changes made to the file
+    /// after the `memoryMap` call are visible in the mapped region.
+    @_alwaysEmitIntoClient
+    public static var `private`: MemoryMapKind { MemoryMapKind(rawValue: _MAP_PRIVATE) }
+
+    // TODO: There are several other MemoryMapKinds.
+  }
+
+  /// Determines whether memory sync should be
+  /// synchronous, asynchronous, and/or invalidate
+  /// other mappings of the same file.
+  @frozen
+  public struct MemorySyncKind: RawRepresentable, Hashable, Codable {
+    /// The raw C flag number.
+    @_alwaysEmitIntoClient
+    public let rawValue: CInt
+
+    /// Creates a strongly typed error number from a raw C error number.
+    @_alwaysEmitIntoClient
+    public init(rawValue: CInt) { self.rawValue = rawValue }
+
+    @_alwaysEmitIntoClient
+    private init(_ raw: CInt) { self.init(rawValue: raw) }
+
+    /// Requests an update and waits for it to complete.
+    @_alwaysEmitIntoClient
+    public static var synchronous: MemorySyncKind { MemorySyncKind(rawValue: _MS_SYNC) }
+    /// Specifies that an update be scheduled, but the call
+    /// returns immediately.
+    @_alwaysEmitIntoClient
+    public static var asynchronous: MemorySyncKind { MemorySyncKind(rawValue: _MS_ASYNC) }
+    /// Asks to invalidate other mappings of the same file (so
+    /// that they can be updated with the fresh values just
+    /// written).
+    @_alwaysEmitIntoClient
+    public static var invalidate: MemorySyncKind { MemorySyncKind(rawValue: _MS_INVALIDATE) }
+  }
+
+  /// Create a new mapping in the virtual address space of the
+  /// calling process.
+  /// After the `memoryMap` call has returned, the file descriptor can
+  /// be closed immediately without invalidating the mapping.
+  /// - Parameters:
+  ///   - length: Specifies the length of the mapping (which must be greater than 0).
+  ///   - pageOffset: The page offset to map. Page size is determined by `sysconf(_SC_PAGE_SIZE)`
+  ///   - kind: Determines the kind of mapping returned. Currently limited to `MAP_SHARED` and `MAP_PRIVATE`.
+  ///   - protection: Describes the desired memory protection of the mapping (and must not conflict with the open mode of the file).
+  /// - Returns: The new memory mapping.
+  @_alwaysEmitIntoClient
+  public func memoryMap(
+    length: Int, pageOffset: Int, kind: MemoryMapKind, protection: [MemoryProtection]
+  ) throws -> UnsafeMutableRawPointer {
+    try _memoryMap(length: length,
+                   pageOffset: pageOffset,
+                   kind: kind,
+                   protection: protection).get()
+  }
+
+  @usableFromInline
+  internal func _memoryMap(
+    length: Int, pageOffset: Int, kind: MemoryMapKind, protection: [MemoryProtection]
+  ) throws -> Result<UnsafeMutableRawPointer, Errno> {
+    valueOrErrno(valueOnFail: _MAP_FAILED, retryOnInterrupt: false) {
+      system_mmap(self.rawValue, length, protection.reduce(into: Int32(), { partialResult, prot in
+        partialResult |= prot.rawValue
+      }), kind.rawValue, _COffT(pageOffset))
+    }
+  }
+
+  /// Deletes the mappings for the specified
+  /// mapping, and causes further references to addresses within
+  /// the range to generate invalid memory references.  The region is
+  /// also automatically unmapped when the process is terminated.  On
+  /// the other hand, closing the file descriptor does not unmap the
+  /// region.
+  /// - Parameters:
+  ///   - memoryMap: The memory map to unmap
+  ///   - length: Amount in bytes to unmap.
+  @_alwaysEmitIntoClient
+  public func memoryUnmap(memoryMap: UnsafeMutableRawPointer, length: Int) throws {
+    _ = try _memoryUnmap(memoryMap: memoryMap, length: length).get()
+  }
+
+  @usableFromInline
+  internal func _memoryUnmap(memoryMap: UnsafeMutableRawPointer, length: Int) throws -> Result<CInt, Errno> {
+    valueOrErrno(retryOnInterrupt: false) {
+      system_munmap(memoryMap, length)
+    }
+  }
+
+  /// Flushes changes made to the in-core copy of a file that
+  /// was mapped into memory using `memoryMap` back to the filesystem.
+  /// Without use of this call, there is no guarantee that changes are
+  /// written back before `memoryUnmap` is called.  To be more precise, the
+  /// part of the file that corresponds to the memory area at the start
+  /// of the map and having length of `length` is updated.
+  /// - Parameters:
+  ///   - memoryMap: The memory map to sync.
+  ///   - length: Length to update.
+  ///   - kind: Should specify one of `MemorySyncKind.synchronous` or `MemorySyncKind.asynchronous`.
+  ///   - invalidateOtherMappings: Asks to invalidate other mappings of the same file (so
+  ///                              that they can be updated with the fresh values just
+  ///                              written).
+  @_alwaysEmitIntoClient
+  public func memorySync(
+    memoryMap: UnsafeMutableRawPointer,
+    length: Int,
+    kind: MemorySyncKind,
+    invalidateOtherMappings: Bool = false
+  ) throws {
+    _ = try _memorySync(memoryMap: memoryMap,
+                        length: length,
+                        flags: invalidateOtherMappings ? kind.rawValue & _MS_INVALIDATE : kind.rawValue)
+      .get()
+  }
+
+  @usableFromInline
+  internal func _memorySync(memoryMap: UnsafeMutableRawPointer, length: Int, flags: CInt) throws -> Result<CInt, Errno> {
+    valueOrErrno(retryOnInterrupt: false) {
+      system_msync(memoryMap, length, flags)
+    }
+  }
+#endif
 }
+

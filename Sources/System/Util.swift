@@ -14,6 +14,11 @@ private func valueOrErrno<I: FixedWidthInteger>(
 ) -> Result<I, Errno> {
   i == -1 ? .failure(Errno.current) : .success(i)
 }
+private func valueOrErrno<T: Equatable>(
+  valueOnFail: T, _ i: T
+) -> Result<T, Errno> {
+  i == valueOnFail ? .failure(Errno.current) : .success(i)
+}
 
 // @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
 private func nothingOrErrno<I: FixedWidthInteger>(
@@ -28,6 +33,21 @@ internal func valueOrErrno<I: FixedWidthInteger>(
 ) -> Result<I, Errno> {
   repeat {
     switch valueOrErrno(f()) {
+    case .success(let r): return .success(r)
+    case .failure(let err):
+      guard retryOnInterrupt && err == .interrupted else { return .failure(err) }
+      break
+    }
+  } while true
+}
+
+internal func valueOrErrno<T: Equatable>(
+  valueOnFail: T,
+  retryOnInterrupt: Bool,
+  _ f: () -> T
+) -> Result<T, Errno> {
+  repeat {
+    switch valueOrErrno(valueOnFail: valueOnFail, f()) {
     case .success(let r): return .success(r)
     case .failure(let err):
       guard retryOnInterrupt && err == .interrupted else { return .failure(err) }
