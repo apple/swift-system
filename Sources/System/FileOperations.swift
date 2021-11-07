@@ -461,8 +461,7 @@ extension FileDescriptor {
   }
 
   /// Determines whether memory sync should be
-  /// synchronous, asynchronous, and/or invalidate
-  /// other mappings of the same file.
+  /// synchronous, asynchronous.
   @frozen
   public struct MemorySyncKind: RawRepresentable, Hashable, Codable {
     /// The raw C flag number.
@@ -483,11 +482,6 @@ extension FileDescriptor {
     /// returns immediately.
     @_alwaysEmitIntoClient
     public static var asynchronous: MemorySyncKind { MemorySyncKind(rawValue: _MS_ASYNC) }
-    /// Asks to invalidate other mappings of the same file (so
-    /// that they can be updated with the fresh values just
-    /// written).
-    @_alwaysEmitIntoClient
-    public static var invalidate: MemorySyncKind { MemorySyncKind(rawValue: _MS_INVALIDATE) }
   }
 
   /// Create a new mapping in the virtual address space of the
