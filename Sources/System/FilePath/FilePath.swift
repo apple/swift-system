@@ -16,7 +16,7 @@
 /// encoding.
 ///
 /// On construction, `FilePath` will normalize separators by removing
-/// reduncant intermediary separators and stripping any trailing separators.
+/// redundant intermediary separators and stripping any trailing separators.
 /// On Windows, `FilePath` will also normalize forward slashes `/` into
 /// backslashes `\`, as preferred by the platform.
 ///
@@ -29,7 +29,7 @@
 ///     try fd.closeAfter { try fd.writeAll(message.utf8) }
 ///
 /// File paths conform to the
-/// and <doc://com.apple.documentation/documentation/swift/equatable>
+/// <doc://com.apple.documentation/documentation/swift/equatable>
 /// and <doc://com.apple.documentation/documentation/swift/hashable> protocols
 /// by performing the protocols' operations on their raw byte contents.
 /// This conformance allows file paths to be used,

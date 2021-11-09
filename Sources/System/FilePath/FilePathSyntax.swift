@@ -442,7 +442,7 @@ extension FilePath {
 // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
 extension FilePath {
   /// If `prefix` is a prefix of `self`, removes it and returns `true`.
-  ///  Otherwise returns `false`.
+  /// Otherwise returns `false`.
   ///
   /// Example:
   ///
@@ -503,10 +503,11 @@ extension FilePath {
   /// A leading separator is spurious if `self` is non-empty.
   ///
   /// Example:
-  ///   var path: FilePath = ""
-  ///   path.append("/var/www/website") // "/var/www/website"
-  ///   path.append("static/assets") // "/var/www/website/static/assets"
-  ///   path.append("/main.css") // "/var/www/website/static/assets/main.css"
+  ///
+  ///     var path: FilePath = ""
+  ///     path.append("/var/www/website") // "/var/www/website"
+  ///     path.append("static/assets") // "/var/www/website/static/assets"
+  ///     path.append("/main.css") // "/var/www/website/static/assets/main.css"
   ///
   // TODO(Windows docs): example with roots, should we rephrase this "spurious
   // roots"?
@@ -576,7 +577,7 @@ extension FilePath {
     _append(unchecked: other._storage[...])
   }
 
-  /// Non-mutating version of `push()`
+  /// Non-mutating version of `push()`.
   ///
   // TODO(Windows docs): examples and docs with roots
   public __consuming func pushing(_ other: __owned FilePath) -> FilePath {
