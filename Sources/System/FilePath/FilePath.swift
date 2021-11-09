@@ -16,7 +16,7 @@
 /// encoding.
 ///
 /// On construction, `FilePath` will normalize separators by removing
-/// reduncant intermediary separators and stripping any trailing separators.
+/// redundant intermediary separators and stripping any trailing separators.
 /// On Windows, `FilePath` will also normalize forward slashes `/` into
 /// backslashes `\`, as preferred by the platform.
 ///
