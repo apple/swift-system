@@ -62,6 +62,16 @@ public struct FilePath {
 
 // @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
 extension FilePath {
+  
+  /// Returns the current working directory of this process
+  public static func getCurrentWorkingDirectory() throws -> FilePath {
+    guard let cwd = system_getcwd(nil, 0) else {
+      throw Errno.current
+    }
+    defer { system_free(cwd) }
+    return FilePath(platformString: cwd)
+  }
+  
   /// The length of the file path, excluding the null terminator.
   public var length: Int { _storage.length }
 }

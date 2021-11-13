@@ -72,5 +72,11 @@ final class FilePathTest: XCTestCase {
       }
     }
   }
+  
+  func testCurrentWorkingDirectory() {
+    XCTAssertEqual(
+      try FilePath.getCurrentWorkingDirectory().string,
+      FileManager.default.currentDirectoryPath)
+  }
 }
 

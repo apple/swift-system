@@ -123,3 +123,24 @@ internal func system_pipe(_ fds: UnsafeMutablePointer<Int32>) -> CInt {
   return pipe(fds)
 }
 #endif
+
+#if !os(Windows)
+internal func system_getcwd(_ buf: UnsafeMutablePointer<CInterop.PlatformChar>?, _ size: size_t) -> UnsafeMutablePointer<CInterop.PlatformChar>? {
+#if ENABLE_MOCKING
+  if mockingEnabled {
+    /// I'm not really sure how to mock this since `buf` is passed in uninitialized and it needs to return something
+    fatalError()
+  }
+#endif
+  return getcwd(buf, size)
+}
+#endif
+
+#if !os(Windows)
+internal func system_free(_ ptr: UnsafeMutableRawPointer?) {
+#if ENABLE_MOCKING
+  if mockingEnabled { _ = _mock(ptr) }
+#endif
+  free(ptr)
+}
+#endif
