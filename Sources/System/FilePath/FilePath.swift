@@ -65,8 +65,8 @@ extension FilePath {
   
   /// Returns the current working directory of this process.
   ///
-  /// - Warning: This value is global and care should be taken to make sure it does not unexpectedly change.
-  public static func getCurrentWorkingDirectoryForProcess() throws -> FilePath {
+  /// - Warning: This value is global to the proess and care should be taken to make sure it does not unexpectedly change.
+  public static func currentWorkingDirectory() throws -> FilePath {
     guard let cwd = system_getcwd(nil, 0) else {
       throw Errno.current
     }

@@ -75,7 +75,7 @@ final class FilePathTest: XCTestCase {
   
   func testCurrentWorkingDirectory() {
     XCTAssertEqual(
-      try FilePath.getCurrentWorkingDirectoryForProcess().string,
+      try FilePath.currentWorkingDirectory().string,
       FileManager.default.currentDirectoryPath)
   }
 }
