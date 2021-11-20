@@ -1,5 +1,5 @@
 #[[
-This source file is part of the Swift System open source project
+This source file is part of the Swift System open source Project
 
 Copyright (c) 2020 Apple Inc. and the Swift System project authors
 Licensed under Apache License v2.0 with Runtime Library Exception
@@ -17,8 +17,12 @@ See https://swift.org/LICENSE.txt for license information
 function(get_swift_host_arch result_var_name)
   if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
     set("${result_var_name}" "x86_64" PARENT_SCOPE)
-  elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "aarch64")
-    set("${result_var_name}" "aarch64" PARENT_SCOPE)
+  elseif ("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "AArch64|aarch64|arm64")
+    if(CMAKE_SYSTEM_NAME MATCHES Darwin)
+      set("${result_var_name}" "arm64" PARENT_SCOPE)
+    else()
+      set("${result_var_name}" "aarch64" PARENT_SCOPE)
+    endif()
   elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "ppc64")
     set("${result_var_name}" "powerpc64" PARENT_SCOPE)
   elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "ppc64le")
@@ -31,6 +35,8 @@ function(get_swift_host_arch result_var_name)
     set("${result_var_name}" "armv7" PARENT_SCOPE)
   elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7-a")
     set("${result_var_name}" "armv7" PARENT_SCOPE)
+  elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "amd64")
+    set("${result_var_name}" "amd64" PARENT_SCOPE)
   elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "AMD64")
     set("${result_var_name}" "x86_64" PARENT_SCOPE)
   elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "IA64")
