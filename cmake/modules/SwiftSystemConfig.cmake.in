@@ -7,6 +7,6 @@ Licensed under Apache License v2.0 with Runtime Library Exception
 See https://swift.org/LICENSE.txt for license information
 #]]
 
-if(NOT TARGET SwiftSystem)
+if(NOT TARGET SystemPackage)
   include(@SWIFT_SYSTEM_EXPORTS_FILE@)
 endif()
