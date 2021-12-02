@@ -34,7 +34,7 @@ target_sources(SystemPackage PRIVATE
   Internals/Mocking.swift
   Internals/Syscalls.swift
   Internals/WindowsSyscallAdapters.swift)
-target_link_libraries(SystemPackage PRIVATE
+target_link_libraries(SystemPackage PUBLIC
   CSystem)
 
 
