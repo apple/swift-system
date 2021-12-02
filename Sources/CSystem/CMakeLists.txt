@@ -12,4 +12,9 @@ target_include_directories(CSystem INTERFACE
   include)
 
 
+install(FILES
+  include/CSystemLinux.h
+  include/CSystemWindows.h
+  include/module.modulemap
+  DESTINATION include/CSystem)
 set_property(GLOBAL APPEND PROPERTY SWIFT_SYSTEM_EXPORTS CSystem)
