@@ -123,3 +123,36 @@ internal func system_pipe(_ fds: UnsafeMutablePointer<Int32>) -> CInt {
   return pipe(fds)
 }
 #endif
+
+#if !os(Windows)
+internal func system_mmap(_ fd: Int32, _ length: Int, _ prot: Int32, _ flags: Int32, _ offset: off_t) -> UnsafeMutableRawPointer {
+  #if ENABLE_MOCKING
+  if mockingEnabled {
+    let ptr = UnsafeMutableRawPointer.allocate(byteCount: 0, alignment: 0)
+    defer { ptr.deallocate() }
+    return _mock(valueOnFail: MAP_FAILED,
+                 valueOnSuccess: ptr,
+                 fd, length, prot, flags, offset)
+  }
+  #endif
+  return mmap(nil, length, prot, flags, fd, off_t(offset * Int64(sysconf(_SC_PAGESIZE))))
+}
+
+internal func system_munmap(_ addr: UnsafeMutableRawPointer, _ length: Int) -> CInt {
+  #if ENABLE_MOCKING
+  if mockingEnabled {
+    return _mock(addr, length)
+  }
+  #endif
+  return munmap(addr, length)
+}
+
+internal func system_msync(_ addr: UnsafeMutableRawPointer, _ length: Int, _ flags: Int32) -> CInt {
+  #if ENABLE_MOCKING
+  if mockingEnabled {
+    return _mock(addr, length, flags)
+  }
+  #endif
+  return msync(addr, length, flags)
+}
+#endif

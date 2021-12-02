@@ -441,6 +441,26 @@ internal var _ELAST: CInt { ELAST }
 
 // MARK: File Operations
 
+#if !os(Windows)
+@_alwaysEmitIntoClient
+internal var _MAP_SHARED: CInt { MAP_SHARED }
+
+@_alwaysEmitIntoClient
+internal var _MAP_PRIVATE: CInt { MAP_PRIVATE }
+
+@_alwaysEmitIntoClient
+internal var _MAP_FAILED: UnsafeMutableRawPointer { MAP_FAILED }
+
+@_alwaysEmitIntoClient
+internal var _MS_ASYNC: CInt { MS_ASYNC }
+
+@_alwaysEmitIntoClient
+internal var _MS_SYNC: CInt { MS_SYNC }
+
+@_alwaysEmitIntoClient
+internal var _MS_INVALIDATE: CInt { MS_INVALIDATE }
+#endif
+
 @_alwaysEmitIntoClient
 internal var _O_RDONLY: CInt { O_RDONLY }
 
@@ -510,6 +530,21 @@ internal var _O_SYMLINK: CInt { O_SYMLINK }
 #if !os(Windows)
 @_alwaysEmitIntoClient
 internal var _O_CLOEXEC: CInt { O_CLOEXEC }
+#endif
+
+// MARK: Mmap Protection
+#if !os(Windows)
+@_alwaysEmitIntoClient
+internal var _PROT_EXEC: CInt { PROT_EXEC }
+
+@_alwaysEmitIntoClient
+internal var _PROT_READ: CInt { PROT_READ }
+
+@_alwaysEmitIntoClient
+internal var _PROT_WRITE: CInt { PROT_WRITE }
+
+@_alwaysEmitIntoClient
+internal var _PROT_NONE: CInt { PROT_NONE }
 #endif
 
 @_alwaysEmitIntoClient
