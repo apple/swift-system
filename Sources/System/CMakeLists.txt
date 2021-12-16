@@ -7,7 +7,7 @@ Licensed under Apache License v2.0 with Runtime Library Exception
 See https://swift.org/LICENSE.txt for license information
 #]]
 
-add_library(System
+add_library(SystemPackage
   Errno.swift
   FileDescriptor.swift
   FileHelpers.swift
@@ -17,7 +17,9 @@ add_library(System
   SystemString.swift
   Util.swift
   UtilConsumers.swift)
-target_sources(System PRIVATE
+set_target_properties(SystemPackage PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
+target_sources(SystemPackage PRIVATE
   FilePath/FilePath.swift
   FilePath/FilePathComponents.swift
   FilePath/FilePathComponentView.swift
@@ -25,16 +27,16 @@ target_sources(System PRIVATE
   FilePath/FilePathString.swift
   FilePath/FilePathSyntax.swift
   FilePath/FilePathWindows.swift)
-target_sources(System PRIVATE
+target_sources(SystemPackage PRIVATE
   Internals/CInterop.swift
   Internals/Constants.swift
   Internals/Exports.swift
   Internals/Mocking.swift
   Internals/Syscalls.swift
   Internals/WindowsSyscallAdapters.swift)
-target_link_libraries(System PRIVATE
+target_link_libraries(SystemPackage PUBLIC
   CSystem)
 
 
-_install_target(System)
-set_property(GLOBAL APPEND PROPERTY SWIFT_SYSTEM_EXPORTS System)
+_install_target(SystemPackage)
+set_property(GLOBAL APPEND PROPERTY SWIFT_SYSTEM_EXPORTS SystemPackage)
