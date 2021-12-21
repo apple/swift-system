@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
-# This script uses the file `availability-macros.def` to automatically
-# add/remove `@available` attributes to declarations in Swift sources
-# in this package.
+# This script can be used to automatically add/remove `@available` attributes to
+# declarations in Swift sources in this package.
 #
 # In order for this to work, ABI-impacting declarations need to be annotated
 # with special comments in the following format:
@@ -34,9 +33,8 @@
 #       "Hello"
 #     }
 #
-# The script recognizes these attributes and updates/removes them on each run,
-# so you can run the script to enable/disable attributes without worrying about
-# duplicate attributes.
+# The script recognizes all three forms of these annotations and updates them on
+# every run, so we can run the script to enable/disable attributes as needed.
 
 import os
 import os.path
