@@ -7,7 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
+/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 extension FileDescriptor {
   /// Opens or creates a file for reading or writing.
   ///
@@ -337,7 +337,7 @@ extension FileDescriptor {
   ///
   /// The corresponding C functions are `dup` and `dup2`.
   @_alwaysEmitIntoClient
-  // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+  /*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
   public func duplicate(
     as target: FileDescriptor? = nil,
     retryOnInterrupt: Bool = true
@@ -345,7 +345,7 @@ extension FileDescriptor {
     try _duplicate(as: target, retryOnInterrupt: retryOnInterrupt).get()
   }
 
-  // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+  /*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
   @usableFromInline
   internal func _duplicate(
     as target: FileDescriptor?,
@@ -370,7 +370,10 @@ extension FileDescriptor {
   public func dup2() throws -> FileDescriptor {
     fatalError("Not implemented")
   }
-  
+}
+
+/*System 1.1.0, @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)*/
+extension FileDescriptor {
   #if !os(Windows)
   /// Create a pipe, a unidirectional data channel which can be used for interprocess communication.
   ///
@@ -378,11 +381,12 @@ extension FileDescriptor {
   ///
   /// The corresponding C function is `pipe`.
   @_alwaysEmitIntoClient
-  // @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+  /*System 1.1.0, @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)*/
   public static func pipe() throws -> (readEnd: FileDescriptor, writeEnd: FileDescriptor) {
     try _pipe().get()
   }
   
+  /*System 1.1.0, @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)*/
   @usableFromInline
   internal static func _pipe() -> Result<(readEnd: FileDescriptor, writeEnd: FileDescriptor), Errno> {
     var fds: (Int32, Int32) = (-1, -1)
