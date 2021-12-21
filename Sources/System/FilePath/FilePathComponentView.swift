@@ -9,7 +9,7 @@
 
 // MARK: - API
 
-// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath {
   /// A bidirectional, range replaceable collection of the non-root components
   /// that make up a file path.
@@ -89,7 +89,7 @@ extension FilePath {
   #endif
 }
 
-// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath.ComponentView: BidirectionalCollection {
   public typealias Element = FilePath.Component
   public struct Index: Comparable, Hashable {
@@ -123,7 +123,7 @@ extension FilePath.ComponentView: BidirectionalCollection {
   }
 }
 
-// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath.ComponentView: RangeReplaceableCollection {
   public init() {
     self.init(FilePath())
@@ -173,7 +173,7 @@ extension FilePath.ComponentView: RangeReplaceableCollection {
   }
 }
 
-// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath {
   /// Create a file path from a root and a collection of components.
   public init<C: Collection>(

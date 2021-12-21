@@ -10,7 +10,7 @@
 /// An error number used by system calls to communicate what kind of error
 /// occurred.
 @frozen
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
+/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 public struct Errno: RawRepresentable, Error, Hashable, Codable {
   /// The raw C error number.
   @_alwaysEmitIntoClient
@@ -1376,7 +1376,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
 }
 
 // Constants defined in header but not man page
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
+/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 extension Errno {
 
   /// Operation would block.
@@ -1470,7 +1470,7 @@ extension Errno {
 #endif
 }
 
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
+/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 extension Errno {
   // TODO: We want to provide safe access to `errno`, but we need a
   // release-barrier to do so.
@@ -1485,14 +1485,14 @@ extension Errno {
 }
 
 // Use "hidden" entry points for `NSError` bridging
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
+/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 extension Errno {
   public var _code: Int { Int(rawValue) }
 
   public var _domain: String { "NSPOSIXErrorDomain" }
 }
 
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
+/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 extension Errno: CustomStringConvertible, CustomDebugStringConvertible {
   ///  A textual representation of the most recent error
   ///  returned by a system call.
@@ -1512,7 +1512,7 @@ extension Errno: CustomStringConvertible, CustomDebugStringConvertible {
   public var debugDescription: String { self.description }
 }
 
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
+/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 extension Errno {
   @_alwaysEmitIntoClient
   public static func ~=(_ lhs: Errno, _ rhs: Error) -> Bool {

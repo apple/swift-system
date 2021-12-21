@@ -8,21 +8,21 @@
 */
 
 // Results in errno if i == -1
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
+/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 private func valueOrErrno<I: FixedWidthInteger>(
   _ i: I
 ) -> Result<I, Errno> {
   i == -1 ? .failure(Errno.current) : .success(i)
 }
 
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
+/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 private func nothingOrErrno<I: FixedWidthInteger>(
   _ i: I
 ) -> Result<(), Errno> {
   valueOrErrno(i).map { _ in () }
 }
 
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
+/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 internal func valueOrErrno<I: FixedWidthInteger>(
   retryOnInterrupt: Bool, _ f: () -> I
 ) -> Result<I, Errno> {
@@ -36,7 +36,7 @@ internal func valueOrErrno<I: FixedWidthInteger>(
   } while true
 }
 
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
+/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 internal func nothingOrErrno<I: FixedWidthInteger>(
   retryOnInterrupt: Bool, _ f: () -> I
 ) -> Result<(), Errno> {

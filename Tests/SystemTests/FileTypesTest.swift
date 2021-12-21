@@ -15,7 +15,7 @@ import SystemPackage
 import System
 #endif
 
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
+/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 final class FileDescriptorTest: XCTestCase {
   func testStandardDescriptors() {
     XCTAssertEqual(FileDescriptor.standardInput.rawValue, 0)
@@ -60,7 +60,7 @@ final class FileDescriptorTest: XCTestCase {
 
 }
 
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
+/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 final class FilePermissionsTest: XCTestCase {
 
   func testPermissions() {

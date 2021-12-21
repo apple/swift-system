@@ -9,7 +9,7 @@
 
 // MARK: - Platform string
 
-// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath {
   /// Creates a file path by copying bytes from a null-terminated platform
   /// string.
@@ -45,7 +45,7 @@ extension FilePath {
   }
 }
 
-// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath.Component {
   /// Creates a file path component by copying bytes from a null-terminated
   /// platform string.
@@ -82,7 +82,7 @@ extension FilePath.Component {
   }
 }
 
-// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath.Root {
   /// Creates a file path root by copying bytes from a null-terminated platform
   /// string.
@@ -120,7 +120,7 @@ extension FilePath.Root {
 
 // MARK: - String literals
 
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
+/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 extension FilePath: ExpressibleByStringLiteral {
   /// Creates a file path from a string literal.
   ///
@@ -139,7 +139,7 @@ extension FilePath: ExpressibleByStringLiteral {
   }
 }
 
-// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath.Component: ExpressibleByStringLiteral {
   /// Create a file path component from a string literal.
   ///
@@ -164,7 +164,7 @@ extension FilePath.Component: ExpressibleByStringLiteral {
   }
 }
 
-// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath.Root: ExpressibleByStringLiteral {
   /// Create a file path root from a string literal.
   ///
@@ -189,7 +189,7 @@ extension FilePath.Root: ExpressibleByStringLiteral {
 
 // MARK: - Printing and dumping
 
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
+/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 extension FilePath: CustomStringConvertible, CustomDebugStringConvertible {
   /// A textual representation of the file path.
   ///
@@ -205,7 +205,7 @@ extension FilePath: CustomStringConvertible, CustomDebugStringConvertible {
   public var debugDescription: String { description.debugDescription }
 }
 
-// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath.Component: CustomStringConvertible, CustomDebugStringConvertible {
 
   /// A textual representation of the path component.
@@ -222,7 +222,7 @@ extension FilePath.Component: CustomStringConvertible, CustomDebugStringConverti
   public var debugDescription: String { description.debugDescription }
 }
 
-// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath.Root: CustomStringConvertible, CustomDebugStringConvertible {
 
   /// A textual representation of the path root.
@@ -242,7 +242,7 @@ extension FilePath.Root: CustomStringConvertible, CustomDebugStringConvertible {
 // MARK: - Convenience helpers
 
 // Convenience helpers
-// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath {
   /// Creates a string by interpreting the path’s content as UTF-8 on Unix
   /// and UTF-16 on Windows.
@@ -253,7 +253,7 @@ extension FilePath {
   }
 }
 
-// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath.Component {
   /// Creates a string by interpreting the component’s content as UTF-8 on Unix
   /// and UTF-16 on Windows.
@@ -264,7 +264,7 @@ extension FilePath.Component {
   }
 }
 
-// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath.Root {
   /// On Unix, this returns `"/"`.
   ///
@@ -278,7 +278,7 @@ extension FilePath.Root {
 
 // MARK: - Decoding and validating
 
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
+/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 extension String {
   /// Creates a string by interpreting the file path's content as UTF-8 on Unix
   /// and UTF-16 on Windows.
@@ -308,7 +308,7 @@ extension String {
   }
 }
 
-// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension String {
   /// Creates a string by interpreting the path component's content as UTF-8 on
   /// Unix and UTF-16 on Windows.
@@ -338,7 +338,7 @@ extension String {
   }
 }
 
-// @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension String {
   /// On Unix, creates the string `"/"`
   ///
@@ -391,7 +391,7 @@ extension String {
 
 // MARK: - Deprecations
 
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
+/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 extension String {
   @available(*, deprecated, renamed: "init(decoding:)")
   public init(_ path: FilePath) { self.init(decoding: path) }
@@ -401,7 +401,7 @@ extension String {
 }
 
 #if !os(Windows)
-// @available(macOS 10.16, iOS 14.0, watchOS 7.0, tvOS 14.0, *)
+/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 extension FilePath {
   /// For backwards compatibility only. This initializer is equivalent to
   /// the preferred `FilePath(platformString:)`.
