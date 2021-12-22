@@ -87,7 +87,8 @@ internal func system_memset(
   _ buffer: UnsafeMutableRawBufferPointer,
   to byte: UInt8
 ) {
-  memset(buffer.baseAddress, CInt(byte), buffer.count)
+  guard buffer.count > 0 else { return }
+  memset(buffer.baseAddress!, CInt(byte), buffer.count)
 }
 
 // Interop between String and platfrom string
