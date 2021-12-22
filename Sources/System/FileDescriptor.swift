@@ -25,7 +25,8 @@ public struct FileDescriptor: RawRepresentable, Hashable, Codable {
   public init(rawValue: CInt) { self.rawValue = rawValue }
 }
 
-// Standard file descriptors
+// Standard file descriptors.
+/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 extension FileDescriptor {
   /// The standard input file descriptor, with a numeric value of 0.
   @_alwaysEmitIntoClient

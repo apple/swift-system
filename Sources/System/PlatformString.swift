@@ -58,6 +58,7 @@ extension String {
 
 }
 
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension CInterop.PlatformChar {
   internal var _platformCodeUnit: CInterop.PlatformUnicodeEncoding.CodeUnit {
     #if os(Windows)
@@ -67,6 +68,8 @@ extension CInterop.PlatformChar {
     #endif
   }
 }
+
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension CInterop.PlatformUnicodeEncoding.CodeUnit {
   internal var _platformChar: CInterop.PlatformChar {
     #if os(Windows)

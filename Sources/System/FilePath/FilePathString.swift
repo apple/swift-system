@@ -20,6 +20,7 @@ extension FilePath {
     self.init(_platformString: platformString)
   }
 
+#if !os(Windows) // Availability workaround
   /// Calls the given closure with a pointer to the contents of the file path,
   /// represented as a null-terminated platform string.
   ///
@@ -37,12 +38,28 @@ extension FilePath {
     _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
   ) rethrows -> Result {
     // For backwards deployment, call withCString if available.
-    #if !os(Windows)
     return try withCString(body)
-    #else
-    return try _withPlatformString(body)
-    #endif
   }
+#else
+  /// Calls the given closure with a pointer to the contents of the file path,
+  /// represented as a null-terminated platform string.
+  ///
+  /// - Parameter body: A closure with a pointer parameter
+  ///   that points to a null-terminated platform string.
+  ///   If `body` has a return value,
+  ///   that value is also used as the return value for this method.
+  /// - Returns: The return value, if any, of the `body` closure parameter.
+  ///
+  /// The pointer passed as an argument to `body` is valid
+  /// only during the execution of this method.
+  /// Don't try to store the pointer for later use.
+  public func withPlatformString<Result>(
+    _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
+  ) rethrows -> Result {
+    // For backwards deployment, call withCString if available.
+    return try _withPlatformString(body)
+  }
+#endif
 }
 
 /*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/

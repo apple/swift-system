@@ -98,6 +98,7 @@ extension FilePath.Component {
   }
 }
 
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath.Root {
   // TODO: Windows analysis APIs
 }
@@ -183,15 +184,18 @@ extension _PathSlice {
   internal var _storage: SystemString { _path._storage }
 }
 
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath.Component: _PathSlice {
 }
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath.Root: _PathSlice {
   internal var _range: Range<SystemString.Index> {
     (..<_rootEnd).relative(to: _path._storage)
   }
 }
+
+/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 extension FilePath: _PlatformStringable {
-  @usableFromInline
   func _withPlatformString<Result>(_ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result) rethrows -> Result {
     try _storage.withPlatformString(body)
   }
@@ -202,6 +206,7 @@ extension FilePath: _PlatformStringable {
 
 }
 
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath.Component {
   // The index of the `.` denoting an extension
   internal func _extensionIndex() -> SystemString.Index? {
@@ -230,6 +235,7 @@ internal func _makeExtension(_ ext: String) -> SystemString {
   return result
 }
 
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath.Component {
   internal init?(_ str: SystemString) {
     // FIXME: explicit null root? Or something else?
@@ -242,6 +248,7 @@ extension FilePath.Component {
   }
 }
 
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath.Root {
   internal init?(_ str: SystemString) {
     // FIXME: explicit null root? Or something else?
@@ -256,6 +263,7 @@ extension FilePath.Root {
 
 // MARK: - Invariants
 
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath.Component {
   // TODO: ensure this all gets easily optimized away in release...
   internal func _invariantCheck() {
@@ -267,6 +275,8 @@ extension FilePath.Component {
     #endif // DEBUG
   }
 }
+
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath.Root {
   internal func _invariantCheck() {
     #if DEBUG

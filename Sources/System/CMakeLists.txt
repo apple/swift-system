@@ -16,6 +16,7 @@ add_library(SystemPackage
   PlatformString.swift
   SystemString.swift
   Util.swift
+  Util+StringArray.swift
   UtilConsumers.swift)
 set_target_properties(SystemPackage PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
@@ -32,6 +33,7 @@ target_sources(SystemPackage PRIVATE
   Internals/Constants.swift
   Internals/Exports.swift
   Internals/Mocking.swift
+  Internals/RawBuffer.swift
   Internals/Syscalls.swift
   Internals/WindowsSyscallAdapters.swift)
 target_link_libraries(SystemPackage PUBLIC

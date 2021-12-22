@@ -31,7 +31,7 @@ extension FileDescriptor {
     permissions: FilePermissions? = nil,
     retryOnInterrupt: Bool = true
   ) throws -> FileDescriptor {
-    try path.withPlatformString {
+    try path.withCString {
       try FileDescriptor.open(
         $0, mode, options: options, permissions: permissions, retryOnInterrupt: retryOnInterrupt)
     }
@@ -53,7 +53,7 @@ extension FileDescriptor {
   /// The corresponding C function is `open`.
   @_alwaysEmitIntoClient
   public static func open(
-    _ path: UnsafePointer<CInterop.PlatformChar>,
+    _ path: UnsafePointer<CChar>,
     _ mode: FileDescriptor.AccessMode,
     options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
     permissions: FilePermissions? = nil,
@@ -66,7 +66,7 @@ extension FileDescriptor {
 
   @usableFromInline
   internal static func _open(
-    _ path: UnsafePointer<CInterop.PlatformChar>,
+    _ path: UnsafePointer<CChar>,
     _ mode: FileDescriptor.AccessMode,
     options: FileDescriptor.OpenOptions,
     permissions: FilePermissions?,
@@ -308,7 +308,10 @@ extension FileDescriptor {
       buffer,
       retryOnInterrupt: retryOnInterrupt)
   }
+}
 
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
+extension FileDescriptor {
   /// Duplicate this file descriptor and return the newly created copy.
   ///
   /// - Parameters:
@@ -385,7 +388,7 @@ extension FileDescriptor {
   public static func pipe() throws -> (readEnd: FileDescriptor, writeEnd: FileDescriptor) {
     try _pipe().get()
   }
-  
+
   /*System 1.1.0, @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)*/
   @usableFromInline
   internal static func _pipe() -> Result<(readEnd: FileDescriptor, writeEnd: FileDescriptor), Errno> {
