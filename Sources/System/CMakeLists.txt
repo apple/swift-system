@@ -29,6 +29,7 @@ target_sources(SystemPackage PRIVATE
   FilePath/FilePathSyntax.swift
   FilePath/FilePathWindows.swift)
 target_sources(SystemPackage PRIVATE
+  Internals/Backcompat.swift
   Internals/CInterop.swift
   Internals/Constants.swift
   Internals/Exports.swift
