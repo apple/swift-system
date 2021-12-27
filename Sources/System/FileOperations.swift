@@ -32,12 +32,12 @@ extension FileDescriptor {
     retryOnInterrupt: Bool = true
   ) throws -> FileDescriptor {
     #if !os(Windows)
-    try path.withCString {
+    return try path.withCString {
       try FileDescriptor.open(
         $0, mode, options: options, permissions: permissions, retryOnInterrupt: retryOnInterrupt)
     }
     #else 
-    try path.withPlatformString {
+    return try path.withPlatformString {
       try FileDescriptor.open(
         $0, mode, options: options, permissions: permissions, retryOnInterrupt: retryOnInterrupt)
     }
