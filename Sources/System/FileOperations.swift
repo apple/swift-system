@@ -31,12 +31,23 @@ extension FileDescriptor {
     permissions: FilePermissions? = nil,
     retryOnInterrupt: Bool = true
   ) throws -> FileDescriptor {
+    #if !os(Windows)
     try path.withCString {
       try FileDescriptor.open(
         $0, mode, options: options, permissions: permissions, retryOnInterrupt: retryOnInterrupt)
     }
+    #else 
+    try path.withPlatformString {
+      try FileDescriptor.open(
+        $0, mode, options: options, permissions: permissions, retryOnInterrupt: retryOnInterrupt)
+    }
+    #endif
   }
 
+  #if !os(Windows) 
+  // On Darwin, `CInterop.PlatformChar` is less available than 
+  // `FileDescriptor.open`, so we need to use `CChar` instead.
+  
   /// Opens or creates a file for reading or writing.
   ///
   /// - Parameters:
@@ -83,6 +94,54 @@ extension FileDescriptor {
     }
     return descOrError.map { FileDescriptor(rawValue: $0) }
   }
+  #else
+  /// Opens or creates a file for reading or writing.
+  ///
+  /// - Parameters:
+  ///   - path: The location of the file to open.
+  ///   - mode: The read and write access to use.
+  ///   - options: The behavior for opening the file.
+  ///   - permissions: The file permissions to use for created files.
+  ///   - retryOnInterrupt: Whether to retry the open operation
+  ///     if it throws ``Errno/interrupted``.
+  ///     The default is `true`.
+  ///     Pass `false` to try only once and throw an error upon interruption.
+  /// - Returns: A file descriptor for the open file
+  ///
+  /// The corresponding C function is `open`.
+  @_alwaysEmitIntoClient
+  public static func open(
+    _ path: UnsafePointer<CInterop.PlatformChar>,
+    _ mode: FileDescriptor.AccessMode,
+    options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
+    permissions: FilePermissions? = nil,
+    retryOnInterrupt: Bool = true
+  ) throws -> FileDescriptor {
+    try FileDescriptor._open(
+      path, mode, options: options, permissions: permissions, retryOnInterrupt: retryOnInterrupt
+    ).get()
+  }
+
+  @usableFromInline
+  internal static func _open(
+    _ path: UnsafePointer<CInterop.PlatformChar>,
+    _ mode: FileDescriptor.AccessMode,
+    options: FileDescriptor.OpenOptions,
+    permissions: FilePermissions?,
+    retryOnInterrupt: Bool
+  ) -> Result<FileDescriptor, Errno> {
+    let oFlag = mode.rawValue | options.rawValue
+    let descOrError: Result<CInt, Errno> = valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+      if let permissions = permissions {
+        return system_open(path, oFlag, permissions.rawValue)
+      }
+      precondition(!options.contains(.create),
+        "Create must be given permissions")
+      return system_open(path, oFlag)
+    }
+    return descOrError.map { FileDescriptor(rawValue: $0) }
+  }
+  #endif
 
   /// Deletes a file descriptor.
   ///

@@ -20,7 +20,13 @@ extension FilePath {
     self.init(_platformString: platformString)
   }
 
-#if !os(Windows) // Availability workaround
+  #if !os(Windows)
+  // Note: This function should have been opaque, but it shipped as 
+  // `@_alwaysEmitIntoClient` in macOS 12/iOS 15, and now it is stuck
+  // this way forever. (Or until the language provides a way for us
+  // to declare separate availability for a function's exported symbol
+  // and its inlinable body.)
+
   /// Calls the given closure with a pointer to the contents of the file path,
   /// represented as a null-terminated platform string.
   ///
@@ -37,7 +43,6 @@ extension FilePath {
   public func withPlatformString<Result>(
     _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
   ) rethrows -> Result {
-    // For backwards deployment, call withCString if available.
     return try withCString(body)
   }
 #else
@@ -56,7 +61,6 @@ extension FilePath {
   public func withPlatformString<Result>(
     _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
   ) rethrows -> Result {
-    // For backwards deployment, call withCString if available.
     return try _withPlatformString(body)
   }
 #endif
