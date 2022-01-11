@@ -185,7 +185,7 @@ extension FileDescriptor {
   /// The <doc://com.apple.documentation/documentation/swift/unsafemutablerawbufferpointer/3019191-count> property of `buffer`
   /// determines the maximum number of bytes that are read into that buffer.
   ///
-  /// Unlike <doc:System/FileDescriptor/read(into:retryOnInterrupt:)>,
+  /// Unlike <doc:FileDescriptor/read(into:retryOnInterrupt:)>,
   /// this method leaves the file's existing offset unchanged.
   ///
   /// The corresponding C function is `pread`.
