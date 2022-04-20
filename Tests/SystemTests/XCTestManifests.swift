@@ -27,6 +27,7 @@ extension FileOperationsTest {
     // to regenerate.
     static let __allTests__FileOperationsTest = [
         ("testAdHocOpen", testAdHocOpen),
+        ("testAdHocPipe", testAdHocPipe),
         ("testGithubIssues", testGithubIssues),
         ("testHelpers", testHelpers),
         ("testSyscalls", testSyscalls),
