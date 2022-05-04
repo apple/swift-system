@@ -122,4 +122,18 @@ extension FileDescriptor {
       return .success(buffer.count)
     }
   }
+
+  /// Return the current size of the file.
+  ///
+  /// - Returns: The current size of the file, in bytes.
+  @_alwaysEmitIntoClient
+  @discardableResult
+  public func fileSize(
+    retryOnInterrupt: Bool = true
+  ) throws -> Int64 {
+    let current = try seek(offset: 0, from: .current)
+    let size = try seek(offset: 0, from: .end)
+    try seek(offset: current, from: .start)
+    return size
+  }
 }
