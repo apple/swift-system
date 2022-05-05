@@ -160,5 +160,36 @@ final class FileOperationsTest: XCTestCase {
     issue26.runAllTests()
 
   }
-}
 
+/// This `#if` is present because, While `read(filling:)` is available on all platforms, this test
+/// makes use of `FileDescriptor.pipe()` which is not available on Windows.
+#if !os(Windows)
+  func testReadFilling() async throws {
+    let pipe = try FileDescriptor.pipe()
+    defer {
+      try? pipe.writeEnd.close()
+      try? pipe.readEnd.close()
+    }
+    var abc = "abc"
+    var def = "def"
+    let abcdef = abc + def
+
+    try abc.withUTF8 {
+      XCTAssertEqual(try pipe.writeEnd.writeAll(UnsafeRawBufferPointer($0)), 3)
+    }
+
+    async let readBytes = try Array<UInt8>(unsafeUninitializedCapacity: abcdef.count) { buf, count in
+      count = try pipe.readEnd.read(filling: UnsafeMutableRawBufferPointer(buf))
+      XCTAssertEqual(count, abcdef.count)
+    }
+
+    try def.withUTF8 {
+      XCTAssertEqual(try pipe.writeEnd.writeAll(UnsafeRawBufferPointer($0)), 3)
+    }
+
+    let _readBytes = try await readBytes
+
+    XCTAssertEqual(_readBytes, Array(abcdef.utf8))
+  }
+#endif
+}
