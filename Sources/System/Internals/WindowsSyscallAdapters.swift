@@ -105,11 +105,4 @@ internal func pwrite(
   return Int(nNumberOfBytesWritten)
 }
 
-@inline(__always)
-internal func ftruncate(
-  _ fd: Int32, _ length: off_t
-) -> Int32 {
-  _chsize(fd, numericCast(length))
-}
-
 #endif
