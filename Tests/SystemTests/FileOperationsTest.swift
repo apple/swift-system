@@ -165,6 +165,7 @@ final class FileOperationsTest: XCTestCase {
 
   }
 
+#if !os(Windows)
   func testResizeFile() throws {
     let fd = try FileDescriptor.open("/tmp/b.txt", .readWrite, options: [.create, .truncate], permissions: .ownerReadWrite)
     try fd.closeAfter {
@@ -206,5 +207,6 @@ final class FileOperationsTest: XCTestCase {
       XCTAssertEqual(readBytesAfterTruncation, Array("ab".utf8))
     }
   }
+#endif
 }
 
