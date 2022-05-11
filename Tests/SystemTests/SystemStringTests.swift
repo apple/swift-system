@@ -252,3 +252,165 @@ final class SystemStringTest: XCTestCase {
 
 }
 
+extension SystemStringTest {
+  func test_String_initWithArrayConversion() {
+    let source: [CInterop.PlatformChar] = [0x61, 0x62, 0, 0x63]
+    let str = String(platformString: source)
+    source.withUnsafeBufferPointer {
+      XCTAssertEqual(str, String(platformString: $0.baseAddress!))
+    }
+  }
+
+  @available(*, deprecated) // silence the warning for using a deprecated api
+  func test_String_initWithStringConversion() {
+    let source = "ab\0c"
+    var str: String
+    str = String(platformString: source)
+    source.withPlatformString {
+      XCTAssertEqual(str, String(platformString: $0))
+    }
+    str = String(platformString: "")
+    XCTAssertEqual(str.isEmpty, true)
+  }
+
+  @available(*, deprecated) // silence the warning for using a deprecated api
+  func test_String_initWithInoutConversion() {
+    var c: CInterop.PlatformChar = 0
+    let str = String(platformString: &c)
+    // Any other value of `c` would violate the null-terminated precondition
+    XCTAssertEqual(str.isEmpty, true)
+  }
+
+  func test_String_validatingPlatformStringWithArrayConversion() {
+    var source: [CInterop.PlatformChar] = [0x61, 0x62, 0, 0x63]
+    var str: String?
+    str = String(validatingPlatformString: source)
+    source.withUnsafeBufferPointer {
+      XCTAssertEqual(str, String(validatingPlatformString: $0.baseAddress!))
+    }
+    source[1] = CInterop.PlatformChar(truncatingIfNeeded: 0xffff)
+    str = String(validatingPlatformString: source)
+    XCTAssertNil(str)
+  }
+
+  @available(*, deprecated) // silence the warning for using a deprecated api
+  func test_String_validatingPlatformStringWithStringConversion() {
+    let source = "ab\0c"
+    var str: String?
+    str = String(validatingPlatformString: source)
+    XCTAssertNotNil(str)
+    source.withPlatformString {
+      XCTAssertEqual(str, String.init(validatingPlatformString: $0))
+    }
+    str = String(validatingPlatformString: "")
+    XCTAssertNotNil(str)
+    XCTAssertEqual(str?.isEmpty, true)
+  }
+
+  @available(*, deprecated) // silence the warning for using a deprecated api
+  func test_String_validatingPlatformStringWithInoutConversion() {
+    var c: CInterop.PlatformChar = 0
+    let str = String(validatingPlatformString: &c)
+    // Any other value of `c` would violate the null-terminated precondition
+    XCTAssertNotNil(str)
+    XCTAssertEqual(str?.isEmpty, true)
+  }
+
+  func test_FilePath_initWithArrayConversion() {
+    let source: [CInterop.PlatformChar] = [0x61, 0x62, 0, 0x63]
+    let path = FilePath(platformString: source)
+    source.withUnsafeBufferPointer {
+      XCTAssertEqual(path, FilePath(platformString: $0.baseAddress!))
+    }
+  }
+
+  @available(*, deprecated) // silence the warning for using a deprecated api
+  func test_FilePath_initWithStringConversion() {
+    let source = "ab\0c"
+    var path: FilePath
+    path = FilePath(platformString: source)
+    source.withPlatformString {
+      XCTAssertEqual(path, FilePath(platformString: $0))
+    }
+    path = FilePath(platformString: "")
+    XCTAssertEqual(path.string.isEmpty, true)
+  }
+
+  @available(*, deprecated) // silence the warning for using a deprecated api
+  func test_FilePath_initWithInoutConversion() {
+    var c: CInterop.PlatformChar = 0
+    let path = FilePath(platformString: &c)
+    // Any other value of `c` would violate the null-terminated precondition
+    XCTAssertEqual(path.string.isEmpty, true)
+  }
+
+  func test_FilePathComponent_initWithArrayConversion() {
+    var source: [CInterop.PlatformChar] = [0x61, 0x62, 0, 0x63]
+    var component: FilePath.Component?
+    component = FilePath.Component(platformString: source)
+    source.withUnsafeBufferPointer {
+      XCTAssertEqual(component, .init(platformString: $0.baseAddress!))
+    }
+    source[1] = CInterop.PlatformChar(truncatingIfNeeded: 0xffff)
+    component = FilePath.Component(platformString: source)
+    source.withUnsafeBufferPointer {
+      XCTAssertEqual(component, .init(platformString: $0.baseAddress!))
+    }
+  }
+
+  @available(*, deprecated) // silence the warning for using a deprecated api
+  func test_FilePathComponent_initWithStringConversion() {
+    let source = "ab\0c"
+    var component: FilePath.Component?
+    component = FilePath.Component(platformString: source)
+    source.withPlatformString {
+      XCTAssertEqual(component, FilePath.Component(platformString: $0))
+    }
+    component = FilePath.Component(platformString: "")
+    XCTAssertNil(component)
+  }
+
+  @available(*, deprecated) // silence the warning for using a deprecated api
+  func test_FilePathComponent_initWithInoutConversion() {
+    var c: CInterop.PlatformChar = 0
+    let component = FilePath.Component(platformString: &c)
+    XCTAssertNil(component)
+  }
+
+  func test_FilePathRoot_initWithArrayConversion() {
+    let source: [CInterop.PlatformChar]
+    #if os(Windows)
+    source = [0x41, 0x3a, 0x5c, 0, 0x7f]
+    #else // unix
+    source = [0x2f, 0, 0x7f]
+    #endif
+    var root: FilePath.Root?
+    root = FilePath.Root(platformString: source)
+    source.withUnsafeBufferPointer {
+      XCTAssertEqual(root, FilePath.Root(platformString: $0.baseAddress!))
+    }
+  }
+
+  @available(*, deprecated) // silence the warning for using a deprecated api
+  func test_FilePathRoot_initWithStringConversion() {
+    #if os(Windows)
+    let source = "C:\\\0 and the rest"
+    #else // unix
+    let source = "/\0 and the rest"
+    #endif
+    var root: FilePath.Root?
+    root = FilePath.Root(platformString: source)
+    source.withPlatformString {
+      XCTAssertEqual(root, FilePath.Root(platformString: $0))
+    }
+    root = FilePath.Root(platformString: "")
+    XCTAssertNil(root)
+  }
+
+  @available(*, deprecated) // silence the warning for using a deprecated api
+  func test_FilePathRoot_initWithInoutConversion() {
+    var c: CInterop.PlatformChar = 0
+    let root = FilePath.Root(platformString: &c)
+    XCTAssertNil(root)
+  }
+}
