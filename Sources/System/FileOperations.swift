@@ -391,10 +391,12 @@ extension FileDescriptor {
   internal static func _pipe() -> Result<(readEnd: FileDescriptor, writeEnd: FileDescriptor), Errno> {
     var fds: (Int32, Int32) = (-1, -1)
     return withUnsafeMutablePointer(to: &fds) { pointer in
-      valueOrErrno(retryOnInterrupt: false) {
-        system_pipe(UnsafeMutableRawPointer(pointer).assumingMemoryBound(to: Int32.self))
+      pointer.withMemoryRebound(to: Int32.self, capacity: 2) { fds in
+        valueOrErrno(retryOnInterrupt: false) {
+          system_pipe(fds)
+        }.map { _ in (.init(rawValue: fds[0]), .init(rawValue: fds[1])) }
       }
-    }.map { _ in (.init(rawValue: fds.0), .init(rawValue: fds.1)) }
+    }
   }
 }
 #endif

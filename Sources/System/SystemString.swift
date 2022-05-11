@@ -171,12 +171,15 @@ extension SystemString {
   internal func withCodeUnits<T>(
     _ f: (UnsafeBufferPointer<CInterop.PlatformUnicodeEncoding.CodeUnit>) throws -> T
   ) rethrows -> T {
-    try withSystemChars {
-      // TODO: Is this the right way?
-      let base = UnsafeRawPointer(
-        $0.baseAddress
-      )!.assumingMemoryBound(to: CInterop.PlatformUnicodeEncoding.CodeUnit.self)
-      return try f(UnsafeBufferPointer(start: base, count: $0.count))
+    try withSystemChars { chars in
+      let length = chars.count * MemoryLayout<SystemChar>.stride
+      let count = length / MemoryLayout<CInterop.PlatformUnicodeEncoding.CodeUnit>.stride
+      return try chars.baseAddress!.withMemoryRebound(
+        to: CInterop.PlatformUnicodeEncoding.CodeUnit.self,
+        capacity: count
+      ) { pointer in
+        try f(UnsafeBufferPointer(start: pointer, count: count))
+      }
     }
   }
 }
@@ -272,13 +275,15 @@ extension SystemString {
   internal func withPlatformString<T>(
     _ f: (UnsafePointer<CInterop.PlatformChar>) throws -> T
   ) rethrows -> T {
-    try withSystemChars {
-      // TODO: Is this the right way?
-      let base = UnsafeRawPointer(
-        $0.baseAddress
-      )!.assumingMemoryBound(to: CInterop.PlatformChar.self)
-      assert(base[self.count] == 0)
-      return try f(base)
+    try withSystemChars { chars in
+      let length = chars.count * MemoryLayout<SystemChar>.stride
+      return try chars.baseAddress!.withMemoryRebound(
+        to: CInterop.PlatformChar.self,
+        capacity: length / MemoryLayout<CInterop.PlatformChar>.stride
+      ) { pointer in
+        assert(pointer[self.count] == 0)
+        return try f(pointer)
+      }
     }
   }
 }
