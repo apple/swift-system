@@ -98,12 +98,12 @@ extension FileDescriptor {
     return try _read(filling: buffer).get()
   }
 
-  /// Reads bytes at the current file offset into a buffer until the buffer is filled.
+  /// Reads bytes at the current file offset into a buffer until the buffer is filled or until EOF is reached.
   ///
   /// - Parameters:
   ///   - offset: The file offset where reading begins.
   ///   - buffer: The region of memory to read into.
-  /// - Returns: The number of bytes that were read, equal to `buffer.count`.
+  /// - Returns: The number of bytes that were read, at most `buffer.count`.
   ///
   /// This method either reads until `buffer` is full, or throws an error if
   /// only part of the buffer was filled.
@@ -125,7 +125,7 @@ extension FileDescriptor {
     filling buffer: UnsafeMutableRawBufferPointer
   ) -> Result<Int, Errno> {
     var idx = 0
-    while idx < buffer.count {
+    loop: while idx < buffer.count {
       let readResult: Result<Int, Errno>
       if let offset = offset {
         readResult = _read(
@@ -140,12 +140,13 @@ extension FileDescriptor {
         )
       }
       switch readResult {
+        case .success(let numBytes) where numBytes == 0: break loop  // EOF
         case .success(let numBytes): idx += numBytes
         case .failure(let err): return .failure(err)
       }
     }
-    assert(idx == buffer.count)
-    return .success(buffer.count)
+    assert(idx <= buffer.count)
+    return .success(idx)
   }
 
   /// Writes a sequence of bytes to the given offset.
