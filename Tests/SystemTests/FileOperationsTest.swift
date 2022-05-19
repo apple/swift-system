@@ -29,10 +29,10 @@ final class FileOperationsTest: XCTestCase {
     let writeBufAddr = writeBuf.baseAddress
 
     let syscallTestCases: Array<MockTestCase> = [
-      MockTestCase(name: "open", .interruptable, "a path", O_RDWR | O_APPEND) {
+      MockTestCase(name: "open", .interruptable, "a path", O_RDWR | O_CREAT | O_APPEND) {
         retryOnInterrupt in
         _ = try FileDescriptor.open(
-          "a path", .readWrite, options: [.append], retryOnInterrupt: retryOnInterrupt)
+          "a path", .readWrite, options: [.create, .append], retryOnInterrupt: retryOnInterrupt)
       },
 
       MockTestCase(name: "open", .interruptable, "a path", O_WRONLY | O_CREAT | O_APPEND, 0o777) {

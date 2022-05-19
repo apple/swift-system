@@ -77,7 +77,7 @@ extension FileDescriptor {
       if let permissions = permissions {
         return system_open(path, oFlag, permissions.rawValue)
       }
-      precondition(!options.contains(.create),
+      precondition(options.contains(.create),
         "Create must be given permissions")
       return system_open(path, oFlag)
     }
