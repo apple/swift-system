@@ -167,7 +167,7 @@ final class FileOperationsTest: XCTestCase {
 
 #if !os(Windows)
   func testResizeFile() throws {
-    let fd = try FileDescriptor.open("/tmp/b.txt", .readWrite, options: [.create, .truncate], permissions: .ownerReadWrite)
+    let fd = try FileDescriptor.open("/tmp/\(UUID().uuidString).txt", .readWrite, options: [.create, .truncate], permissions: .ownerReadWrite)
     try fd.closeAfter {
       // File should be empty initially.
       XCTAssertEqual(try fd.fileSize(), 0)
