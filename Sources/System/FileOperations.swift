@@ -398,3 +398,51 @@ extension FileDescriptor {
   }
   #endif
 }
+
+/*System 1.2.0, @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)*/
+extension FileDescriptor {
+  #if !os(Windows)
+  /// Truncate or extend the file referenced by this file descriptor.
+  ///
+  /// - Parameters:
+  ///   - newSize: The length in bytes to resize the file to.
+  ///   - retryOnInterrupt: Whether to retry the write operation
+  ///      if it throws ``Errno/interrupted``. The default is `true`.
+  ///      Pass `false` to try only once and throw an error upon interruption.
+  ///
+  /// The file referenced by this file descriptor will by truncated (or extended) to `newSize`.
+  ///
+  /// If the current size of the file exceeds `newSize`, any extra data is discarded. If the current
+  /// size of the file is smaller than `newSize`, the file is extended and filled with zeros to the
+  /// provided size.
+  ///
+  /// This function requires that the file has been opened for writing.
+  ///
+  /// - Note: This function does not modify the current offset for any open file descriptors
+  /// associated with the file.
+  ///
+  /// The corresponding C function is `ftruncate`.
+  /*System 1.2.0, @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)*/
+  @_alwaysEmitIntoClient
+  public func resize(
+    to newSize: Int64,
+    retryOnInterrupt: Bool = true
+  ) throws {
+    try _resize(
+      to: newSize,
+      retryOnInterrupt: retryOnInterrupt
+    ).get()
+  }
+
+  /*System 1.2.0, @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)*/
+  @usableFromInline
+  internal func _resize(
+    to newSize: Int64,
+    retryOnInterrupt: Bool
+  ) -> Result<(), Errno> {
+    nothingOrErrno(retryOnInterrupt: retryOnInterrupt) {
+      system_ftruncate(self.rawValue, _COffT(newSize))
+    }
+  }
+  #endif
+}

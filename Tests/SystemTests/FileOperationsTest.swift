@@ -81,6 +81,10 @@ final class FileOperationsTest: XCTestCase {
         _ = try fd.duplicate(as: FileDescriptor(rawValue: 42),
                              retryOnInterrupt: retryOnInterrupt)
       },
+
+      MockTestCase(name: "ftruncate", .interruptable, rawFD, 42) { retryOnInterrupt in
+        _ = try fd.resize(to: 42, retryOnInterrupt: retryOnInterrupt)
+      },
     ]
 
     for test in syscallTestCases { test.runAllTests() }
@@ -160,5 +164,49 @@ final class FileOperationsTest: XCTestCase {
     issue26.runAllTests()
 
   }
+
+#if !os(Windows)
+  func testResizeFile() throws {
+    let fd = try FileDescriptor.open("/tmp/\(UUID().uuidString).txt", .readWrite, options: [.create, .truncate], permissions: .ownerReadWrite)
+    try fd.closeAfter {
+      // File should be empty initially.
+      XCTAssertEqual(try fd.fileSize(), 0)
+      // Write 3 bytes.
+      try fd.writeAll("abc".utf8)
+      // File should now be 3 bytes.
+      XCTAssertEqual(try fd.fileSize(), 3)
+      // Resize to 6 bytes.
+      try fd.resize(to: 6)
+      // File should now be 6 bytes.
+      XCTAssertEqual(try fd.fileSize(), 6)
+      // Read in the 6 bytes.
+      let readBytes = try Array<UInt8>(unsafeUninitializedCapacity: 6) { (buf, count) in
+        try fd.seek(offset: 0, from: .start)
+        // Should have read all 6 bytes.
+        count = try fd.read(into: UnsafeMutableRawBufferPointer(buf))
+        XCTAssertEqual(count, 6)
+      }
+      // First 3 bytes should be unaffected by resize.
+      XCTAssertEqual(Array(readBytes[..<3]), Array("abc".utf8))
+      // Extension should be padded with zeros.
+      XCTAssertEqual(Array(readBytes[3...]), Array(repeating: 0, count: 3))
+      // File should still be 6 bytes.
+      XCTAssertEqual(try fd.fileSize(), 6)
+      // Resize to 2 bytes.
+      try fd.resize(to: 2)
+      // File should now be 2 bytes.
+      XCTAssertEqual(try fd.fileSize(), 2)
+      // Read in file with a buffer big enough for 6 bytes.
+      let readBytesAfterTruncation = try Array<UInt8>(unsafeUninitializedCapacity: 6) { (buf, count) in
+        try fd.seek(offset: 0, from: .start)
+        count = try fd.read(into: UnsafeMutableRawBufferPointer(buf))
+        // Should only have read 2 bytes.
+        XCTAssertEqual(count, 2)
+      }
+      // Written content was trunctated.
+      XCTAssertEqual(readBytesAfterTruncation, Array("ab".utf8))
+    }
+  }
+#endif
 }
 
