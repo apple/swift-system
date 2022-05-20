@@ -46,9 +46,6 @@ extension FileDescriptor {
   /// increments that position by the number of bytes written.
   /// See also ``seek(offset:from:)``.
   ///
-  /// This method either writes the entire contents of `sequence`,
-  /// or throws an error if only part of the content was written.
-  ///
   /// If `sequence` doesn't implement
   /// the <doc://com.apple.documentation/documentation/swift/sequence/3128824-withcontiguousstorageifavailable> method,
   /// temporary space will be allocated as needed.
