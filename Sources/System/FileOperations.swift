@@ -372,9 +372,9 @@ extension FileDescriptor {
   }
 }
 
+#if !os(Windows)
 /*System 1.1.0, @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)*/
 extension FileDescriptor {
-  #if !os(Windows)
   /// Create a pipe, a unidirectional data channel which can be used for interprocess communication.
   ///
   /// - Returns: The pair of file descriptors.
@@ -396,12 +396,12 @@ extension FileDescriptor {
       }
     }.map { _ in (.init(rawValue: fds.0), .init(rawValue: fds.1)) }
   }
-  #endif
 }
+#endif
 
+#if !os(Windows)
 /*System 1.2.0, @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)*/
 extension FileDescriptor {
-  #if !os(Windows)
   /// Truncate or extend the file referenced by this file descriptor.
   ///
   /// - Parameters:
@@ -444,5 +444,5 @@ extension FileDescriptor {
       system_ftruncate(self.rawValue, _COffT(newSize))
     }
   }
-  #endif
 }
+#endif

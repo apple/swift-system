@@ -82,9 +82,11 @@ final class FileOperationsTest: XCTestCase {
                              retryOnInterrupt: retryOnInterrupt)
       },
 
+#if !os(Windows)
       MockTestCase(name: "ftruncate", .interruptable, rawFD, 42) { retryOnInterrupt in
         _ = try fd.resize(to: 42, retryOnInterrupt: retryOnInterrupt)
       },
+#endif
     ]
 
     for test in syscallTestCases { test.runAllTests() }
