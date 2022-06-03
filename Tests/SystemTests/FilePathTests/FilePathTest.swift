@@ -22,7 +22,9 @@ func filePathFromUnterminatedBytes<S: Sequence>(_ bytes: S) -> FilePath where S.
   array += [0]
 
   return array.withUnsafeBufferPointer {
-    FilePath(platformString: $0.baseAddress!._asCChar)
+    $0.withMemoryRebound(to: CChar.self) {
+      FilePath(platformString: $0.baseAddress!)
+    }
   }
 }
 let invalidBytes: [UInt8] = [0x2F, 0x61, 0x2F, 0x62, 0x2F, 0x83]

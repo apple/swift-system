@@ -10,29 +10,6 @@
 // Tests for PlatformString, SystemString, and FilePath's forwarding APIs
 
 // TODO: Adapt test to Windows
-extension UnsafePointer where Pointee == UInt8 {
-  internal var _asCChar: UnsafePointer<CChar> {
-    UnsafeRawPointer(self).assumingMemoryBound(to: CChar.self)
-  }
-}
-extension UnsafePointer where Pointee == CChar {
-  internal var _asUInt8: UnsafePointer<UInt8> {
-    UnsafeRawPointer(self).assumingMemoryBound(to: UInt8.self)
-  }
-}
-extension UnsafeBufferPointer where Element == UInt8 {
-  internal var _asCChar: UnsafeBufferPointer<CChar> {
-    let base = baseAddress?._asCChar
-    return UnsafeBufferPointer<CChar>(start: base, count: self.count)
-  }
-}
-extension UnsafeBufferPointer where Element == CChar {
-  internal var _asUInt8: UnsafeBufferPointer<UInt8> {
-    let base = baseAddress?._asUInt8
-    return UnsafeBufferPointer<UInt8>(start: base, count: self.count)
-  }
-}
-
 
 import XCTest
 
@@ -46,7 +23,7 @@ private func makeRaw(
   _ str: String
 ) -> [CInterop.PlatformChar] {
   var str = str
-  var array = str.withUTF8 { Array($0._asCChar) }
+  var array = str.withUTF8 { $0.withMemoryRebound(to: CChar.self, Array.init) }
   array.append(0)
   return array
 }
