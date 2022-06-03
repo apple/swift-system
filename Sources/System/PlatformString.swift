@@ -30,12 +30,118 @@ extension String {
   /// - Parameter platformString: The null-terminated platform string to be
   ///  interpreted as `CInterop.PlatformUnicodeEncoding`.
   ///
+  /// - Note It is a precondition that `platformString` must be null-terminated.
+  /// The absence of a null byte will trigger a runtime error.
+  ///
+  /// If the content of the platform string isn't well-formed Unicode,
+  /// this initializer replaces invalid bytes with U+FFFD.
+  /// This means that, depending on the semantics of the specific platform,
+  /// conversion to a string and back might result in a value that's different
+  /// from the original platform string.
+  @inlinable
+  @_alwaysEmitIntoClient
+  public init(platformString: [CInterop.PlatformChar]) {
+    guard let _ = platformString.firstIndex(of: 0) else {
+      fatalError(
+        "input of String.init(platformString:) must be null-terminated"
+      )
+    }
+    self = platformString.withUnsafeBufferPointer {
+      String(platformString: $0.baseAddress!)
+    }
+  }
+
+  @inlinable
+  @_alwaysEmitIntoClient
+  @available(*, deprecated, message: "Use String.init(_ scalar: Unicode.Scalar)")
+  public init(platformString: inout CInterop.PlatformChar) {
+    guard platformString == 0 else {
+      fatalError(
+        "input of String.init(platformString:) must be null-terminated"
+      )
+    }
+    self = ""
+  }
+
+  @inlinable
+  @_alwaysEmitIntoClient
+  @available(*, deprecated, message: "Use a copy of the String argument")
+  public init(platformString: String) {
+    if let nullLoc = platformString.firstIndex(of: "\0") {
+      self = String(platformString[..<nullLoc])
+    } else {
+      self = platformString
+    }
+  }
+
+  /// Creates a string by interpreting the null-terminated platform string as
+  /// UTF-8 on Unix and UTF-16 on Windows.
+  ///
+  /// - Parameter platformString: The null-terminated platform string to be
+  ///  interpreted as `CInterop.PlatformUnicodeEncoding`.
+  ///
   /// If the contents of the platform string isn't well-formed Unicode,
   /// this initializer returns `nil`.
   public init?(
     validatingPlatformString platformString: UnsafePointer<CInterop.PlatformChar>
   ) {
     self.init(_platformString: platformString)
+  }
+
+  /// Creates a string by interpreting the null-terminated platform string as
+  /// UTF-8 on Unix and UTF-16 on Windows.
+  ///
+  /// - Parameter platformString: The null-terminated platform string to be
+  ///  interpreted as `CInterop.PlatformUnicodeEncoding`.
+  ///
+  /// - Note It is a precondition that `platformString` must be null-terminated.
+  /// The absence of a null byte will trigger a runtime error.
+  ///
+  /// If the contents of the platform string isn't well-formed Unicode,
+  /// this initializer returns `nil`.
+  @inlinable
+  @_alwaysEmitIntoClient
+  public init?(
+    validatingPlatformString platformString: [CInterop.PlatformChar]
+  ) {
+    guard let _ = platformString.firstIndex(of: 0) else {
+      fatalError(
+        "input of String.init(validatingPlatformString:) must be null-terminated"
+      )
+    }
+    guard let string = platformString.withUnsafeBufferPointer({
+      String(validatingPlatformString: $0.baseAddress!)
+    }) else {
+      return nil
+    }
+    self = string
+  }
+
+  @inlinable
+  @_alwaysEmitIntoClient
+  @available(*, deprecated, message: "Use String(_ scalar: Unicode.Scalar)")
+  public init?(
+    validatingPlatformString platformString: inout CInterop.PlatformChar
+  ) {
+    guard platformString == 0 else {
+      fatalError(
+        "input of String.init(validatingPlatformString:) must be null-terminated"
+      )
+    }
+    self = ""
+  }
+
+  @inlinable
+  @_alwaysEmitIntoClient
+  @available(*, deprecated, message: "Use a copy of the String argument")
+  public init?(
+    validatingPlatformString platformString: String
+  ) {
+    if let nullLoc = platformString.firstIndex(of: "\0") {
+      self = String(platformString[..<nullLoc])
+    } else {
+      self = platformString
+    }
   }
 
   /// Calls the given closure with a pointer to the contents of the string,
