@@ -42,7 +42,7 @@ extension FilePath {
 
   @inlinable
   @_alwaysEmitIntoClient
-  @available(*, deprecated, message: "Use FilePath(_: String) to create a path from a String.")
+  @available(*, deprecated, message: "Use FilePath.init(_ scalar: Unicode.Scalar)")
   public init(platformString: inout CInterop.PlatformChar) {
     guard platformString == 0 else {
       fatalError(
@@ -54,7 +54,7 @@ extension FilePath {
 
   @inlinable
   @_alwaysEmitIntoClient
-  @available(*, deprecated, message: "Use FilePath(_: String) to create a path from a String.")
+  @available(*, deprecated, message: "Use FilePath(_: String) to create a path from a String")
   public init(platformString: String) {
     if let nullLoc = platformString.firstIndex(of: "\0") {
       self = FilePath(String(platformString[..<nullLoc]))
@@ -132,7 +132,7 @@ extension FilePath.Component {
 
   @inlinable
   @_alwaysEmitIntoClient
-  @available(*, deprecated, message: "Use FilePath.Component.init(_: String).")
+  @available(*, deprecated, message: "Use FilePath.Component.init(_ scalar: Unicode.Scalar)")
   public init?(platformString: inout CInterop.PlatformChar) {
     guard platformString == 0 else {
       fatalError(
@@ -144,7 +144,7 @@ extension FilePath.Component {
 
   @inlinable
   @_alwaysEmitIntoClient
-  @available(*, deprecated, message: "Use FilePath.Component.init(_: String).")
+  @available(*, deprecated, message: "Use FilePath.Component.init(_: String)")
   public init?(platformString: String) {
     let string: String
     if let nullLoc = platformString.firstIndex(of: "\0") {
@@ -220,7 +220,7 @@ extension FilePath.Root {
 
   @inlinable
   @_alwaysEmitIntoClient
-  @available(*, deprecated, message: "Use FilePath.Root.init(_: String).")
+  @available(*, deprecated, message: "Use FilePath.Root.init(_ scalar: Unicode.Scalar)")
   public init?(platformString: inout CInterop.PlatformChar) {
     guard platformString == 0 else {
       fatalError(
@@ -232,7 +232,7 @@ extension FilePath.Root {
 
   @inlinable
   @_alwaysEmitIntoClient
-  @available(*, deprecated, message: "Use FilePath.Root.init(_: String).")
+  @available(*, deprecated, message: "Use FilePath.Root.init(_: String)")
   public init?(platformString: String) {
     let string: String
     if let nullLoc = platformString.firstIndex(of: "\0") {

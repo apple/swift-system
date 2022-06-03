@@ -51,9 +51,9 @@ extension String {
     }
   }
 
-  @available(*, deprecated, message: "Use String(_ scalar: Unicode.Scalar)")
   @inlinable
   @_alwaysEmitIntoClient
+  @available(*, deprecated, message: "Use String.init(_ scalar: Unicode.Scalar)")
   public init(platformString: inout CInterop.PlatformChar) {
     guard platformString == 0 else {
       fatalError(
@@ -63,9 +63,9 @@ extension String {
     self = ""
   }
 
-  @available(*, deprecated, message: "Use a copy of the String argument")
   @inlinable
   @_alwaysEmitIntoClient
+  @available(*, deprecated, message: "Use a copy of the String argument")
   public init(platformString: String) {
     if let nullLoc = platformString.firstIndex(of: "\0") {
       self = String(platformString[..<nullLoc])
@@ -117,9 +117,9 @@ extension String {
     self = string
   }
 
-  @available(*, deprecated, message: "Use String(_ scalar: Unicode.Scalar)")
   @inlinable
   @_alwaysEmitIntoClient
+  @available(*, deprecated, message: "Use String(_ scalar: Unicode.Scalar)")
   public init?(
     validatingPlatformString platformString: inout CInterop.PlatformChar
   ) {
@@ -131,9 +131,9 @@ extension String {
     self = ""
   }
 
-  @available(*, deprecated, message: "Use a copy of the String argument")
   @inlinable
   @_alwaysEmitIntoClient
+  @available(*, deprecated, message: "Use a copy of the String argument")
   public init?(
     validatingPlatformString platformString: String
   ) {
