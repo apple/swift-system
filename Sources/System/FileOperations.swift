@@ -401,7 +401,6 @@ extension FileDescriptor {
 }
 #endif
 
-#if !os(Windows)
 /*System 1.2.0, @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)*/
 extension FileDescriptor {
   /// Truncate or extend the file referenced by this file descriptor.
@@ -447,4 +446,3 @@ extension FileDescriptor {
     }
   }
 }
-#endif
