@@ -110,6 +110,6 @@ internal func ftruncate(
   _ fd: Int32,
   _ length: off_t
 ) -> Int32 {
-  _chsize(fd, numericCast(length))
+  _chsize_s(fd, numericCast(length))
 }
 #endif
