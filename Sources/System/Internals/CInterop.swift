@@ -17,7 +17,7 @@ public typealias CModeT =  CInterop.Mode
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
 import Darwin
 #elseif os(Linux) || os(FreeBSD) || os(Android)
-import CSystem
+@_implementationOnly import CSystem
 import Glibc
 #elseif os(Windows)
 import CSystem
