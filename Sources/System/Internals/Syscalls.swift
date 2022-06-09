@@ -125,11 +125,9 @@ internal func system_pipe(_ fds: UnsafeMutablePointer<Int32>) -> CInt {
 }
 #endif
 
-#if !os(Windows)
 internal func system_ftruncate(_ fd: Int32, _ length: off_t) -> Int32 {
 #if ENABLE_MOCKING
   if mockingEnabled { return _mock(fd, length) }
 #endif
   return ftruncate(fd, length)
 }
-#endif
