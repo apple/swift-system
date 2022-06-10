@@ -1,4 +1,4 @@
-#if !canImport(ObjectiveC)
+#if !canImport(ObjectiveC) && swift(<5.5)
 import XCTest
 
 extension ErrnoTest {
