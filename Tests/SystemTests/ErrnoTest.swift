@@ -32,7 +32,9 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(ENOMEM == Errno.noMemory.rawValue)
     XCTAssert(EACCES == Errno.permissionDenied.rawValue)
     XCTAssert(EFAULT == Errno.badAddress.rawValue)
+#if !os(Windows)
     XCTAssert(ENOTBLK == Errno.notBlockDevice.rawValue)
+#endif
     XCTAssert(EBUSY == Errno.resourceBusy.rawValue)
     XCTAssert(EEXIST == Errno.fileExists.rawValue)
     XCTAssert(EXDEV == Errno.improperLink.rawValue)
@@ -42,8 +44,10 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(EINVAL == Errno.invalidArgument.rawValue)
     XCTAssert(ENFILE == Errno.tooManyOpenFilesInSystem.rawValue)
     XCTAssert(EMFILE == Errno.tooManyOpenFiles.rawValue)
+#if !os(Windows)
     XCTAssert(ENOTTY == Errno.inappropriateIOCTLForDevice.rawValue)
     XCTAssert(ETXTBSY == Errno.textFileBusy.rawValue)
+#endif
     XCTAssert(EFBIG == Errno.fileTooLarge.rawValue)
     XCTAssert(ENOSPC == Errno.noSpace.rawValue)
     XCTAssert(ESPIPE == Errno.illegalSeek.rawValue)
@@ -111,7 +115,9 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(EDEVERR == Errno.deviceError.rawValue)
 #endif
 
+#if !os(Windows)
     XCTAssert(EOVERFLOW == Errno.overflow.rawValue)
+#endif
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
     XCTAssert(EBADEXEC == Errno.badExecutable.rawValue)
@@ -121,14 +127,17 @@ final class ErrnoTest: XCTestCase {
 #endif
 
     XCTAssert(ECANCELED == Errno.canceled.rawValue)
+#if !os(Windows)
     XCTAssert(EIDRM == Errno.identifierRemoved.rawValue)
     XCTAssert(ENOMSG == Errno.noMessage.rawValue)
+#endif
     XCTAssert(EILSEQ == Errno.illegalByteSequence.rawValue)
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
     XCTAssert(ENOATTR == Errno.attributeNotFound.rawValue)
 #endif
 
+#if !os(Windows)
     XCTAssert(EBADMSG == Errno.badMessage.rawValue)
     XCTAssert(EMULTIHOP == Errno.multiHop.rawValue)
     XCTAssert(ENODATA == Errno.noData.rawValue)
@@ -137,6 +146,7 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(ENOSTR == Errno.notStream.rawValue)
     XCTAssert(EPROTO == Errno.protocolError.rawValue)
     XCTAssert(ETIME == Errno.timeout.rawValue)
+#endif
     XCTAssert(EOPNOTSUPP == Errno.notSupportedOnSocket.rawValue)
 
     // From headers but not man page
@@ -148,8 +158,10 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(ENOPOLICY == Errno.noSuchPolicy.rawValue)
 #endif
 
+#if !os(Windows)
     XCTAssert(ENOTRECOVERABLE == Errno.notRecoverable.rawValue)
     XCTAssert(EOWNERDEAD == Errno.previousOwnerDied.rawValue)
+#endif
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
     XCTAssert(EQFULL == Errno.outputQueueFull.rawValue)
