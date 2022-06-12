@@ -22,7 +22,7 @@ func filePathFromUnterminatedBytes<S: Sequence>(_ bytes: S) -> FilePath where S.
   array += [0]
 
   return array.withUnsafeBufferPointer {
-    $0.withMemoryRebound(to: CChar.self) {
+    $0.withMemoryRebound(to: CInterop.PlatformChar.self) {
       FilePath(platformString: $0.baseAddress!)
     }
   }
