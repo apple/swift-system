@@ -288,7 +288,7 @@ extension SystemStringTest {
     source.withUnsafeBufferPointer {
       XCTAssertEqual(str, String(validatingPlatformString: $0.baseAddress!))
     }
-    source[1] = CInterop.PlatformChar(truncatingIfNeeded: 0xffff)
+    source[1] = CInterop.PlatformChar(truncatingIfNeeded: 0xdfff)
     str = String(validatingPlatformString: source)
     XCTAssertNil(str)
   }
