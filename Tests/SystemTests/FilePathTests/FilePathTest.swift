@@ -69,7 +69,11 @@ final class FilePathTest: XCTestCase {
       }
 
       testPath.filePath.withPlatformString {
+#if os(Windows)
+        XCTAssertEqual(testPath.string, String(decodingCString: $0, as: UTF16.self))
+#else
         XCTAssertEqual(testPath.string, String(cString: $0))
+#endif
         XCTAssertEqual(testPath.filePath, FilePath(platformString: $0))
       }
     }
