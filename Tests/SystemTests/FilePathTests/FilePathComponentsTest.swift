@@ -231,7 +231,7 @@ final class FilePathComponentsTest: XCTestCase {
   }
 
   func testCases() {
-    let testPaths: Array<TestPathComponents> = [
+    var testPaths: Array<TestPathComponents> = [
       TestPathComponents("", root: nil, []),
       TestPathComponents("/", root: "/", []),
       TestPathComponents("foo", root: nil, ["foo"]),
@@ -244,11 +244,15 @@ final class FilePathComponentsTest: XCTestCase {
       TestPathComponents("/foo///bar", root: "/", ["foo", "bar"]),
       TestPathComponents("foo/bar/", root: nil, ["foo", "bar"]),
       TestPathComponents("foo///bar/baz/", root: nil, ["foo", "bar", "baz"]),
-      TestPathComponents("//foo///bar/baz/", root: "/", ["foo", "bar", "baz"]),
       TestPathComponents("./", root: nil, ["."]),
       TestPathComponents("./..", root: nil, [".", ".."]),
       TestPathComponents("/./..//", root: "/", [".", ".."]),
     ]
+#if !os(Windows)
+    testPaths += [
+      TestPathComponents("//foo///bar/baz/", root: "/", ["foo", "bar", "baz"]),
+    ]
+#endif
     testPaths.forEach { $0.runAllTests() }
   }
 
