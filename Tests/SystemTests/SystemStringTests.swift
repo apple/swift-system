@@ -23,7 +23,11 @@ private func makeRaw(
   _ str: String
 ) -> [CInterop.PlatformChar] {
   var str = str
+#if os(Windows)
+  var array = Array(str.utf16)
+#else
   var array = str.withUTF8 { $0.withMemoryRebound(to: CChar.self, Array.init) }
+#endif
   array.append(0)
   return array
 }
