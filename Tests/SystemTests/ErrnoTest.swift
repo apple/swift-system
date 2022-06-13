@@ -15,6 +15,10 @@ import SystemPackage
 import System
 #endif
 
+#if os(Windows)
+import WinSDK
+#endif
+
 /*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 final class ErrnoTest: XCTestCase {
   func testConstants() {
@@ -61,9 +65,15 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(EPROTOTYPE == Errno.protocolWrongTypeForSocket.rawValue)
     XCTAssert(ENOPROTOOPT == Errno.protocolNotAvailable.rawValue)
     XCTAssert(EPROTONOSUPPORT == Errno.protocolNotSupported.rawValue)
+#if os(Windows)
+    XCTAssert(WSAESOCKTNOSUPPORT == Errno.socketTypeNotSupported.rawValue)
+    XCTAssert(WSAEOPNOTSUPP == Errno.notSupported.rawValue)
+    XCTAssert(WSAEPFNOSUPPORT == Errno.protocolFamilyNotSupported.rawValue)
+#else
     XCTAssert(ESOCKTNOSUPPORT == Errno.socketTypeNotSupported.rawValue)
     XCTAssert(ENOTSUP == Errno.notSupported.rawValue)
     XCTAssert(EPFNOSUPPORT == Errno.protocolFamilyNotSupported.rawValue)
+#endif
     XCTAssert(EAFNOSUPPORT == Errno.addressFamilyNotSupported.rawValue)
     XCTAssert(EADDRINUSE == Errno.addressInUse.rawValue)
     XCTAssert(EADDRNOTAVAIL == Errno.addressNotAvailable.rawValue)
@@ -75,12 +85,20 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(ENOBUFS == Errno.noBufferSpace.rawValue)
     XCTAssert(EISCONN == Errno.socketIsConnected.rawValue)
     XCTAssert(ENOTCONN == Errno.socketNotConnected.rawValue)
+#if os(Windows)
+    XCTAssert(WSAESHUTDOWN == Errno.socketShutdown.rawValue)
+#else
     XCTAssert(ESHUTDOWN == Errno.socketShutdown.rawValue)
+#endif
     XCTAssert(ETIMEDOUT == Errno.timedOut.rawValue)
     XCTAssert(ECONNREFUSED == Errno.connectionRefused.rawValue)
     XCTAssert(ELOOP == Errno.tooManySymbolicLinkLevels.rawValue)
     XCTAssert(ENAMETOOLONG == Errno.fileNameTooLong.rawValue)
+#if os(Windows)
+    XCTAssert(WSAEHOSTDOWN == Errno.hostIsDown.rawValue)
+#else
     XCTAssert(EHOSTDOWN == Errno.hostIsDown.rawValue)
+#endif
     XCTAssert(EHOSTUNREACH == Errno.noRouteToHost.rawValue)
     XCTAssert(ENOTEMPTY == Errno.directoryNotEmpty.rawValue)
 
@@ -88,9 +106,15 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(EPROCLIM == Errno.tooManyProcesses.rawValue)
 #endif
 
+#if os(Windows)
+    XCTAssert(WSAEUSERS == Errno.tooManyUsers.rawValue)
+    XCTAssert(WSAEDQUOT == Errno.diskQuotaExceeded.rawValue)
+    XCTAssert(WSAESTALE == Errno.staleNFSFileHandle.rawValue)
+#else
     XCTAssert(EUSERS == Errno.tooManyUsers.rawValue)
     XCTAssert(EDQUOT == Errno.diskQuotaExceeded.rawValue)
     XCTAssert(ESTALE == Errno.staleNFSFileHandle.rawValue)
+#endif
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
     XCTAssert(EBADRPC == Errno.rpcUnsuccessful.rawValue)
@@ -141,8 +165,13 @@ final class ErrnoTest: XCTestCase {
 
     // From headers but not man page
     XCTAssert(EWOULDBLOCK == Errno.wouldBlock.rawValue)
+#if os(Windows)
+    XCTAssert(WSAETOOMANYREFS == Errno.tooManyReferences.rawValue)
+    XCTAssert(WSAEREMOTE == Errno.tooManyRemoteLevels.rawValue)
+#else
     XCTAssert(ETOOMANYREFS == Errno.tooManyReferences.rawValue)
     XCTAssert(EREMOTE == Errno.tooManyRemoteLevels.rawValue)
+#endif
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
     XCTAssert(ENOPOLICY == Errno.noSuchPolicy.rawValue)
