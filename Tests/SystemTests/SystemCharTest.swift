@@ -25,7 +25,7 @@ final class SystemCharTest: XCTestCase {
 
     // non printable
     for value in 0..<(UInt8(ascii: " ")) {
-      XCTAssertFalse(SystemChar(codeUnit: value).isLetter)
+      XCTAssertFalse(SystemChar(codeUnit: CInterop.PlatformUnicodeEncoding.CodeUnit(value)).isLetter)
     }
     XCTAssertFalse(SystemChar(codeUnit: 0x7F).isLetter) // DEL
 
