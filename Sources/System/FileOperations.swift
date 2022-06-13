@@ -244,7 +244,7 @@ extension FileDescriptor {
   /// The <doc://com.apple.documentation/documentation/swift/unsafemutablerawbufferpointer/3019191-count> property of `buffer`
   /// determines the maximum number of bytes that are read into that buffer.
   ///
-  /// Unlike <doc:System/FileDescriptor/read(into:retryOnInterrupt:)>,
+  /// Unlike <doc:FileDescriptor/read(into:retryOnInterrupt:)>,
   /// this method leaves the file's existing offset unchanged.
   ///
   /// The corresponding C function is `pread`.
@@ -434,9 +434,9 @@ extension FileDescriptor {
   }
 }
 
+#if !os(Windows)
 /*System 1.1.0, @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)*/
 extension FileDescriptor {
-  #if !os(Windows)
   /// Create a pipe, a unidirectional data channel which can be used for interprocess communication.
   ///
   /// - Returns: The pair of file descriptors.
@@ -453,10 +453,60 @@ extension FileDescriptor {
   internal static func _pipe() -> Result<(readEnd: FileDescriptor, writeEnd: FileDescriptor), Errno> {
     var fds: (Int32, Int32) = (-1, -1)
     return withUnsafeMutablePointer(to: &fds) { pointer in
-      valueOrErrno(retryOnInterrupt: false) {
-        system_pipe(UnsafeMutableRawPointer(pointer).assumingMemoryBound(to: Int32.self))
+      pointer.withMemoryRebound(to: Int32.self, capacity: 2) { fds in
+        valueOrErrno(retryOnInterrupt: false) {
+          system_pipe(fds)
+        }.map { _ in (.init(rawValue: fds[0]), .init(rawValue: fds[1])) }
       }
-    }.map { _ in (.init(rawValue: fds.0), .init(rawValue: fds.1)) }
+    }
   }
-  #endif
 }
+#endif
+
+#if !os(Windows)
+/*System 1.2.0, @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)*/
+extension FileDescriptor {
+  /// Truncate or extend the file referenced by this file descriptor.
+  ///
+  /// - Parameters:
+  ///   - newSize: The length in bytes to resize the file to.
+  ///   - retryOnInterrupt: Whether to retry the write operation
+  ///      if it throws ``Errno/interrupted``. The default is `true`.
+  ///      Pass `false` to try only once and throw an error upon interruption.
+  ///
+  /// The file referenced by this file descriptor will by truncated (or extended) to `newSize`.
+  ///
+  /// If the current size of the file exceeds `newSize`, any extra data is discarded. If the current
+  /// size of the file is smaller than `newSize`, the file is extended and filled with zeros to the
+  /// provided size.
+  ///
+  /// This function requires that the file has been opened for writing.
+  ///
+  /// - Note: This function does not modify the current offset for any open file descriptors
+  /// associated with the file.
+  ///
+  /// The corresponding C function is `ftruncate`.
+  /*System 1.2.0, @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)*/
+  @_alwaysEmitIntoClient
+  public func resize(
+    to newSize: Int64,
+    retryOnInterrupt: Bool = true
+  ) throws {
+    try _resize(
+      to: newSize,
+      retryOnInterrupt: retryOnInterrupt
+    ).get()
+  }
+
+  /*System 1.2.0, @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)*/
+  @usableFromInline
+  internal func _resize(
+    to newSize: Int64,
+    retryOnInterrupt: Bool
+  ) -> Result<(), Errno> {
+    nothingOrErrno(retryOnInterrupt: retryOnInterrupt) {
+      system_ftruncate(self.rawValue, _COffT(newSize))
+    }
+  }
+}
+#endif

@@ -20,7 +20,50 @@ extension FilePath {
     self.init(_platformString: platformString)
   }
 
-  #if !os(Windows)
+  /// Creates a file path by copying bytes from a null-terminated platform
+  /// string.
+  ///
+  /// - Note It is a precondition that `platformString` must be null-terminated.
+  /// The absence of a null byte will trigger a runtime error.
+  ///
+  /// - Parameter platformString: A null-terminated platform string.
+  @inlinable
+  @_alwaysEmitIntoClient
+  public init(platformString: [CInterop.PlatformChar]) {
+    guard let _ = platformString.firstIndex(of: 0) else {
+      fatalError(
+        "input of FilePath.init(platformString:) must be null-terminated"
+      )
+    }
+    self = platformString.withUnsafeBufferPointer {
+      FilePath(platformString: $0.baseAddress!)
+    }
+  }
+
+  @inlinable
+  @_alwaysEmitIntoClient
+  @available(*, deprecated, message: "Use FilePath.init(_ scalar: Unicode.Scalar)")
+  public init(platformString: inout CInterop.PlatformChar) {
+    guard platformString == 0 else {
+      fatalError(
+        "input of FilePath.init(platformString:) must be null-terminated"
+      )
+    }
+    self = FilePath()
+  }
+
+  @inlinable
+  @_alwaysEmitIntoClient
+  @available(*, deprecated, message: "Use FilePath(_: String) to create a path from a String")
+  public init(platformString: String) {
+    if let nullLoc = platformString.firstIndex(of: "\0") {
+      self = FilePath(String(platformString[..<nullLoc]))
+    } else {
+      self = FilePath(platformString)
+    }
+  }
+
+#if !os(Windows)
   // Note: This function should have been opaque, but it shipped as 
   // `@_alwaysEmitIntoClient` in macOS 12/iOS 15, and now it is stuck
   // this way forever. (Or until the language provides a way for us
@@ -81,6 +124,59 @@ extension FilePath.Component {
     self.init(_platformString: platformString)
   }
 
+  /// Creates a file path component by copying bytes from a null-terminated
+  /// platform string. It is a precondition that a null byte indicates the end of
+  /// the string. The absence of a null byte will trigger a runtime error.
+  ///
+  /// Returns `nil` if `platformString` is empty, is a root, or has more than
+  /// one component in it.
+  ///
+  /// - Note It is a precondition that `platformString` must be null-terminated.
+  /// The absence of a null byte will trigger a runtime error.
+  ///
+  /// - Parameter platformString: A null-terminated platform string.
+  @inlinable
+  @_alwaysEmitIntoClient
+  public init?(platformString: [CInterop.PlatformChar]) {
+    guard let _ = platformString.firstIndex(of: 0) else {
+      fatalError(
+        "input of FilePath.Component.init?(platformString:) must be null-terminated"
+      )
+    }
+    guard let component = platformString.withUnsafeBufferPointer({
+      FilePath.Component(platformString: $0.baseAddress!)
+    }) else {
+      return nil
+    }
+    self = component
+  }
+
+  @inlinable
+  @_alwaysEmitIntoClient
+  @available(*, deprecated, message: "Use FilePath.Component.init(_ scalar: Unicode.Scalar)")
+  public init?(platformString: inout CInterop.PlatformChar) {
+    guard platformString == 0 else {
+      fatalError(
+        "input of FilePath.Component.init?(platformString:) must be null-terminated"
+      )
+    }
+    return nil
+  }
+
+  @inlinable
+  @_alwaysEmitIntoClient
+  @available(*, deprecated, message: "Use FilePath.Component.init(_: String)")
+  public init?(platformString: String) {
+    let string: String
+    if let nullLoc = platformString.firstIndex(of: "\0") {
+      string = String(platformString[..<nullLoc])
+    } else {
+      string = platformString
+    }
+    guard let component = FilePath.Component(string) else { return nil }
+    self = component
+  }
+
   /// Calls the given closure with a pointer to the contents of the file path
   /// component, represented as a null-terminated platform string.
   ///
@@ -115,6 +211,58 @@ extension FilePath.Root {
   ///
   public init?(platformString: UnsafePointer<CInterop.PlatformChar>) {
     self.init(_platformString: platformString)
+  }
+
+  /// Creates a file path root by copying bytes from a null-terminated platform
+  /// string. It is a precondition that a null byte indicates the end of
+  /// the string. The absence of a null byte will trigger a runtime error.
+  ///
+  /// Returns `nil` if `platformString` is empty or is not a root.
+  ///
+  /// - Note It is a precondition that `platformString` must be null-terminated.
+  /// The absence of a null byte will trigger a runtime error.
+  ///
+  /// - Parameter platformString: A null-terminated platform string.
+  @inlinable
+  @_alwaysEmitIntoClient
+  public init?(platformString: [CInterop.PlatformChar]) {
+    guard let _ = platformString.firstIndex(of: 0) else {
+      fatalError(
+        "input of FilePath.Root.init?(platformString:) must be null-terminated"
+      )
+    }
+    guard let component = platformString.withUnsafeBufferPointer({
+      FilePath.Root(platformString: $0.baseAddress!)
+    }) else {
+      return nil
+    }
+    self = component
+  }
+
+  @inlinable
+  @_alwaysEmitIntoClient
+  @available(*, deprecated, message: "Use FilePath.Root.init(_ scalar: Unicode.Scalar)")
+  public init?(platformString: inout CInterop.PlatformChar) {
+    guard platformString == 0 else {
+      fatalError(
+        "input of FilePath.Root.init?(platformString:) must be null-terminated"
+      )
+    }
+    return nil
+  }
+
+  @inlinable
+  @_alwaysEmitIntoClient
+  @available(*, deprecated, message: "Use FilePath.Root.init(_: String)")
+  public init?(platformString: String) {
+    let string: String
+    if let nullLoc = platformString.firstIndex(of: "\0") {
+      string = String(platformString[..<nullLoc])
+    } else {
+      string = platformString
+    }
+    guard let root = FilePath.Root(string) else { return nil }
+    self = root
   }
 
   /// Calls the given closure with a pointer to the contents of the file path
@@ -169,7 +317,7 @@ extension FilePath.Component: ExpressibleByStringLiteral {
   public init(stringLiteral: String) {
     guard let s = FilePath.Component(stringLiteral) else {
       // TODO: static assert
-      preconditionFailure("""
+      fatalError("""
         FilePath.Component must be created from exactly one non-root component
         """)
     }
@@ -193,7 +341,7 @@ extension FilePath.Root: ExpressibleByStringLiteral {
   public init(stringLiteral: String) {
     guard let s = FilePath.Root(stringLiteral) else {
       // TODO: static assert
-      preconditionFailure("""
+      fatalError("""
         FilePath.Root must be created from a root
         """)
     }
@@ -426,7 +574,23 @@ extension String {
 extension FilePath {
   /// For backwards compatibility only. This initializer is equivalent to
   /// the preferred `FilePath(platformString:)`.
+  @available(*, deprecated, renamed: "init(platformString:)")
   public init(cString: UnsafePointer<CChar>) {
+    self.init(platformString: cString)
+  }
+
+  @available(*, deprecated, renamed: "init(platformString:)")
+  public init(cString: [CChar]) {
+    self.init(platformString: cString)
+  }
+
+  @available(*, deprecated, renamed: "init(platformString:)")
+  public init(cString: inout CChar) {
+    self.init(platformString: &cString)
+  }
+
+  @available(*, deprecated, renamed: "init(platformString:)")
+  public init(cString: String) {
     self.init(platformString: cString)
   }
 

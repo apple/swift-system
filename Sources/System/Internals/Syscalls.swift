@@ -115,11 +115,21 @@ internal func system_dup2(_ fd: Int32, _ fd2: Int32) -> Int32 {
   #endif
   return dup2(fd, fd2)
 }
+
 #if !os(Windows)
 internal func system_pipe(_ fds: UnsafeMutablePointer<Int32>) -> CInt {
 #if ENABLE_MOCKING
   if mockingEnabled { return _mock(fds) }
 #endif
   return pipe(fds)
+}
+#endif
+
+#if !os(Windows)
+internal func system_ftruncate(_ fd: Int32, _ length: off_t) -> Int32 {
+#if ENABLE_MOCKING
+  if mockingEnabled { return _mock(fd, length) }
+#endif
+  return ftruncate(fd, length)
 }
 #endif

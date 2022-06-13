@@ -107,7 +107,7 @@ extension FileDescriptor {
     /// the system doesn't wait for the device or file
     /// to be ready or available.
     /// If the
-    /// <doc:System/FileDescriptor/open(_:_:options:permissions:)-10dcs>
+    /// <doc:FileDescriptor/open(_:_:options:permissions:retryOnInterrupt:)-2266j>
     /// call would result in the process being blocked for some reason,
     /// that method returns immediately.
     /// This flag also has the effect of making all
@@ -165,14 +165,14 @@ extension FileDescriptor {
     /// expecting that it doesn't exist.
     ///
     /// If this option and ``create`` are both specified and the file exists,
-    /// <doc:System/FileDescriptor/open(_:_:options:permissions:)-10dcs>
+    /// <doc:FileDescriptor/open(_:_:options:permissions:retryOnInterrupt:)-2266j>
     /// returns an error instead of creating the file.
     /// You can use this, for example,
     /// to implement a simple exclusive-access locking mechanism.
     ///
     /// If this option and ``create`` are both specified
     /// and the last component of the file's path is a symbolic link,
-    /// <doc:System/FileDescriptor/open(_:_:options:permissions:)-10dcs>
+    /// <doc:FileDescriptor/open(_:_:options:permissions:retryOnInterrupt:)-2266j>
     /// fails even if the symbolic link points to a nonexistent name.
     ///
     /// The corresponding C constant is `O_EXCL`.
@@ -224,7 +224,7 @@ extension FileDescriptor {
     ///
     /// If you specify this option
     /// and the file path you pass to
-    /// <doc:System/FileDescriptor/open(_:_:options:permissions:)-10dcs>
+    /// <doc:FileDescriptor/open(_:_:options:permissions:retryOnInterrupt:)-2266j>
     /// is a symbolic link,
     /// then that open operation fails.
     ///
@@ -239,7 +239,7 @@ extension FileDescriptor {
     /// Indicates that opening the file only succeeds if the file is a directory.
     ///
     /// If you specify this option and the file path you pass to
-    /// <doc:System/FileDescriptor/open(_:_:options:permissions:)-10dcs>
+    /// <doc:FileDescriptor/open(_:_:options:permissions:retryOnInterrupt:)-2266j>
     /// is a not a directory, then that open operation fails.
     ///
     /// The corresponding C constant is `O_DIRECTORY`.
@@ -257,7 +257,7 @@ extension FileDescriptor {
     ///
     /// If you specify this option
     /// and the file path you pass to
-    /// <doc:System/FileDescriptor/open(_:_:options:permissions:)-10dcs>
+    /// <doc:FileDescriptor/open(_:_:options:permissions:retryOnInterrupt:)-2266j>
     /// is a symbolic link,
     /// then the link itself is opened instead of what it links to.
     ///
