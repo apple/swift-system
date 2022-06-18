@@ -29,13 +29,17 @@ final class FileDescriptorTest: XCTestCase {
     XCTAssertEqual(O_WRONLY, FileDescriptor.AccessMode.writeOnly.rawValue)
     XCTAssertEqual(O_RDWR, FileDescriptor.AccessMode.readWrite.rawValue)
 
+#if !os(Windows)
     XCTAssertEqual(O_NONBLOCK, FileDescriptor.OpenOptions.nonBlocking.rawValue)
+#endif
     XCTAssertEqual(O_APPEND, FileDescriptor.OpenOptions.append.rawValue)
     XCTAssertEqual(O_CREAT, FileDescriptor.OpenOptions.create.rawValue)
     XCTAssertEqual(O_TRUNC, FileDescriptor.OpenOptions.truncate.rawValue)
     XCTAssertEqual(O_EXCL, FileDescriptor.OpenOptions.exclusiveCreate.rawValue)
+#if !os(Windows)
     XCTAssertEqual(O_NOFOLLOW, FileDescriptor.OpenOptions.noFollow.rawValue)
     XCTAssertEqual(O_CLOEXEC, FileDescriptor.OpenOptions.closeOnExec.rawValue)
+#endif
 
     // BSD only
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
