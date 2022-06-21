@@ -59,6 +59,23 @@ internal func write(
 }
 
 @inline(__always)
+internal func lseek(
+  _ fd: Int32, _ off: off_t, _ whence: Int32
+) -> off_t {
+  _lseek(fd, off, whence)
+}
+
+@inline(__always)
+internal func dup(_ fd: Int32) -> Int32 {
+  _dup(fd)
+}
+
+@inline(__always)
+internal func dup2(_ fd: Int32, _ fd2: Int32) -> Int32 {
+  _dup2(fd, fd2)
+}
+
+@inline(__always)
 internal func pread(
   _ fd: Int32, _ buf: UnsafeMutableRawPointer!, _ nbyte: Int, _ offset: off_t
 ) -> Int {
