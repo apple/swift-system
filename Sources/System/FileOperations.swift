@@ -144,7 +144,7 @@ extension FileDescriptor {
   ///     Pass `false` to try only once and throw an error upon interruption.
   /// - Returns: The number of bytes that were read.
   ///
-  /// The <doc://com.apple.documentation/documentation/swift/unsafemutablerawbufferpointer/3019191-count> property of `buffer`
+  /// The <doc://com.apple.documentation/documentation/swift/unsafemutablerawbufferpointer/count-95usp> property of `buffer`
   /// determines the maximum number of bytes that are read into that buffer.
   ///
   /// After reading,
@@ -182,7 +182,7 @@ extension FileDescriptor {
   ///     Pass `false` to try only once and throw an error upon interruption.
   /// - Returns: The number of bytes that were read.
   ///
-  /// The <doc://com.apple.documentation/documentation/swift/unsafemutablerawbufferpointer/3019191-count> property of `buffer`
+  /// The <doc://com.apple.documentation/documentation/swift/unsafemutablerawbufferpointer/count-95usp> property of `buffer`
   /// determines the maximum number of bytes that are read into that buffer.
   ///
   /// Unlike <doc:FileDescriptor/read(into:retryOnInterrupt:)>,
