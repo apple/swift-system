@@ -8,5 +8,5 @@ See https://swift.org/LICENSE.txt for license information
 #]]
 
 if(NOT TARGET SystemPackage)
-  include(@SWIFT_SYSTEM_EXPORTS_FILE@)
+  include("@SWIFT_SYSTEM_EXPORTS_FILE@")
 endif()
