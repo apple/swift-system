@@ -28,7 +28,7 @@ Windows-specific details are open to reevaluation pending more Windows expertise
 
 | API                          | Darwin      | Linux       | Windows                                            |
 |:-----------------------------|:------------|:------------|:---------------------------------------------------|
-| `open`                       | `open`      | `open`      | `_wsopen_s(..., _SH_DENYNO, _S_IREAD | _S_IWRITE)` |
+| `open`                       | `open`      | `open`      | `_wsopen_s(..., _SH_DENYNO, _S_IREAD \| _S_IWRITE)` |
 | `close`                      | `close`     | `close`     | `_close`                                           |
 | `seek`                       | `lseek`     | `lseek`     | `_lseeki64`                                        |
 | `read`                       | `read`      | `read`      | `_read`                                            |
