@@ -1,4 +1,4 @@
-#if !canImport(ObjectiveC) && swift(<5.5)
+#if !canImport(ObjectiveC)
 import XCTest
 
 extension ErrnoTest {
@@ -28,8 +28,11 @@ extension FileOperationsTest {
     static let __allTests__FileOperationsTest = [
         ("testAdHocOpen", testAdHocOpen),
         ("testAdHocPipe", testAdHocPipe),
+        ("testFcntl", testFcntl),
+        ("testFlock", testFlock),
         ("testGithubIssues", testGithubIssues),
         ("testHelpers", testHelpers),
+        ("testResizeFile", testResizeFile),
         ("testSyscalls", testSyscalls),
     ]
 }
@@ -91,6 +94,7 @@ extension MockingTest {
     //   `swift test --generate-linuxmain`
     // to regenerate.
     static let __allTests__MockingTest = [
+        ("testFCNTLMocking", testFCNTLMocking),
         ("testMocking", testMocking),
     ]
 }
@@ -109,6 +113,21 @@ extension SystemStringTest {
     //   `swift test --generate-linuxmain`
     // to regenerate.
     static let __allTests__SystemStringTest = [
+        ("test_FilePath_initWithArrayConversion", test_FilePath_initWithArrayConversion),
+        ("test_FilePath_initWithInoutConversion", test_FilePath_initWithInoutConversion),
+        ("test_FilePath_initWithStringConversion", test_FilePath_initWithStringConversion),
+        ("test_FilePathComponent_initWithArrayConversion", test_FilePathComponent_initWithArrayConversion),
+        ("test_FilePathComponent_initWithInoutConversion", test_FilePathComponent_initWithInoutConversion),
+        ("test_FilePathComponent_initWithStringConversion", test_FilePathComponent_initWithStringConversion),
+        ("test_FilePathRoot_initWithArrayConversion", test_FilePathRoot_initWithArrayConversion),
+        ("test_FilePathRoot_initWithInoutConversion", test_FilePathRoot_initWithInoutConversion),
+        ("test_FilePathRoot_initWithStringConversion", test_FilePathRoot_initWithStringConversion),
+        ("test_String_initWithArrayConversion", test_String_initWithArrayConversion),
+        ("test_String_initWithInoutConversion", test_String_initWithInoutConversion),
+        ("test_String_initWithStringConversion", test_String_initWithStringConversion),
+        ("test_String_validatingPlatformStringWithArrayConversion", test_String_validatingPlatformStringWithArrayConversion),
+        ("test_String_validatingPlatformStringWithInoutConversion", test_String_validatingPlatformStringWithInoutConversion),
+        ("test_String_validatingPlatformStringWithStringConversion", test_String_validatingPlatformStringWithStringConversion),
         ("testAdHoc", testAdHoc),
         ("testPlatformString", testPlatformString),
     ]
