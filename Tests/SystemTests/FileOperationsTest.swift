@@ -28,7 +28,7 @@ final class FileOperationsTest: XCTestCase {
     let writeBuf = UnsafeRawBufferPointer(rawBuf)
     let writeBufAddr = writeBuf.baseAddress
 
-    let syscallTestCases: Array<MockTestCase> = [
+    var syscallTestCases: Array<MockTestCase> = [
       MockTestCase(name: "open", .interruptable, "a path", O_RDWR | O_APPEND) {
         retryOnInterrupt in
         _ = try FileDescriptor.open(
@@ -82,6 +82,27 @@ final class FileOperationsTest: XCTestCase {
                              retryOnInterrupt: retryOnInterrupt)
       },
     ]
+
+    #if !os(Windows)
+    syscallTestCases.append(contentsOf: [
+      // flock
+      MockTestCase(name: "flock", .interruptable, rawFD, LOCK_SH) { retryOnInterrupt in
+        _ = try fd.lock(exclusive: false, nonBlocking: false, retryOnInterrupt: retryOnInterrupt)
+      },
+      MockTestCase(name: "flock", .interruptable, rawFD, LOCK_SH | LOCK_NB) { retryOnInterrupt in
+        _ = try fd.lock(exclusive: false, nonBlocking: true, retryOnInterrupt: retryOnInterrupt)
+      },
+      MockTestCase(name: "flock", .interruptable, rawFD, LOCK_EX) { retryOnInterrupt in
+        _ = try fd.lock(exclusive: true, nonBlocking: false, retryOnInterrupt: retryOnInterrupt)
+      },
+      MockTestCase(name: "flock", .interruptable, rawFD, LOCK_EX | LOCK_NB) { retryOnInterrupt in
+        _ = try fd.lock(exclusive: true, nonBlocking: true, retryOnInterrupt: retryOnInterrupt)
+      },
+      MockTestCase(name: "flock", .interruptable, rawFD, LOCK_UN) { retryOnInterrupt in
+        _ = try fd.unlock(retryOnInterrupt: retryOnInterrupt)
+      },
+    ])
+    #endif
 
     for test in syscallTestCases { test.runAllTests() }
   }
@@ -202,6 +223,10 @@ final class FileOperationsTest: XCTestCase {
       // Written content was trunctated.
       XCTAssertEqual(readBytesAfterTruncation, Array("ab".utf8))
     }
+  }
+
+  func testFlock() throws {
+    // TODO: We need multiple processes in order to test blocking behavior
   }
 #endif
 }

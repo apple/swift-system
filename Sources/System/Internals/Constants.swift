@@ -528,3 +528,16 @@ internal var _SEEK_HOLE: CInt { SEEK_HOLE }
 internal var _SEEK_DATA: CInt { SEEK_DATA }
 #endif
 
+#if !os(Windows)
+@_alwaysEmitIntoClient
+internal var _LOCK_SH: CInt { LOCK_SH }
+
+@_alwaysEmitIntoClient
+internal var _LOCK_EX: CInt { LOCK_EX }
+
+@_alwaysEmitIntoClient
+internal var _LOCK_NB: CInt { LOCK_NB }
+
+@_alwaysEmitIntoClient
+internal var _LOCK_UN: CInt { LOCK_UN }
+#endif
