@@ -75,8 +75,6 @@ extension FileDescriptor {
     @_alwaysEmitIntoClient
     public static var async: StatusFlags { StatusFlags(O_ASYNC) }
   }
-
-
 }
 
 // Raw escape hatch
@@ -103,18 +101,6 @@ extension FileDescriptor {
       system_fcntl(self.rawValue, cmd.rawValue, ptr)
     }
   }
-
-////  @usableFromInline
-//  internal func _fcntlLock(
-//    _ cmd: Command, _ lock: inout FileLock,
-//    retryOnInterrupt: Bool
-//  ) -> Result<(), Errno> {
-//    nothingOrErrno(retryOnInterrupt: retryOnInterrupt) {
-//      withUnsafeMutablePointer(to: &lock) {
-//        system_fcntl(self.rawValue, cmd.rawValue, $0)
-//      }
-//    }
-//  }
 
   /// Commands (and various constants) to pass to `fcntl`.
   @frozen
@@ -185,13 +171,13 @@ extension FileDescriptor {
     ///
     /// Note: A Swiftier wrapper is `FileDescriptor.setOwner(_:)`.
     ///
+    /// TODO:  `setOwner` is pending the `PIDOrPGID` type decision
+    ///
     /// The corresponding C constant is `F_SETOWN`.
     @_alwaysEmitIntoClient
     public static var setOwner: Command { Command(F_SETOWN) }
 
     /// Get record locking information.
-    ///
-    /// Note: A Swiftier wrapper is `FileDescriptor.getLock(_:_:)`.
     ///
     /// The corresponding C constant is `F_GETLK`.
     @_alwaysEmitIntoClient
@@ -199,15 +185,11 @@ extension FileDescriptor {
 
     /// Set record locking information.
     ///
-    /// Note: A Swiftier wrapper is `FileDescriptor.setLock(_:_:)`.
-    ///
     /// The corresponding C constant is `F_SETLK`.
     @_alwaysEmitIntoClient
     public static var setLock: Command { Command(F_SETLK) }
 
     /// Wait if blocked.
-    ///
-    /// Note: A Swiftier wrapper is `FileDescriptor.setLock(_:_:)`.
     ///
     /// The corresponding C constant is `F_SETLKW`.
     @_alwaysEmitIntoClient
@@ -215,8 +197,6 @@ extension FileDescriptor {
 
     #if !os(Linux)
     /// Wait if blocked, return on timeout.
-    ///
-    /// TODO: A Swiftier wrapper
     ///
     /// The corresponding C constant is `F_SETLKWTIMEOUT`.
     @_alwaysEmitIntoClient
@@ -593,10 +573,7 @@ extension FileDescriptor {
       Command(F_ALLOCATEALL)
     }
 
-    /// Make it past all of the SEEK pos modes so that.
-    ///
-    /// TODO: The above is a direct quote from the header, figure out what it
-    /// means
+    /// Allocate from the physical end of file.
     ///
     /// The corresponding C constant is `F_PEOFPOSMODE`.
     @_alwaysEmitIntoClient
