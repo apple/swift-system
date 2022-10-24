@@ -205,6 +205,7 @@ extension FileDescriptor {
     @_alwaysEmitIntoClient
     public static var setOFDLockWait: Command { Command(_F_OFD_SETLKW) }
 
+#if !os(Linux)
     /// Set Open File Description record locking information and wait until
     /// the request can be completed, returning on timeout.
     ///
@@ -216,6 +217,7 @@ extension FileDescriptor {
     public static var setOFDLockWaitTimout: Command {
       Command(_F_OFD_SETLKWTIMEOUT)
     }
+#endif
 
     /// Get POSIX process-level record locking information.
     ///
