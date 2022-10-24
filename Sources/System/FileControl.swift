@@ -11,41 +11,46 @@
 // commands.
 
 extension FileDescriptor {
+  // TODO: flags struct or individual queries? or a namespace with individual queries?
+  // These types aren't really `Control`s...
+
   /// Get the flags associated with this file descriptor
   ///
   /// The corresponding C function is `fcntl` with the `F_GETFD` command.
   @_alwaysEmitIntoClient
-  public func getFlags() throws -> Flags {
-    try Flags(rawValue: fcntl(.getFlags))
+  public func getFlags() throws -> Control.Flags {
+    try Control.Flags(rawValue: control(.getFlags))
   }
 
   /// Set the file descriptor flags.
   ///
   /// The corresponding C function is `fcntl` with the `F_SETFD` command.
   @_alwaysEmitIntoClient
-  public func setFlags(_ value: Flags) throws {
-    _ = try fcntl(.setFlags, value.rawValue)
+  public func setFlags(_ value: Control.Flags) throws {
+    _ = try control(.setFlags, value.rawValue)
   }
 
   /// Get descriptor status flags.
   ///
   /// The corresponding C function is `fcntl` with the `F_GETFL` command.
   @_alwaysEmitIntoClient
-  public func getStatusFlags() throws -> StatusFlags {
-    try StatusFlags(rawValue: fcntl(.getStatusFlags))
+  public func getStatusFlags() throws -> Control.StatusFlags {
+    try Control.StatusFlags(rawValue: control(.getStatusFlags))
   }
 
   /// Set descriptor status flags.
   ///
   /// The corresponding C function is `fcntl` with the `F_SETFL` command.
   @_alwaysEmitIntoClient
-  public func setStatusFlags(_ flags: StatusFlags) throws {
-    _ = try fcntl(.setStatusFlags, flags.rawValue)
+  public func setStatusFlags(_ flags: Control.StatusFlags) throws {
+    _ = try control(.setStatusFlags, flags.rawValue)
   }
 }
 
 
 extension FileDescriptor {
+  // TODO: Unify this dup with the other dups which have come in since...
+
   /// Duplicate this file descriptor and return the newly created copy.
   ///
   /// - Parameters:
@@ -71,8 +76,8 @@ extension FileDescriptor {
   public func duplicate(
     minRawValue: CInt, closeOnExec: Bool
   ) throws -> FileDescriptor {
-    let cmd: Command = closeOnExec ? .duplicateCloseOnExec : .duplicate
-    return try FileDescriptor(rawValue: fcntl(cmd, minRawValue))
+    let cmd: Control.Command = closeOnExec ? .duplicateCloseOnExec : .duplicate
+    return try FileDescriptor(rawValue: control(cmd, minRawValue))
   }
 
   #if !os(Linux)
@@ -84,11 +89,11 @@ extension FileDescriptor {
   /// The corresponding C functions are `fcntl` with `F_GETPATH` and
   /// `F_GETPATH_NOFIRMLINK`.
   public func getPath(noFirmLink: Bool = false) throws -> FilePath {
-    let cmd: Command = noFirmLink ? .getPathNoFirmLink : .getPath
+    let cmd: Control.Command = noFirmLink ? .getPathNoFirmLink : .getPath
     // TODO: have a uninitialized init on FilePath / SystemString...
     let bytes = try Array<SystemChar>(unsafeUninitializedCapacity: _maxPathLen) {
       (bufPtr, count: inout Int) in
-      _ = try fcntl(cmd, UnsafeMutableRawPointer(bufPtr.baseAddress!))
+      _ = try control(cmd, UnsafeMutableRawPointer(bufPtr.baseAddress!))
       count = 1 + system_strlen(
         UnsafeRawPointer(bufPtr.baseAddress!).assumingMemoryBound(to: Int8.self))
     }
@@ -146,7 +151,7 @@ extension FileDescriptor {
   // TODO:  @_alwaysEmitIntoClient
   // TODO: public
   private func getOwner() throws -> PIDOrPGID {
-    try PIDOrPGID(rawValue: fcntl(.getOwner))
+    try PIDOrPGID(rawValue: control(.getOwner))
   }
 
   /// Set the process or process group to receive SIGIO and
@@ -156,6 +161,6 @@ extension FileDescriptor {
   // TODO:  @_alwaysEmitIntoClient
   // TODO: public
   private func setOwner(_ id: PIDOrPGID) throws {
-    _ = try fcntl(.setOwner, id.rawValue)
+    _ = try control(.setOwner, id.rawValue)
   }
 }

@@ -20,9 +20,25 @@ import Glibc
 
 #if !os(Windows)
 
-// RawRepresentable wrappers
 extension FileDescriptor {
+  /// A namespace for types, values, and direct `fcntl` interfaces.
+  ///
+  /// TODO: a better name? "Internals", "Raw", "FCNTL"? I feel like a
+  /// precedent would be useful for sysctl, ioctl, and other grab-bag
+  /// things. "junk drawer" can be an anti-pattern, but is better than
+  /// trashing the higher namespace.
+  public enum Control {}
+}
+
+// - MARK: RawRepresentable wrappers
+
+// TODO: What higher-level API should we expose? Individual predicates or get
+// flags that will return these structs? If returning these structs, should
+// they be in this namespace?
+extension FileDescriptor.Control {
   /// File descriptor flags.
+  ///
+  /// These flags are not shared across duplicated file descriptors.
   @frozen
   public struct Flags: OptionSet {
     @_alwaysEmitIntoClient
@@ -40,7 +56,11 @@ extension FileDescriptor {
     public static var closeOnExec: Flags { Flags(rawValue: FD_CLOEXEC) }
   }
 
-  /// File descriptor status flags.
+  /// File status flags.
+  ///
+  /// File status flags are associated with an open file description
+  /// (see `FileDescriptor.open`). Duplicated file descriptors
+  /// (see `FileDescriptor.duplicate`) share file status flags.
   @frozen
   public struct StatusFlags: OptionSet {
     @_alwaysEmitIntoClient
@@ -75,33 +95,100 @@ extension FileDescriptor {
     @_alwaysEmitIntoClient
     public static var async: StatusFlags { StatusFlags(O_ASYNC) }
   }
+
+  /// Advisory record locks.
+  ///
+  /// The corresponding C type is `struct flock`.
+  @frozen
+  public struct FileLock: RawRepresentable {
+    @_alwaysEmitIntoClient
+    public var rawValue: CInterop.FileLock
+
+    @_alwaysEmitIntoClient
+    public init(rawValue: CInterop.FileLock) { self.rawValue = rawValue }
+
+    /// The type of the lock.
+    @frozen
+    public struct Kind: RawRepresentable, Hashable {
+      @_alwaysEmitIntoClient
+      public var rawValue: Int16 // TODO: Linux `short` too? `CShort`?
+
+      @_alwaysEmitIntoClient
+      public init(rawValue: Int16) { self.rawValue = rawValue }
+
+      /// Shared or read lock.
+      ///
+      /// The corresponding C constant is `F_RDLCK`.
+      @_alwaysEmitIntoClient
+      public static var readLock: Self { Self(rawValue: Int16(F_RDLCK)) }
+
+      /// Unlock.
+      ///
+      /// The corresponding C constant is `F_UNLCK`.
+      @_alwaysEmitIntoClient
+      public static var unlock: Self { Self(rawValue: Int16(F_UNLCK)) }
+
+      /// Exclusive or write lock.
+      ///
+      /// The corresponding C constant is `F_WRLCK`.
+      @_alwaysEmitIntoClient
+      public static var writeLock: Self { Self(rawValue: Int16(F_WRLCK)) }
+    }
+
+    // TOOO: convenience initializers / static constructors
+
+    /// The type of the locking operation.
+    ///
+    /// The corresponding C field is `l_type`.
+    @_alwaysEmitIntoClient
+    public var type: Kind {
+      get { Kind(rawValue: rawValue.l_type) }
+      set { rawValue.l_type = newValue.rawValue }
+    }
+
+    /// The origin of the locked region.
+    ///
+    /// The corresponding C field is `l_whence`.
+    @_alwaysEmitIntoClient
+    public var origin: FileDescriptor.SeekOrigin {
+      get { FileDescriptor.SeekOrigin(rawValue: CInt(rawValue.l_whence)) }
+      set { rawValue.l_whence = Int16(newValue.rawValue) }
+    }
+
+    /// The start offset (from the origin) of the locked region.
+    ///
+    /// The corresponding C field is `l_start`.
+    @_alwaysEmitIntoClient
+    public var start: Int64 {
+      get { Int64(rawValue.l_start) }
+      set { rawValue.l_start = CInterop.Offset(newValue) }
+    }
+
+    /// The number of consecutive bytes to lock.
+    ///
+    /// The corresponding C field is `l_len`.
+    @_alwaysEmitIntoClient
+    public var length: Int64 {
+      get { Int64(rawValue.l_len) }
+      set { rawValue.l_len = CInterop.Offset(newValue) }
+    }
+
+    /// The process ID of the lock holder, filled in by`FileDescriptor.getLock()`.
+    ///
+    /// TODO: Actual ProcessID type
+    ///
+    /// The corresponding C field is `l_pid`
+    @_alwaysEmitIntoClient
+    public var pid: CInterop.PID {
+      get { rawValue.l_pid }
+      set { rawValue.l_pid = newValue }
+    }
+  }  
 }
 
-// Raw escape hatch
-extension FileDescriptor {
-  @usableFromInline
-  internal func _fcntl(_ cmd: Command) -> Result<CInt, Errno> {
-    valueOrErrno(retryOnInterrupt: false) {
-      system_fcntl(self.rawValue, cmd.rawValue)
-    }
-  }
-  @usableFromInline
-  internal func _fcntl(
-    _ cmd: Command, _ arg: CInt
-  ) -> Result<CInt, Errno> {
-    valueOrErrno(retryOnInterrupt: false) {
-      system_fcntl(self.rawValue, cmd.rawValue, arg)
-    }
-  }
-  @usableFromInline
-  internal func _fcntl(
-    _ cmd: Command, _ ptr: UnsafeMutableRawPointer
-  ) -> Result<CInt, Errno> {
-    valueOrErrno(retryOnInterrupt: false) {
-      system_fcntl(self.rawValue, cmd.rawValue, ptr)
-    }
-  }
+// - MARK: Commands
 
+extension FileDescriptor.Control {
   /// Commands (and various constants) to pass to `fcntl`.
   @frozen
   public struct Command: RawRepresentable, Hashable {
@@ -177,7 +264,7 @@ extension FileDescriptor {
     @_alwaysEmitIntoClient
     public static var setOwner: Command { Command(F_SETOWN) }
 
-    /// Get Open File Description record locking information.
+    /// Get open file description record locking information.
     ///
     /// TODO: link to https://www.gnu.org/software/libc/manual/html_node/Open-File-Description-Locks.html
     /// TODO: reference FileDesciptor.isLocked() or something like that
@@ -186,7 +273,7 @@ extension FileDescriptor {
     @_alwaysEmitIntoClient
     public static var getOFDLock: Command { Command(_F_OFD_GETLK) }
 
-    /// Set Open File Description record locking information.
+    /// Set open file description record locking information.
     ///
     /// TODO: link to https://www.gnu.org/software/libc/manual/html_node/Open-File-Description-Locks.html
     /// TODO: reference FileDesciptor.lock()
@@ -195,7 +282,7 @@ extension FileDescriptor {
     @_alwaysEmitIntoClient
     public static var setOFDLock: Command { Command(_F_OFD_SETLK) }
 
-    /// Set Open File Description record locking information and wait until
+    /// Set open file description record locking information and wait until
     /// the request can be completed.
     ///
     /// TODO: link to https://www.gnu.org/software/libc/manual/html_node/Open-File-Description-Locks.html
@@ -206,7 +293,7 @@ extension FileDescriptor {
     public static var setOFDLockWait: Command { Command(_F_OFD_SETLKW) }
 
 #if !os(Linux)
-    /// Set Open File Description record locking information and wait until
+    /// Set open file description record locking information and wait until
     /// the request can be completed, returning on timeout.
     ///
     /// TODO: link to https://www.gnu.org/software/libc/manual/html_node/Open-File-Description-Locks.html
@@ -227,7 +314,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `F_GETLK`.
     @_alwaysEmitIntoClient
-    public static var getPOSIXLock: Command { Command(F_GETLK) }
+    public static var getPOSIXProcessLock: Command { Command(F_GETLK) }
 
     /// Set POSIX process-level record locking information.
     ///
@@ -237,7 +324,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `F_SETLK`.
     @_alwaysEmitIntoClient
-    public static var setPOSIXLock: Command { Command(F_SETLK) }
+    public static var setPOSIXProcessLock: Command { Command(F_SETLK) }
 
     /// Set POSIX process-level record locking information and wait until the
     /// request can be completed.
@@ -248,7 +335,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `F_SETLKW`.
     @_alwaysEmitIntoClient
-    public static var setPOSIXLockWait: Command { Command(F_SETLKW) }
+    public static var setPOSIXProcessLockWait: Command { Command(F_SETLKW) }
 
     #if !os(Linux)
     /// Set POSIX process-level record locking information and wait until the
@@ -260,7 +347,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `F_SETLKWTIMEOUT`.
     @_alwaysEmitIntoClient
-    public static var setPOSIXLockWaitTimout: Command {
+    public static var setPOSIXProcessLockWaitTimout: Command {
       Command(F_SETLKWTIMEOUT)
     }
 
@@ -594,24 +681,6 @@ extension FileDescriptor {
     }
     #endif
 
-    /// Shared or read lock.
-    ///
-    /// The corresponding C constant is `F_RDLCK`.
-    @_alwaysEmitIntoClient
-    public static var readLock: Command { Command(F_RDLCK) }
-
-    /// Unlock.
-    ///
-    /// The corresponding C constant is `F_UNLCK`.
-    @_alwaysEmitIntoClient
-    public static var unlock: Command { Command(F_UNLCK) }
-
-    /// Exclusive or write lock.
-    ///
-    /// The corresponding C constant is `F_WRLCK`.
-    @_alwaysEmitIntoClient
-    public static var writeLock: Command { Command(F_WRLCK) }
-
     #if !os(Linux)
     /// Allocate contigious space.
     ///
@@ -650,29 +719,69 @@ extension FileDescriptor {
     }
     #endif
   }
+}
+
+// - MARK: Raw escape hatch
+
+extension FileDescriptor {
+  // TODO: better docs
 
   /// Raw interface to C's `fcntl`. Note, most common operations have Swiftier
   /// alternatives directly on `FileDescriptor`.
   @_alwaysEmitIntoClient
-  public func fcntl(_ cmd: Command) throws -> CInt {
+  public func control(_ cmd: Control.Command) throws -> CInt {
     try _fcntl(cmd).get()
   }
 
   /// Raw interface to C's `fcntl`. Note, most common operations have Swiftier
   /// alternatives directly on `FileDescriptor`.
   @_alwaysEmitIntoClient
-  public func fcntl(_ cmd: Command, _ arg: CInt) throws -> CInt {
+  public func control(_ cmd: Control.Command, _ arg: CInt) throws -> CInt {
     try _fcntl(cmd, arg).get()
   }
 
   /// Raw interface to C's `fcntl`. Note, most common operations have Swiftier
   /// alternatives directly on `FileDescriptor`.
   @_alwaysEmitIntoClient
-  public func fcntl(
-    _ cmd: Command, _ ptr: UnsafeMutableRawPointer
+  public func control(
+    _ cmd: Control.Command, _ ptr: UnsafeMutableRawPointer
   ) throws -> CInt {
     try _fcntl(cmd, ptr).get()
   }
+
+  @usableFromInline
+  internal func _fcntl(_ cmd: Control.Command) -> Result<CInt, Errno> {
+    valueOrErrno(retryOnInterrupt: false) {
+      system_fcntl(self.rawValue, cmd.rawValue)
+    }
+  }
+  @usableFromInline
+  internal func _fcntl(
+    _ cmd: Control.Command, _ arg: CInt
+  ) -> Result<CInt, Errno> {
+    valueOrErrno(retryOnInterrupt: false) {
+      system_fcntl(self.rawValue, cmd.rawValue, arg)
+    }
+  }
+  @usableFromInline
+  internal func _fcntl(
+    _ cmd: Control.Command, _ ptr: UnsafeMutableRawPointer
+  ) -> Result<CInt, Errno> {
+    valueOrErrno(retryOnInterrupt: false) {
+      system_fcntl(self.rawValue, cmd.rawValue, ptr)
+    }
+  }
+  @usableFromInline
+  internal func _fcntlLock(
+    _ cmd: Control.Command, _ lock: inout Control.FileLock,
+    retryOnInterrupt: Bool
+  ) -> Result<(), Errno> {
+    nothingOrErrno(retryOnInterrupt: retryOnInterrupt) {
+      withUnsafeMutablePointer(to: &lock) {
+        system_fcntl(self.rawValue, cmd.rawValue, $0)
+      }
+    }
+  }  
 }
 
 #if !os(Linux)
