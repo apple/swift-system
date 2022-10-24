@@ -21,21 +21,14 @@ import Glibc
 #if !os(Windows)
 
 extension FileDescriptor {
-  /// A namespace for types, values, and direct `fcntl` interfaces.
+  /// A namespace for types and values for `FileDescriptor.control()`, aka `fcntl`.
   ///
   /// TODO: a better name? "Internals", "Raw", "FCNTL"? I feel like a
   /// precedent would be useful for sysctl, ioctl, and other grab-bag
   /// things. "junk drawer" can be an anti-pattern, but is better than
   /// trashing the higher namespace.
   public enum Control {}
-}
 
-// - MARK: RawRepresentable wrappers
-
-// TODO: What higher-level API should we expose? Individual predicates or get
-// flags that will return these structs? If returning these structs, should
-// they be in this namespace?
-extension FileDescriptor.Control {
   /// File descriptor flags.
   ///
   /// These flags are not shared across duplicated file descriptors.
@@ -95,7 +88,11 @@ extension FileDescriptor.Control {
     @_alwaysEmitIntoClient
     public static var async: StatusFlags { StatusFlags(O_ASYNC) }
   }
+}
 
+// - MARK: RawRepresentable wrappers
+
+extension FileDescriptor.Control {
   /// Advisory record locks.
   ///
   /// The corresponding C type is `struct flock`.
@@ -722,67 +719,6 @@ extension FileDescriptor.Control {
 }
 
 // - MARK: Raw escape hatch
-
-extension FileDescriptor {
-  // TODO: better docs
-
-  /// Raw interface to C's `fcntl`. Note, most common operations have Swiftier
-  /// alternatives directly on `FileDescriptor`.
-  @_alwaysEmitIntoClient
-  public func control(_ cmd: Control.Command) throws -> CInt {
-    try _fcntl(cmd).get()
-  }
-
-  /// Raw interface to C's `fcntl`. Note, most common operations have Swiftier
-  /// alternatives directly on `FileDescriptor`.
-  @_alwaysEmitIntoClient
-  public func control(_ cmd: Control.Command, _ arg: CInt) throws -> CInt {
-    try _fcntl(cmd, arg).get()
-  }
-
-  /// Raw interface to C's `fcntl`. Note, most common operations have Swiftier
-  /// alternatives directly on `FileDescriptor`.
-  @_alwaysEmitIntoClient
-  public func control(
-    _ cmd: Control.Command, _ ptr: UnsafeMutableRawPointer
-  ) throws -> CInt {
-    try _fcntl(cmd, ptr).get()
-  }
-
-  @usableFromInline
-  internal func _fcntl(_ cmd: Control.Command) -> Result<CInt, Errno> {
-    valueOrErrno(retryOnInterrupt: false) {
-      system_fcntl(self.rawValue, cmd.rawValue)
-    }
-  }
-  @usableFromInline
-  internal func _fcntl(
-    _ cmd: Control.Command, _ arg: CInt
-  ) -> Result<CInt, Errno> {
-    valueOrErrno(retryOnInterrupt: false) {
-      system_fcntl(self.rawValue, cmd.rawValue, arg)
-    }
-  }
-  @usableFromInline
-  internal func _fcntl(
-    _ cmd: Control.Command, _ ptr: UnsafeMutableRawPointer
-  ) -> Result<CInt, Errno> {
-    valueOrErrno(retryOnInterrupt: false) {
-      system_fcntl(self.rawValue, cmd.rawValue, ptr)
-    }
-  }
-  @usableFromInline
-  internal func _fcntlLock(
-    _ cmd: Control.Command, _ lock: inout Control.FileLock,
-    retryOnInterrupt: Bool
-  ) -> Result<(), Errno> {
-    nothingOrErrno(retryOnInterrupt: retryOnInterrupt) {
-      withUnsafeMutablePointer(to: &lock) {
-        system_fcntl(self.rawValue, cmd.rawValue, $0)
-      }
-    }
-  }  
-}
 
 #if !os(Linux)
 internal var _maxPathLen: Int { Int(MAXPATHLEN) }

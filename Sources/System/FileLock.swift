@@ -8,13 +8,14 @@ extension FileDescriptor {
     /// Write or exclusive lock
     case write
 
-    fileprivate var flockValue: Int16 /* TODO: short? */ {
-      // TODO: cleanup
+    fileprivate var flockValue: FileDescriptor.Control.FileLock.Kind {
       switch self {
-      case .read: return FileDescriptor.Control.FileLock.Kind.readLock.rawValue
-      case .write: return FileDescriptor.Control.FileLock.Kind.writeLock.rawValue
+      case .read: return .readLock
+      case .write: return .writeLock
       }
     }
+
+    // FIXME: this wont work, because getLock can return unlock / none / clear. We should probably just put the raw representable struct here...
   }
 
   /// Get information about an open file description lock.
@@ -53,7 +54,12 @@ extension FileDescriptor {
     // There might be more than one lock affecting the region specified by the
     // lockp argument, but fcntl only returns information about one of them.
     // Which lock is returned in this situation is undefined.
-    fatalError("TODO: implement")
+
+    var flock = FileDescriptor.Control.FileLock(rawValue: CInterop.FileLock())
+    flock.type = LockKind.write.flockValue
+    return self._fcntl(.getOFDLock, &flock).map { _ in
+      fatalError()
+    }
   }
 
   /// Set an open file description lock.
@@ -87,7 +93,7 @@ extension FileDescriptor {
   @_alwaysEmitIntoClient
   public func lock(
     kind: FileDescriptor.LockKind = .read,
-    nonBlocking: Bool = false,
+    nonBlocking: Bool = false, // FIXME: "wait"? Which default?
     retryOnInterrupt: Bool = true
   ) throws {
     try _lock(kind: kind, nonBlocking: nonBlocking, retryOnInterrupt: retryOnInterrupt).get()

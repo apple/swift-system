@@ -11,22 +11,19 @@
 // commands.
 
 extension FileDescriptor {
-  // TODO: flags struct or individual queries? or a namespace with individual queries?
-  // These types aren't really `Control`s...
-
   /// Get the flags associated with this file descriptor
   ///
   /// The corresponding C function is `fcntl` with the `F_GETFD` command.
   @_alwaysEmitIntoClient
-  public func getFlags() throws -> Control.Flags {
-    try Control.Flags(rawValue: control(.getFlags))
+  public func getFlags() throws -> Flags {
+    try Flags(rawValue: control(.getFlags))
   }
 
   /// Set the file descriptor flags.
   ///
   /// The corresponding C function is `fcntl` with the `F_SETFD` command.
   @_alwaysEmitIntoClient
-  public func setFlags(_ value: Control.Flags) throws {
+  public func setFlags(_ value: Flags) throws {
     _ = try control(.setFlags, value.rawValue)
   }
 
@@ -34,15 +31,15 @@ extension FileDescriptor {
   ///
   /// The corresponding C function is `fcntl` with the `F_GETFL` command.
   @_alwaysEmitIntoClient
-  public func getStatusFlags() throws -> Control.StatusFlags {
-    try Control.StatusFlags(rawValue: control(.getStatusFlags))
+  public func getStatusFlags() throws -> StatusFlags {
+    try StatusFlags(rawValue: control(.getStatusFlags))
   }
 
   /// Set descriptor status flags.
   ///
   /// The corresponding C function is `fcntl` with the `F_SETFL` command.
   @_alwaysEmitIntoClient
-  public func setStatusFlags(_ flags: Control.StatusFlags) throws {
+  public func setStatusFlags(_ flags: StatusFlags) throws {
     _ = try control(.setStatusFlags, flags.rawValue)
   }
 }
@@ -162,5 +159,73 @@ extension FileDescriptor {
   // TODO: public
   private func setOwner(_ id: PIDOrPGID) throws {
     _ = try control(.setOwner, id.rawValue)
+  }
+}
+
+extension FileDescriptor {
+  /// Low-level file control.
+  ///
+  /// Note: most common operations have Swiftier alternatives, e.g. `FileDescriptor.getFlags()`
+  ///
+  /// The corresponding C function is `fcntl`.
+  @_alwaysEmitIntoClient
+  public func control(_ cmd: Control.Command) throws -> CInt {
+    try _fcntl(cmd).get()
+  }
+
+  /// Low-level file control.
+  ///
+  /// Note: most common operations have Swiftier alternatives, e.g. `FileDescriptor.getFlags()`
+  ///
+  /// The corresponding C function is `fcntl`.
+  @_alwaysEmitIntoClient
+  public func control(_ cmd: Control.Command, _ arg: CInt) throws -> CInt {
+    try _fcntl(cmd, arg).get()
+  }
+
+  /// Low-level file control.
+  ///
+  /// Note: most common operations have Swiftier alternatives, e.g. `FileDescriptor.getFlags()`
+  ///
+  /// The corresponding C function is `fcntl`.
+  @_alwaysEmitIntoClient
+  public func control(
+    _ cmd: Control.Command, _ ptr: UnsafeMutableRawPointer
+  ) throws -> CInt {
+    try _fcntl(cmd, ptr).get()
+  }
+
+  @usableFromInline
+  internal func _fcntl(_ cmd: Control.Command) -> Result<CInt, Errno> {
+    valueOrErrno(retryOnInterrupt: false) {
+      system_fcntl(self.rawValue, cmd.rawValue)
+    }
+  }
+  @usableFromInline
+  internal func _fcntl(
+    _ cmd: Control.Command, _ arg: CInt
+  ) -> Result<CInt, Errno> {
+    valueOrErrno(retryOnInterrupt: false) {
+      system_fcntl(self.rawValue, cmd.rawValue, arg)
+    }
+  }
+  @usableFromInline
+  internal func _fcntl(
+    _ cmd: Control.Command, _ ptr: UnsafeMutableRawPointer
+  ) -> Result<CInt, Errno> {
+    valueOrErrno(retryOnInterrupt: false) {
+      system_fcntl(self.rawValue, cmd.rawValue, ptr)
+    }
+  }
+  @usableFromInline
+  internal func _fcntl(
+    _ cmd: Control.Command, _ lock: inout Control.FileLock,
+    retryOnInterrupt: Bool
+  ) -> Result<(), Errno> {
+    nothingOrErrno(retryOnInterrupt: retryOnInterrupt) {
+      withUnsafeMutablePointer(to: &lock) {
+        system_fcntl(self.rawValue, cmd.rawValue, $0)
+      }
+    }
   }
 }
