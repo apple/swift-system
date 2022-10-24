@@ -541,3 +541,52 @@ internal var _LOCK_NB: CInt { LOCK_NB }
 @_alwaysEmitIntoClient
 internal var _LOCK_UN: CInt { LOCK_UN }
 #endif
+
+#if !os(Windows)
+@_alwaysEmitIntoClient
+internal var _F_OFD_SETLK: CInt {
+#if os(Linux)
+  F_OFD_SETLK
+#else
+  90 // FIXME: use API when available
+#endif
+}
+
+@_alwaysEmitIntoClient
+internal var _F_OFD_SETLKW: CInt {
+#if os(Linux)
+  F_OFD_SETLKW
+#else
+  91 // FIXME: use API when available
+#endif
+}
+
+@_alwaysEmitIntoClient
+internal var _F_OFD_GETLK: CInt {
+#if os(Linux)
+  F_OFD_GETLK
+#else
+  92 // FIXME: use API when available
+#endif
+}
+
+@_alwaysEmitIntoClient
+internal var _F_OFD_SETLKWTIMEOUT: CInt {
+#if os(Linux)
+  F_OFD_SETLKWTIMEOUT
+#else
+  93 // FIXME: use API when available
+#endif
+}
+
+@_alwaysEmitIntoClient
+internal var _F_OFD_GETLKPID: CInt {
+#if os(Linux)
+  F_OFD_GETLKPID
+#else
+  94 // FIXME: use API when available
+#endif
+}
+#endif // !os(Windows)
+
+

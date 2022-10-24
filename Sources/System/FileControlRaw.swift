@@ -177,30 +177,88 @@ extension FileDescriptor {
     @_alwaysEmitIntoClient
     public static var setOwner: Command { Command(F_SETOWN) }
 
-    /// Get record locking information.
+    /// Get Open File Description record locking information.
+    ///
+    /// TODO: link to https://www.gnu.org/software/libc/manual/html_node/Open-File-Description-Locks.html
+    /// TODO: reference FileDesciptor.isLocked() or something like that
     ///
     /// The corresponding C constant is `F_GETLK`.
     @_alwaysEmitIntoClient
-    public static var getLock: Command { Command(F_GETLK) }
+    public static var getOFDLock: Command { Command(_F_OFD_GETLK) }
 
-    /// Set record locking information.
+    /// Set Open File Description record locking information.
+    ///
+    /// TODO: link to https://www.gnu.org/software/libc/manual/html_node/Open-File-Description-Locks.html
+    /// TODO: reference FileDesciptor.lock()
     ///
     /// The corresponding C constant is `F_SETLK`.
     @_alwaysEmitIntoClient
-    public static var setLock: Command { Command(F_SETLK) }
+    public static var setOFDLock: Command { Command(_F_OFD_SETLK) }
 
-    /// Wait if blocked.
+    /// Set Open File Description record locking information and wait until
+    /// the request can be completed.
+    ///
+    /// TODO: link to https://www.gnu.org/software/libc/manual/html_node/Open-File-Description-Locks.html
+    /// TODO: reference FileDesciptor.lock()
     ///
     /// The corresponding C constant is `F_SETLKW`.
     @_alwaysEmitIntoClient
-    public static var setLockWait: Command { Command(F_SETLKW) }
+    public static var setOFDLockWait: Command { Command(_F_OFD_SETLKW) }
 
-    #if !os(Linux)
-    /// Wait if blocked, return on timeout.
+    /// Set Open File Description record locking information and wait until
+    /// the request can be completed, returning on timeout.
+    ///
+    /// TODO: link to https://www.gnu.org/software/libc/manual/html_node/Open-File-Description-Locks.html
+    /// TODO: reference FileDesciptor.lock()
     ///
     /// The corresponding C constant is `F_SETLKWTIMEOUT`.
     @_alwaysEmitIntoClient
-    public static var setLockWaitTimout: Command {
+    public static var setOFDLockWaitTimout: Command {
+      Command(_F_OFD_SETLKWTIMEOUT)
+    }
+
+    /// Get POSIX process-level record locking information.
+    ///
+    /// Note: This implements POSIX.1 record locking semantics. The vast
+    /// majority of uses are better served by either OFD locks
+    /// (i.e. per-`open` locks) or `flock`-style per-process locks.
+    ///
+    /// The corresponding C constant is `F_GETLK`.
+    @_alwaysEmitIntoClient
+    public static var getPOSIXLock: Command { Command(F_GETLK) }
+
+    /// Set POSIX process-level record locking information.
+    ///
+    /// Note: This implements POSIX.1 record locking semantics. The vast
+    /// majority of uses are better served by either OFD locks
+    /// (i.e. per-`open` locks) or `flock`-style per-process locks.
+    ///
+    /// The corresponding C constant is `F_SETLK`.
+    @_alwaysEmitIntoClient
+    public static var setPOSIXLock: Command { Command(F_SETLK) }
+
+    /// Set POSIX process-level record locking information and wait until the
+    /// request can be completed.
+    ///
+    /// Note: This implements POSIX.1 record locking semantics. The vast
+    /// majority of uses are better served by either OFD locks
+    /// (i.e. per-`open` locks) or `flock`-style per-process locks.
+    ///
+    /// The corresponding C constant is `F_SETLKW`.
+    @_alwaysEmitIntoClient
+    public static var setPOSIXLockWait: Command { Command(F_SETLKW) }
+
+    #if !os(Linux)
+    /// Set POSIX process-level record locking information and wait until the
+    /// request can be completed, returning on timeout.
+    ///
+    /// Note: This implements POSIX.1 record locking semantics. The vast
+    /// majority of uses are better served by either OFD locks
+    /// (i.e. per-`open` locks) or `flock`-style per-process locks.
+    ///
+    /// The corresponding C constant is `F_SETLKWTIMEOUT`.
+    @_alwaysEmitIntoClient
+    public static var setPOSIXLockWaitTimout: Command {
       Command(F_SETLKWTIMEOUT)
     }
 
