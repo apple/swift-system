@@ -175,3 +175,7 @@ extension FilePermissions
   /// A textual representation of the file permissions, suitable for debugging.
   public var debugDescription: String { self.description }
 }
+
+#if compiler(>=5.5) && canImport(_Concurrency)
+extension FilePermissions: Sendable {}
+#endif

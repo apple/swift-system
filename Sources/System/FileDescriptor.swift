@@ -473,3 +473,14 @@ extension FileDescriptor.OpenOptions
   /// A textual representation of the open options, suitable for debugging.
   public var debugDescription: String { self.description }
 }
+
+#if compiler(>=5.5) && canImport(_Concurrency)
+// The decision on whether to make FileDescriptor Sendable or not
+// is currently being discussed in https://github.com/apple/swift-system/pull/112
+//@available(*, unavailable, message: "File descriptors are not completely thread-safe.")
+//extension FileDescriptor: Sendable {}
+
+extension FileDescriptor.AccessMode: Sendable {}
+extension FileDescriptor.OpenOptions: Sendable {}
+extension FileDescriptor.SeekOrigin: Sendable {}
+#endif
