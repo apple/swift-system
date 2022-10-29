@@ -1274,6 +1274,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "badMessage")
   public static var EBADMSG: Errno { badMessage }
 
+#if !os(OpenBSD)
   /// Reserved.
   ///
   /// This error is reserved for future use.
@@ -1333,6 +1334,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "notStream")
   public static var ENOSTR: Errno { notStream }
+#endif
 
   /// Protocol error.
   ///
@@ -1348,6 +1350,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "protocolError")
   public static var EPROTO: Errno { protocolError }
 
+#if !os(OpenBSD)
   /// Reserved.
   ///
   /// This error is reserved for future use.
@@ -1359,6 +1362,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "timeout")
   public static var ETIME: Errno { timeout }
+#endif
 #endif
 
   /// Operation not supported on socket.

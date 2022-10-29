@@ -14,7 +14,7 @@
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
 import Darwin
-#elseif os(Linux) || os(FreeBSD) || os(Android)
+#elseif os(Linux) || os(FreeBSD) || os(OpenBSD) || os(Android)
 @_implementationOnly import CSystem
 import Glibc
 #elseif os(Windows)
