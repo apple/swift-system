@@ -13,7 +13,7 @@
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
 import Darwin
-#elseif os(Linux) || os(FreeBSD) || os(Android)
+#elseif os(Linux) || os(FreeBSD) || os(OpenBSD) || os(Android)
 import Glibc
 #elseif os(Windows)
 import CSystem
@@ -392,6 +392,7 @@ internal var _ENOATTR: CInt { ENOATTR }
 @_alwaysEmitIntoClient
 internal var _EBADMSG: CInt { EBADMSG }
 
+#if !os(OpenBSD)
 @_alwaysEmitIntoClient
 internal var _EMULTIHOP: CInt { EMULTIHOP }
 
@@ -406,12 +407,15 @@ internal var _ENOSR: CInt { ENOSR }
 
 @_alwaysEmitIntoClient
 internal var _ENOSTR: CInt { ENOSTR }
+#endif 
 
 @_alwaysEmitIntoClient
 internal var _EPROTO: CInt { EPROTO }
 
+#if !os(OpenBSD)
 @_alwaysEmitIntoClient
 internal var _ETIME: CInt { ETIME }
+#endif
 #endif
 
 @_alwaysEmitIntoClient
