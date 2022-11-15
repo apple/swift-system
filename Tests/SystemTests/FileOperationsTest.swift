@@ -244,10 +244,6 @@ final class FileOperationsTest: XCTestCase {
       // TODO: more tests
     }
   }
-
-  func testFlock() throws {
-    // TODO: We need multiple processes in order to test blocking behavior
-  }
 #endif
 }
 

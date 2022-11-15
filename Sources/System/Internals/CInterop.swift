@@ -38,6 +38,9 @@ public enum CInterop {
   /// The C `char` type
   public typealias Char = CChar
 
+  /// The C `short` type
+  public typealias CShort = Int16
+
 #if os(Windows)
   /// The platform's preferred character type. On Unix, this is an 8-bit C
   /// `char` (which may be signed or unsigned, depending on platform). On

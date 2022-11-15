@@ -219,13 +219,19 @@ extension FileDescriptor {
   }
   @usableFromInline
   internal func _fcntl(
-    _ cmd: Control.Command, _ lock: inout Control.FileLock,
+    _ cmd: Control.Command, _ lock: inout FileDescriptor.FileLock,
     retryOnInterrupt: Bool
   ) -> Result<(), Errno> {
-    nothingOrErrno(retryOnInterrupt: retryOnInterrupt) {
+    print(
+      "  fcntl \(cmd.rawValue) with type \(lock.type.rawValue)",
+      terminator: "")
+    let result = nothingOrErrno(retryOnInterrupt: retryOnInterrupt) {
       withUnsafeMutablePointer(to: &lock) {
-        system_fcntl(self.rawValue, cmd.rawValue, $0)
+        let r = system_fcntl(self.rawValue, cmd.rawValue, $0)
+        return r
       }
     }
+    print(" -> type \(lock.type.rawValue)")
+    return result
   }
 }

@@ -127,3 +127,61 @@ extension MutableCollection where Element: Equatable {
     }
   }
 }
+
+/// Map byte offsets passed as a range expression to start+length, e.g. for
+/// use in `struct flock`.
+///
+/// Start can be negative, e.g. for use with `SEEK_CUR`.
+///
+/// Convention: Half-open ranges or explicit `Int64.min` / `Int64.max` bounds
+/// denote start or end.
+///
+/// Passing `Int64.min` as the lower bound maps to a start offset of `0`, such
+/// that `..<5` would map to `(start: 0, length: 5)`.
+///
+/// Passing `Int64.max` as an upper bound maps to a length of `0` (i.e. rest
+/// of file by convention), such that passing `5...` would map to `(start: 5,
+/// length: 0)`.
+///
+/// NOTE: This is a utility function and can return negative start offsets and
+/// negative lengths E.g. `(-3)...` for user with `SEEK_CUR` and `...(-3)`
+/// (TBD). It's up to the caller to check any additional invariants
+///
+@_alwaysEmitIntoClient
+internal func _mapByteRangeToByteOffsets(
+  _ byteRange: (some RangeExpression<Int64>)?
+) -> (start: Int64, length: Int64) {
+  let allInts = Int64.min..<Int64.max
+  let br = byteRange?.relative(to: allInts) ?? allInts
+
+  let start = br.lowerBound == Int64.min ? 0 : br.lowerBound
+
+  let len: Int64 = {
+    if br.upperBound == Int64.max {
+      // l_len == 0 means until end of file
+      return 0
+    }
+    return br.upperBound - start
+  }()
+  return (start, len)
+
+  /*
+
+   let len: Int64 = {
+     if byteRange.upperBound == Int64.max {
+       // l_len == 0 means until end of file
+       0
+     } else {
+       byteRange.upperBound - start
+     }
+   }()
+
+   let len = if byteRange.upperbound == Int64.max {
+     // l_len == 0 means until end of file
+     0
+   } else {
+     byteRange.upperBound - start
+   }
+
+   */
+}
