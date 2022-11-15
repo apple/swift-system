@@ -5,7 +5,7 @@
 ///
 /// The corresponding C type is `pid_t`
 @frozen
-public struct ProcessID: RawRepresentable, Hashable {
+public struct ProcessID: RawRepresentable, Hashable, Sendable {
   @_alwaysEmitIntoClient
   public var rawValue: CInterop.PID
 

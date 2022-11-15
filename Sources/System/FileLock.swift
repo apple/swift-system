@@ -14,7 +14,7 @@ extension FileDescriptor {
   ///
   /// The corresponding C type is `struct flock`.
   @frozen
-  public struct FileLock: RawRepresentable {
+  public struct FileLock: RawRepresentable, Sendable {
     @_alwaysEmitIntoClient
     public var rawValue: CInterop.FileLock
 
@@ -93,7 +93,7 @@ extension FileDescriptor.FileLock {
   /// The kind or type of a lock: read (aka "shared"), write (aka "exclusive"), or none
   /// (aka "unlock").
   @frozen
-  public struct Kind: RawRepresentable, Hashable {
+  public struct Kind: RawRepresentable, Hashable, Sendable {
     @_alwaysEmitIntoClient
     public var rawValue: CInterop.CShort
 
