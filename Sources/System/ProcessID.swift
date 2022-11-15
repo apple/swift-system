@@ -1,5 +1,9 @@
 
-/// TODO: docs
+#if !os(Windows)
+
+/// The process identifier (aka PID) used to uniquely identify an active process.
+///
+/// The corresponding C type is `pid_t`
 @frozen
 public struct ProcessID: RawRepresentable, Hashable {
   @_alwaysEmitIntoClient
@@ -9,3 +13,4 @@ public struct ProcessID: RawRepresentable, Hashable {
   public init(rawValue: CInterop.PID) { self.rawValue = rawValue }
 }
 
+#endif

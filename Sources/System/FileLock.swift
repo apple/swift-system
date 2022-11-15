@@ -24,7 +24,6 @@ extension FileDescriptor {
 }
 
 extension FileDescriptor.FileLock {
-  /// TODO: docs
   @_alwaysEmitIntoClient
   public init() { self.init(rawValue: .init()) }
 
@@ -65,8 +64,6 @@ extension FileDescriptor.FileLock {
   }
 
   /// The process ID of the lock holder, filled in by`FileDescriptor.getLock()`.
-  ///
-  /// TODO: Actual ProcessID type
   ///
   /// The corresponding C field is `l_pid`
   @_alwaysEmitIntoClient
@@ -128,33 +125,6 @@ extension FileDescriptor.FileLock {
     }
   }
 }
-
-
-// TODO: Need to version this carefully
-// TODO: Don't do this, make a new type, but figure out ranges for that new type
-extension FileDescriptor.SeekOrigin: Comparable, Strideable {
-  // TODO: Should stride be CInt or Int?
-
-  public func distance(to other: FileDescriptor.SeekOrigin) -> Int {
-    Int(other.rawValue - self.rawValue)
-  }
-
-  public func advanced(by n: Int) -> FileDescriptor.SeekOrigin {
-    .init(rawValue: self.rawValue + CInt(n))
-  }
-  public static func < (
-    lhs: FileDescriptor.SeekOrigin, rhs: FileDescriptor.SeekOrigin
-  ) -> Bool {
-    lhs.rawValue < rhs.rawValue
-  }
-}
-
-extension FileDescriptor {
-  struct FileRange {
-    // Note: if it has an origin it wouldn't be comparable really or strideable
-  }
-}
-
 
 extension FileDescriptor {
   /// All bytes in a file
