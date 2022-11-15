@@ -70,12 +70,12 @@ extension FileOperationsTest {
     testOFDs(one: .read, two: .read)
 
     do {
-      try dup_2.lock(.write, nonBlocking: true)
+      try dup_2.lock(.write)
     } catch let e as Errno {
       XCTAssertEqual(.resourceTemporarilyUnavailable, e)
     }
     do {
-      try ofd_1.lock(.write, nonBlocking: true)
+      try ofd_1.lock(.write)
     } catch let e as Errno {
       XCTAssertEqual(.resourceTemporarilyUnavailable, e)
     }
