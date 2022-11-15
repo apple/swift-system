@@ -224,26 +224,6 @@ final class FileOperationsTest: XCTestCase {
       XCTAssertEqual(readBytesAfterTruncation, Array("ab".utf8))
     }
   }
-
-  func testFcntl() throws {
-    let path = FilePath("/tmp/\(UUID().uuidString).txt")
-
-    // On Darwin, `/tmp` is a symlink to `/private/tmp`
-    // TODO: Linux?
-    // TODO: Get or query symlink status when we add those APIs
-    let resolvedPath = FilePath("/private").pushing(path.removingRoot())
-
-    let fd = try FileDescriptor.open(
-      path, .readWrite, options: [.create, .truncate], permissions: .ownerReadWrite)
-    try fd.closeAfter {
-
-      #if !os(Linux)
-      XCTAssertEqual(resolvedPath, try fd.getPath())
-      #endif
-
-      // TODO: more tests
-    }
-  }
 #endif
 }
 
