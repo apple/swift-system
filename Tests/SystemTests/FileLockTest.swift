@@ -15,6 +15,10 @@ import XCTest
 @testable import System
 #endif
 
+func _range(_ r: some RangeExpression<Int64>) -> Range<Int64> {
+  r.relative(to: Int64.min..<Int64.max)
+}
+
 extension FileOperationsTest {
 
   func testFileLocks() throws {
@@ -28,12 +32,24 @@ extension FileOperationsTest {
       path, .readWrite, options: [.create, .truncate], permissions: .ownerReadWrite)
     let dup_2 = try ofd_2.duplicate()
 
-    func testOFDs(one: FileDescriptor.FileLock.Kind, two: FileDescriptor.FileLock.Kind) {
-      XCTAssertEqual(one, try ofd_1.getConflictingLock())
-      XCTAssertEqual(one, try dup_1.getConflictingLock())
+    func testOFDs(
+      one: FileDescriptor.FileLock.Kind,
+      two: FileDescriptor.FileLock.Kind,
+      byteRange: Range<Int64>? = nil
+    ) {
+      if let br = byteRange {
+        XCTAssertEqual(one, try ofd_1.getConflictingLock(byteRange: br))
+        XCTAssertEqual(one, try dup_1.getConflictingLock(byteRange: br))
 
-      XCTAssertEqual(two, try ofd_2.getConflictingLock())
-      XCTAssertEqual(two, try dup_2.getConflictingLock())
+        XCTAssertEqual(two, try ofd_2.getConflictingLock(byteRange: br))
+        XCTAssertEqual(two, try dup_2.getConflictingLock(byteRange: br))
+      } else {
+        XCTAssertEqual(one, try ofd_1.getConflictingLock())
+        XCTAssertEqual(one, try dup_1.getConflictingLock())
+
+        XCTAssertEqual(two, try ofd_2.getConflictingLock())
+        XCTAssertEqual(two, try dup_2.getConflictingLock())
+      }
     }
 
     testOFDs(one: .none, two: .none)
@@ -65,42 +81,32 @@ extension FileOperationsTest {
     }
 
     try ofd_1.unlock()
-    XCTAssertEqual(.read, try ofd_1.getConflictingLock())
-    XCTAssertEqual(.read, try dup_1.getConflictingLock())
-    XCTAssertEqual(.none, try ofd_2.getConflictingLock())
-    XCTAssertEqual(.none, try dup_2.getConflictingLock())
+    try ofd_2.unlock()
+    testOFDs(one: .none, two: .none)
 
-    try dup_2.lock(.write, nonBlocking: true)
-    XCTAssertEqual(.write, try ofd_1.getConflictingLock())
-    XCTAssertEqual(.write, try dup_1.getConflictingLock())
-    XCTAssertEqual(.none, try ofd_2.getConflictingLock())
-    XCTAssertEqual(.none, try dup_2.getConflictingLock())
-  }
+    /// Byte ranges
 
-  func testFileLockByteRanges() throws {
-    let path = FilePath("/tmp/\(UUID().uuidString).txt")
+    try dup_1.lock(byteRange: ..<50)
+    testOFDs(one: .none, two: .read)
+    testOFDs(one: .none, two: .none, byteRange: _range(51...))
+    testOFDs(one: .none, two: .read, byteRange: _range(1..<2))
 
-    let ofd_1 = try FileDescriptor.open(
-      path, .readWrite, options: [.create, .truncate], permissions: .ownerReadWrite)
-    let dup_1 = try ofd_1.duplicate()
+    try dup_1.lock(.write, byteRange: 100..<150)
+    testOFDs(one: .none, two: .write)
+    testOFDs(one: .none, two: .read, byteRange: 49..<50)
+    testOFDs(one: .none, two: .none, byteRange: 98..<99)
+    testOFDs(one: .none, two: .write, byteRange: _range(100...))
 
-    let ofd_2 = try FileDescriptor.open(
-      path, .readWrite, options: [.create, .truncate], permissions: .ownerReadWrite)
-    let dup_2 = try ofd_2.duplicate()
+    try dup_1.unlock(byteRange: ..<49)
+    testOFDs(one: .none, two: .read, byteRange: 49..<50)
 
-    func testOFDs(
-      one: FileDescriptor.FileLock.Kind,
-      two: FileDescriptor.FileLock.Kind,
-      byteRange range: Range<Int64>
-    ) {
-      XCTAssertEqual(one, try ofd_1.getConflictingLock(byteRange: range))
-      XCTAssertEqual(one, try dup_1.getConflictingLock(byteRange: range))
+    try dup_1.unlock(byteRange: ..<149)
+    testOFDs(one: .none, two: .write)
+    testOFDs(one: .none, two: .none, byteRange: _range(..<149))
+    testOFDs(one: .none, two: .write, byteRange: 149..<150)
 
-      XCTAssertEqual(two, try ofd_2.getConflictingLock(byteRange: range))
-      XCTAssertEqual(two, try dup_2.getConflictingLock(byteRange: range))
-    }
-
-    // TODO: tests
-
+    try dup_1.unlock(byteRange: 149..<150)
+    testOFDs(one: .none, two: .none)
   }
 }
+

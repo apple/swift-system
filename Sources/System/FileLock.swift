@@ -70,16 +70,15 @@ extension FileDescriptor.FileLock {
   ///
   /// The corresponding C field is `l_pid`
   @_alwaysEmitIntoClient
-  public var pid: CInterop.PID {
-    get { rawValue.l_pid }
-    set { rawValue.l_pid = newValue }
+  public var pid: ProcessID {
+    get { ProcessID(rawValue: rawValue.l_pid) }
+    set { rawValue.l_pid = newValue.rawValue }
   }
 }
 
 // MARK: - Convenience for `struct flock`
 extension FileDescriptor.FileLock {
-
-  // For whole-file OFD locks
+  // For OFD locks
   internal init(
     ofdType: Kind,
     start: Int64,
@@ -89,12 +88,8 @@ extension FileDescriptor.FileLock {
     self.type = ofdType
     self.start = start
     self.length = length
-    self.pid = 0
+    self.pid = ProcessID(rawValue: 0)
   }
-
-  // TOOO: convenience initializers or static constructors
-
-
 }
 
 extension FileDescriptor.FileLock {
