@@ -11,7 +11,6 @@
 // commands.
 
 extension FileDescriptor {
-  @usableFromInline
   internal func _fcntl(
     _ cmd: Control.Command, _ lock: inout FileDescriptor.FileLock,
     retryOnInterrupt: Bool
