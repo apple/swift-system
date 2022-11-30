@@ -288,6 +288,11 @@ extension SystemString {
   }
 }
 
+#if compiler(>=5.5) && canImport(_Concurrency)
+extension SystemChar: Sendable {}
+extension SystemString: Sendable {}
+#endif
+
 // TODO: SystemString should use a COW-interchangable storage form rather
 // than array, so you could "borrow" the storage from a non-bridged String
 // or Data or whatever

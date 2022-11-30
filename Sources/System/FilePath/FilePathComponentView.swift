@@ -238,3 +238,8 @@ extension FilePath.ComponentView {
     #endif // DEBUG
   }
 }
+
+#if compiler(>=5.5) && canImport(_Concurrency)
+extension FilePath.ComponentView: Sendable {}
+extension FilePath.ComponentView.Index: Sendable {}
+#endif

@@ -276,3 +276,9 @@ extension FilePath.Root {
     #endif
   }
 }
+
+#if compiler(>=5.5) && canImport(_Concurrency)
+extension FilePath.Root: Sendable {}
+extension FilePath.Component: Sendable {}
+extension FilePath.Component.Kind: Sendable {}
+#endif
