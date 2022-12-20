@@ -35,7 +35,7 @@ enum Mach {
             assert(name != mach_port_name_t(MACH_PORT_NULL))
             self.name = name
 
-            if (RightType.self == ReceiveRight.self) {
+            if RightType.self == ReceiveRight.self {
                 let secret = mach_port_context_t(arc4random())
                 let kr = mach_port_guard(mach_task_self_, name, secret, 0)
                 assert(kr == KERN_SUCCESS)
