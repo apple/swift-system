@@ -15,9 +15,9 @@ protocol MachPortRight {}
 
 enum Mach {
     @_moveOnly
-    struct Port<RightType:MachPortRight> {
-        internal var name:mach_port_name_t
-        internal var context:mach_port_context_t
+    struct Port<RightType: MachPortRight> {
+        internal var name: mach_port_name_t
+        internal var context: mach_port_context_t
 
         /// Transfer ownership of an existing unmanaged Mach port right into a
         /// Mach.Port by name.
@@ -31,7 +31,7 @@ enum Mach {
         /// end of the Mach.Port instance's lifetime.
         ///
         /// This initializer makes a syscall to guard the right.
-        init(name:mach_port_name_t) {
+        init(name: mach_port_name_t) {
             assert(name != mach_port_name_t(MACH_PORT_NULL))
             self.name = name
 
@@ -56,7 +56,7 @@ enum Mach {
         ///
         /// The body block may optionally return something, which will then be
         /// returned to the caller of withBorrowedName.
-        func withBorrowedName<ReturnType>(body:(mach_port_name_t) -> ReturnType) -> ReturnType {
+        func withBorrowedName<ReturnType>(body: (mach_port_name_t) -> ReturnType) -> ReturnType {
             return body(name)
         }
 
@@ -129,7 +129,7 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
     ///
     /// The underlying port right will be automatically deallocated when
     /// the Mach.Port object is destroyed.
-    init(name:mach_port_name_t, context:mach_port_context_t) {
+    init(name: mach_port_name_t, context: mach_port_context_t) {
         self.name = name
         self.context = context
     }
@@ -140,14 +140,14 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
     /// This initializer will abort if the right could not be created.
     /// Callers may assert that a valid right is always returned.
     init() {
-        var storage:mach_port_name_t = 0
-        withUnsafeMutablePointer(to:&storage) { storage in
+        var storage: mach_port_name_t = 0
+        withUnsafeMutablePointer(to: &storage) { storage in
             let kr = mach_port_allocate(mach_task_self_, MACH_PORT_RIGHT_RECEIVE, storage)
             assert(kr == KERN_SUCCESS)
         }
 
         // name-only init will guard ReceiveRights
-        self.init(name:storage)
+        self.init(name: storage)
     }
 
 
@@ -194,7 +194,7 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
     ///
     /// The body block may optionally return something, which will then be
     /// returned to the caller of withBorrowedName.
-    func withBorrowedName<ReturnType>(body:(mach_port_name_t, mach_port_context_t) -> ReturnType) -> ReturnType {
+    func withBorrowedName<ReturnType>(body: (mach_port_name_t, mach_port_context_t) -> ReturnType) -> ReturnType {
         body(name, context)
     }
 
@@ -206,9 +206,9 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
     /// Callers may assert that a valid right is always returned.
     func makeSendOnceRight() -> Mach.Port<Mach.SendOnceRight> {
         // send once rights do not coalesce
-        var kr:kern_return_t = KERN_FAILURE
-        var newRight:mach_port_name_t = mach_port_name_t(MACH_PORT_NULL)
-        var newRightType:mach_port_type_t = MACH_PORT_TYPE_NONE
+        var kr: kern_return_t = KERN_FAILURE
+        var newRight: mach_port_name_t = mach_port_name_t(MACH_PORT_NULL)
+        var newRightType: mach_port_type_t = MACH_PORT_TYPE_NONE
 
         withUnsafeMutablePointer(to: &newRight) { newRight in
             withUnsafeMutablePointer(to: &newRightType) { newRightType in
@@ -221,7 +221,7 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
         assert(kr == KERN_SUCCESS)
         assert(newRightType == MACH_MSG_TYPE_MOVE_SEND_ONCE)
 
-        return Mach.Port<Mach.SendOnceRight>(name:newRight)
+        return Mach.Port<Mach.SendOnceRight>(name: newRight)
     }
 
     /// Create a send right for a given receive right.
@@ -237,7 +237,7 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
         let kr = mach_port_insert_right(mach_task_self_, name, name, mach_msg_type_name_t(how))
         assert(kr == KERN_SUCCESS)
 
-        return Mach.Port<Mach.SendRight>(name:name)
+        return Mach.Port<Mach.SendRight>(name: name)
     }
 
     /// Access the make-send count.
@@ -245,8 +245,8 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
     /// Each get/set of this property makes a syscall.
     var makeSendCount : mach_port_mscount_t {
         get {
-            var status:mach_port_status = mach_port_status()
-            var size:mach_msg_type_number_t = mach_msg_type_number_t(MemoryLayout<mach_port_status>.size)
+            var status: mach_port_status = mach_port_status()
+            var size: mach_msg_type_number_t = mach_msg_type_number_t(MemoryLayout<mach_port_status>.size)
             withUnsafeMutablePointer(to: &size) { size in
                 withUnsafeMutablePointer(to: &status) { status in
                     let info = UnsafeMutableRawPointer(status).bindMemory(to: integer_t.self, capacity: 1)
@@ -295,7 +295,7 @@ extension Mach.Port where RightType == Mach.SendRight {
         }
         assert(kr == KERN_SUCCESS)
 
-        return Mach.Port<Mach.SendRight>(name:name)
+        return Mach.Port<Mach.SendRight>(name: name)
     }
 }
 
