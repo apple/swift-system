@@ -13,6 +13,16 @@ import Darwin.Mach
 
 protocol MachPortRight {}
 
+private func machPrecondition(
+    file: StaticString = #file,
+    line: UInt = #line,
+    _ body: @autoclosure () -> kern_return_t
+) {
+    let kr = body()
+    let expected = KERN_SUCCESS
+    precondition(kr == expected, file: file, line: line)
+}
+
 enum Mach {
     @_moveOnly
     struct Port<RightType: MachPortRight> {
@@ -32,13 +42,12 @@ enum Mach {
         ///
         /// This initializer makes a syscall to guard the right.
         init(name: mach_port_name_t) {
-            assert(name != mach_port_name_t(MACH_PORT_NULL))
+            precondition(name != mach_port_name_t(MACH_PORT_NULL))
             self.name = name
 
             if RightType.self == ReceiveRight.self {
                 let secret = mach_port_context_t(arc4random())
-                let kr = mach_port_guard(mach_task_self_, name, secret, 0)
-                assert(kr == KERN_SUCCESS)
+                machPrecondition(mach_port_guard(mach_task_self_, name, secret, 0))
                 self.context = secret
             }
             else {
@@ -64,13 +73,10 @@ enum Mach {
             if name != 0xFFFFFFFF /* MACH_PORT_DEAD */ {
                 if RightType.self == ReceiveRight.self {
                     // recv rights must be mod ref'ed instead of deallocated
-                    let kr = mach_port_unguard(mach_task_self_, name, context)
-                    assert(kr == KERN_SUCCESS)
-
-                    let kr2 = mach_port_mod_refs(mach_task_self_, name, MACH_PORT_RIGHT_RECEIVE, -1)
-                    assert(kr2 == KERN_SUCCESS)
+                    machPrecondition(mach_port_unguard(mach_task_self_, name, context))
+                    machPrecondition(mach_port_mod_refs(mach_task_self_, name, MACH_PORT_RIGHT_RECEIVE, -1))
                 } else {
-                    mach_port_deallocate(mach_task_self_, name)
+                    machPrecondition(mach_port_deallocate(mach_task_self_, name))
                 }
             }
         }
@@ -110,8 +116,7 @@ enum Mach {
             var options = mach_port_options_t()
             options.flags = UInt32(MPO_INSERT_SEND_RIGHT);
             withUnsafeMutablePointer(to: &options) { options in
-                let kr = mach_port_construct(mach_task_self_, options, secret, name)
-                assert(kr == KERN_SUCCESS)
+                machPrecondition(mach_port_construct(mach_task_self_, options, secret, name))
             }
         }
         return (Mach.Port<Mach.ReceiveRight>(name: name, context: secret), Mach.Port<Mach.SendRight>(name: name))
@@ -142,8 +147,7 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
     init() {
         var storage: mach_port_name_t = 0
         withUnsafeMutablePointer(to: &storage) { storage in
-            let kr = mach_port_allocate(mach_task_self_, MACH_PORT_RIGHT_RECEIVE, storage)
-            assert(kr == KERN_SUCCESS)
+            machPrecondition(mach_port_allocate(mach_task_self_, MACH_PORT_RIGHT_RECEIVE, storage))
         }
 
         // name-only init will guard ReceiveRights
@@ -180,8 +184,7 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
     /// Mach.ReceiveRights. Use relinquish() to avoid the syscall and extract
     /// the context value along with the port name.
     __consuming func unguardAndRelinquish() -> mach_port_name_t {
-        let kr = mach_port_unguard(mach_task_self_, name, context);
-        assert(kr == KERN_SUCCESS)
+        machPrecondition(mach_port_unguard(mach_task_self_, name, context))
         return name
     }
 
@@ -206,20 +209,23 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
     /// Callers may assert that a valid right is always returned.
     func makeSendOnceRight() -> Mach.Port<Mach.SendOnceRight> {
         // send once rights do not coalesce
-        var kr: kern_return_t = KERN_FAILURE
         var newRight: mach_port_name_t = mach_port_name_t(MACH_PORT_NULL)
         var newRightType: mach_port_type_t = MACH_PORT_TYPE_NONE
 
         withUnsafeMutablePointer(to: &newRight) { newRight in
             withUnsafeMutablePointer(to: &newRightType) { newRightType in
-                kr = mach_port_extract_right(mach_task_self_, name, mach_msg_type_name_t(MACH_MSG_TYPE_MAKE_SEND_ONCE), newRight, newRightType)
-
+                machPrecondition(
+                    mach_port_extract_right(mach_task_self_,
+                                            name,
+                                            mach_msg_type_name_t(MACH_MSG_TYPE_MAKE_SEND_ONCE),
+                                            newRight,
+                                            newRightType)
+                )
             }
         }
 
         // The value of newRight is validated by the Mach.Port initializer
-        assert(kr == KERN_SUCCESS)
-        assert(newRightType == MACH_MSG_TYPE_MOVE_SEND_ONCE)
+        precondition(newRightType == MACH_MSG_TYPE_MOVE_SEND_ONCE)
 
         return Mach.Port<Mach.SendOnceRight>(name: newRight)
     }
@@ -233,9 +239,8 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
     func makeSendRight() -> Mach.Port<Mach.SendRight> {
         let how = MACH_MSG_TYPE_MAKE_SEND
 
-        // send and recv rights are coalesced
-        let kr = mach_port_insert_right(mach_task_self_, name, name, mach_msg_type_name_t(how))
-        assert(kr == KERN_SUCCESS)
+        // name is the same because send and recv rights are coalesced
+        machPrecondition(mach_port_insert_right(mach_task_self_, name, name, mach_msg_type_name_t(how)))
 
         return Mach.Port<Mach.SendRight>(name: name)
     }
@@ -250,16 +255,14 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
             withUnsafeMutablePointer(to: &size) { size in
                 withUnsafeMutablePointer(to: &status) { status in
                     let info = UnsafeMutableRawPointer(status).bindMemory(to: integer_t.self, capacity: 1)
-                    let kr = mach_port_get_attributes(mach_task_self_, name, MACH_PORT_RECEIVE_STATUS, info, size)
-                    assert(kr == KERN_SUCCESS);
+                    machPrecondition(mach_port_get_attributes(mach_task_self_, name, MACH_PORT_RECEIVE_STATUS, info, size))
                 }
             }
             return status.mps_mscount
         }
 
         set {
-            let kr = mach_port_set_mscount(mach_task_self_, name, newValue)
-            assert(kr == KERN_SUCCESS)
+            machPrecondition(mach_port_set_mscount(mach_task_self_, name, newValue))
         }
     }
 }
@@ -288,12 +291,12 @@ extension Mach.Port where RightType == Mach.SendRight {
     func copySendRight() throws -> Mach.Port<Mach.SendRight> {
         let how = MACH_MSG_TYPE_COPY_SEND
 
-        // send rights are coalesced
+        // name is the same because send rights are coalesced
         let kr = mach_port_insert_right(mach_task_self_, name, name, mach_msg_type_name_t(how))
         if kr == KERN_INVALID_CAPABILITY {
             throw Mach.PortRightError.deadName
         }
-        assert(kr == KERN_SUCCESS)
+        machPrecondition(kr)
 
         return Mach.Port<Mach.SendRight>(name: name)
     }
