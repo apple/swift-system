@@ -251,7 +251,7 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
     var makeSendCount : mach_port_mscount_t {
         get {
             var status: mach_port_status = mach_port_status()
-            var size: mach_msg_type_number_t = mach_msg_type_number_t(MemoryLayout<mach_port_status>.size)
+            var size: mach_msg_type_number_t = mach_msg_type_number_t(MemoryLayout<mach_port_status>.size / MemoryLayout<natural_t>.size)
             withUnsafeMutablePointer(to: &size) { size in
                 withUnsafeMutablePointer(to: &status) { status in
                     let info = UnsafeMutableRawPointer(status).bindMemory(to: integer_t.self, capacity: 1)
