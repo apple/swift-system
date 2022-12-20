@@ -145,7 +145,7 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
     /// This initializer will abort if the right could not be created.
     /// Callers may assert that a valid right is always returned.
     init() {
-        var storage: mach_port_name_t = 0
+        var storage: mach_port_name_t = mach_port_name_t(MACH_PORT_NULL)
         withUnsafeMutablePointer(to: &storage) { storage in
             machPrecondition(mach_port_allocate(mach_task_self_, MACH_PORT_RIGHT_RECEIVE, storage))
         }
