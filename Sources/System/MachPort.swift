@@ -109,7 +109,7 @@ enum Mach {
     ///
     /// This function will abort if the rights could not be created.
     /// Callers may assert that valid rights are always returned.
-    static func allocatePortRightPair() -> (Mach.Port<Mach.ReceiveRight>, Mach.Port<Mach.SendRight>) {
+    static func allocatePortRightPair() -> (receive: Mach.Port<Mach.ReceiveRight>, send: Mach.Port<Mach.SendRight>) {
         var name = mach_port_name_t(MACH_PORT_NULL)
         let secret = mach_port_context_t(arc4random())
         withUnsafeMutablePointer(to: &name) { name in
@@ -165,8 +165,8 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
     ///
     /// After this function completes, the Mach.Port is destroyed and no longer
     /// usable.
-    __consuming func relinquish() -> (mach_port_name_t, mach_port_context_t) {
-        return (name, context)
+    __consuming func relinquish() -> (name: mach_port_name_t, context: mach_port_context_t) {
+        return (name: name, context: context)
     }
 
     /// Remove guard and transfer ownership of the underlying port right to
