@@ -11,7 +11,7 @@
 
 import Darwin.Mach
 
-protocol MachPortRight {}
+public protocol MachPortRight {}
 
 private func machPrecondition(
     file: StaticString = #file,
@@ -23,9 +23,9 @@ private func machPrecondition(
     precondition(kr == expected, file: file, line: line)
 }
 
-enum Mach {
+public enum Mach {
     @_moveOnly
-    struct Port<RightType: MachPortRight> {
+    public struct Port<RightType: MachPortRight> {
         internal var name: mach_port_name_t
         internal var context: mach_port_context_t
 
@@ -42,7 +42,7 @@ enum Mach {
         /// end of the Mach.Port instance's lifetime.
         ///
         /// This initializer makes a syscall to guard the right.
-        init(name: mach_port_name_t) {
+        public init(name: mach_port_name_t) {
             precondition(name != mach_port_name_t(MACH_PORT_NULL), "Mach.Port cannot be initialized with MACH_PORT_NULL")
             self.name = name
 
@@ -68,7 +68,7 @@ enum Mach {
         ///
         /// The body block may optionally return something, which will then be
         /// returned to the caller of withBorrowedName.
-        func withBorrowedName<ReturnType>(body: (mach_port_name_t) -> ReturnType) -> ReturnType {
+        public func withBorrowedName<ReturnType>(body: (mach_port_name_t) -> ReturnType) -> ReturnType {
             return body(name)
         }
 
@@ -89,7 +89,7 @@ enum Mach {
     }
 
     /// Possible errors that can be thrown by Mach.Port operations.
-    enum PortRightError : Error {
+    public enum PortRightError : Error {
         /// Returned when an operation cannot be completed, because the Mach
         /// port right has become a dead name. This is caused by deallocation of the
         /// receive right on the other end.
@@ -97,10 +97,10 @@ enum Mach {
     }
 
     /// The MachPortRight type used to manage a receive right.
-    struct ReceiveRight : MachPortRight {}
+    public struct ReceiveRight : MachPortRight {}
 
     /// The MachPortRight type used to manage a send right.
-    struct SendRight : MachPortRight {}
+    public struct SendRight : MachPortRight {}
 
     /// The MachPortRight type used to manage a send-once right.
     ///
@@ -109,13 +109,13 @@ enum Mach {
     ///
     /// Upon destruction a send-once notification will be sent to the
     /// receiving end.
-    struct SendOnceRight : MachPortRight {}
+    public struct SendOnceRight : MachPortRight {}
 
     /// Create a connected pair of rights, one receive, and one send.
     ///
     /// This function will abort if the rights could not be created.
     /// Callers may assert that valid rights are always returned.
-    static func allocatePortRightPair() -> (receive: Mach.Port<Mach.ReceiveRight>, send: Mach.Port<Mach.SendRight>) {
+    public static func allocatePortRightPair() -> (receive: Mach.Port<Mach.ReceiveRight>, send: Mach.Port<Mach.SendRight>) {
         var name = mach_port_name_t(MACH_PORT_NULL)
         let secret = mach_port_context_t(arc4random())
         withUnsafeMutablePointer(to: &name) { name in
@@ -129,7 +129,7 @@ enum Mach {
     }
 }
 
-extension Mach.Port where RightType == Mach.ReceiveRight {
+public extension Mach.Port where RightType == Mach.ReceiveRight {
     /// Transfer ownership of an existing, unmanaged, but already guarded,
     /// Mach port right into a Mach.Port by name.
     ///
@@ -273,7 +273,7 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
     }
 }
 
-extension Mach.Port where RightType == Mach.SendRight {
+public extension Mach.Port where RightType == Mach.SendRight {
     /// Transfer ownership of the underlying port right to the caller.
     ///
     /// Returns the Mach port name representing the right.
@@ -309,7 +309,7 @@ extension Mach.Port where RightType == Mach.SendRight {
 }
 
 
-extension Mach.Port where RightType == Mach.SendOnceRight {
+public extension Mach.Port where RightType == Mach.SendOnceRight {
     /// Transfer ownership of the underlying port right to the caller.
     ///
     /// Returns the Mach port name representing the right.
