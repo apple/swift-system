@@ -32,7 +32,8 @@ enum Mach {
         /// Transfer ownership of an existing unmanaged Mach port right into a
         /// Mach.Port by name.
         ///
-        /// This initializer aborts if name is MACH_PORT_NULL.
+        /// This initializer aborts if name is MACH_PORT_NULL, or if name is
+        /// MACH_PORT_DEAD and the type T of Mach.Port<T> is Mach.ReceiveRight.
         ///
         /// If the type of the right does not match the type T of Mach.Port<T>
         /// being constructed, behavior is undefined.
@@ -46,6 +47,8 @@ enum Mach {
             self.name = name
 
             if RightType.self == ReceiveRight.self {
+                precondition(name != 0xFFFFFFFF /* MACH_PORT_DEAD */, "Receive rights cannot be dead names")
+
                 let secret = mach_port_context_t(arc4random())
                 machPrecondition(mach_port_guard(mach_task_self_, name, secret, 0))
                 self.context = secret
@@ -70,13 +73,16 @@ enum Mach {
         }
 
         deinit {
-            if name != 0xFFFFFFFF /* MACH_PORT_DEAD */ {
+            if name == 0xFFFFFFFF /* MACH_PORT_DEAD */ {
+                precondition(RightType.self != ReceiveRight.self, "Receive rights cannot be dead names")
+                machPrecondition(mach_port_mod_refs(mach_task_self_, name, MACH_PORT_RIGHT_DEAD_NAME, -1))
+            } else {
                 if RightType.self == ReceiveRight.self {
-                    // recv rights must be mod ref'ed instead of deallocated
-                    machPrecondition(mach_port_unguard(mach_task_self_, name, context))
-                    machPrecondition(mach_port_mod_refs(mach_task_self_, name, MACH_PORT_RIGHT_RECEIVE, -1))
-                } else {
-                    machPrecondition(mach_port_deallocate(mach_task_self_, name))
+                    machPrecondition(mach_port_destruct(mach_task_self_, name, -1, context))
+                } else if RightType.self == SendRight.self {
+                    machPrecondition(mach_port_mod_refs(mach_task_self_, name, MACH_PORT_RIGHT_SEND, -1))
+                } else if RightType.self == SendOnceRight.self {
+                    machPrecondition(mach_port_mod_refs(mach_task_self_, name, MACH_PORT_RIGHT_SEND_ONCE, -1))
                 }
             }
         }
