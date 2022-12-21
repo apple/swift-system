@@ -43,7 +43,7 @@ enum Mach {
         ///
         /// This initializer makes a syscall to guard the right.
         init(name: mach_port_name_t) {
-            precondition(name != mach_port_name_t(MACH_PORT_NULL))
+            precondition(name != mach_port_name_t(MACH_PORT_NULL), "Mach.Port cannot be initialized with MACH_PORT_NULL")
             self.name = name
 
             if RightType.self == ReceiveRight.self {
