@@ -125,7 +125,7 @@ enum Mach {
                 machPrecondition(mach_port_construct(mach_task_self_, options, secret, name))
             }
         }
-        return (Mach.Port<Mach.ReceiveRight>(name: name, context: secret), Mach.Port<Mach.SendRight>(name: name))
+        return (Mach.Port(name: name, context: secret), Mach.Port(name: name))
     }
 }
 
@@ -233,7 +233,7 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
         // The value of newRight is validated by the Mach.Port initializer
         precondition(newRightType == MACH_MSG_TYPE_MOVE_SEND_ONCE)
 
-        return Mach.Port<Mach.SendOnceRight>(name: newRight)
+        return Mach.Port(name: newRight)
     }
 
     /// Create a send right for a given receive right.
@@ -248,7 +248,7 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
         // name is the same because send and recv rights are coalesced
         machPrecondition(mach_port_insert_right(mach_task_self_, name, name, mach_msg_type_name_t(how)))
 
-        return Mach.Port<Mach.SendRight>(name: name)
+        return Mach.Port(name: name)
     }
 
     /// Access the make-send count.
@@ -304,7 +304,7 @@ extension Mach.Port where RightType == Mach.SendRight {
         }
         machPrecondition(kr)
 
-        return Mach.Port<Mach.SendRight>(name: name)
+        return Mach.Port(name: name)
     }
 }
 
