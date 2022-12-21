@@ -110,6 +110,17 @@ final class MachPortTests: XCTestCase {
         XCTAssert(same == zero)
     }
 
+    func testMakeSendOnceIsUnique() throws {
+        let recv = Mach.Port<Mach.ReceiveRight>()
+        let once = recv.makeSendOnceRight()
+        recv.withBorrowedName { rname in
+            once.withBorrowedName { oname in
+                print(oname, rname)
+                XCTAssert(oname != rname)
+            }
+        }
+    }
+
     func testMakePair() throws {
         let (recv, send) = Mach.allocatePortRightPair()
         XCTAssert(recv.makeSendCount == 1)
