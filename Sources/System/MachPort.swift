@@ -97,10 +97,10 @@ public enum Mach {
     }
 
     /// The MachPortRight type used to manage a receive right.
-    public struct ReceiveRight : MachPortRight {}
+    public struct ReceiveRight: MachPortRight {}
 
     /// The MachPortRight type used to manage a send right.
-    public struct SendRight : MachPortRight {}
+    public struct SendRight: MachPortRight {}
 
     /// The MachPortRight type used to manage a send-once right.
     ///
@@ -109,7 +109,7 @@ public enum Mach {
     ///
     /// Upon destruction a send-once notification will be sent to the
     /// receiving end.
-    public struct SendOnceRight : MachPortRight {}
+    public struct SendOnceRight: MachPortRight {}
 
     /// Create a connected pair of rights, one receive, and one send.
     ///
