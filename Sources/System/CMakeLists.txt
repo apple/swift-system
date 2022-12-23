@@ -13,6 +13,7 @@ add_library(SystemPackage
   FileHelpers.swift
   FileOperations.swift
   FilePermissions.swift
+  MachPort.swift
   PlatformString.swift
   SystemString.swift
   Util.swift
