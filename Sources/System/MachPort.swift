@@ -30,16 +30,16 @@ public enum Mach {
         internal var context: mach_port_context_t
 
         /// Transfer ownership of an existing unmanaged Mach port right into a
-        /// Mach.Port by name.
+        /// `Mach.Port` by name.
         ///
-        /// This initializer aborts if name is MACH_PORT_NULL, or if name is
-        /// MACH_PORT_DEAD and the type T of Mach.Port<T> is Mach.ReceiveRight.
+        /// This initializer traps if `name` is `MACH_PORT_NULL`, or if `name` is
+        /// `MACH_PORT_DEAD` and the `RightType` is `Mach.ReceiveRight`.
         ///
-        /// If the type of the right does not match the type T of Mach.Port<T>
-        /// being constructed, behavior is undefined.
+        /// If the type of the right does not match the `RightType` of the 
+        /// `Mach.Port` being constructed, behavior is undefined.
         ///
         /// The underlying port right will be automatically deallocated at the
-        /// end of the Mach.Port instance's lifetime.
+        /// end of the `Mach.Port` instance's lifetime.
         ///
         /// This initializer makes a syscall to guard the right.
         public init(name: mach_port_name_t) {
