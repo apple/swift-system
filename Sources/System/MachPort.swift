@@ -7,7 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-#if $MoveOnly && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
+#if swift(>=5.8) && $MoveOnly && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
 
 import Darwin.Mach
 
