@@ -51,7 +51,6 @@ extension FilePath {
 
   /// Whether a lexically-normalized `self` contains a lexically-normalized
   /// `other`.
-  ///
   public func lexicallyContains(_ other: FilePath) -> Bool {
     guard !other.isEmpty else { return true }
     guard !isEmpty else { return false }

@@ -28,7 +28,6 @@ extension FilePath {
   ///
   ///     path.components.removeAll { $0.kind == .currentDirectory }
   ///     // path is "/home/username/bin/scripts/tree"
-  ///
   public struct ComponentView {
     internal var _path: FilePath
     internal var _start: SystemString.Index

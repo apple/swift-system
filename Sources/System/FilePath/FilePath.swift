@@ -40,7 +40,6 @@
 /// However, the rules for path equivalence
 /// are file-system–specific and have additional considerations
 /// like case insensitivity, Unicode normalization, and symbolic links.
-///
 public struct FilePath {
   internal var _storage: SystemString
 

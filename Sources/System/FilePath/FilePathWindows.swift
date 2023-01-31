@@ -156,7 +156,6 @@ internal struct WindowsRootInfo {
     /// * Traditional disk: `C:\`, `C:`
     /// * Device disk: `\\.\C:\`, `\\?\C:\`
     /// * UNC: `\\server\e:\`, `\\?\UNC\server\e:\`
-    ///
     case drive(Character)
 
     // TODO: GUID type?
@@ -164,7 +163,6 @@ internal struct WindowsRootInfo {
     ///
     /// * UNC: `\\host\Volume{0000-...}\`, `\\.\UNC\host\Volume{0000-...}\`
     /// * Device roots: `\\.\Volume{0000-...}\`, `\\?\Volume{000-...}\`
-    ///
     case guid(String)
 
     // TODO: Legacy DOS devices, such as COM1?
