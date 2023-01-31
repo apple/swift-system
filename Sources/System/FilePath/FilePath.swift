@@ -7,6 +7,9 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
+// TODO(docs): Section on all the new syntactic operations, lexical normalization, decomposition,
+// components, etc.
+/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 /// Represents a location in the file system.
 ///
 /// This structure recognizes directory separators  (e.g. `/`), roots, and
@@ -38,9 +41,6 @@
 /// are file-system–specific and have additional considerations
 /// like case insensitivity, Unicode normalization, and symbolic links.
 ///
-// TODO(docs): Section on all the new syntactic operations, lexical normalization, decomposition,
-// components, etc.
-/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
 public struct FilePath {
   internal var _storage: SystemString
 

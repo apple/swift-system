@@ -52,6 +52,8 @@ extension FilePath {
   ///   * `\Users`
   public var isRelative: Bool { !isAbsolute }
 
+  // TODO(Windows docs): examples with roots, such as whether `\foo\bar`
+  //   starts with `C:\foo`
   /// Returns whether `other` is a prefix of `self`, only considering
   /// whole path components.
   ///
@@ -64,14 +66,14 @@ extension FilePath {
   ///     path.starts(with: "/usr/bin/ls///") // true
   ///     path.starts(with: "/us")            // false
   ///
-  // TODO(Windows docs): examples with roots, such as whether `\foo\bar`
-  //   starts with `C:\foo`
   public func starts(with other: FilePath) -> Bool {
     guard !other.isEmpty else { return true }
     return self.root == other.root && components.starts(
       with: other.components)
   }
 
+  // TODO(Windows docs): examples with roots, such as whether `C:\foo\bar`
+  //   ends with `C:bar`
   /// Returns whether `other` is a suffix of `self`, only considering
   /// whole path components.
   ///
@@ -84,8 +86,6 @@ extension FilePath {
   ///     path.ends(with: "/usr/bin/ls///") // true
   ///     path.ends(with: "/ls")            // false
   ///
-  // TODO(Windows docs): examples with roots, such as whether `C:\foo\bar`
-  //   ends with `C:bar`
   public func ends(with other: FilePath) -> Bool {
     if other.root != nil {
       // TODO: anything tricky here for Windows?
@@ -441,6 +441,7 @@ extension FilePath {
 // Modification and concatenation API
 /*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath {
+  // TODO(Windows docs): example with roots
   /// If `prefix` is a prefix of `self`, removes it and returns `true`.
   /// Otherwise returns `false`.
   ///
@@ -451,7 +452,6 @@ extension FilePath {
   ///     path.removePrefix("/us")        // false
   ///     path.removePrefix("/usr/local") // true, path is "bin"
   ///
-  // TODO(Windows docs): example with roots
   public mutating func removePrefix(_ prefix: FilePath) -> Bool {
     defer { _invariantCheck() }
     // FIXME: Should Windows have more nuanced semantics?
@@ -462,6 +462,7 @@ extension FilePath {
     return true
   }
 
+  // TODO(Windows docs): example with roots
   /// Append a `component` on to the end of this path.
   ///
   /// Example:
@@ -473,12 +474,12 @@ extension FilePath {
   ///     }
   ///     // path is "/tmp/foo/bar/../baz"
   ///
-  // TODO(Windows docs): example with roots
   public mutating func append(_ component: __owned FilePath.Component) {
     defer { _invariantCheck() }
     _append(unchecked: component._slice)
   }
 
+  // TODO(Windows docs): example with roots
   /// Append `components` on to the end of this path.
   ///
   /// Example:
@@ -488,7 +489,6 @@ extension FilePath {
   ///     let otherPath: FilePath = "/bin/ls"
   ///     path.append(otherPath.components) // path is "/usr/local/bin/ls"
   ///
-  // TODO(Windows docs): example with roots
   public mutating func append<C: Collection>(
     _ components: __owned C
   ) where C.Element == FilePath.Component {
@@ -498,6 +498,8 @@ extension FilePath {
     }
   }
 
+  // TODO(Windows docs): example with roots, should we rephrase this "spurious
+  // roots"?
   /// Append the contents of `other`, ignoring any spurious leading separators.
   ///
   /// A leading separator is spurious if `self` is non-empty.
@@ -509,8 +511,6 @@ extension FilePath {
   ///     path.append("static/assets") // "/var/www/website/static/assets"
   ///     path.append("/main.css") // "/var/www/website/static/assets/main.css"
   ///
-  // TODO(Windows docs): example with roots, should we rephrase this "spurious
-  // roots"?
   public mutating func append(_ other: __owned String) {
     defer { _invariantCheck() }
     guard !other.utf8.isEmpty else { return }
@@ -522,18 +522,18 @@ extension FilePath {
     _append(unchecked: otherPath._storage[otherPath._relativeStart...])
   }
 
+  // TODO(Windows docs): example with roots
   /// Non-mutating version of `append(_:Component)`.
   ///
-  // TODO(Windows docs): example with roots
   public __consuming func appending(_ other: __owned Component) -> FilePath {
     var copy = self
     copy.append(other)
     return copy
   }
 
+  // TODO(Windows docs): example with roots
   /// Non-mutating version of `append(_:C)`.
   ///
-  // TODO(Windows docs): example with roots
   public __consuming func appending<C: Collection>(
     _ components: __owned C
   ) -> FilePath where C.Element == FilePath.Component {
@@ -542,15 +542,17 @@ extension FilePath {
     return copy
   }
 
+  // TODO(Windows docs): example with roots
   /// Non-mutating version of `append(_:String)`.
   ///
-  // TODO(Windows docs): example with roots
   public __consuming func appending(_ other: __owned String) -> FilePath {
     var copy = self
     copy.append(other)
     return copy
   }
 
+  // TODO(Windows docs): examples and docs with roots, update/generalize doc
+  // comment
   /// If `other` does not have a root, append each component of `other`. If
   /// `other` has a root, replaces `self` with other.
   ///
@@ -565,8 +567,6 @@ extension FilePath {
   ///     path.push("dir/file.txt") // path is "/tmp/dir/file.txt"
   ///     path.push("/bin")         // path is "/bin"
   ///
-  // TODO(Windows docs): examples and docs with roots, update/generalize doc
-  // comment
   public mutating func push(_ other: __owned FilePath) {
     defer { _invariantCheck() }
     guard other.root == nil else {
@@ -577,9 +577,9 @@ extension FilePath {
     _append(unchecked: other._storage[...])
   }
 
+  // TODO(Windows docs): examples and docs with roots
   /// Non-mutating version of `push()`.
   ///
-  // TODO(Windows docs): examples and docs with roots
   public __consuming func pushing(_ other: __owned FilePath) -> FilePath {
     var copy = self
     copy.push(other)

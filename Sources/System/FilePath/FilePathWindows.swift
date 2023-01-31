@@ -150,21 +150,21 @@ internal struct WindowsRootInfo {
     /// * Omitted volume from other forms: `\\.\`, `\\.\UNC\server\\`, `\\server\\`
     case empty
 
+    // TODO: NT paths? Admin paths using `$`?
     /// A specified drive.
     ///
     /// * Traditional disk: `C:\`, `C:`
     /// * Device disk: `\\.\C:\`, `\\?\C:\`
     /// * UNC: `\\server\e:\`, `\\?\UNC\server\e:\`
     ///
-    // TODO: NT paths? Admin paths using `$`?
     case drive(Character)
 
+    // TODO: GUID type?
     /// A volume with a GUID in a non-traditional path
     ///
     /// * UNC: `\\host\Volume{0000-...}\`, `\\.\UNC\host\Volume{0000-...}\`
     /// * Device roots: `\\.\Volume{0000-...}\`, `\\?\Volume{000-...}\`
     ///
-    // TODO: GUID type?
     case guid(String)
 
     // TODO: Legacy DOS devices, such as COM1?
