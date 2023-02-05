@@ -12,6 +12,7 @@
 // - IEEE Std 1003.1™-2017
 // - The Open Group Technical Standard Base Specifications, Issue 7
 // Reference: https://pubs.opengroup.org/onlinepubs/9699919799
+// sys/time.h
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
 import Darwin

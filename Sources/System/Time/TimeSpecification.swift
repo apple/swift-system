@@ -8,8 +8,11 @@
  */
 
 // Specification:
-// - ISO/IEC 9899:2017
-// Reference: https://web.archive.org/web/20181230041359/http://www.open-std.org/jtc1/sc22/wg14/www/abq/c17_updated_proposed_fdis.pdf
+// - POSIX.1-2017
+// - IEEE Std 1003.1™-2017
+// - The Open Group Technical Standard Base Specifications, Issue 7
+// Reference: https://pubs.opengroup.org/onlinepubs/9699919799
+// time.h
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
 import Darwin
@@ -107,9 +110,55 @@ extension TimeSpecification {
   }
 }
 
-// TODO(rauhul): Protocol conformances to match:
-// ==, >, +, -, .zero
-// #define timercmp(tvp, uvp, cmp) Comparable
-// #define timeradd(tvp, uvp, vvp) AdditiveArithmetic?
-// #define timersub(tvp, uvp, vvp)
+extension TimeSpecification: AdditiveArithmetic {
+  @_alwaysEmitIntoClient
+  @inline(__always)
+  private static let nanosecondsPerSecond: CInterop.Nanoseconds = 1_000_000_000
+
+  @_alwaysEmitIntoClient
+  public static var zero: Self {
+    Self(rawValue: .init(tv_sec: 0, tv_nsec: 0))
+  }
+
+  @_alwaysEmitIntoClient
+  public static func + (lhs: Self, rhs: Self) -> Self {
+    var newValue = TimeSpecification.zero
+    newValue.seconds = lhs.seconds + rhs.seconds
+    newValue.nanoseconds = lhs.nanoseconds + rhs.nanoseconds
+    if (newValue.nanoseconds >= Self.nanosecondsPerSecond) {
+      newValue.seconds += 1
+      newValue.nanoseconds -= Self.nanosecondsPerSecond
+    }
+    return newValue
+  }
+
+  @_alwaysEmitIntoClient
+  public static func - (lhs: Self, rhs: Self) -> Self {
+    var newValue = TimeSpecification.zero
+    newValue.seconds = lhs.seconds - rhs.seconds;
+    newValue.nanoseconds = lhs.nanoseconds - rhs.nanoseconds
+    if (newValue.nanoseconds < 0) {
+      newValue.seconds -= 1
+      newValue.nanoseconds += Self.nanosecondsPerSecond
+    }
+    return newValue
+  }
+}
+
+extension TimeSpecification: Comparable {
+  @_alwaysEmitIntoClient
+  public static func < (lhs: Self, rhs: Self) -> Bool {
+    guard lhs.seconds == rhs.seconds else {
+      return lhs.seconds < rhs.seconds
+    }
+    return lhs.nanoseconds < rhs.nanoseconds
+  }
+}
+
+extension TimeSpecification: Equatable {
+  @_alwaysEmitIntoClient
+  public static func == (lhs: Self, rhs: Self) -> Bool {
+    lhs.seconds == rhs.seconds && lhs.nanoseconds == rhs.nanoseconds
+  }
+}
 #endif

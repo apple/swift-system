@@ -12,6 +12,7 @@
 // - IEEE Std 1003.1™-2017
 // - The Open Group Technical Standard Base Specifications, Issue 7
 // Reference: https://pubs.opengroup.org/onlinepubs/9699919799
+// sys/time.h
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
 import Darwin
@@ -109,9 +110,56 @@ extension TimeValue {
   }
 }
 
-// TODO(rauhul): Protocol conformances to match:
-// ==, >, +, -, .zero
-// #define timercmp(tvp, uvp, cmp) Comparable
-// #define timeradd(tvp, uvp, vvp) AdditiveArithmetic?
-// #define timersub(tvp, uvp, vvp)
+extension TimeValue: AdditiveArithmetic {
+  @_alwaysEmitIntoClient
+  @inline(__always)
+  private static let microsecondsPerSecond: CInterop.Microseconds = 1_000_000
+
+  @_alwaysEmitIntoClient
+  public static var zero: TimeValue {
+    Self(rawValue: .init(tv_sec: 0, tv_usec: 0))
+  }
+
+  @_alwaysEmitIntoClient
+  public static func + (lhs: Self, rhs: Self) -> Self {
+    var newValue = TimeValue.zero
+    newValue.seconds = lhs.seconds + rhs.seconds
+    newValue.microseconds = lhs.microseconds + rhs.microseconds
+    if (newValue.microseconds >= Self.microsecondsPerSecond) {
+      newValue.seconds += 1
+      newValue.microseconds -= Self.microsecondsPerSecond
+    }
+    return newValue
+  }
+
+  @_alwaysEmitIntoClient
+  public static func - (lhs: Self, rhs: Self) -> Self {
+    var newValue = TimeValue.zero
+    newValue.seconds = lhs.seconds - rhs.seconds;
+    newValue.microseconds = lhs.microseconds - rhs.microseconds
+    if (newValue.microseconds < 0) {
+      newValue.seconds -= 1
+      newValue.microseconds += Self.microsecondsPerSecond
+    }
+    return newValue
+  }
+}
+
+extension TimeValue: Comparable {
+  @_alwaysEmitIntoClient
+  public static func < (lhs: Self, rhs: Self) -> Bool {
+    guard lhs.seconds == rhs.seconds else {
+      return lhs.seconds < rhs.seconds
+    }
+    return lhs.microseconds < rhs.microseconds
+  }
+}
+
+extension TimeValue: Equatable {
+  @_alwaysEmitIntoClient
+  public static func == (lhs: Self, rhs: Self) -> Bool {
+    lhs.seconds == rhs.seconds && lhs.microseconds == rhs.microseconds
+  }
+}
+
 #endif
