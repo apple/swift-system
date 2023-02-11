@@ -23,6 +23,7 @@ private func _machPrecondition(
   precondition(kr == expected, file: file, line: line)
 }
 
+@frozen
 public enum Mach {
   @_moveOnly
   public struct Port<RightType: MachPortRight> {
