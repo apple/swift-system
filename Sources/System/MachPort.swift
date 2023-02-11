@@ -26,8 +26,8 @@ private func _machPrecondition(
 public enum Mach {
   @_moveOnly
   public struct Port<RightType: MachPortRight> {
-    internal var name: mach_port_name_t
-    internal var context: mach_port_context_t
+    internal var _name: mach_port_name_t
+    internal var _context: mach_port_context_t
 
     /// Transfer ownership of an existing unmanaged Mach port right into a
     /// `Mach.Port` by name.
@@ -44,17 +44,17 @@ public enum Mach {
     /// This initializer makes a syscall to guard the right.
     public init(name: mach_port_name_t) {
       precondition(name != mach_port_name_t(MACH_PORT_NULL), "Mach.Port cannot be initialized with MACH_PORT_NULL")
-      self.name = name
+      self._name = name
 
       if RightType.self == ReceiveRight.self {
         precondition(name != 0xFFFFFFFF /* MACH_PORT_DEAD */, "Receive rights cannot be dead names")
 
         let secret = mach_port_context_t(arc4random())
         _machPrecondition(mach_port_guard(mach_task_self_, name, secret, 0))
-        self.context = secret
+        self._context = secret
       }
       else {
-        self.context = 0
+        self._context = 0
       }
     }
 
@@ -69,20 +69,20 @@ public enum Mach {
     /// The body block may optionally return something, which will then be
     /// returned to the caller of withBorrowedName.
     public func withBorrowedName<ReturnType>(body: (mach_port_name_t) -> ReturnType) -> ReturnType {
-      return body(name)
+      return body(_name)
     }
 
     deinit {
-      if name == 0xFFFFFFFF /* MACH_PORT_DEAD */ {
+      if _name == 0xFFFFFFFF /* MACH_PORT_DEAD */ {
         precondition(RightType.self != ReceiveRight.self, "Receive rights cannot be dead names")
-        _machPrecondition(mach_port_mod_refs(mach_task_self_, name, MACH_PORT_RIGHT_DEAD_NAME, -1))
+        _machPrecondition(mach_port_mod_refs(mach_task_self_, _name, MACH_PORT_RIGHT_DEAD_NAME, -1))
       } else {
         if RightType.self == ReceiveRight.self {
-          _machPrecondition(mach_port_destruct(mach_task_self_, name, -1, context))
+          _machPrecondition(mach_port_destruct(mach_task_self_, _name, -1, _context))
         } else if RightType.self == SendRight.self {
-          _machPrecondition(mach_port_mod_refs(mach_task_self_, name, MACH_PORT_RIGHT_SEND, -1))
+          _machPrecondition(mach_port_mod_refs(mach_task_self_, _name, MACH_PORT_RIGHT_SEND, -1))
         } else if RightType.self == SendOnceRight.self {
-          _machPrecondition(mach_port_mod_refs(mach_task_self_, name, MACH_PORT_RIGHT_SEND_ONCE, -1))
+          _machPrecondition(mach_port_mod_refs(mach_task_self_, _name, MACH_PORT_RIGHT_SEND_ONCE, -1))
         }
       }
     }
@@ -141,8 +141,8 @@ public extension Mach.Port where RightType == Mach.ReceiveRight {
   /// The underlying port right will be automatically deallocated when
   /// the Mach.Port object is destroyed.
   init(name: mach_port_name_t, context: mach_port_context_t) {
-    self.name = name
-    self.context = context
+    self._name = name
+    self._context = context
   }
 
   /// Allocate a new Mach port with a receive right, creating a
@@ -172,7 +172,7 @@ public extension Mach.Port where RightType == Mach.ReceiveRight {
   /// After this function completes, the Mach.Port is destroyed and no longer
   /// usable.
   __consuming func relinquish() -> (name: mach_port_name_t, context: mach_port_context_t) {
-    return (name: name, context: context)
+    return (name: _name, context: _context)
   }
 
   /// Remove guard and transfer ownership of the underlying port right to
@@ -190,8 +190,8 @@ public extension Mach.Port where RightType == Mach.ReceiveRight {
   /// Mach.ReceiveRights. Use relinquish() to avoid the syscall and extract
   /// the context value along with the port name.
   __consuming func unguardAndRelinquish() -> mach_port_name_t {
-    _machPrecondition(mach_port_unguard(mach_task_self_, name, context))
-    return name
+    _machPrecondition(mach_port_unguard(mach_task_self_, _name, _context))
+    return _name
   }
 
   /// Borrow access to the port name in a block that can perform
@@ -204,7 +204,7 @@ public extension Mach.Port where RightType == Mach.ReceiveRight {
   /// The body block may optionally return something, which will then be
   /// returned to the caller of withBorrowedName.
   func withBorrowedName<ReturnType>(body: (mach_port_name_t, mach_port_context_t) -> ReturnType) -> ReturnType {
-    body(name, context)
+    body(_name, _context)
   }
 
   /// Create a send-once right for a given receive right.
@@ -222,7 +222,7 @@ public extension Mach.Port where RightType == Mach.ReceiveRight {
       withUnsafeMutablePointer(to: &newRightType) { newRightType in
         _machPrecondition(
           mach_port_extract_right(mach_task_self_,
-                                  name,
+                                  _name,
                                   mach_msg_type_name_t(MACH_MSG_TYPE_MAKE_SEND_ONCE),
                                   newRight,
                                   newRightType)
@@ -246,9 +246,9 @@ public extension Mach.Port where RightType == Mach.ReceiveRight {
     let how = MACH_MSG_TYPE_MAKE_SEND
 
     // name is the same because send and recv rights are coalesced
-    _machPrecondition(mach_port_insert_right(mach_task_self_, name, name, mach_msg_type_name_t(how)))
+    _machPrecondition(mach_port_insert_right(mach_task_self_, _name, _name, mach_msg_type_name_t(how)))
 
-    return Mach.Port(name: name)
+    return Mach.Port(name: _name)
   }
 
   /// Access the make-send count.
@@ -261,14 +261,14 @@ public extension Mach.Port where RightType == Mach.ReceiveRight {
       withUnsafeMutablePointer(to: &size) { size in
         withUnsafeMutablePointer(to: &status) { status in
           let info = UnsafeMutableRawPointer(status).bindMemory(to: integer_t.self, capacity: 1)
-          _machPrecondition(mach_port_get_attributes(mach_task_self_, name, MACH_PORT_RECEIVE_STATUS, info, size))
+          _machPrecondition(mach_port_get_attributes(mach_task_self_, _name, MACH_PORT_RECEIVE_STATUS, info, size))
         }
       }
       return status.mps_mscount
     }
 
     set {
-      _machPrecondition(mach_port_set_mscount(mach_task_self_, name, newValue))
+      _machPrecondition(mach_port_set_mscount(mach_task_self_, _name, newValue))
     }
   }
 }
@@ -284,7 +284,7 @@ public extension Mach.Port where RightType == Mach.SendRight {
   /// After this function completes, the Mach.Port is destroyed and no longer
   /// usable.
   __consuming func relinquish() -> mach_port_name_t {
-    return name
+    return _name
   }
 
   /// Create another send right from a given send right.
@@ -298,13 +298,13 @@ public extension Mach.Port where RightType == Mach.SendRight {
     let how = MACH_MSG_TYPE_COPY_SEND
 
     // name is the same because send rights are coalesced
-    let kr = mach_port_insert_right(mach_task_self_, name, name, mach_msg_type_name_t(how))
+    let kr = mach_port_insert_right(mach_task_self_, _name, _name, mach_msg_type_name_t(how))
     if kr == KERN_INVALID_CAPABILITY {
       throw Mach.PortRightError.deadName
     }
     _machPrecondition(kr)
 
-    return Mach.Port(name: name)
+    return Mach.Port(name: _name)
   }
 }
 
@@ -320,7 +320,7 @@ public extension Mach.Port where RightType == Mach.SendOnceRight {
   /// After this function completes, the Mach.Port is destroyed and no longer
   /// usable.
   __consuming func relinquish() -> mach_port_name_t {
-    return name
+    return _name
   }
 }
 
