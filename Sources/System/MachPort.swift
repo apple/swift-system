@@ -70,7 +70,9 @@ public enum Mach {
     ///
     /// The body block may optionally return something, which will then be
     /// returned to the caller of withBorrowedName.
-    public func withBorrowedName<ReturnType>(body: (mach_port_name_t) -> ReturnType) -> ReturnType {
+    public func withBorrowedName<ReturnType>(
+      body: (mach_port_name_t) -> ReturnType
+    ) -> ReturnType {
       return body(_name)
     }
 
@@ -117,7 +119,8 @@ public enum Mach {
   ///
   /// This function will abort if the rights could not be created.
   /// Callers may assert that valid rights are always returned.
-  public static func allocatePortRightPair() -> (receive: Mach.Port<Mach.ReceiveRight>, send: Mach.Port<Mach.SendRight>) {
+  public static func allocatePortRightPair() ->
+    (receive: Mach.Port<Mach.ReceiveRight>, send: Mach.Port<Mach.SendRight>) {
     var name = mach_port_name_t(MACH_PORT_NULL)
     let secret = mach_port_context_t(arc4random())
     withUnsafeMutablePointer(to: &name) { name in
@@ -173,7 +176,8 @@ public extension Mach.Port where RightType == Mach.ReceiveRight {
   ///
   /// After this function completes, the Mach.Port is destroyed and no longer
   /// usable.
-  __consuming func relinquish() -> (name: mach_port_name_t, context: mach_port_context_t) {
+  __consuming func relinquish() ->
+    (name: mach_port_name_t, context: mach_port_context_t) {
     return (name: _name, context: _context)
   }
 
@@ -205,7 +209,9 @@ public extension Mach.Port where RightType == Mach.ReceiveRight {
   ///
   /// The body block may optionally return something, which will then be
   /// returned to the caller of withBorrowedName.
-  func withBorrowedName<ReturnType>(body: (mach_port_name_t, mach_port_context_t) -> ReturnType) -> ReturnType {
+  func withBorrowedName<ReturnType>(
+    body: (mach_port_name_t, mach_port_context_t) -> ReturnType
+  ) -> ReturnType {
     body(_name, _context)
   }
 
