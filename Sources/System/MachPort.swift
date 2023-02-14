@@ -23,6 +23,7 @@ private func _machPrecondition(
   precondition(kr == expected, file: file, line: line)
 }
 
+/*System 1.3.0, @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)*/
 @frozen
 public enum Mach {
   @_moveOnly
