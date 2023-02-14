@@ -98,7 +98,6 @@ extension FilePath.Component {
   ///
   /// - Parameter platformString: A pointer to a null-terminated platform
   ///   string.
-  ///
   public init?(platformString: UnsafePointer<CInterop.PlatformChar>) {
     self.init(_platformString: platformString)
   }
@@ -187,7 +186,6 @@ extension FilePath.Root {
   ///
   /// - Parameter platformString: A pointer to a null-terminated platform
   ///   string.
-  ///
   public init?(platformString: UnsafePointer<CInterop.PlatformChar>) {
     self.init(_platformString: platformString)
   }

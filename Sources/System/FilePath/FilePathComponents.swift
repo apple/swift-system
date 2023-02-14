@@ -54,7 +54,6 @@ extension FilePath {
   ///     file.kind == .regular           // true
   ///     file.extension                  // "txt"
   ///     path.append(file)               // path is "/tmp/foo.txt"
-  ///
   public struct Component {
     internal var _path: FilePath
     internal var _range: Range<SystemString.Index>
