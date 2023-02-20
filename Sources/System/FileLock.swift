@@ -127,88 +127,11 @@ extension FileDescriptor.FileLock {
 }
 
 extension FileDescriptor {
-  /// All bytes in a file
-  @_alwaysEmitIntoClient
-  internal var _allFileBytes: Range<Int64> { Int64.min ..< Int64.max }
-
-  /// Get any conflicting locks held by other open file descriptions.
-  ///
-  /// Open file description locks are associated with an open file
-  /// description (see `FileDescriptor.open`). Duplicated
-  /// file descriptors (see `FileDescriptor.duplicate`) share open file
-  /// description locks.
-  ///
-  /// Locks are advisory, which allow cooperating code to perform
-  /// consistent operations on files, but do not guarantee consistency.
-  /// (i.e. other code may still access files without using advisory locks
-  /// possibly resulting in inconsistencies).
-  ///
-  /// Open file description locks are inherited by child processes across
-  /// `fork`, etc.
-  ///
-  /// - Parameters:
-  ///   - byteRange: The range of bytes over which to check for a lock. Pass
-  ///     `nil` to consider the entire file.
-  ///   - retryOnInterrupt: Whether to retry the operation if it throws
-  ///     ``Errno/interrupted``. The default is `true`. Pass `false` to try
-  ///     only once and throw an error upon interruption.
-  /// - Returns; `.none` if there are no locks, otherwise returns the
-  ///   strongest conflicting lock
-  ///
-  /// The corresponding C function is `fcntl` with `F_OFD_GETLK`.
-  @_alwaysEmitIntoClient
-  public func getConflictingLock(
-    byteRange: (some RangeExpression<Int64>)? = Range?.none,
-    retryOnInterrupt: Bool = true
-  ) throws -> FileDescriptor.FileLock.Kind {
-    let (start, len) = _mapByteRangeToByteOffsets(byteRange)
-    return try _getConflictingLock(
-      start: start, length: len, retryOnInterrupt: retryOnInterrupt
-    ).get()
-  }
-
-  @usableFromInline
-  internal func _getConflictingLock(
-    start: Int64, length: Int64, retryOnInterrupt: Bool
-  ) -> Result<FileDescriptor.FileLock.Kind, Errno> {
-    // If there are multiple locks already in place on a file region, the lock that
-    // is returned is unspecified. E.g. there could be a write lock over one
-    // portion of the file and a read lock over another overlapping
-    // region. Thus, we first check if there are any write locks, and if not
-    // we issue another call to check for any reads-or-writes.
-    //
-    // 1) Try with a read lock, which will tell us if there's a conflicting
-    // write lock in place.
-    //
-    // 2) Try with a write lock, which will tell us if there's either a
-    // conflicting read or write lock in place.
-    var lock = FileDescriptor.FileLock(ofdType: .read, start: start, length: length)
-    if case let .failure(err) = self._fcntl(
-      .getOFDLock, &lock, retryOnInterrupt: retryOnInterrupt
-    ) {
-      return .failure(err)
-    }
-    if lock.type == .write {
-      return .success(.write)
-    }
-    guard lock.type == .none else {
-      fatalError("FIXME: really shouldn't be possible")
-    }
-    // This means there was no conflicting lock, so try to detect reads
-    lock = FileDescriptor.FileLock(ofdType: .write, start: start, length: length)
-
-    let secondTry = self._fcntl(.getOFDLock, &lock, retryOnInterrupt: retryOnInterrupt)
-    return secondTry.map { lock.type }
-  }
-
-  /// Set an open file description lock.
+  /// Set an advisory open file description lock.
   ///
   /// If the open file description already has a lock, the old lock is
-  /// replaced.
-  ///
-  /// If the lock cannot be set because it is blocked by an existing lock on a
-  /// file and `wait` is `false`,
-  /// `Errno.resourceTemporarilyUnavailable` is thrown.
+  /// replaced. If the lock cannot be set because it is blocked by an existing lock,
+  /// this will wait until the lock can be set.
   ///
   /// Open file description locks are associated with an open file
   /// description (see `FileDescriptor.open`). Duplicated
@@ -230,18 +153,15 @@ extension FileDescriptor {
   ///   - kind: The kind of lock to set
   ///   - byteRange: The range of bytes over which to lock. Pass
   ///     `nil` to consider the entire file.
-  ///   - wait: Whether to wait (block) until the request can be completed
   ///   - retryOnInterrupt: Whether to retry the operation if it throws
   ///     ``Errno/interrupted``. The default is `true`. Pass `false` to try
   ///     only once and throw an error upon interruption.
   ///
-  /// The corresponding C function is `fcntl` with `F_OFD_SETLK` or
-  /// `F_OFD_SETLKW`.
+  /// The corresponding C function is `fcntl` with `F_OFD_SETLKW`.
   @_alwaysEmitIntoClient
   public func lock(
     _ kind: FileDescriptor.FileLock.Kind = .read,
     byteRange: (some RangeExpression<Int64>)? = Range?.none,
-    wait: Bool = false,
     retryOnInterrupt: Bool = true
   ) throws {
     let (start, len) = _mapByteRangeToByteOffsets(byteRange)
@@ -249,10 +169,117 @@ extension FileDescriptor {
       kind,
       start: start,
       length: len,
-      wait: wait,
       retryOnInterrupt: retryOnInterrupt
     ).get()
   }
+
+  /// Try to set an advisory open file description lock.
+  ///
+  /// If the open file description already has a lock, the old lock is
+  /// replaced. If the lock cannot be set because it is blocked by an existing lock,
+  /// that is if the syscall would throw `.resourceTemporarilyUnavailable`
+  /// (aka `EAGAIN`), this will return `false`.
+  ///
+  /// Open file description locks are associated with an open file
+  /// description (see `FileDescriptor.open`). Duplicated
+  /// file descriptors (see `FileDescriptor.duplicate`) share open file
+  /// description locks.
+  ///
+  /// Locks are advisory, which allow cooperating code to perform
+  /// consistent operations on files, but do not guarantee consistency.
+  /// (i.e. other code may still access files without using advisory locks
+  /// possibly resulting in inconsistencies).
+  ///
+  /// Open file description locks are inherited by child processes across
+  /// `fork`, etc.
+  ///
+  /// Passing a lock kind of `.none` will remove a lock (equivalent to calling
+  /// `FileDescriptor.unlock()`).
+  ///
+  /// - Parameters:
+  ///   - kind: The kind of lock to set
+  ///   - byteRange: The range of bytes over which to lock. Pass
+  ///     `nil` to consider the entire file.
+  ///   - retryOnInterrupt: Whether to retry the operation if it throws
+  ///     ``Errno/interrupted``. The default is `true`. Pass `false` to try
+  ///     only once and throw an error upon interruption.
+  /// - Returns: `true` if the lock was aquired, `false` otherwise
+  ///
+  /// The corresponding C function is `fcntl` with `F_OFD_SETLK`.
+  @_alwaysEmitIntoClient
+  public func tryLock(
+    _ kind: FileDescriptor.FileLock.Kind = .read,
+    byteRange: (some RangeExpression<Int64>)? = Range?.none,
+    retryOnInterrupt: Bool = true
+  ) throws -> Bool {
+    let (start, len) = _mapByteRangeToByteOffsets(byteRange)
+    guard let _ = try _tryLock(
+      kind,
+      waitUntilTimeout: false,
+      start: start,
+      length: len,
+      retryOnInterrupt: retryOnInterrupt
+    )?.get() else {
+      return false
+    }
+    return true
+  }
+
+  #if !os(Linux)
+  /// Try to set an advisory open file description lock.
+  ///
+  /// If the open file description already has a lock, the old lock is
+  /// replaced. If the lock cannot be set because it is blocked by an existing lock,
+  /// that is if the syscall would throw `.resourceTemporarilyUnavailable`
+  /// (aka `EAGAIN`), this will return `false`.
+  ///
+  /// Open file description locks are associated with an open file
+  /// description (see `FileDescriptor.open`). Duplicated
+  /// file descriptors (see `FileDescriptor.duplicate`) share open file
+  /// description locks.
+  ///
+  /// Locks are advisory, which allow cooperating code to perform
+  /// consistent operations on files, but do not guarantee consistency.
+  /// (i.e. other code may still access files without using advisory locks
+  /// possibly resulting in inconsistencies).
+  ///
+  /// Open file description locks are inherited by child processes across
+  /// `fork`, etc.
+  ///
+  /// Passing a lock kind of `.none` will remove a lock (equivalent to calling
+  /// `FileDescriptor.unlock()`).
+  ///
+  /// - Parameters:
+  ///   - kind: The kind of lock to set
+  ///   - byteRange: The range of bytes over which to lock. Pass
+  ///     `nil` to consider the entire file.
+  ///   - waitUntilTimeout: If `true`, will wait until a timeout (determined by the operating system)
+  ///   - retryOnInterrupt: Whether to retry the operation if it throws
+  ///     ``Errno/interrupted``. The default is `true`. Pass `false` to try
+  ///     only once and throw an error upon interruption.
+  /// - Returns: `true` if the lock was aquired, `false` otherwise
+  ///
+  /// The corresponding C function is `fcntl` with `F_OFD_SETLK` or `F_OFD_SETLKWTIMEOUT` .
+  @_alwaysEmitIntoClient
+  public func tryLock(
+    _ kind: FileDescriptor.FileLock.Kind = .read,
+    byteRange: (some RangeExpression<Int64>)? = Range?.none,
+    waitUntilTimeout: Bool,
+    retryOnInterrupt: Bool = true
+  ) throws -> Bool {
+    let (start, len) = _mapByteRangeToByteOffsets(byteRange)
+    guard let _ = try _tryLock(
+      kind,
+      waitUntilTimeout: waitUntilTimeout,
+      start: start,
+      length: len,
+      retryOnInterrupt: retryOnInterrupt
+    )?.get() else {
+      return false
+    }
+    return true
+  }
+  #endif
 
   /// Remove an open file description lock.
   ///
@@ -275,7 +302,6 @@ extension FileDescriptor {
   /// - Parameters:
   ///   - byteRange: The range of bytes over which to lock. Pass
   ///     `nil` to consider the entire file.
-  ///   - wait: Whether to wait (block) until the request can be completed
   ///   - retryOnInterrupt: Whether to retry the operation if it throws
   ///     ``Errno/interrupted``. The default is `true`. Pass `false` to try
   ///     only once and throw an error upon interruption.
@@ -289,13 +315,16 @@ extension FileDescriptor {
     retryOnInterrupt: Bool = true
   ) throws {
     let (start, len) = _mapByteRangeToByteOffsets(byteRange)
-    try _lock(
+    guard let res = _tryLock(
       .none,
+      waitUntilTimeout: false, // TODO: or we wait for timeout?
       start: start,
       length: len,
-      wait: wait,
       retryOnInterrupt: retryOnInterrupt
-    ).get()
+    ) else {
+      preconditionFailure("TODO: Unlock should always succeed?")
+    }
+    return try res.get()
   }
 
   @usableFromInline
@@ -303,13 +332,35 @@ extension FileDescriptor {
     _ kind: FileDescriptor.FileLock.Kind,
     start: Int64,
     length: Int64,
-    wait: Bool,
     retryOnInterrupt: Bool
   ) -> Result<(), Errno> {
-    var lock = FileDescriptor.FileLock(ofdType: kind, start: start, length: length)
-    let command: FileDescriptor.Control.Command =
-      wait ? .setOFDLockWait : .setOFDLock
-    return _fcntl(command, &lock, retryOnInterrupt: retryOnInterrupt)
+    var lock = FileDescriptor.FileLock(
+      ofdType: kind, start: start, length: length)
+    return _fcntl(.setOFDLockWait, &lock, retryOnInterrupt: retryOnInterrupt)
+  }
+
+  @usableFromInline
+  internal func _tryLock(
+    _ kind: FileDescriptor.FileLock.Kind,
+    waitUntilTimeout: Bool,
+    start: Int64,
+    length: Int64,
+    retryOnInterrupt: Bool
+  ) -> Result<(), Errno>? {
+#if os(Linux)
+    precondition(!waitUntilTimeout, "`waitUntilTimeout` unavailable on Linux")
+#endif
+
+    let cmd: Control.Command
+    if waitUntilTimeout {
+      cmd = .setOFDLockWaitTimout
+    } else {
+      cmd = .setOFDLock
+    }
+    var lock = FileDescriptor.FileLock(
+      ofdType: kind, start: start, length: length)
+    return _extractWouldBlock(
+      _fcntl(cmd, &lock, retryOnInterrupt: retryOnInterrupt))
   }
 }
 #endif

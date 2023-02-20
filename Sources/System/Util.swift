@@ -43,6 +43,16 @@ internal func nothingOrErrno<I: FixedWidthInteger>(
   valueOrErrno(retryOnInterrupt: retryOnInterrupt, f).map { _ in () }
 }
 
+/// Promote `Errno.wouldBlcok` to `nil`.
+internal func _extractWouldBlock<T>(
+  _ value: Result<T, Errno>
+) -> Result<T, Errno>? {
+  if case .failure(let err) = value, err == .wouldBlock {
+    return nil
+  }
+  return value
+}
+
 // Run a precondition for debug client builds
 internal func _debugPrecondition(
   _ condition: @autoclosure () -> Bool,

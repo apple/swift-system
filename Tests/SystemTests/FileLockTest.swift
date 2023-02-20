@@ -20,93 +20,62 @@ func _range(_ r: some RangeExpression<Int64>) -> Range<Int64> {
 }
 
 extension FileOperationsTest {
-
   func testFileLocks() throws {
     let path = FilePath("/tmp/\(UUID().uuidString).txt")
 
-    let ofd_1 = try FileDescriptor.open(
+    let ofd_A = try FileDescriptor.open(
       path, .readWrite, options: [.create, .truncate], permissions: .ownerReadWrite)
-    let dup_1 = try ofd_1.duplicate()
+    let dup_A = try ofd_A.duplicate()
 
-    let ofd_2 = try FileDescriptor.open(
+    let ofd_B = try FileDescriptor.open(
       path, .readWrite, options: [.create, .truncate], permissions: .ownerReadWrite)
-    let dup_2 = try ofd_2.duplicate()
+    let dup_B = try ofd_B.duplicate()
 
-    func testOFDs(
-      one: FileDescriptor.FileLock.Kind,
-      two: FileDescriptor.FileLock.Kind,
-      byteRange: Range<Int64>? = nil
-    ) {
-      if let br = byteRange {
-        XCTAssertEqual(one, try ofd_1.getConflictingLock(byteRange: br))
-        XCTAssertEqual(one, try dup_1.getConflictingLock(byteRange: br))
+    // A(read) -> A(write) -> FAIL: B(read/write)
+    XCTAssertTrue(try ofd_A.tryLock(.read))
+    XCTAssertTrue(try ofd_A.tryLock(.write))
+    XCTAssertTrue(try dup_A.tryLock(.write)) // redundant, but works
+    XCTAssertFalse(try ofd_B.tryLock(.read))
+    XCTAssertFalse(try ofd_B.tryLock(.write))
+    XCTAssertFalse(try dup_B.tryLock(.write))
+    try dup_A.unlock()
 
-        XCTAssertEqual(two, try ofd_2.getConflictingLock(byteRange: br))
-        XCTAssertEqual(two, try dup_2.getConflictingLock(byteRange: br))
-      } else {
-        XCTAssertEqual(one, try ofd_1.getConflictingLock())
-        XCTAssertEqual(one, try dup_1.getConflictingLock())
-
-        XCTAssertEqual(two, try ofd_2.getConflictingLock())
-        XCTAssertEqual(two, try dup_2.getConflictingLock())
-      }
-    }
-
-    testOFDs(one: .none, two: .none)
-
-    try ofd_1.lock()
-    testOFDs(one: .none, two: .read)
-
-    try ofd_1.lock(.write)
-    testOFDs(one: .none, two: .write)
-
-    try dup_1.unlock()
-    testOFDs(one: .none, two: .none)
-
-    try dup_2.lock()
-    testOFDs(one: .read, two: .none)
-
-    try dup_1.lock()
-    testOFDs(one: .read, two: .read)
-
-    do {
-      try dup_2.lock(.write)
-    } catch let e as Errno {
-      XCTAssertEqual(.resourceTemporarilyUnavailable, e)
-    }
-    do {
-      try ofd_1.lock(.write)
-    } catch let e as Errno {
-      XCTAssertEqual(.resourceTemporarilyUnavailable, e)
-    }
-
-    try ofd_1.unlock()
-    try ofd_2.unlock()
-    testOFDs(one: .none, two: .none)
+    // A(read) -> B(read) -> FAIL: A/B(write)
+    // -> B(unlock) -> A(write) -> FAIL: B(read/write)
+    XCTAssertTrue(try dup_A.tryLock(.read))
+    XCTAssertTrue(try ofd_B.tryLock(.read))
+    XCTAssertFalse(try ofd_A.tryLock(.write))
+    XCTAssertFalse(try dup_A.tryLock(.write))
+    XCTAssertFalse(try ofd_B.tryLock(.write))
+    XCTAssertFalse(try dup_B.tryLock(.write))
+    try dup_B.unlock()
+    XCTAssertTrue(try ofd_A.tryLock(.write))
+    XCTAssertFalse(try dup_B.tryLock(.read))
+    XCTAssertFalse(try ofd_B.tryLock(.write))
+    try dup_A.unlock()
 
     /// Byte ranges
 
-    try dup_1.lock(byteRange: ..<50)
-    testOFDs(one: .none, two: .read)
-    testOFDs(one: .none, two: .none, byteRange: _range(51...))
-    testOFDs(one: .none, two: .read, byteRange: _range(1..<2))
+    // A(read, ..<50) -> B(write, 50...)
+    // -> A(write, 10..<20) -> B(read, 40..<50)
+    // -> FAIL: B(read, 17..<18), A(read 60..<70)
+    // -> A(unlock, 11..<12) -> B(read, 11..<12) -> A(read, 11..<12)
+    // -> FAIL A/B(write, 11..<12)
+    XCTAssertTrue(try ofd_A.tryLock(.read, byteRange: ..<50))
+    XCTAssertTrue(try ofd_B.tryLock(.write, byteRange: 50...))
+    XCTAssertTrue(try ofd_A.tryLock(.write, byteRange: 10..<20))
+    XCTAssertTrue(try ofd_B.tryLock(.read, byteRange: 40..<50))
+    XCTAssertFalse(try ofd_B.tryLock(.read, byteRange: 17..<18))
+    XCTAssertFalse(try ofd_A.tryLock(.read, byteRange: 60..<70))
+    try dup_A.unlock(byteRange: 11..<12)
+    XCTAssertTrue(try ofd_B.tryLock(.read, byteRange: 11..<12))
+    XCTAssertTrue(try ofd_A.tryLock(.read, byteRange: 11..<12))
+    XCTAssertFalse(try ofd_B.tryLock(.write, byteRange: 11..<12))
+    XCTAssertFalse(try ofd_A.tryLock(.write, byteRange: 11..<12))
+  }
 
-    try dup_1.lock(.write, byteRange: 100..<150)
-    testOFDs(one: .none, two: .write)
-    testOFDs(one: .none, two: .read, byteRange: 49..<50)
-    testOFDs(one: .none, two: .none, byteRange: 98..<99)
-    testOFDs(one: .none, two: .write, byteRange: _range(100...))
-
-    try dup_1.unlock(byteRange: ..<49)
-    testOFDs(one: .none, two: .read, byteRange: 49..<50)
-
-    try dup_1.unlock(byteRange: ..<149)
-    testOFDs(one: .none, two: .write)
-    testOFDs(one: .none, two: .none, byteRange: _range(..<149))
-    testOFDs(one: .none, two: .write, byteRange: 149..<150)
-
-    try dup_1.unlock(byteRange: 149..<150)
-    testOFDs(one: .none, two: .none)
+  func testFileLocksWaiting() {
+    // TODO: Test waiting, test waiting until timeouts
   }
 }
 
