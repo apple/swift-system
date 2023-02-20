@@ -134,7 +134,7 @@ public enum Mach {
   }
 }
 
-public extension Mach.Port where RightType == Mach.ReceiveRight {
+extension Mach.Port where RightType == Mach.ReceiveRight {
   /// Transfer ownership of an existing, unmanaged, but already guarded,
   /// Mach port right into a Mach.Port by name.
   ///
@@ -145,7 +145,7 @@ public extension Mach.Port where RightType == Mach.ReceiveRight {
   ///
   /// The underlying port right will be automatically deallocated when
   /// the Mach.Port object is destroyed.
-  init(name: mach_port_name_t, context: mach_port_context_t) {
+  public init(name: mach_port_name_t, context: mach_port_context_t) {
     self._name = name
     self._context = context
   }
@@ -155,7 +155,7 @@ public extension Mach.Port where RightType == Mach.ReceiveRight {
   ///
   /// This initializer will abort if the right could not be created.
   /// Callers may assert that a valid right is always returned.
-  init() {
+  public init() {
     var storage: mach_port_name_t = mach_port_name_t(MACH_PORT_NULL)
     withUnsafeMutablePointer(to: &storage) { storage in
       _machPrecondition(mach_port_allocate(mach_task_self_, MACH_PORT_RIGHT_RECEIVE, storage))
@@ -176,7 +176,7 @@ public extension Mach.Port where RightType == Mach.ReceiveRight {
   ///
   /// After this function completes, the Mach.Port is destroyed and no longer
   /// usable.
-  __consuming func relinquish() ->
+  public __consuming func relinquish() ->
     (name: mach_port_name_t, context: mach_port_context_t) {
     return (name: _name, context: _context)
   }
@@ -195,7 +195,7 @@ public extension Mach.Port where RightType == Mach.ReceiveRight {
   /// This function makes a syscall to remove the guard from
   /// Mach.ReceiveRights. Use relinquish() to avoid the syscall and extract
   /// the context value along with the port name.
-  __consuming func unguardAndRelinquish() -> mach_port_name_t {
+  public __consuming func unguardAndRelinquish() -> mach_port_name_t {
     _machPrecondition(mach_port_unguard(mach_task_self_, _name, _context))
     return _name
   }
@@ -209,7 +209,7 @@ public extension Mach.Port where RightType == Mach.ReceiveRight {
   ///
   /// The body block may optionally return something, which will then be
   /// returned to the caller of withBorrowedName.
-  func withBorrowedName<ReturnType>(
+  public func withBorrowedName<ReturnType>(
     body: (mach_port_name_t, mach_port_context_t) -> ReturnType
   ) -> ReturnType {
     body(_name, _context)
@@ -221,7 +221,7 @@ public extension Mach.Port where RightType == Mach.ReceiveRight {
   ///
   /// This function will abort if the right could not be created.
   /// Callers may assert that a valid right is always returned.
-  func makeSendOnceRight() -> Mach.Port<Mach.SendOnceRight> {
+  public func makeSendOnceRight() -> Mach.Port<Mach.SendOnceRight> {
     // send once rights do not coalesce
     var newRight: mach_port_name_t = mach_port_name_t(MACH_PORT_NULL)
     var newRightType: mach_port_type_t = MACH_PORT_TYPE_NONE
@@ -250,7 +250,7 @@ public extension Mach.Port where RightType == Mach.ReceiveRight {
   ///
   /// This function will abort if the right could not be created.
   /// Callers may assert that a valid right is always returned.
-  func makeSendRight() -> Mach.Port<Mach.SendRight> {
+  public func makeSendRight() -> Mach.Port<Mach.SendRight> {
     let how = MACH_MSG_TYPE_MAKE_SEND
 
     // name is the same because send and recv rights are coalesced
@@ -262,7 +262,7 @@ public extension Mach.Port where RightType == Mach.ReceiveRight {
   /// Access the make-send count.
   ///
   /// Each get/set of this property makes a syscall.
-  var makeSendCount : mach_port_mscount_t {
+  public var makeSendCount : mach_port_mscount_t {
     get {
       var status: mach_port_status = mach_port_status()
       var size: mach_msg_type_number_t = mach_msg_type_number_t(MemoryLayout<mach_port_status>.size / MemoryLayout<natural_t>.size)
@@ -281,7 +281,7 @@ public extension Mach.Port where RightType == Mach.ReceiveRight {
   }
 }
 
-public extension Mach.Port where RightType == Mach.SendRight {
+extension Mach.Port where RightType == Mach.SendRight {
   /// Transfer ownership of the underlying port right to the caller.
   ///
   /// Returns the Mach port name representing the right.
@@ -291,7 +291,7 @@ public extension Mach.Port where RightType == Mach.SendRight {
   ///
   /// After this function completes, the Mach.Port is destroyed and no longer
   /// usable.
-  __consuming func relinquish() -> mach_port_name_t {
+  public __consuming func relinquish() -> mach_port_name_t {
     return _name
   }
 
@@ -302,7 +302,7 @@ public extension Mach.Port where RightType == Mach.SendRight {
   /// If the send right being copied has become a dead name, meaning the
   /// receiving side has been deallocated, then copySendRight() will throw
   /// a Mach.PortRightError.deadName error.
-  func copySendRight() throws -> Mach.Port<Mach.SendRight> {
+  public func copySendRight() throws -> Mach.Port<Mach.SendRight> {
     let how = MACH_MSG_TYPE_COPY_SEND
 
     // name is the same because send rights are coalesced
@@ -317,7 +317,7 @@ public extension Mach.Port where RightType == Mach.SendRight {
 }
 
 
-public extension Mach.Port where RightType == Mach.SendOnceRight {
+extension Mach.Port where RightType == Mach.SendOnceRight {
   /// Transfer ownership of the underlying port right to the caller.
   ///
   /// Returns the Mach port name representing the right.
@@ -327,7 +327,7 @@ public extension Mach.Port where RightType == Mach.SendOnceRight {
   ///
   /// After this function completes, the Mach.Port is destroyed and no longer
   /// usable.
-  __consuming func relinquish() -> mach_port_name_t {
+  public __consuming func relinquish() -> mach_port_name_t {
     return _name
   }
 }
