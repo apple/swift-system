@@ -39,7 +39,7 @@ extension FilePath {
     }
   }
 
-  #if SYSTEM_PACKAGE
+  #if SYSTEM_PACKAGE // Workaround for a __consuming getter bug in Swift 5.3.3
   /// View the non-root components that make up this path.
   public var components: ComponentView {
     get { ComponentView(self) }
@@ -201,6 +201,7 @@ extension FilePath {
 
 // MARK: - Internals
 
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath.ComponentView: _PathSlice {
   internal var _range: Range<SystemString.Index> {
     _start ..< _path._storage.endIndex
@@ -213,6 +214,7 @@ extension FilePath.ComponentView: _PathSlice {
 
 // MARK: - Invariants
 
+/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
 extension FilePath.ComponentView {
   internal func _invariantCheck() {
     #if DEBUG

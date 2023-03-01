@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2021 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -124,6 +124,41 @@ extension MutableCollection where Element: Equatable {
   mutating func _replaceAll(_ e: Element, with new: Element) {
     for idx in self.indices {
       if self[idx] == e { self[idx] = new }
+    }
+  }
+}
+
+internal func _withOptionalUnsafePointerOrNull<T, R>(
+  to value: T?,
+  _ body: (UnsafePointer<T>?) throws -> R
+) rethrows -> R {
+  guard let value = value else {
+    return try body(nil)
+  }
+  return try withUnsafePointer(to: value, body)
+}
+
+/// Calls `body` with a temporary buffer of the indicated size,
+/// possibly stack-allocated.
+internal func _withStackBuffer<R>(
+  capacity: Int,
+  _ body: (UnsafeMutableRawBufferPointer) throws -> R
+) rethrows -> R {
+  typealias StackStorage = (
+    UInt64, UInt64, UInt64, UInt64,
+    UInt64, UInt64, UInt64, UInt64,
+    UInt64, UInt64, UInt64, UInt64,
+    UInt64, UInt64, UInt64, UInt64
+  )
+  if capacity > MemoryLayout<StackStorage>.size {
+    var buffer = _RawBuffer(minimumCapacity: capacity)
+    return try buffer.withUnsafeMutableBytes { buffer in
+      try body(.init(rebasing: buffer[..<capacity]))
+    }
+  } else {
+    var storage: StackStorage = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    return try withUnsafeMutableBytes(of: &storage) { buffer in
+      try body(.init(rebasing: buffer[..<capacity]))
     }
   }
 }

@@ -1,18 +1,11 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2021 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
 */
-
-// MARK: - Public typealiases
-
-/// The C `mode_t` type.
-/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
-@available(*, deprecated, renamed: "CInterop.Mode")
-public typealias CModeT =  CInterop.Mode
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
 import Darwin
@@ -24,6 +17,20 @@ import CSystem
 import ucrt
 #else
 #error("Unsupported Platform")
+#endif
+
+// MARK: - Public typealiases
+
+// FIXME: `CModeT` ought to be deprecated and replaced with `CInterop.Mode`
+//        if/when the compiler becomes less strict about availability checking
+//        of "namespaced" typealiases. (rdar://81722893)
+#if os(Windows)
+/// The C `mode_t` type.
+public typealias CModeT = CInt
+#else
+/// The C `mode_t` type.
+/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
+public typealias CModeT = mode_t
 #endif
 
 /// A namespace for C and platform types
