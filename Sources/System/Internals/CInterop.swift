@@ -29,12 +29,12 @@ import ucrt
 public typealias CModeT = CInt
 #else
 /// The C `mode_t` type.
-/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 public typealias CModeT = mode_t
 #endif
 
 /// A namespace for C and platform types
-/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 public enum CInterop {
 #if os(Windows)
   public typealias Mode = CInt

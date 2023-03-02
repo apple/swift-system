@@ -11,12 +11,13 @@
 #       "Hello"
 #     }
 #
-# (The iOS 8 availability is a dummy no-op declaration -- it only has to be there because
-# `@available(*)` isn't valid syntax, and commenting out the entire `@available` attribute
-# would interfere with parser tools for doc comments. `iOS 8` is the shortest version string that
-# matches the minimum possible deployment target for Swift code, so we use that as our dummy
-# availability version. `@available(iOS 8, *)` is functionally equivalent to not having an
-# `@available` attribute at all.)
+# (The iOS 8 availability is a dummy no-op declaration -- it only has to be
+# there because `@available(*)` isn't valid syntax, and commenting out the
+# entire `@available` attribute would interfere with parser tools for doc
+# comments. `iOS 8` is the shortest version string that matches the minimum
+# possible deployment target for Swift code, so we use that as our dummy
+# availability version. `@available(iOS 8, *)` is functionally equivalent to not
+# having an `@available` attribute at all.)
 #
 # The script adds full availability incantations to these comments. It can run
 # in one of two modes:
@@ -96,8 +97,8 @@ def available_attribute(filename, lineno, symbolic_version):
     if args.attributes:
         attribute = "@available(/*{0}*/{1}, *)".format(symbolic_version, expansion)
     else:
-        # Sadly `@available(*)` is not valid syntax, so we have to mention at least one actual
-        # platform here.
+        # Sadly `@available(*)` is not valid syntax, so we have to mention at
+        # least one actual platform here.
         attribute = "@available(/*{0}: {1}*/iOS 8, *)".format(symbolic_version, expansion)
     return attribute
 
