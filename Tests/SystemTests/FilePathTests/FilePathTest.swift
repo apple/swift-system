@@ -15,7 +15,7 @@ import SystemPackage
 import System
 #endif
 
-/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 func filePathFromUnterminatedBytes<S: Sequence>(_ bytes: S) -> FilePath where S.Element == UInt8 {
   var array = Array(bytes)
   assert(array.last != 0, "already null terminated")
@@ -29,7 +29,7 @@ func filePathFromUnterminatedBytes<S: Sequence>(_ bytes: S) -> FilePath where S.
 }
 let invalidBytes: [UInt8] = [0x2F, 0x61, 0x2F, 0x62, 0x2F, 0x83]
 
-/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 final class FilePathTest: XCTestCase {
   struct TestPath {
     let filePath: FilePath
