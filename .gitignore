@@ -1,6 +1,8 @@
 .DS_Store
+/.swiftpm
 /.build
 /Packages
 swift-system.xcodeproj
 xcuserdata/
 .*.sw?
+.docc-build
