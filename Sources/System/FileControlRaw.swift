@@ -11,6 +11,7 @@
 import Darwin
 #elseif os(Linux) || os(FreeBSD) || os(Android)
 import Glibc
+import CSystem
 #elseif os(Windows)
 // Nothing
 #else
