@@ -12,7 +12,7 @@
 
 extension FileDescriptor {
   internal func _fcntl(
-    _ cmd: Control.Command, _ lock: inout FileDescriptor.FileLock,
+    _ cmd: Command, _ lock: inout FileDescriptor.FileLock,
     retryOnInterrupt: Bool
   ) -> Result<(), Errno> {
     nothingOrErrno(retryOnInterrupt: retryOnInterrupt) {

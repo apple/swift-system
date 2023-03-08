@@ -70,7 +70,6 @@ public enum CInterop {
 #if !os(Windows)
   /// The C `struct flock` type
   public typealias FileLock = flock
-#endif
 
   /// The C `pid_t` type
   public typealias PID = pid_t
@@ -81,6 +80,7 @@ public enum CInterop {
   /// might otherwise appear. This typealias allows conversion code to be
   /// emitted into client.
   public typealias Offset = off_t
+#endif
 
 }
 

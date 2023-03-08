@@ -43,7 +43,7 @@ internal func nothingOrErrno<I: FixedWidthInteger>(
   valueOrErrno(retryOnInterrupt: retryOnInterrupt, f).map { _ in () }
 }
 
-/// Promote `Errno.wouldBlcok` to `nil`.
+/// Promote `Errno.wouldBlock` / `Errno.resourceTemporarilyUnavailable` to `nil`.
 internal func _extractWouldBlock<T>(
   _ value: Result<T, Errno>
 ) -> Result<T, Errno>? {
@@ -166,32 +166,9 @@ internal func _mapByteRangeToByteOffsets(
 
   let start = br.lowerBound == Int64.min ? 0 : br.lowerBound
 
-  let len: Int64 = {
-    if br.upperBound == Int64.max {
-      // l_len == 0 means until end of file
-      return 0
-    }
-    return br.upperBound - start
-  }()
-  return (start, len)
-
-  /*
-
-   let len: Int64 = {
-     if byteRange.upperBound == Int64.max {
-       // l_len == 0 means until end of file
-       0
-     } else {
-       byteRange.upperBound - start
-     }
-   }()
-
-   let len = if byteRange.upperbound == Int64.max {
-     // l_len == 0 means until end of file
-     0
-   } else {
-     byteRange.upperBound - start
-   }
-
-   */
+  if br.upperBound == Int64.max {
+    // l_len == 0 means until end of file
+    return (start, 0)
+  }
+  return (start, br.upperBound - start)
 }
