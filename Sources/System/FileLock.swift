@@ -361,8 +361,10 @@ extension FileDescriptor {
     if waitUntilTimeout {
 #if os(Linux)
       preconditionFailure("`waitUntilTimeout` unavailable on Linux")
-#endif
+      cmd = .setOFDLock
+#else
       cmd = .setOFDLockWaitTimout
+#endif
     } else if wait {
       cmd = .setOFDLockWait
     } else {
