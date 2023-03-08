@@ -30,7 +30,6 @@ extension FileDescriptor {
 
     internal init(rawValue: CInt) { self.rawValue = rawValue }
 
-    @_alwaysEmitIntoClient
     private init(_ raw: CInt) { self.init(rawValue: raw) }
 
     /// Get open file description record locking information.
