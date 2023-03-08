@@ -373,7 +373,7 @@ extension FileDescriptor {
     var lock = FileDescriptor.FileLock(
       ofdType: kind, start: start, length: length)
     return _extractWouldBlock(
-      _fcntl(cmd, &lock, retryOnInterrupt: retryOnInterrupt))
+      _control(cmd, &lock, retryOnInterrupt: retryOnInterrupt))
   }
 }
 

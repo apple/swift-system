@@ -10,7 +10,13 @@ public struct ProcessID: RawRepresentable, Hashable, Sendable {
   public var rawValue: CInterop.PID
 
   @_alwaysEmitIntoClient
-  public init(rawValue: CInterop.PID) { self.rawValue = rawValue }
+  public init(rawValue: CInterop.PID) {
+    // We assert instead of precondition, as the user may want to
+    // use this to ferry a PIDOrPGID value (denoted by a negative number).
+    // They would a `EINVAL` on use, instead of trapping the process.
+    assert(rawValue >= 0, "Process IDs are always positive")
+    self.rawValue = rawValue
+  }
 }
 
 #endif
