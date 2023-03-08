@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2021 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -13,7 +13,7 @@
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
 import Darwin
-#elseif os(Linux) || os(FreeBSD) || os(Android)
+#elseif os(Linux) || os(FreeBSD) || os(OpenBSD) || os(Android)
 import Glibc
 #elseif os(Windows)
 import CSystem
@@ -392,6 +392,7 @@ internal var _ENOATTR: CInt { ENOATTR }
 @_alwaysEmitIntoClient
 internal var _EBADMSG: CInt { EBADMSG }
 
+#if !os(OpenBSD)
 @_alwaysEmitIntoClient
 internal var _EMULTIHOP: CInt { EMULTIHOP }
 
@@ -406,12 +407,15 @@ internal var _ENOSR: CInt { ENOSR }
 
 @_alwaysEmitIntoClient
 internal var _ENOSTR: CInt { ENOSTR }
+#endif 
 
 @_alwaysEmitIntoClient
 internal var _EPROTO: CInt { EPROTO }
 
+#if !os(OpenBSD)
 @_alwaysEmitIntoClient
 internal var _ETIME: CInt { ETIME }
+#endif
 #endif
 
 @_alwaysEmitIntoClient
@@ -582,5 +586,4 @@ internal var _F_OFD_GETLKPID: CInt {
 #endif // !os(Linux)
 
 #endif // !os(Windows)
-
 

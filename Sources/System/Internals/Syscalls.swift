@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2021 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -9,7 +9,7 @@
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
 import Darwin
-#elseif os(Linux) || os(FreeBSD) || os(Android)
+#elseif os(Linux) || os(FreeBSD) || os(OpenBSD) || os(Android)
 import Glibc
 #elseif os(Windows)
 import ucrt
@@ -54,7 +54,7 @@ internal func system_close(_ fd: Int32) -> Int32 {
 
 // read
 internal func system_read(
-  _ fd: Int32, _ buf: UnsafeMutableRawPointer!, _ nbyte: Int
+  _ fd: Int32, _ buf: UnsafeMutableRawPointer?, _ nbyte: Int
 ) -> Int {
 #if ENABLE_MOCKING
   if mockingEnabled { return _mockInt(fd, buf, nbyte) }
@@ -64,7 +64,7 @@ internal func system_read(
 
 // pread
 internal func system_pread(
-  _ fd: Int32, _ buf: UnsafeMutableRawPointer!, _ nbyte: Int, _ offset: off_t
+  _ fd: Int32, _ buf: UnsafeMutableRawPointer?, _ nbyte: Int, _ offset: off_t
 ) -> Int {
 #if ENABLE_MOCKING
   if mockingEnabled { return _mockInt(fd, buf, nbyte, offset) }
@@ -84,7 +84,7 @@ internal func system_lseek(
 
 // write
 internal func system_write(
-  _ fd: Int32, _ buf: UnsafeRawPointer!, _ nbyte: Int
+  _ fd: Int32, _ buf: UnsafeRawPointer?, _ nbyte: Int
 ) -> Int {
 #if ENABLE_MOCKING
   if mockingEnabled { return _mockInt(fd, buf, nbyte) }
@@ -94,7 +94,7 @@ internal func system_write(
 
 // pwrite
 internal func system_pwrite(
-  _ fd: Int32, _ buf: UnsafeRawPointer!, _ nbyte: Int, _ offset: off_t
+  _ fd: Int32, _ buf: UnsafeRawPointer?, _ nbyte: Int, _ offset: off_t
 ) -> Int {
 #if ENABLE_MOCKING
   if mockingEnabled { return _mockInt(fd, buf, nbyte, offset) }

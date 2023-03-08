@@ -111,6 +111,7 @@ extension SystemString {
   }
 }
 
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FilePath {
   internal mutating func _removeTrailingSeparator() {
     _storage._removeTrailingSeparator()
@@ -191,6 +192,7 @@ extension SystemString {
   }
 }
 
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FilePath {
   internal var _relativeStart: SystemString.Index {
     _storage._relativePathStart
@@ -202,6 +204,7 @@ extension FilePath {
 
 // Parse separators
 
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FilePath {
   internal typealias _Index = SystemString.Index
 
@@ -265,6 +268,7 @@ extension FilePath {
   }
 }
 
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.ComponentView {
   // TODO: Store this...
   internal var _relativeStart: SystemString.Index {
@@ -289,6 +293,7 @@ extension SystemString {
   }
 }
 
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.Root {
   // Asserting self is a root, returns whether this is an
   // absolute root.
@@ -313,6 +318,7 @@ extension FilePath.Root {
   }
 }
 
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FilePath {
   internal var _portableDescription: String {
     guard _windowsPaths else { return description }
@@ -331,6 +337,7 @@ internal var _windowsPaths: Bool {
   #endif
 }
 
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FilePath {
   // Whether we should add a separator when doing an append
   internal var _needsSeparatorForAppend: Bool {
@@ -358,6 +365,7 @@ extension FilePath {
 }
 
 // MARK: - Invariants
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FilePath {
   internal func _invariantCheck() {
     #if DEBUG

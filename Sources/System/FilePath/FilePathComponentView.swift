@@ -9,7 +9,7 @@
 
 // MARK: - API
 
-/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath {
   /// A bidirectional, range replaceable collection of the non-root components
   /// that make up a file path.
@@ -28,7 +28,6 @@ extension FilePath {
   ///
   ///     path.components.removeAll { $0.kind == .currentDirectory }
   ///     // path is "/home/username/bin/scripts/tree"
-  ///
   public struct ComponentView {
     internal var _path: FilePath
     internal var _start: SystemString.Index
@@ -40,7 +39,7 @@ extension FilePath {
     }
   }
 
-  #if SYSTEM_PACKAGE
+  #if SYSTEM_PACKAGE // Workaround for a __consuming getter bug in Swift 5.3.3
   /// View the non-root components that make up this path.
   public var components: ComponentView {
     get { ComponentView(self) }
@@ -89,7 +88,7 @@ extension FilePath {
   #endif
 }
 
-/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.ComponentView: BidirectionalCollection {
   public typealias Element = FilePath.Component
   public struct Index: Comparable, Hashable {
@@ -123,7 +122,7 @@ extension FilePath.ComponentView: BidirectionalCollection {
   }
 }
 
-/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.ComponentView: RangeReplaceableCollection {
   public init() {
     self.init(FilePath())
@@ -173,7 +172,7 @@ extension FilePath.ComponentView: RangeReplaceableCollection {
   }
 }
 
-/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath {
   /// Create a file path from a root and a collection of components.
   public init<C: Collection>(
@@ -202,6 +201,7 @@ extension FilePath {
 
 // MARK: - Internals
 
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.ComponentView: _PathSlice {
   internal var _range: Range<SystemString.Index> {
     _start ..< _path._storage.endIndex
@@ -214,6 +214,7 @@ extension FilePath.ComponentView: _PathSlice {
 
 // MARK: - Invariants
 
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.ComponentView {
   internal func _invariantCheck() {
     #if DEBUG
@@ -238,3 +239,8 @@ extension FilePath.ComponentView {
     #endif // DEBUG
   }
 }
+
+#if compiler(>=5.5) && canImport(_Concurrency)
+extension FilePath.ComponentView: Sendable {}
+extension FilePath.ComponentView.Index: Sendable {}
+#endif

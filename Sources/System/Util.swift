@@ -1,28 +1,28 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2021 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
 */
 
 // Results in errno if i == -1
-/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 private func valueOrErrno<I: FixedWidthInteger>(
   _ i: I
 ) -> Result<I, Errno> {
   i == -1 ? .failure(Errno.current) : .success(i)
 }
 
-/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 private func nothingOrErrno<I: FixedWidthInteger>(
   _ i: I
 ) -> Result<(), Errno> {
   valueOrErrno(i).map { _ in () }
 }
 
-/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 internal func valueOrErrno<I: FixedWidthInteger>(
   retryOnInterrupt: Bool, _ f: () -> I
 ) -> Result<I, Errno> {
@@ -36,7 +36,7 @@ internal func valueOrErrno<I: FixedWidthInteger>(
   } while true
 }
 
-/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 internal func nothingOrErrno<I: FixedWidthInteger>(
   retryOnInterrupt: Bool, _ f: () -> I
 ) -> Result<(), Errno> {
@@ -171,4 +171,39 @@ internal func _mapByteRangeToByteOffsets(
     return (start, 0)
   }
   return (start, br.upperBound - start)
+}
+
+internal func _withOptionalUnsafePointerOrNull<T, R>(
+  to value: T?,
+  _ body: (UnsafePointer<T>?) throws -> R
+) rethrows -> R {
+  guard let value = value else {
+    return try body(nil)
+  }
+  return try withUnsafePointer(to: value, body)
+}
+
+/// Calls `body` with a temporary buffer of the indicated size,
+/// possibly stack-allocated.
+internal func _withStackBuffer<R>(
+  capacity: Int,
+  _ body: (UnsafeMutableRawBufferPointer) throws -> R
+) rethrows -> R {
+  typealias StackStorage = (
+    UInt64, UInt64, UInt64, UInt64,
+    UInt64, UInt64, UInt64, UInt64,
+    UInt64, UInt64, UInt64, UInt64,
+    UInt64, UInt64, UInt64, UInt64
+  )
+  if capacity > MemoryLayout<StackStorage>.size {
+    var buffer = _RawBuffer(minimumCapacity: capacity)
+    return try buffer.withUnsafeMutableBytes { buffer in
+      try body(.init(rebasing: buffer[..<capacity]))
+    }
+  } else {
+    var storage: StackStorage = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    return try withUnsafeMutableBytes(of: &storage) { buffer in
+      try body(.init(rebasing: buffer[..<capacity]))
+    }
+  }
 }

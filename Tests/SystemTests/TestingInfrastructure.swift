@@ -15,6 +15,25 @@ import XCTest
 @testable import System
 #endif
 
+internal struct Wildcard: Hashable {}
+
+extension Trace.Entry {
+  /// This implements `==` with wildcard matching.
+  /// (`Entry` cannot conform to `Equatable`/`Hashable` this way because
+  /// the wildcard matching `==` relation isn't transitive.)
+  internal func matches(_ other: Self) -> Bool {
+    guard self.name == other.name else { return false }
+    guard self.arguments.count == other.arguments.count else { return false }
+    for i in self.arguments.indices {
+      if self.arguments[i] is Wildcard || other.arguments[i] is Wildcard {
+        continue
+      }
+      guard self.arguments[i] == other.arguments[i] else { return false }
+    }
+    return true
+  }
+}
+
 // To aid debugging, force failures to fatal error
 internal var forceFatalFailures = false
 
@@ -40,7 +59,7 @@ extension TestCase {
     _ message: String? = nil
   ) where S1.Element: Equatable, S1.Element == S2.Element {
     if !expected.elementsEqual(actual) {
-      defer { print("expected: \(expected), actual: \(actual)") }
+      defer { print("expected: \(expected)\n  actual: \(actual)") }
       fail(message)
     }
   }
@@ -49,7 +68,7 @@ extension TestCase {
     _ message: String? = nil
   ) {
     if actual != expected {
-      defer { print("expected: \(expected), actual: \(actual)") }
+      defer { print("expected: \(expected)\n  actual: \(actual)") }
       fail(message)
     }
   }
@@ -59,6 +78,27 @@ extension TestCase {
   ) {
     if actual == expected {
       defer { print("expected not equal: \(expected) and \(actual)") }
+      fail(message)
+    }
+  }
+  func expectMatch(
+    _ expected: Trace.Entry?, _ actual: Trace.Entry?,
+    _ message: String? = nil
+  ) {
+    func check() -> Bool {
+      switch (expected, actual) {
+      case let (expected?, actual?):
+        return expected.matches(actual)
+      case (nil, nil):
+        return true
+      default:
+        return false
+      }
+    }
+    if !check() {
+      let e = expected.map { "\($0)" } ?? "nil"
+      let a = actual.map { "\($0)" } ?? "nil"
+      defer { print("expected: \(e)\n  actual: \(a)") }
       fail(message)
     }
   }
@@ -149,7 +189,7 @@ internal struct MockTestCase: TestCase {
       // Test our API mappings to the lower-level syscall invocation
       do {
         try body(true)
-        self.expectEqual(self.expected, mocking.trace.dequeue())
+        self.expectMatch(self.expected, mocking.trace.dequeue())
       } catch {
         self.fail()
       }
@@ -158,9 +198,9 @@ internal struct MockTestCase: TestCase {
       guard interruptBehavior != .noError else {
         do {
           try body(interruptable)
-          self.expectEqual(self.expected, mocking.trace.dequeue())
+          self.expectMatch(self.expected, mocking.trace.dequeue())
           try body(!interruptable)
-          self.expectEqual(self.expected, mocking.trace.dequeue())
+          self.expectMatch(self.expected, mocking.trace.dequeue())
         } catch {
           self.fail()
         }
@@ -177,7 +217,7 @@ internal struct MockTestCase: TestCase {
         self.fail()
       } catch Errno.interrupted {
         // Success!
-        self.expectEqual(self.expected, mocking.trace.dequeue())
+        self.expectMatch(self.expected, mocking.trace.dequeue())
       } catch {
         self.fail()
       }
@@ -188,13 +228,13 @@ internal struct MockTestCase: TestCase {
         mocking.forceErrno = .counted(errno: EINTR, count: 3)
 
         try body(interruptable)
-        self.expectEqual(self.expected, mocking.trace.dequeue()) // EINTR
-        self.expectEqual(self.expected, mocking.trace.dequeue()) // EINTR
-        self.expectEqual(self.expected, mocking.trace.dequeue()) // EINTR
-        self.expectEqual(self.expected, mocking.trace.dequeue()) // Success
+        self.expectMatch(self.expected, mocking.trace.dequeue()) // EINTR
+        self.expectMatch(self.expected, mocking.trace.dequeue()) // EINTR
+        self.expectMatch(self.expected, mocking.trace.dequeue()) // EINTR
+        self.expectMatch(self.expected, mocking.trace.dequeue()) // Success
       } catch Errno.interrupted {
         self.expectFalse(interruptable)
-        self.expectEqual(self.expected, mocking.trace.dequeue()) // EINTR
+        self.expectMatch(self.expected, mocking.trace.dequeue()) // EINTR
       } catch {
         self.fail()
       }

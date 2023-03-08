@@ -13,9 +13,11 @@ add_library(SystemPackage
   FileHelpers.swift
   FileOperations.swift
   FilePermissions.swift
+  MachPort.swift
   PlatformString.swift
   SystemString.swift
   Util.swift
+  Util+StringArray.swift
   UtilConsumers.swift)
 set_target_properties(SystemPackage PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
@@ -28,10 +30,12 @@ target_sources(SystemPackage PRIVATE
   FilePath/FilePathSyntax.swift
   FilePath/FilePathWindows.swift)
 target_sources(SystemPackage PRIVATE
+  Internals/Backcompat.swift
   Internals/CInterop.swift
   Internals/Constants.swift
   Internals/Exports.swift
   Internals/Mocking.swift
+  Internals/RawBuffer.swift
   Internals/Syscalls.swift
   Internals/WindowsSyscallAdapters.swift)
 target_link_libraries(SystemPackage PUBLIC

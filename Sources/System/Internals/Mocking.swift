@@ -19,9 +19,10 @@
 
 #if ENABLE_MOCKING
 internal struct Trace {
-  internal struct Entry: Hashable {
-    private var name: String
-    private var arguments: [AnyHashable]
+  internal struct Entry {
+
+    internal var name: String
+    internal var arguments: [AnyHashable]
 
     internal init(name: String, _ arguments: [AnyHashable]) {
       self.name = name

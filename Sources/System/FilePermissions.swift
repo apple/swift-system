@@ -17,18 +17,18 @@
 ///     let perms = FilePermissions(rawValue: 0o644)
 ///     perms == [.ownerReadWrite, .groupRead, .otherRead] // true
 @frozen
-/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 public struct FilePermissions: OptionSet, Hashable, Codable {
   /// The raw C file permissions.
   @_alwaysEmitIntoClient
-  public let rawValue: CInterop.Mode
+  public let rawValue: CModeT
 
   /// Create a strongly-typed file permission from a raw C value.
   @_alwaysEmitIntoClient
-  public init(rawValue: CInterop.Mode) { self.rawValue = rawValue }
+  public init(rawValue: CModeT) { self.rawValue = rawValue }
 
   @_alwaysEmitIntoClient
-  private init(_ raw: CInterop.Mode) { self.init(rawValue: raw) }
+  private init(_ raw: CModeT) { self.init(rawValue: raw) }
 
   /// Indicates that other users have read-only permission.
   @_alwaysEmitIntoClient
@@ -135,7 +135,7 @@ public struct FilePermissions: OptionSet, Hashable, Codable {
   public static var saveText: FilePermissions { FilePermissions(0o1000) }
 }
 
-/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FilePermissions
   : CustomStringConvertible, CustomDebugStringConvertible
 {
@@ -175,3 +175,7 @@ extension FilePermissions
   /// A textual representation of the file permissions, suitable for debugging.
   public var debugDescription: String { self.description }
 }
+
+#if compiler(>=5.5) && canImport(_Concurrency)
+extension FilePermissions: Sendable {}
+#endif

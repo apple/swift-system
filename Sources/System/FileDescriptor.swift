@@ -14,7 +14,7 @@
 /// of `FileDescriptor` values,
 /// in the same way as you manage a raw C file handle.
 @frozen
-/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 public struct FileDescriptor: RawRepresentable, Hashable, Codable {
   /// The raw C file handle.
   @_alwaysEmitIntoClient
@@ -25,7 +25,8 @@ public struct FileDescriptor: RawRepresentable, Hashable, Codable {
   public init(rawValue: CInt) { self.rawValue = rawValue }
 }
 
-// Standard file descriptors
+// Standard file descriptors.
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FileDescriptor {
   /// The standard input file descriptor, with a numeric value of 0.
   @_alwaysEmitIntoClient
@@ -40,7 +41,7 @@ extension FileDescriptor {
   public static var standardError: FileDescriptor { .init(rawValue: 2) }
 }
 
-/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FileDescriptor {
   /// The desired read and write access for a newly opened file.
   @frozen
@@ -385,7 +386,7 @@ extension FileDescriptor {
   }
 }
 
-/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FileDescriptor.AccessMode
   : CustomStringConvertible, CustomDebugStringConvertible
 {
@@ -404,7 +405,7 @@ extension FileDescriptor.AccessMode
   public var debugDescription: String { self.description }
 }
 
-/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FileDescriptor.SeekOrigin
   : CustomStringConvertible, CustomDebugStringConvertible
 {
@@ -427,7 +428,7 @@ extension FileDescriptor.SeekOrigin
   public var debugDescription: String { self.description }
 }
 
-/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FileDescriptor.OpenOptions
   : CustomStringConvertible, CustomDebugStringConvertible
 {
@@ -473,3 +474,14 @@ extension FileDescriptor.OpenOptions
   /// A textual representation of the open options, suitable for debugging.
   public var debugDescription: String { self.description }
 }
+
+#if compiler(>=5.5) && canImport(_Concurrency)
+// The decision on whether to make FileDescriptor Sendable or not
+// is currently being discussed in https://github.com/apple/swift-system/pull/112
+//@available(*, unavailable, message: "File descriptors are not completely thread-safe.")
+//extension FileDescriptor: Sendable {}
+
+extension FileDescriptor.AccessMode: Sendable {}
+extension FileDescriptor.OpenOptions: Sendable {}
+extension FileDescriptor.SeekOrigin: Sendable {}
+#endif

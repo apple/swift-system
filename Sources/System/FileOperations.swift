@@ -7,7 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FileDescriptor {
   /// Opens or creates a file for reading or writing.
   ///
@@ -31,12 +31,70 @@ extension FileDescriptor {
     permissions: FilePermissions? = nil,
     retryOnInterrupt: Bool = true
   ) throws -> FileDescriptor {
-    try path.withPlatformString {
+    #if !os(Windows)
+    return try path.withCString {
       try FileDescriptor.open(
         $0, mode, options: options, permissions: permissions, retryOnInterrupt: retryOnInterrupt)
     }
+    #else 
+    return try path.withPlatformString {
+      try FileDescriptor.open(
+        $0, mode, options: options, permissions: permissions, retryOnInterrupt: retryOnInterrupt)
+    }
+    #endif
   }
 
+  #if !os(Windows) 
+  // On Darwin, `CInterop.PlatformChar` is less available than 
+  // `FileDescriptor.open`, so we need to use `CChar` instead.
+  
+  /// Opens or creates a file for reading or writing.
+  ///
+  /// - Parameters:
+  ///   - path: The location of the file to open.
+  ///   - mode: The read and write access to use.
+  ///   - options: The behavior for opening the file.
+  ///   - permissions: The file permissions to use for created files.
+  ///   - retryOnInterrupt: Whether to retry the open operation
+  ///     if it throws ``Errno/interrupted``.
+  ///     The default is `true`.
+  ///     Pass `false` to try only once and throw an error upon interruption.
+  /// - Returns: A file descriptor for the open file
+  ///
+  /// The corresponding C function is `open`.
+  @_alwaysEmitIntoClient
+  public static func open(
+    _ path: UnsafePointer<CChar>,
+    _ mode: FileDescriptor.AccessMode,
+    options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
+    permissions: FilePermissions? = nil,
+    retryOnInterrupt: Bool = true
+  ) throws -> FileDescriptor {
+    try FileDescriptor._open(
+      path, mode, options: options, permissions: permissions, retryOnInterrupt: retryOnInterrupt
+    ).get()
+  }
+
+  @usableFromInline
+  internal static func _open(
+    _ path: UnsafePointer<CChar>,
+    _ mode: FileDescriptor.AccessMode,
+    options: FileDescriptor.OpenOptions,
+    permissions: FilePermissions?,
+    retryOnInterrupt: Bool
+  ) -> Result<FileDescriptor, Errno> {
+    let oFlag = mode.rawValue | options.rawValue
+    let descOrError: Result<CInt, Errno> = valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+      if let permissions = permissions {
+        return system_open(path, oFlag, permissions.rawValue)
+      }
+      precondition(!options.contains(.create),
+        "Create must be given permissions")
+      return system_open(path, oFlag)
+    }
+    return descOrError.map { FileDescriptor(rawValue: $0) }
+  }
+  #else
   /// Opens or creates a file for reading or writing.
   ///
   /// - Parameters:
@@ -83,6 +141,7 @@ extension FileDescriptor {
     }
     return descOrError.map { FileDescriptor(rawValue: $0) }
   }
+  #endif
 
   /// Deletes a file descriptor.
   ///
@@ -308,7 +367,10 @@ extension FileDescriptor {
       buffer,
       retryOnInterrupt: retryOnInterrupt)
   }
+}
 
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
+extension FileDescriptor {
   /// Duplicate this file descriptor and return the newly created copy.
   ///
   /// - Parameters:
@@ -337,7 +399,7 @@ extension FileDescriptor {
   ///
   /// The corresponding C functions are `dup` and `dup2`.
   @_alwaysEmitIntoClient
-  /*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
+  @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
   public func duplicate(
     as target: FileDescriptor? = nil,
     retryOnInterrupt: Bool = true
@@ -345,7 +407,7 @@ extension FileDescriptor {
     try _duplicate(as: target, retryOnInterrupt: retryOnInterrupt).get()
   }
 
-  /*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
+  @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
   @usableFromInline
   internal func _duplicate(
     as target: FileDescriptor?,
@@ -373,7 +435,7 @@ extension FileDescriptor {
 }
 
 #if !os(Windows)
-/*System 1.1.0, @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)*/
+@available(/*System 1.1.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
 extension FileDescriptor {
   /// Create a pipe, a unidirectional data channel which can be used for interprocess communication.
   ///
@@ -381,12 +443,12 @@ extension FileDescriptor {
   ///
   /// The corresponding C function is `pipe`.
   @_alwaysEmitIntoClient
-  /*System 1.1.0, @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)*/
+  @available(/*System 1.1.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
   public static func pipe() throws -> (readEnd: FileDescriptor, writeEnd: FileDescriptor) {
     try _pipe().get()
   }
-  
-  /*System 1.1.0, @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)*/
+
+  @available(/*System 1.1.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
   @usableFromInline
   internal static func _pipe() -> Result<(readEnd: FileDescriptor, writeEnd: FileDescriptor), Errno> {
     var fds: (Int32, Int32) = (-1, -1)
@@ -402,7 +464,7 @@ extension FileDescriptor {
 #endif
 
 #if !os(Windows)
-/*System 1.2.0, @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)*/
+@available(/*System 1.2.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
 extension FileDescriptor {
   /// Truncate or extend the file referenced by this file descriptor.
   ///
@@ -424,7 +486,7 @@ extension FileDescriptor {
   /// associated with the file.
   ///
   /// The corresponding C function is `ftruncate`.
-  /*System 1.2.0, @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)*/
+  @available(/*System 1.2.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
   @_alwaysEmitIntoClient
   public func resize(
     to newSize: Int64,
@@ -436,7 +498,7 @@ extension FileDescriptor {
     ).get()
   }
 
-  /*System 1.2.0, @available(macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, *)*/
+  @available(/*System 1.2.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
   @usableFromInline
   internal func _resize(
     to newSize: Int64,

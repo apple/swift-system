@@ -9,7 +9,7 @@
 
 // MARK: - API
 
-/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath {
   /// Represents a root of a file path.
   ///
@@ -54,7 +54,6 @@ extension FilePath {
   ///     file.kind == .regular           // true
   ///     file.extension                  // "txt"
   ///     path.append(file)               // path is "/tmp/foo.txt"
-  ///
   public struct Component {
     internal var _path: FilePath
     internal var _range: Range<SystemString.Index>
@@ -73,7 +72,7 @@ extension FilePath {
   }
 }
 
-/*System 0.0.2, @available(macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0, *)*/
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.Component {
 
   /// Whether a component is a regular file or directory name, or a special
@@ -98,6 +97,7 @@ extension FilePath.Component {
   }
 }
 
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.Root {
   // TODO: Windows analysis APIs
 }
@@ -183,15 +183,18 @@ extension _PathSlice {
   internal var _storage: SystemString { _path._storage }
 }
 
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.Component: _PathSlice {
 }
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.Root: _PathSlice {
   internal var _range: Range<SystemString.Index> {
     (..<_rootEnd).relative(to: _path._storage)
   }
 }
+
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FilePath: _PlatformStringable {
-  @usableFromInline
   func _withPlatformString<Result>(_ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result) rethrows -> Result {
     try _storage.withPlatformString(body)
   }
@@ -202,6 +205,7 @@ extension FilePath: _PlatformStringable {
 
 }
 
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.Component {
   // The index of the `.` denoting an extension
   internal func _extensionIndex() -> SystemString.Index? {
@@ -230,6 +234,7 @@ internal func _makeExtension(_ ext: String) -> SystemString {
   return result
 }
 
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.Component {
   internal init?(_ str: SystemString) {
     // FIXME: explicit null root? Or something else?
@@ -242,6 +247,7 @@ extension FilePath.Component {
   }
 }
 
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.Root {
   internal init?(_ str: SystemString) {
     // FIXME: explicit null root? Or something else?
@@ -256,6 +262,7 @@ extension FilePath.Root {
 
 // MARK: - Invariants
 
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.Component {
   // TODO: ensure this all gets easily optimized away in release...
   internal func _invariantCheck() {
@@ -267,6 +274,8 @@ extension FilePath.Component {
     #endif // DEBUG
   }
 }
+
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.Root {
   internal func _invariantCheck() {
     #if DEBUG
@@ -276,3 +285,9 @@ extension FilePath.Root {
     #endif
   }
 }
+
+#if compiler(>=5.5) && canImport(_Concurrency)
+extension FilePath.Root: Sendable {}
+extension FilePath.Component: Sendable {}
+extension FilePath.Component.Kind: Sendable {}
+#endif

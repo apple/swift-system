@@ -7,7 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-/*System 0.0.1, @available(macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0, *)*/
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FileDescriptor {
   /// Runs a closure and then closes the file descriptor, even if an error occurs.
   ///
