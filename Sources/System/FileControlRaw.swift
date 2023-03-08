@@ -103,6 +103,14 @@ extension FileDescriptor {
     @_alwaysEmitIntoClient
     public static var duplicate: Command { Command(F_DUPFD) }
 
+    /// Mark the dup with FD_CLOEXEC.
+    ///
+    /// The corresponding C constant is `F_DUPFD_CLOEXEC`
+    @_alwaysEmitIntoClient
+    public static var duplicateCloseOnExec: Command {
+      Command(F_DUPFD_CLOEXEC)
+    }
+
     /// Get file descriptor flags.
     ///
     /// Note: A Swiftier wrapper is `FileDescriptor.getFlags()`.
@@ -178,6 +186,8 @@ extension FileDescriptor {
     /// The corresponding C constant is `F_SETLKW`.
     @_alwaysEmitIntoClient
     public static var setLockWait: Command { Command(F_SETLKW) }
+
+#if !os(Linux)
 
     /// Wait if blocked, return on timeout.
     ///
@@ -337,14 +347,6 @@ extension FileDescriptor {
     /// The corresponding C constant is `F_GETLKPID`.
     @_alwaysEmitIntoClient
     public static var getLockPID: Command { Command(F_GETLKPID) }
-
-    /// Mark the dup with FD_CLOEXEC.
-    ///
-    /// The corresponding C constant is `F_DUPFD_CLOEXEC`
-    @_alwaysEmitIntoClient
-    public static var duplicateCloseOnExec: Command {
-      Command(F_DUPFD_CLOEXEC)
-    }
 
     /// Mark the file as being the backing store for another filesystem.
     ///
@@ -552,6 +554,8 @@ extension FileDescriptor {
     public static var startOfVolume: Command {
       Command(F_VOLPOSMODE)
     }
+
+#endif // !os(Linux)
 
     /// Get open file description record locking information.
     ///

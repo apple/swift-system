@@ -118,6 +118,8 @@ extension FileDescriptor {
       cmd, minRawValue, retryOnInterrupt: retryOnInterrupt))
   }
 
+#if !os(Linux)
+
   /// Get the path of the file descriptor
   ///
   /// - Parameters:
@@ -144,6 +146,9 @@ extension FileDescriptor {
     }
     return FilePath(SystemString(nullTerminated: bytes))
   }
+
+#endif // !os(Linux)
+
 }
 
 #endif // !os(Windows)
