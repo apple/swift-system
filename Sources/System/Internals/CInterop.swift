@@ -87,7 +87,13 @@ public enum CInterop {
   /// might otherwise appear. This typealias allows conversion code to be
   /// emitted into client.
   public typealias Offset = off_t
-#endif
+
+  #if !os(Linux)
+  /// The C `fstore` type
+  public typealias FStore = fstore
+  #endif
+
+#endif // !os(Windows)
 
 }
 

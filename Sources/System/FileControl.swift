@@ -151,4 +151,86 @@ extension FileDescriptor {
 
 }
 
+extension FileDescriptor {
+  /// Low-level interface equivalent to C's `fcntl`. Note, most common operations have Swiftier
+  /// alternatives directly on `FileDescriptor`.
+  @_alwaysEmitIntoClient
+  public func control(
+    _ cmd: Command, retryOnInterrupt: Bool = true
+  ) throws -> CInt {
+    try _control(cmd, retryOnInterrupt: retryOnInterrupt).get()
+  }
+
+  /// Low-level interface equivalent to C's `fcntl`. Note, most common operations have Swiftier
+  /// alternatives directly on `FileDescriptor`.
+  @_alwaysEmitIntoClient
+  public func control(
+    _ cmd: Command, _ arg: CInt, retryOnInterrupt: Bool = true
+  ) throws -> CInt {
+    try _control(cmd, arg, retryOnInterrupt: retryOnInterrupt).get()
+  }
+
+  /// Low-level interface equivalent to C's `fcntl`. Note, most common operations have Swiftier
+  /// alternatives directly on `FileDescriptor`.
+  @_alwaysEmitIntoClient
+  public func control(
+    _ cmd: Command,
+    _ ptr: UnsafeMutableRawPointer,
+    retryOnInterrupt: Bool = true
+  ) throws -> CInt {
+    try _control(cmd, ptr, retryOnInterrupt: retryOnInterrupt).get()
+  }
+
+  /// Low-level interface equivalent to C's `fcntl`. Note, most common operations have Swiftier
+  /// alternatives directly on `FileDescriptor`.
+  @_alwaysEmitIntoClient
+  public func control(
+    _ cmd: Command,
+    _ lock: inout FileDescriptor.FileLock,
+    retryOnInterrupt: Bool = true
+  ) throws -> CInt {
+    try _control(cmd, &lock, retryOnInterrupt: retryOnInterrupt).get()
+  }
+
+  @usableFromInline
+  internal func _control(
+    _ cmd: Command, retryOnInterrupt: Bool
+  ) -> Result<CInt, Errno> {
+    valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+      system_fcntl(self.rawValue, cmd.rawValue)
+    }
+  }
+  @usableFromInline
+  internal func _control(
+    _ cmd: Command, _ arg: CInt, retryOnInterrupt: Bool
+  ) -> Result<CInt, Errno> {
+    valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+      system_fcntl(self.rawValue, cmd.rawValue, arg)
+    }
+  }
+  @usableFromInline
+  internal func _control(
+    _ cmd: Command,
+    _ ptr: UnsafeMutableRawPointer,
+    retryOnInterrupt: Bool
+  ) -> Result<CInt, Errno> {
+    valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+      system_fcntl(self.rawValue, cmd.rawValue, ptr)
+    }
+  }
+  
+  @usableFromInline
+  internal func _control(
+    _ cmd: Command,
+    _ lock: inout FileDescriptor.FileLock,
+    retryOnInterrupt: Bool
+  ) -> Result<(), Errno> {
+    nothingOrErrno(retryOnInterrupt: retryOnInterrupt) {
+      withUnsafeMutablePointer(to: &lock) {
+        system_fcntl(self.rawValue, cmd.rawValue, $0)
+      }
+    }
+  }
+}
+
 #endif // !os(Windows)
