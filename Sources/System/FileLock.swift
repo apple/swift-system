@@ -141,10 +141,12 @@ extension FileDescriptor.FileLock {
 extension FileDescriptor {
   /// Set an advisory open file description lock.
   ///
-  /// If the open file description already has a lock, the old lock is
-  /// replaced. If the lock cannot be set because it is blocked by an existing lock,
-  /// that is if the syscall would throw `.resourceTemporarilyUnavailable`
-  /// (aka `EAGAIN`), this will return `false`.
+  /// If the open file description already has a lock over `byteRange`, that
+  /// portion of the old lock is replaced. If `byteRange` is `nil`, the
+  /// entire file is considered. If the lock cannot be set because it is
+  /// blocked by an existing lock, that is if the syscall would throw
+  /// `.resourceTemporarilyUnavailable`(aka `EAGAIN`), this will return
+  /// `false`.
   ///
   /// Open file description locks are associated with an open file
   /// description (see `FileDescriptor.open`). Duplicated
@@ -191,9 +193,11 @@ extension FileDescriptor {
 
   /// Set an advisory open file description lock.
   ///
-  /// If the open file description already has a lock, the old lock is
-  /// replaced. If the lock cannot be set because it is blocked by an existing lock and
-  /// `wait` is true, this will wait until the lock can be set, otherwise returns `false`.
+  /// If the open file description already has a lock over `byteRange`, that
+  /// portion of the old lock is replaced. If `byteRange` is `nil`, the
+  /// entire file is considered. If the lock cannot be set because it is
+  /// blocked by an existing lock and `wait` is true, this will wait until
+  /// the lock can be set, otherwise returns `false`.
   ///
   /// Open file description locks are associated with an open file
   /// description (see `FileDescriptor.open`). Duplicated
@@ -243,10 +247,12 @@ extension FileDescriptor {
 #if !os(Linux)
   /// Set an advisory open file description lock.
   ///
-  /// If the open file description already has a lock, the old lock is
-  /// replaced. If the lock cannot be set because it is blocked by an existing lock and
-  /// `waitUntilTimeout` is true, this will wait until the lock can be set (or the operating
-  /// system's timeout expires), otherwise returns `false`.
+  /// If the open file description already has a lock over `byteRange`, that
+  /// portion of the old lock is replaced. If `byteRange` is `nil`, the
+  /// entire file is considered. If the lock cannot be set because it is
+  /// blocked by an existing lock and `waitUntilTimeout` is true, this will
+  /// wait until the lock can be set(or the operating system's timeout
+  /// expires), otherwise returns `false`.
   ///
   /// Open file description locks are associated with an open file
   /// description (see `FileDescriptor.open`). Duplicated
