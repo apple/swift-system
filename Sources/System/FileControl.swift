@@ -192,6 +192,64 @@ extension FileDescriptor {
     try _control(cmd, &lock, retryOnInterrupt: retryOnInterrupt).get()
   }
 
+#if !os(Linux)
+
+  // TODO: Worth calling out the command to supply in docs?
+
+  /// Low-level interface equivalent to C's `fcntl`. Note, most common operations have Swiftier
+  /// alternatives directly on `FileDescriptor`.
+  @_alwaysEmitIntoClient
+  public func control(
+    _ cmd: Command,
+    _ type: inout FileDescriptor.ControlTypes.Store,
+    retryOnInterrupt: Bool = true
+  ) throws -> CInt {
+    try withUnsafeMutablePointer(to: &type) {
+      try _control(cmd, $0, retryOnInterrupt: retryOnInterrupt).get()
+    }
+  }
+
+  /// Low-level interface equivalent to C's `fcntl`. Note, most common operations have Swiftier
+  /// alternatives directly on `FileDescriptor`.
+  @_alwaysEmitIntoClient
+  public func control(
+    _ cmd: Command,
+    _ type: inout FileDescriptor.ControlTypes.Punchhole,
+    retryOnInterrupt: Bool = true
+  ) throws -> CInt {
+    try withUnsafeMutablePointer(to: &type) {
+      try _control(cmd, $0, retryOnInterrupt: retryOnInterrupt).get()
+    }
+  }
+
+  /// Low-level interface equivalent to C's `fcntl`. Note, most common operations have Swiftier
+  /// alternatives directly on `FileDescriptor`.
+  @_alwaysEmitIntoClient
+  public func control(
+    _ cmd: Command,
+    _ type: inout FileDescriptor.ControlTypes.ReadAdvisory,
+    retryOnInterrupt: Bool = true
+  ) throws -> CInt {
+    try withUnsafeMutablePointer(to: &type) {
+      try _control(cmd, $0, retryOnInterrupt: retryOnInterrupt).get()
+    }
+  }
+
+  /// Low-level interface equivalent to C's `fcntl`. Note, most common operations have Swiftier
+  /// alternatives directly on `FileDescriptor`.
+  @_alwaysEmitIntoClient
+  public func control(
+    _ cmd: Command,
+    _ type: inout FileDescriptor.ControlTypes.LogicalToPhysical,
+    retryOnInterrupt: Bool = true
+  ) throws -> CInt {
+    try withUnsafeMutablePointer(to: &type) {
+      try _control(cmd, $0, retryOnInterrupt: retryOnInterrupt).get()
+    }
+  }
+
+#endif // !os(Linux)
+
   @usableFromInline
   internal func _control(
     _ cmd: Command, retryOnInterrupt: Bool
@@ -218,7 +276,7 @@ extension FileDescriptor {
       system_fcntl(self.rawValue, cmd.rawValue, ptr)
     }
   }
-  
+
   @usableFromInline
   internal func _control(
     _ cmd: Command,

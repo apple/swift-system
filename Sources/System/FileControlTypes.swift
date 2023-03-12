@@ -26,7 +26,7 @@ extension FileDescriptor {
   @frozen
   public struct Flags: OptionSet, Sendable {
     @_alwaysEmitIntoClient
-    public let rawValue: CInt
+    public var rawValue: CInt
 
     @_alwaysEmitIntoClient
     public init(rawValue: CInt) { self.rawValue = rawValue }
@@ -44,7 +44,7 @@ extension FileDescriptor {
   @frozen
   public struct StatusFlags: OptionSet, Sendable {
     @_alwaysEmitIntoClient
-    public let rawValue: CInt
+    public var rawValue: CInt
 
     @_alwaysEmitIntoClient
     public init(rawValue: CInt) { self.rawValue = rawValue }
@@ -82,11 +82,11 @@ extension FileDescriptor {
   // TODO: Flatten these out? Rename this somehow?
   @frozen
   public enum ControlTypes {
-    /// TODO: preallocate description
+    /// The corresponding C type is `fstore`.
     @frozen
     public struct Store: RawRepresentable, Sendable {
       @_alwaysEmitIntoClient
-      public let rawValue: CInterop.FStore
+      public var rawValue: CInterop.FStore
 
       @_alwaysEmitIntoClient
       public init(rawValue: CInterop.FStore) { self.rawValue = rawValue }
@@ -94,7 +94,7 @@ extension FileDescriptor {
       @frozen
       public struct Flags: OptionSet, Sendable {
         @_alwaysEmitIntoClient
-        public let rawValue: UInt32
+        public var rawValue: UInt32
 
         @_alwaysEmitIntoClient
         public init(rawValue: UInt32) { self.rawValue = rawValue }
@@ -103,10 +103,58 @@ extension FileDescriptor {
       @frozen
       public struct PositionMode: RawRepresentable, Hashable, Sendable {
         @_alwaysEmitIntoClient
-        public let rawValue: CInt
+        public var rawValue: CInt
 
         @_alwaysEmitIntoClient
         public init(rawValue: CInt) { self.rawValue = rawValue }
+      }
+    }
+
+    /// The corresponding C type is `fpunchhole`
+    @frozen
+    public struct Punchhole: RawRepresentable, Sendable {
+      @_alwaysEmitIntoClient
+      public var rawValue: CInterop.FPunchhole
+
+      @_alwaysEmitIntoClient
+      public init(rawValue: CInterop.FPunchhole) { self.rawValue = rawValue }
+
+      @frozen
+      public struct Flags: OptionSet, Sendable {
+        @_alwaysEmitIntoClient
+        public var rawValue: UInt32
+
+        @_alwaysEmitIntoClient
+        public init(rawValue: UInt32) { self.rawValue = rawValue }
+      }
+    }
+
+    /// The corresponding C type is `radvisory`
+    @frozen
+    public struct ReadAdvisory: RawRepresentable, Sendable {
+      @_alwaysEmitIntoClient
+      public var rawValue: CInterop.RAdvisory
+
+      @_alwaysEmitIntoClient
+      public init(rawValue: CInterop.RAdvisory) { self.rawValue = rawValue }
+    }
+
+    /// The corresponding C type is `log2phys`
+    @frozen
+    public struct LogicalToPhysical: RawRepresentable, Sendable {
+      @_alwaysEmitIntoClient
+      public var rawValue: CInterop.Log2Phys
+
+      @_alwaysEmitIntoClient
+      public init(rawValue: CInterop.Log2Phys) { self.rawValue = rawValue }
+
+      @frozen
+      public struct Flags: OptionSet, Sendable {
+        @_alwaysEmitIntoClient
+        public let rawValue: UInt32
+
+        @_alwaysEmitIntoClient
+        public init(rawValue: UInt32) { self.rawValue = rawValue }
       }
     }
   }
@@ -155,7 +203,130 @@ extension FileDescriptor.ControlTypes.Store.PositionMode {
 }
 
 extension FileDescriptor.ControlTypes.Store {
+  /// The corresponding C field is `fst_flags`
+  @_alwaysEmitIntoClient
+  public var flags: Flags {
+    get { .init(rawValue: rawValue.fst_flags) }
+    set { rawValue.fst_flags = newValue.rawValue }
+  }
 
+  /// Indicates mode for offset field
+  ///
+  /// The corresponding C field is `fst_posmode`
+  @_alwaysEmitIntoClient
+  public var positionMode: PositionMode {
+    get { .init(rawValue: rawValue.fst_posmode) }
+    set { rawValue.fst_posmode = newValue.rawValue }
+  }
+
+  /// Start of the region
+  ///
+  /// The corresponding C field is `fst_offset`
+  @_alwaysEmitIntoClient
+  public var offset: Int64 {
+    get { .init(rawValue.fst_offset) }
+    set { rawValue.fst_offset = CInterop.Offset(newValue) }
+  }
+
+  /// Size of the region
+  ///
+  /// The corresponding C field is `fst_length`
+  @_alwaysEmitIntoClient
+  public var length: Int64 {
+    get { .init(rawValue.fst_length) }
+    set { rawValue.fst_length = CInterop.Offset(newValue) }
+  }
+
+  /// Output: number of bytes allocated
+  ///
+  /// The corresponding C field is `fst_bytesalloc`
+  @_alwaysEmitIntoClient
+  public var bytesAllocated: Int64 {
+    get { .init(rawValue.fst_bytesalloc) }
+    set { rawValue.fst_bytesalloc = CInterop.Offset(newValue) }
+  }
+}
+
+extension FileDescriptor.ControlTypes.Punchhole {
+  /// The corresponding C field is `fp_flags`
+  @_alwaysEmitIntoClient
+  public var flags: Flags {
+    get { .init(rawValue: rawValue.fp_flags) }
+    set { rawValue.fp_flags = newValue.rawValue }
+  }
+
+  // No API for the reserved field
+
+  /// Start of the region
+  ///
+  /// The corresponding C field is `fp_offset`
+  @_alwaysEmitIntoClient
+  public var offset: Int64 {
+    get { .init(rawValue.fp_offset) }
+    set { rawValue.fp_offset = CInterop.Offset(newValue) }
+  }
+
+  /// Size of the region
+  ///
+  /// The corresponding C field is `fp_length`
+  @_alwaysEmitIntoClient
+  public var length: Int64 {
+    get { .init(rawValue.fp_length) }
+    set { rawValue.fp_length = CInterop.Offset(newValue) }
+  }
+}
+
+extension FileDescriptor.ControlTypes.ReadAdvisory {
+  /// Offset into the file
+  ///
+  /// The corresponding C field is `ra_offset`
+  @_alwaysEmitIntoClient
+  public var offset: Int64 {
+    get { .init(rawValue.ra_offset) }
+    set { rawValue.ra_offset = CInterop.Offset(newValue) }
+  }
+
+  /// Size of the read
+  ///
+  /// The corresponding C field is `ra_count`
+  @_alwaysEmitIntoClient
+  public var count: Int {
+    get { .init(rawValue.ra_count) }
+    set { rawValue.ra_count = CInt(newValue) }
+  }
+}
+
+extension FileDescriptor.ControlTypes.LogicalToPhysical {
+  /// The corresponding C field is `l2p_flags`
+  @_alwaysEmitIntoClient
+  public var flags: Flags {
+    get { .init(rawValue: rawValue.l2p_flags) }
+    set { rawValue.l2p_flags = newValue.rawValue }
+  }
+
+  /// When used with `logicalToPhysicalExtended`:
+  /// - In: number of bytes to be queried;
+  /// - Out: number of contiguous bytes allocated at this position */
+  ///
+  /// The corresponding C field is `l2p_contigbytes`
+  @_alwaysEmitIntoClient
+  public var contiguousBytes: Int64 {
+    get { .init(rawValue.l2p_contigbytes) }
+    set { rawValue.l2p_contigbytes = CInterop.Offset(newValue) }
+  }
+
+  /// When used with `logicalToPhysical`, bytes into file.
+  ///
+  /// When used with `logicalToPhysicalExtended`:
+  /// - In: bytes into file
+  /// - Out: bytes into device
+  ///
+  /// The corresponding C field is `l2p_devoffset`
+  @_alwaysEmitIntoClient
+  public var deviceOffset: Int64 {
+    get { .init(rawValue.l2p_devoffset) }
+    set { rawValue.l2p_devoffset = CInterop.Offset(newValue) }
+  }
 }
 
 #endif // !os(Linux)

@@ -280,7 +280,7 @@ extension FileDescriptor.Command {
   ///
   /// The corresponding C constant is `F_LOG2PHYS_EXT`.
   @_alwaysEmitIntoClient
-  public static var log2physExtended: Self {
+  public static var logicalToPhysicalExtended: Self {
     .init(F_LOG2PHYS_EXT)
   }
 

@@ -91,6 +91,15 @@ public enum CInterop {
   #if !os(Linux)
   /// The C `fstore` type
   public typealias FStore = fstore
+
+  /// The C `fpunchhole` type
+  public typealias FPunchhole = fpunchhole
+
+  /// The C `radvisory` type
+  public typealias RAdvisory = radvisory
+
+  /// The C `radvisory` type
+  public typealias Log2Phys = log2phys
   #endif
 
 #endif // !os(Windows)
