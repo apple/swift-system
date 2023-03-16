@@ -55,11 +55,9 @@ extension FileDescriptor {
     _ = try control(
       .setStatusFlags, flags.rawValue, retryOnInterrupt: retryOnInterrupt)
   }
-}
 
-extension FileDescriptor {
-  /// Get the process ID or process group currently receiv-
-  /// ing SIGIO and SIGURG signals.
+  /// Get the process ID or process ID group currently receiving SIGIO and
+  /// SIGURG signals.
   ///
   /// The corresponding C function is `fcntl` with the `F_GETOWN` command.
   @_alwaysEmitIntoClient
@@ -74,8 +72,8 @@ extension FileDescriptor {
     return (ProcessID(rawValue: pidOrPGID), isGroup: false)
   }
 
-  /// Set the process or process group to receive SIGIO and
-  /// SIGURG signals.
+  /// Set the process ID or process group ID to receive SIGIO and SIGURG
+  /// signals.
   ///
   /// The corresponding C function is `fcntl` with the `F_SETOWN` command.
   @_alwaysEmitIntoClient
@@ -96,14 +94,14 @@ extension FileDescriptor {
   /// - Returns: The lowest numbered available descriptor whose raw value is
   ///     greater than or equal to `minRawValue`.
   ///
-  /// File descriptors are merely references to some underlying system resource.
-  /// The system does not distinguish between the original and the new file
-  /// descriptor in any way. For example, read, write and seek operations on
-  /// one of them also affect the logical file position in the other, and
-  /// append mode, non-blocking I/O and asynchronous I/O options are shared
-  /// between the references. If a separate pointer into the file is desired,
-  /// a different object reference to the file must be obtained by issuing an
-  /// additional call to `open`.
+  /// File descriptors are merely references to some underlying system
+  /// resource. The system does not distinguish between the original and the
+  /// new file descriptor in any way. For example, read, write and seek
+  /// operations on one of them also affect the logical file position in the
+  /// other, and append mode, non-blocking I/O and asynchronous I/O options
+  /// are shared between the references. If a separate pointer into the file
+  /// is desired, a different object reference to the file must be obtained
+  /// by issuing an additional call to `open`.
   ///
   /// However, each file descriptor maintains its own close-on-exec flag.
   ///
@@ -152,8 +150,8 @@ extension FileDescriptor {
 }
 
 extension FileDescriptor {
-  /// Low-level interface equivalent to C's `fcntl`. Note, most common operations have Swiftier
-  /// alternatives directly on `FileDescriptor`.
+  /// Low-level interface equivalent to C's `fcntl`. Note, most common
+  /// operations have Swiftier alternatives directly on `FileDescriptor`.
   @_alwaysEmitIntoClient
   public func control(
     _ cmd: Command, retryOnInterrupt: Bool = true
@@ -161,8 +159,8 @@ extension FileDescriptor {
     try _control(cmd, retryOnInterrupt: retryOnInterrupt).get()
   }
 
-  /// Low-level interface equivalent to C's `fcntl`. Note, most common operations have Swiftier
-  /// alternatives directly on `FileDescriptor`.
+  /// Low-level interface equivalent to C's `fcntl`. Note, most common
+  /// operations have Swiftier alternatives directly on `FileDescriptor`.
   @_alwaysEmitIntoClient
   public func control(
     _ cmd: Command, _ arg: CInt, retryOnInterrupt: Bool = true
@@ -170,8 +168,8 @@ extension FileDescriptor {
     try _control(cmd, arg, retryOnInterrupt: retryOnInterrupt).get()
   }
 
-  /// Low-level interface equivalent to C's `fcntl`. Note, most common operations have Swiftier
-  /// alternatives directly on `FileDescriptor`.
+  /// Low-level interface equivalent to C's `fcntl`. Note, most common
+  /// operations have Swiftier alternatives directly on `FileDescriptor`.
   @_alwaysEmitIntoClient
   public func control(
     _ cmd: Command,
@@ -181,8 +179,8 @@ extension FileDescriptor {
     try _control(cmd, ptr, retryOnInterrupt: retryOnInterrupt).get()
   }
 
-  /// Low-level interface equivalent to C's `fcntl`. Note, most common operations have Swiftier
-  /// alternatives directly on `FileDescriptor`.
+  /// Low-level interface equivalent to C's `fcntl`. Note, most common
+  /// operations have Swiftier alternatives directly on `FileDescriptor`.
   @_alwaysEmitIntoClient
   public func control(
     _ cmd: Command,
@@ -196,8 +194,8 @@ extension FileDescriptor {
 
   // TODO: Worth calling out the command to supply in docs?
 
-  /// Low-level interface equivalent to C's `fcntl`. Note, most common operations have Swiftier
-  /// alternatives directly on `FileDescriptor`.
+  /// Low-level interface equivalent to C's `fcntl`. Note, most common
+  /// operations have Swiftier alternatives directly on `FileDescriptor`.
   @_alwaysEmitIntoClient
   public func control(
     _ cmd: Command,
@@ -209,8 +207,8 @@ extension FileDescriptor {
     }
   }
 
-  /// Low-level interface equivalent to C's `fcntl`. Note, most common operations have Swiftier
-  /// alternatives directly on `FileDescriptor`.
+  /// Low-level interface equivalent to C's `fcntl`. Note, most common
+  /// operations have Swiftier alternatives directly on `FileDescriptor`.
   @_alwaysEmitIntoClient
   public func control(
     _ cmd: Command,
@@ -222,8 +220,8 @@ extension FileDescriptor {
     }
   }
 
-  /// Low-level interface equivalent to C's `fcntl`. Note, most common operations have Swiftier
-  /// alternatives directly on `FileDescriptor`.
+  /// Low-level interface equivalent to C's `fcntl`. Note, most common
+  /// operations have Swiftier alternatives directly on `FileDescriptor`.
   @_alwaysEmitIntoClient
   public func control(
     _ cmd: Command,
@@ -235,8 +233,8 @@ extension FileDescriptor {
     }
   }
 
-  /// Low-level interface equivalent to C's `fcntl`. Note, most common operations have Swiftier
-  /// alternatives directly on `FileDescriptor`.
+  /// Low-level interface equivalent to C's `fcntl`. Note, most common
+  /// operations have Swiftier alternatives directly on `FileDescriptor`.
   @_alwaysEmitIntoClient
   public func control(
     _ cmd: Command,

@@ -79,83 +79,85 @@ extension FileDescriptor {
 
 #if !os(Linux)
 extension FileDescriptor {
-  // TODO: Flatten these out? Rename this somehow?
+  /// Namespace for types used with `FileDescriptor.control`.
   @frozen
-  public enum ControlTypes {
-    /// The corresponding C type is `fstore`.
+  public enum ControlTypes { }
+}
+
+extension FileDescriptor.ControlTypes {
+  /// The corresponding C type is `fstore`.
+  @frozen
+  public struct Store: RawRepresentable, Sendable {
+    @_alwaysEmitIntoClient
+    public var rawValue: CInterop.FStore
+
+    @_alwaysEmitIntoClient
+    public init(rawValue: CInterop.FStore) { self.rawValue = rawValue }
+
     @frozen
-    public struct Store: RawRepresentable, Sendable {
+    public struct Flags: OptionSet, Sendable {
       @_alwaysEmitIntoClient
-      public var rawValue: CInterop.FStore
+      public var rawValue: UInt32
 
       @_alwaysEmitIntoClient
-      public init(rawValue: CInterop.FStore) { self.rawValue = rawValue }
-
-      @frozen
-      public struct Flags: OptionSet, Sendable {
-        @_alwaysEmitIntoClient
-        public var rawValue: UInt32
-
-        @_alwaysEmitIntoClient
-        public init(rawValue: UInt32) { self.rawValue = rawValue }
-      }
-
-      @frozen
-      public struct PositionMode: RawRepresentable, Hashable, Sendable {
-        @_alwaysEmitIntoClient
-        public var rawValue: CInt
-
-        @_alwaysEmitIntoClient
-        public init(rawValue: CInt) { self.rawValue = rawValue }
-      }
+      public init(rawValue: UInt32) { self.rawValue = rawValue }
     }
 
-    /// The corresponding C type is `fpunchhole`
     @frozen
-    public struct Punchhole: RawRepresentable, Sendable {
+    public struct PositionMode: RawRepresentable, Hashable, Sendable {
       @_alwaysEmitIntoClient
-      public var rawValue: CInterop.FPunchhole
+      public var rawValue: CInt
 
       @_alwaysEmitIntoClient
-      public init(rawValue: CInterop.FPunchhole) { self.rawValue = rawValue }
-
-      @frozen
-      public struct Flags: OptionSet, Sendable {
-        @_alwaysEmitIntoClient
-        public var rawValue: UInt32
-
-        @_alwaysEmitIntoClient
-        public init(rawValue: UInt32) { self.rawValue = rawValue }
-      }
+      public init(rawValue: CInt) { self.rawValue = rawValue }
     }
+  }
 
-    /// The corresponding C type is `radvisory`
+  /// The corresponding C type is `fpunchhole`
+  @frozen
+  public struct Punchhole: RawRepresentable, Sendable {
+    @_alwaysEmitIntoClient
+    public var rawValue: CInterop.FPunchhole
+
+    @_alwaysEmitIntoClient
+    public init(rawValue: CInterop.FPunchhole) { self.rawValue = rawValue }
+
     @frozen
-    public struct ReadAdvisory: RawRepresentable, Sendable {
+    public struct Flags: OptionSet, Sendable {
       @_alwaysEmitIntoClient
-      public var rawValue: CInterop.RAdvisory
+      public var rawValue: UInt32
 
       @_alwaysEmitIntoClient
-      public init(rawValue: CInterop.RAdvisory) { self.rawValue = rawValue }
+      public init(rawValue: UInt32) { self.rawValue = rawValue }
     }
+  }
 
-    /// The corresponding C type is `log2phys`
+  /// The corresponding C type is `radvisory`
+  @frozen
+  public struct ReadAdvisory: RawRepresentable, Sendable {
+    @_alwaysEmitIntoClient
+    public var rawValue: CInterop.RAdvisory
+
+    @_alwaysEmitIntoClient
+    public init(rawValue: CInterop.RAdvisory) { self.rawValue = rawValue }
+  }
+
+  /// The corresponding C type is `log2phys`
+  @frozen
+  public struct LogicalToPhysical: RawRepresentable, Sendable {
+    @_alwaysEmitIntoClient
+    public var rawValue: CInterop.Log2Phys
+
+    @_alwaysEmitIntoClient
+    public init(rawValue: CInterop.Log2Phys) { self.rawValue = rawValue }
+
     @frozen
-    public struct LogicalToPhysical: RawRepresentable, Sendable {
+    public struct Flags: OptionSet, Sendable {
       @_alwaysEmitIntoClient
-      public var rawValue: CInterop.Log2Phys
+      public let rawValue: UInt32
 
       @_alwaysEmitIntoClient
-      public init(rawValue: CInterop.Log2Phys) { self.rawValue = rawValue }
-
-      @frozen
-      public struct Flags: OptionSet, Sendable {
-        @_alwaysEmitIntoClient
-        public let rawValue: UInt32
-
-        @_alwaysEmitIntoClient
-        public init(rawValue: UInt32) { self.rawValue = rawValue }
-      }
+      public init(rawValue: UInt32) { self.rawValue = rawValue }
     }
   }
 }
