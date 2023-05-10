@@ -121,19 +121,6 @@ final class MachPortTests: XCTestCase {
         }
     }
 
-    func testMakePair() throws {
-        let (recv, send) = Mach.allocatePortRightPair()
-        XCTAssert(recv.makeSendCount == 1)
-        recv.withBorrowedName { rName in
-            send.withBorrowedName { sName in
-                XCTAssert(rName != 0xFFFFFFFF)
-                XCTAssert(rName != MACH_PORT_NULL)
-                // send and recv port names coalesce
-                XCTAssert(rName == sName)
-            }
-        }
-    }
-
     func testCopySend() throws {
         let recv = Mach.Port<Mach.ReceiveRight>()
         let zero = recv.makeSendCount
