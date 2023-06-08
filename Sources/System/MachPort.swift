@@ -27,8 +27,7 @@ internal func _machPrecondition(
 @available(/*System 1.3.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
 @frozen
 public enum Mach {
-  @_moveOnly
-  public struct Port<RightType: MachPortRight> {
+  public struct Port<RightType: MachPortRight>: ~Copyable {
     @usableFromInline
     internal var _name: mach_port_name_t
 
