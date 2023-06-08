@@ -12,6 +12,12 @@
 import XCTest
 import Darwin.Mach
 
+#if SYSTEM_PACKAGE
+import SystemPackage
+#else
+import System
+#endif
+
 final class MachPortTests: XCTestCase {
     func refCountForMachPortName(name:mach_port_name_t, kind:mach_port_right_t) -> mach_port_urefs_t {
         var refCount:mach_port_urefs_t = 0
