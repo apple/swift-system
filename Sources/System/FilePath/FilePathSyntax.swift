@@ -340,8 +340,8 @@ extension FilePath {
   /// Returns `nil` if `lastComponent` is `nil`
   ///
   ///   * `/tmp/foo.txt                 => foo`
-  ///   * `/Appliations/Foo.app/        => Foo`
-  ///   * `/Appliations/Foo.app/bar.txt => bar`
+  ///   * `/Applications/Foo.app/        => Foo`
+  ///   * `/Applications/Foo.app/bar.txt => bar`
   ///   * `/tmp/.hidden                 => .hidden`
   ///   * `/tmp/..                      => ..`
   ///   * `/                            => nil`
