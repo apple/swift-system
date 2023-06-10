@@ -7,10 +7,16 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-#if swift(>=5.8) && $MoveOnly && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
+#if false && swift(>=5.8) && $MoveOnly && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
 
 import XCTest
 import Darwin.Mach
+
+#if SYSTEM_PACKAGE
+import SystemPackage
+#else
+import System
+#endif
 
 final class MachPortTests: XCTestCase {
     func refCountForMachPortName(name:mach_port_name_t, kind:mach_port_right_t) -> mach_port_urefs_t {
@@ -117,19 +123,6 @@ final class MachPortTests: XCTestCase {
             once.withBorrowedName { oname in
                 print(oname, rname)
                 XCTAssert(oname != rname)
-            }
-        }
-    }
-
-    func testMakePair() throws {
-        let (recv, send) = Mach.allocatePortRightPair()
-        XCTAssert(recv.makeSendCount == 1)
-        recv.withBorrowedName { rName in
-            send.withBorrowedName { sName in
-                XCTAssert(rName != 0xFFFFFFFF)
-                XCTAssert(rName != MACH_PORT_NULL)
-                // send and recv port names coalesce
-                XCTAssert(rName == sName)
             }
         }
     }

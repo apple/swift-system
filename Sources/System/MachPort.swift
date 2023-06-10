@@ -7,7 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-#if swift(>=5.8) && $MoveOnly && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
+#if false && swift(>=5.8) && $MoveOnly && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
 
 import Darwin.Mach
 
@@ -27,8 +27,7 @@ internal func _machPrecondition(
 @available(/*System 1.3.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
 @frozen
 public enum Mach {
-  @_moveOnly
-  public struct Port<RightType: MachPortRight> {
+  public struct Port<RightType: MachPortRight>: ~Copyable {
     @usableFromInline
     internal var _name: mach_port_name_t
 
@@ -122,24 +121,6 @@ public enum Mach {
   /// receiving end.
   @frozen
   public struct SendOnceRight: MachPortRight {}
-
-  /// Create a connected pair of rights, one receive, and one send.
-  ///
-  /// This function will abort if the rights could not be created.
-  /// Callers may assert that valid rights are always returned.
-  public static func allocatePortRightPair() ->
-    (receive: Mach.Port<Mach.ReceiveRight>, send: Mach.Port<Mach.SendRight>) {
-    var name = mach_port_name_t(MACH_PORT_NULL)
-    let secret = mach_port_context_t(arc4random())
-    withUnsafeMutablePointer(to: &name) { name in
-      var options = mach_port_options_t()
-      options.flags = UInt32(MPO_INSERT_SEND_RIGHT);
-      withUnsafeMutablePointer(to: &options) { options in
-        _machPrecondition(mach_port_construct(mach_task_self_, options, secret, name))
-      }
-    }
-    return (Mach.Port(name: name, context: secret), Mach.Port(name: name))
-  }
 }
 
 extension Mach.Port where RightType == Mach.ReceiveRight {
