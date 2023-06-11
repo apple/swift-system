@@ -87,5 +87,4 @@ public struct FileStatus: RawRepresentable {
   @_alwaysEmitIntoClient
   public var generationID: CInterop.GenerationID { rawValue.st_gen }
 }
-
 #endif

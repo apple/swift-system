@@ -36,12 +36,6 @@ public typealias CModeT = mode_t
 /// A namespace for C and platform types
 @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 public enum CInterop {
-#if os(Windows)
-  public typealias Mode = CInt
-#else
-  public typealias Mode = mode_t
-#endif
-
   /// The C `char` type
   public typealias Char = CChar
 
@@ -69,43 +63,5 @@ public enum CInterop {
   /// which will be handled by either error-correction or failing, depending
   /// on API.
   public typealias PlatformUnicodeEncoding = UTF8
-  #endif
-
-  #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
-  /// The C `stat` type.
-  public typealias Stat = stat
-
-  /// The C `uid_t` type.
-  public typealias UserID = uid_t
-
-  /// The C `gid_t` type.
-  public typealias GroupID = gid_t
-
-  /// The C `dev_t` type.
-  public typealias DeviceID = dev_t
-
-  /// The C `nlink_t` type.
-  public typealias NumberOfLinks = nlink_t
-
-  /// The C `ino_t` type.
-  public typealias INodeNumber = ino_t
-
-  /// The C `timespec` type.
-  public typealias TimeSpec = timespec
-
-  /// The C `off_t` type.
-  public typealias Offset = off_t
-
-  /// The C `blkcnt_t` type.
-  public typealias BlockCount = blkcnt_t
-
-  /// The C `blksize_t` type.
-  public typealias BlockSize = blksize_t
-
-  /// The C `UInt32` type.
-  public typealias GenerationID = UInt32
-
-  /// The C `UInt32` type.
-  public typealias FileFlags = UInt32
   #endif
 }

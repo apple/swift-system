@@ -97,7 +97,7 @@ extension FilePath {
     fcntrl: FileDescriptor.ControlFlags,
     retryOnInterrupt: Bool = true
   ) throws -> FileStatus {
-    try _stat(
+    try _fstatat(
       relativeTo: fd,
       fcntrl: fcntrl,
       retryOnInterrupt: retryOnInterrupt
@@ -105,7 +105,7 @@ extension FilePath {
   }
 
   @usableFromInline
-  internal func _stat(
+  internal func _fstatat(
     relativeTo fd: FileDescriptor,
     fcntrl: FileDescriptor.ControlFlags,
     retryOnInterrupt: Bool
@@ -133,13 +133,13 @@ extension FileDescriptor {
   /// The corresponding C function is `fstat`.
   @_alwaysEmitIntoClient
   public func stat(retryOnInterrupt: Bool = true) throws -> FileStatus {
-    try _stat(
+    try _fstat(
       retryOnInterrupt: retryOnInterrupt
     ).get()
   }
 
   @usableFromInline
-  internal func _stat(
+  internal func _fstat(
     retryOnInterrupt: Bool = true
   ) -> Result<FileStatus, Errno> {
     var result = CInterop.Stat()

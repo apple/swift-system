@@ -161,5 +161,4 @@ extension TimeValue: Equatable {
     lhs.seconds == rhs.seconds && lhs.microseconds == rhs.microseconds
   }
 }
-
 #endif
