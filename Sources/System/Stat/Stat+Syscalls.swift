@@ -86,7 +86,7 @@ internal func system_fchmod(
 
 internal func system_fchmodat(
   _ fd: Int32,
-  _ path: UnsafePointer<CInterop.PlatformChar>?,
+  _ path: UnsafePointer<CInterop.PlatformChar>,
   _ mode: CInterop.Mode,
   _ flag: Int32
 ) -> Int32 {
@@ -97,7 +97,7 @@ internal func system_fchmodat(
 }
 
 internal func system_chown(
-  _ path: UnsafePointer<CInterop.PlatformChar>?,
+  _ path: UnsafePointer<CInterop.PlatformChar>,
   _ userID: CInterop.UserID,
   _ groupID: CInterop.GroupID
 ) -> Int32 {
@@ -108,7 +108,7 @@ internal func system_chown(
 }
 
 internal func system_lchown(
-  _ path: UnsafePointer<CInterop.PlatformChar>?,
+  _ path: UnsafePointer<CInterop.PlatformChar>,
   _ userID: CInterop.UserID,
   _ groupID: CInterop.GroupID
 ) -> Int32 {
@@ -131,7 +131,7 @@ internal func system_fchown(
 
 internal func system_fchownat(
   _ fd: Int32,
-  _ path: UnsafePointer<CInterop.PlatformChar>?,
+  _ path: UnsafePointer<CInterop.PlatformChar>,
   _ userID: CInterop.UserID,
   _ groupID: CInterop.GroupID,
   _ flag: Int32
@@ -143,7 +143,7 @@ internal func system_fchownat(
 }
 
 internal func system_chflags(
-  _ path: UnsafePointer<CInterop.PlatformChar>?,
+  _ path: UnsafePointer<CInterop.PlatformChar>,
   _ flag: UInt32
 ) -> Int32 {
 #if ENABLE_MOCKING
@@ -153,7 +153,7 @@ internal func system_chflags(
 }
 
 internal func system_lchflags(
-  _ path: UnsafePointer<CInterop.PlatformChar>?,
+  _ path: UnsafePointer<CInterop.PlatformChar>,
   _ flag: UInt32
 ) -> Int32 {
 #if ENABLE_MOCKING
@@ -172,9 +172,6 @@ internal func system_fchflags(
   return fchflags(fd, flag)
 }
 
-#if ENABLE_MOCKING
-internal var currentModeMask = CInterop.Mode(S_IWGRP|S_IWOTH)
-#endif
 internal func system_umask(
     _ cmask: CInterop.Mode
 ) -> CInterop.Mode {
@@ -184,9 +181,8 @@ internal func system_umask(
   return umask(cmask)
 }
 
-// mkfifo
 internal func system_mkfifo(
-  _ path: UnsafePointer<CInterop.PlatformChar>?,
+  _ path: UnsafePointer<CInterop.PlatformChar>,
   _ mode: CInterop.Mode
 ) -> Int32 {
 #if ENABLE_MOCKING
@@ -195,9 +191,20 @@ internal func system_mkfifo(
   return mkfifo(path, mode)
 }
 
-// mknod
+@available(macOS 13.0, *)
+internal func system_mkfifoat(
+  _ fd: Int32,
+  _ path: UnsafePointer<CInterop.PlatformChar>,
+  _ mode: CInterop.Mode
+) -> Int32 {
+#if ENABLE_MOCKING
+  if mockingEnabled { return _mock(path, mode) }
+#endif
+  return mkfifoat(fd, path, mode)
+}
+
 internal func system_mknod(
-  _ path: UnsafePointer<CInterop.PlatformChar>?,
+  _ path: UnsafePointer<CInterop.PlatformChar>,
   _ mode: CInterop.Mode,
   _ deviceID: CInterop.DeviceID
 ) -> Int32 {
@@ -207,8 +214,21 @@ internal func system_mknod(
   return mknod(path, mode, deviceID)
 }
 
+@available(macOS 13.0, *)
+internal func system_mknodat(
+  _ fd: Int32,
+  _ path: UnsafePointer<CInterop.PlatformChar>,
+  _ mode: CInterop.Mode,
+  _ deviceID: CInterop.DeviceID
+) -> Int32 {
+#if ENABLE_MOCKING
+  if mockingEnabled { return _mock(path, mode, deviceID) }
+#endif
+  return mknodat(fd, path, mode, deviceID)
+}
+
 internal func system_mkdir(
-  _ path: UnsafePointer<CInterop.PlatformChar>?,
+  _ path: UnsafePointer<CInterop.PlatformChar>,
   _ mode: CInterop.Mode
 ) -> Int32 {
 #if ENABLE_MOCKING
@@ -219,7 +239,7 @@ internal func system_mkdir(
 
 internal func system_mkdirat(
   _ fd: Int32,
-  _ path: UnsafePointer<CInterop.PlatformChar>?,
+  _ path: UnsafePointer<CInterop.PlatformChar>,
   _ mode: CInterop.Mode
 ) -> Int32 {
 #if ENABLE_MOCKING
@@ -228,27 +248,49 @@ internal func system_mkdirat(
   return mkdirat(fd, path, mode)
 }
 
-@available(macOS 10.13, *)
-internal func system_futimens(
-  _ fd: Int32,
-  _ times: UnsafePointer<timespec> // FIXME: is this really nullable?
+#if os(FreeBSD)
+internal func system_utimens(
+  _ path: UnsafePointer<CInterop.PlatformChar>,
+  _ times: UnsafePointer<timespec>?
 ) -> Int32 {
 #if ENABLE_MOCKING
-  if mockingEnabled { return _mock(fd, times) }
+  if mockingEnabled { return _mock(path, times) }
 #endif
-  return futimens(fd, times)
+  return utimens(path, times)
 }
+#endif
 
-@available(macOS 10.13, *)
+#if os(FreeBSD)
+internal func system_lutimens(
+  _ path: UnsafePointer<CInterop.PlatformChar>,
+  _ times: UnsafePointer<timespec>?
+) -> Int32 {
+#if ENABLE_MOCKING
+  if mockingEnabled { return _mock(path, times) }
+#endif
+  return lutimens(path, times)
+}
+#endif
+
 internal func system_utimensat(
   _ fd: Int32,
-  _ path: UnsafePointer<CInterop.PlatformChar>?,
-  _ times: UnsafePointer<timespec>, // FIXME: is this really nullable?
+  _ path: UnsafePointer<CInterop.PlatformChar>,
+  _ times: UnsafePointer<timespec>?,
   _ flag: Int32
 ) -> Int32 {
 #if ENABLE_MOCKING
   if mockingEnabled { return _mock(fd, path, times, flag) }
 #endif
   return utimensat(fd, path, times, flag)
+}
+
+internal func system_futimens(
+  _ fd: Int32,
+  _ times: UnsafePointer<timespec>?
+) -> Int32 {
+#if ENABLE_MOCKING
+  if mockingEnabled { return _mock(fd, times) }
+#endif
+  return futimens(fd, times)
 }
 #endif
