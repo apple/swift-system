@@ -10,13 +10,13 @@
 // MARK: - stat
 // int stat(const char *, struct stat *)
 // int lstat(const char *, struct stat *)
-// FilePath.fileStatus(followSymlinks:) throws Errno -> FileStatus
+// FilePath.getFileStatus(followSymlinks:) throws Errno -> FileStatus
 
 // int fstatat(int, const char *, struct stat *, int)
-// FilePath.fileStatus(relativeTo:controlFlags:) throws Errno -> FileStatus
+// FilePath.getFileStatus(relativeTo:controlFlags:) throws Errno -> FileStatus
 
 // int fstat(int, struct stat *)
-// FileDescriptor.fileStatus() throws Errno -> FileStatus
+// FileDescriptor.getFileStatus() throws Errno -> FileStatus
 
 
 // MARK: - chmod

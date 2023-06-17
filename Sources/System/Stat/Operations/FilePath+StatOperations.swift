@@ -27,18 +27,18 @@ extension FilePath {
   ///
   /// The corresponding C functions are `stat` and `lstat`.
   @_alwaysEmitIntoClient
-  public func stat(
+  public func getFileStatus(
     followSymlinks: Bool = true,
     retryOnInterrupt: Bool = true
   ) throws -> FileStatus {
-    try _stat(
+    try _getFileStatus(
       followSymlinks: followSymlinks,
       retryOnInterrupt: retryOnInterrupt
     ).get()
   }
 
   @usableFromInline
-  internal func _stat(
+  internal func _getFileStatus(
     followSymlinks: Bool,
     retryOnInterrupt: Bool
   ) -> Result<FileStatus, Errno> {
@@ -70,12 +70,12 @@ extension FilePath {
   ///
   /// The corresponding C function is `fstatat`.
   @_alwaysEmitIntoClient
-  public func stat(
+  public func getFileStatus(
     relativeTo fd: FileDescriptor,
     fcntrl: FileDescriptor.ControlFlags,
     retryOnInterrupt: Bool = true
   ) throws -> FileStatus {
-    try _fstatat(
+    try _getFileStatus(
       relativeTo: fd,
       fcntrl: fcntrl,
       retryOnInterrupt: retryOnInterrupt
@@ -83,7 +83,7 @@ extension FilePath {
   }
 
   @usableFromInline
-  internal func _fstatat(
+  internal func _getFileStatus(
     relativeTo fd: FileDescriptor,
     fcntrl: FileDescriptor.ControlFlags,
     retryOnInterrupt: Bool

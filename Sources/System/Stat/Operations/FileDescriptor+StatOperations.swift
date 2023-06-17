@@ -22,14 +22,16 @@ extension FileDescriptor {
   ///
   /// The corresponding C function is `fstat`.
   @_alwaysEmitIntoClient
-  public func fileStatus(retryOnInterrupt: Bool = true) throws -> FileStatus {
-    try _fileStatus(
+  public func getFileStatus(
+    retryOnInterrupt: Bool = true
+  ) throws -> FileStatus {
+    try _getFileStatus(
       retryOnInterrupt: retryOnInterrupt
     ).get()
   }
 
   @usableFromInline
-  internal func _fileStatus(
+  internal func _getFileStatus(
     retryOnInterrupt: Bool = true
   ) -> Result<FileStatus, Errno> {
     var result = CInterop.Stat()
