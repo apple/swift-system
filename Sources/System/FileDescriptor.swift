@@ -481,7 +481,12 @@ extension FileDescriptor.OpenOptions
 //@available(*, unavailable, message: "File descriptors are not completely thread-safe.")
 //extension FileDescriptor: Sendable {}
 
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FileDescriptor.AccessMode: Sendable {}
+
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FileDescriptor.OpenOptions: Sendable {}
+
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FileDescriptor.SeekOrigin: Sendable {}
 #endif

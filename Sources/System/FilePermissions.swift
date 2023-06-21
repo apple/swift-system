@@ -177,5 +177,6 @@ extension FilePermissions
 }
 
 #if compiler(>=5.5) && canImport(_Concurrency)
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FilePermissions: Sendable {}
 #endif
