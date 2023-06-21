@@ -158,7 +158,7 @@ extension FileDescriptor {
     nothingOrErrno(retryOnInterrupt: false) { system_close(self.rawValue) }
   }
 
-  /// Reposition the offset for the given file descriptor.
+  /// Repositions the offset for the given file descriptor.
   ///
   /// - Parameters:
   ///   - offset: The new offset for the file descriptor.
@@ -371,7 +371,7 @@ extension FileDescriptor {
 
 @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FileDescriptor {
-  /// Duplicate this file descriptor and return the newly created copy.
+  /// Duplicates this file descriptor and return the newly created copy.
   ///
   /// - Parameters:
   ///   - `target`: The desired target file descriptor, or `nil`, in which case
@@ -437,7 +437,7 @@ extension FileDescriptor {
 #if !os(Windows)
 @available(/*System 1.1.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
 extension FileDescriptor {
-  /// Create a pipe, a unidirectional data channel which can be used for interprocess communication.
+  /// Creates a unidirectional data channel, which can be used for interprocess communication.
   ///
   /// - Returns: The pair of file descriptors.
   ///
@@ -466,7 +466,7 @@ extension FileDescriptor {
 #if !os(Windows)
 @available(/*System 1.2.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
 extension FileDescriptor {
-  /// Truncate or extend the file referenced by this file descriptor.
+  /// Truncates or extends the file referenced by this file descriptor.
   ///
   /// - Parameters:
   ///   - newSize: The length in bytes to resize the file to.
