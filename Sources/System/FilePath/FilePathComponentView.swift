@@ -241,6 +241,9 @@ extension FilePath.ComponentView {
 }
 
 #if compiler(>=5.5) && canImport(_Concurrency)
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.ComponentView: Sendable {}
+
+@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.ComponentView.Index: Sendable {}
 #endif
