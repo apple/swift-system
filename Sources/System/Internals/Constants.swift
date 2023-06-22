@@ -13,8 +13,11 @@
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
 import Darwin
-#elseif os(Linux) || os(FreeBSD) || os(OpenBSD) || os(Android)
+#elseif canImport(Glibc)
 import Glibc
+#elseif canImport(Musl)
+import CSystem
+import Musl
 #elseif os(Windows)
 import CSystem
 import ucrt
@@ -454,9 +457,13 @@ internal var _O_WRONLY: CInt { O_WRONLY }
 internal var _O_RDWR: CInt { O_RDWR }
 
 #if !os(Windows)
+#if canImport(Musl)
+internal var _O_ACCMODE: CInt { 03|O_SEARCH }
+#else
 // TODO: API?
 @_alwaysEmitIntoClient
 internal var _O_ACCMODE: CInt { O_ACCMODE }
+#endif
 
 @_alwaysEmitIntoClient
 internal var _O_NONBLOCK: CInt { O_NONBLOCK }
