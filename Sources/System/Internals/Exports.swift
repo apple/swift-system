@@ -14,12 +14,15 @@
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
 import Darwin
-#elseif os(Linux) || os(FreeBSD) || os(OpenBSD) || os(Android)
-@_implementationOnly import CSystem
-import Glibc
 #elseif os(Windows)
 import CSystem
 import ucrt
+#elseif canImport(Glibc)
+@_implementationOnly import CSystem
+import Glibc
+#elseif canImport(Musl)
+@_implementationOnly import CSystem
+import Musl
 #else
 #error("Unsupported Platform")
 #endif
@@ -45,10 +48,15 @@ internal var system_errno: CInt {
     _ = ucrt._set_errno(newValue)
   }
 }
-#else
+#elseif canImport(Glibc)
 internal var system_errno: CInt {
   get { Glibc.errno }
   set { Glibc.errno = newValue }
+}
+#elseif canImport(Musl)
+internal var system_errno: CInt {
+  get { Musl.errno }
+  set { Musl.errno = newValue }
 }
 #endif
 
