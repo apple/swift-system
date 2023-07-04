@@ -458,7 +458,7 @@ internal var _O_RDWR: CInt { O_RDWR }
 
 #if !os(Windows)
 #if canImport(Musl)
-internal var _O_ACCMODE: CInt { 03|O_SEARCH }
+internal var _O_ACCMODE: CInt { 0x03|O_SEARCH }
 #else
 // TODO: API?
 @_alwaysEmitIntoClient
