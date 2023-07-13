@@ -538,3 +538,59 @@ internal var _SEEK_HOLE: CInt { SEEK_HOLE }
 @_alwaysEmitIntoClient
 internal var _SEEK_DATA: CInt { SEEK_DATA }
 #endif
+
+#if !os(Windows)
+@_alwaysEmitIntoClient
+internal var _LOCK_SH: CInt { LOCK_SH }
+
+@_alwaysEmitIntoClient
+internal var _LOCK_EX: CInt { LOCK_EX }
+
+@_alwaysEmitIntoClient
+internal var _LOCK_NB: CInt { LOCK_NB }
+
+@_alwaysEmitIntoClient
+internal var _LOCK_UN: CInt { LOCK_UN }
+#endif
+
+#if !os(Windows)
+@_alwaysEmitIntoClient
+internal var _F_OFD_SETLK: CInt {
+#if os(Linux)
+  37 // FIXME: F_OFD_SETLK
+#else
+  90 // FIXME: use API when available
+#endif
+}
+
+@_alwaysEmitIntoClient
+internal var _F_OFD_SETLKW: CInt {
+#if os(Linux)
+  38 // FIXME: F_OFD_SETLKW
+#else
+  91 // FIXME: use API when available
+#endif
+}
+
+@_alwaysEmitIntoClient
+internal var _F_OFD_GETLK: CInt {
+#if os(Linux)
+  36// FIXME: F_OFD_GETLK
+#else
+  92 // FIXME: use API when available
+#endif
+}
+
+#if !os(Linux)
+@_alwaysEmitIntoClient
+internal var _F_OFD_SETLKWTIMEOUT: CInt {
+  93 // FIXME: use API when available
+}
+@_alwaysEmitIntoClient
+internal var _F_OFD_GETLKPID: CInt {
+  94 // FIXME: use API when available
+}
+#endif // !os(Linux)
+
+#endif // !os(Windows)
+

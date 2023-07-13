@@ -11,6 +11,7 @@
 
 #include <sys/epoll.h>
 #include <sys/eventfd.h>
+#include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/sysinfo.h>

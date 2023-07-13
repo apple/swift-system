@@ -135,3 +135,37 @@ internal func system_ftruncate(_ fd: Int32, _ length: off_t) -> Int32 {
   return ftruncate(fd, length)
 }
 #endif
+
+#if !os(Windows)
+internal func system_flock(_ fd: Int32, _ operation: Int32) -> Int32 {
+#if ENABLE_MOCKING
+  if mockingEnabled { return _mock(fd, operation) }
+#endif
+  return flock(fd, operation)
+}
+#endif
+
+#if !os(Windows)
+internal func system_fcntl(_ fd: Int32, _ cmd: Int32) -> Int32 {
+   #if ENABLE_MOCKING
+   if mockingEnabled { return _mock(fd, cmd) }
+   #endif
+   return fcntl(fd, cmd)
+ }
+
+ internal func system_fcntl(_ fd: Int32, _ cmd: Int32, _ arg: Int32) -> Int32 {
+   #if ENABLE_MOCKING
+   if mockingEnabled { return _mock(fd, cmd, arg) }
+   #endif
+   return fcntl(fd, cmd, arg)
+ }
+
+ internal func system_fcntl(
+   _ fd: Int32, _ cmd: Int32, _ arg: UnsafeMutableRawPointer
+ ) -> Int32 {
+   #if ENABLE_MOCKING
+   if mockingEnabled { return _mock(fd, cmd, arg) }
+   #endif
+   return fcntl(fd, cmd, arg)
+ }
+#endif

@@ -47,4 +47,13 @@ final class MockingTest: XCTestCase {
     }
     XCTAssertFalse(mockingEnabled)
   }
+
+  func testFCNTLMocking() {
+    MockingDriver.withMockingEnabled { driver in
+      XCTAssertTrue(mockingEnabled)
+
+      // TODO: a handful of mock tests, especially those that have different number of parameters
+    }
+
+  }
 }

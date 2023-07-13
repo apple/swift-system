@@ -48,29 +48,65 @@ public enum CInterop {
   /// The C `char` type
   public typealias Char = CChar
 
-  #if os(Windows)
+  /// The C `short` type
+  public typealias CShort = Int16
+
+#if os(Windows)
   /// The platform's preferred character type. On Unix, this is an 8-bit C
   /// `char` (which may be signed or unsigned, depending on platform). On
   /// Windows, this is `UInt16` (a "wide" character).
   public typealias PlatformChar = UInt16
-  #else
+#else
   /// The platform's preferred character type. On Unix, this is an 8-bit C
   /// `char` (which may be signed or unsigned, depending on platform). On
   /// Windows, this is `UInt16` (a "wide" character).
   public typealias PlatformChar = CInterop.Char
-  #endif
+#endif
 
-  #if os(Windows)
+#if os(Windows)
   /// The platform's preferred Unicode encoding. On Unix this is UTF-8 and on
   /// Windows it is UTF-16. Native strings may contain invalid Unicode,
   /// which will be handled by either error-correction or failing, depending
   /// on API.
   public typealias PlatformUnicodeEncoding = UTF16
-  #else
+#else
   /// The platform's preferred Unicode encoding. On Unix this is UTF-8 and on
   /// Windows it is UTF-16. Native strings may contain invalid Unicode,
   /// which will be handled by either error-correction or failing, depending
   /// on API.
   public typealias PlatformUnicodeEncoding = UTF8
+#endif
+
+#if !os(Windows)
+  /// The C `struct flock` type
+  public typealias FileLock = flock
+
+  /// The C `pid_t` type
+  public typealias PID = pid_t
+
+  /// The C `off_t` type.
+  ///
+  /// Note System generally standardizes on `Int64` where `off_t`
+  /// might otherwise appear. This typealias allows conversion code to be
+  /// emitted into client.
+  public typealias Offset = off_t
+
+  #if !os(Linux)
+  /// The C `fstore` type
+  public typealias FStore = fstore
+
+  /// The C `fpunchhole` type
+  public typealias FPunchhole = fpunchhole
+
+  /// The C `radvisory` type
+  public typealias RAdvisory = radvisory
+
+  /// The C `radvisory` type
+  public typealias Log2Phys = log2phys
   #endif
+
+#endif // !os(Windows)
+
 }
+
+
