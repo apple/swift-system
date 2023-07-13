@@ -16,39 +16,65 @@ import System
 #endif
 
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
-func filePathFromUnterminatedBytes<S: Sequence>(_ bytes: S) -> FilePath where S.Element == UInt8 {
+func filePathFromInvalidCodePointSequence<S: Sequence>(_ bytes: S) -> FilePath where S.Element == UTF16.CodeUnit {
   var array = Array(bytes)
   assert(array.last != 0, "already null terminated")
   array += [0]
 
   return array.withUnsafeBufferPointer {
-    $0.withMemoryRebound(to: CChar.self) {
+    $0.withMemoryRebound(to: CInterop.PlatformChar.self) {
       FilePath(platformString: $0.baseAddress!)
     }
   }
 }
-let invalidBytes: [UInt8] = [0x2F, 0x61, 0x2F, 0x62, 0x2F, 0x83]
+
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+func filePathFromInvalidCodePointSequence<S: Sequence>(_ bytes: S) -> FilePath where S.Element == UTF8.CodeUnit {
+  var array = Array(bytes)
+  assert(array.last != 0, "already null terminated")
+  array += [0]
+
+  return array.withUnsafeBufferPointer {
+    $0.withMemoryRebound(to: CInterop.PlatformChar.self) {
+      FilePath(platformString: $0.baseAddress!)
+    }
+  }
+}
 
 @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 final class FilePathTest: XCTestCase {
   struct TestPath {
     let filePath: FilePath
     let string: String
-    let validUTF8: Bool
+    let validString: Bool
   }
 
-  let testPaths: [TestPath] = [
+#if os(Windows)
+    static let invalidSequence: [UTF16.CodeUnit] = [0xd800, 0x0020]
+    static let invalidSequenceTest =
+        TestPath(filePath: filePathFromInvalidCodePointSequence(invalidSequence),
+                 string: String(decoding: invalidSequence, as: UTF16.self),
+                 validString: false)
+#else
+    static let invalidSequence: [UTF8.CodeUnit] = [0x2F, 0x61, 0x2F, 0x62, 0x2F, 0x83]
+    static let invalidSequenceTest =
+        TestPath(filePath: filePathFromInvalidCodePointSequence(invalidSequence),
+                 string: String(decoding: invalidSequence, as: UTF8.self),
+                 validString: false)
+#endif
+
+  var testPaths: [TestPath] = [
     // empty
-    TestPath(filePath: FilePath(), string: String(), validUTF8: true),
+    TestPath(filePath: FilePath(), string: String(), validString: true),
 
     // valid ascii
-    TestPath(filePath: "/a/b/c", string: "/a/b/c", validUTF8: true),
+    TestPath(filePath: "/a/b/c", string: "/a/b/c", validString: true),
 
     // valid utf8
-    TestPath(filePath: "/あ/🧟‍♀️", string: "/あ/🧟‍♀️", validUTF8: true),
+    TestPath(filePath: "/あ/🧟‍♀️", string: "/あ/🧟‍♀️", validString: true),
 
-    // invalid utf8
-    TestPath(filePath: filePathFromUnterminatedBytes(invalidBytes), string: String(decoding: invalidBytes, as: UTF8.self), validUTF8: false),
+    // invalid sequence
+    invalidSequenceTest,
   ]
 
   func testFilePath() {
@@ -59,8 +85,8 @@ final class FilePathTest: XCTestCase {
 
       XCTAssertEqual(testPath.string, String(decoding: testPath.filePath))
 
-      // TODO: test component UTF8 validation
-      if testPath.validUTF8 {
+      // TODO: test component CodeUnit representation validation
+      if testPath.validString {
         XCTAssertEqual(testPath.filePath, FilePath(testPath.string))
         XCTAssertEqual(testPath.string, String(validating: testPath.filePath))
       } else {
