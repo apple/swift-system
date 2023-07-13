@@ -16,20 +16,7 @@ import System
 #endif
 
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
-func filePathFromInvalidCodePointSequence<S: Sequence>(_ bytes: S) -> FilePath where S.Element == UTF16.CodeUnit {
-  var array = Array(bytes)
-  assert(array.last != 0, "already null terminated")
-  array += [0]
-
-  return array.withUnsafeBufferPointer {
-    $0.withMemoryRebound(to: CInterop.PlatformChar.self) {
-      FilePath(platformString: $0.baseAddress!)
-    }
-  }
-}
-
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
-func filePathFromInvalidCodePointSequence<S: Sequence>(_ bytes: S) -> FilePath where S.Element == UTF8.CodeUnit {
+func filePathFromInvalidCodePointSequence<S: Sequence>(_ bytes: S) -> FilePath where S.Element == CInterop.PlatformUnicodeEncoding.CodeUnit {
   var array = Array(bytes)
   assert(array.last != 0, "already null terminated")
   array += [0]
