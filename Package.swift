@@ -17,14 +17,19 @@ let package = Package(
     products: [
         .library(name: "SystemPackage", targets: ["SystemPackage"]),
     ],
-    dependencies: [],
+    dependencies: [
+      .package(url: "https://github.com/apple/swift-atomics", from: "1.1.0")
+    ],
     targets: [
       .target(
         name: "CSystem",
         dependencies: []),
       .target(
         name: "SystemPackage",
-        dependencies: ["CSystem"],
+        dependencies: [
+          "CSystem",
+          .product(name: "Atomics", package: "swift-atomics")
+        ],
         path: "Sources/System",
         cSettings: [
           .define("_CRT_SECURE_NO_WARNINGS")
