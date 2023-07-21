@@ -28,7 +28,7 @@ final class FileOperationsTest: XCTestCase {
     let writeBuf = UnsafeRawBufferPointer(rawBuf)
     let writeBufAddr = writeBuf.baseAddress
 
-    let syscallTestCases: Array<MockTestCase> = [
+    var syscallTestCases: Array<MockTestCase> = [
       MockTestCase(name: "open", .interruptable, "a path", O_RDWR | O_APPEND) {
         retryOnInterrupt in
         _ = try FileDescriptor.open(
