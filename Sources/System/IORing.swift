@@ -1,6 +1,8 @@
 @_implementationOnly import CSystem
-import Glibc
-import Atomics
+import struct CSystem.io_uring_sqe
+
+@_implementationOnly import Atomics
+import Glibc // needed for mmap
 
 // XXX: this *really* shouldn't be here. oh well.
 extension UnsafeMutableRawPointer {
@@ -10,7 +12,7 @@ extension UnsafeMutableRawPointer {
 }
 
 // all pointers in this struct reference kernel-visible memory
-struct SQRing {
+@usableFromInline struct SQRing {
     let kernelHead: UnsafeAtomic<UInt32>
     let kernelTail: UnsafeAtomic<UInt32>
     var userTail: UInt32
@@ -44,14 +46,90 @@ struct CQRing {
     let cqes: UnsafeBufferPointer<io_uring_cqe>
 }
 
+internal class ResourceManager<T>: @unchecked Sendable {
+    typealias Resource = T
+    let resourceList: UnsafeMutableBufferPointer<T>
+    var freeList: [Int]
+    let mutex: Mutex
+
+    init(_ res: UnsafeMutableBufferPointer<T>) {
+        self.resourceList = res
+        self.freeList = [Int](resourceList.indices)
+        self.mutex = Mutex()
+    }
+
+    func getResource() -> IOResource<T>? {
+        self.mutex.lock()
+        defer { self.mutex.unlock() }
+        if let index = freeList.popLast() {
+            return IOResource(
+                rescource: resourceList[index],
+                index: index,
+                manager: self
+            )
+        } else {
+            return nil
+        }
+    }
+
+    func releaseResource(index: Int) {
+        self.mutex.lock()
+        defer { self.mutex.unlock() }
+        self.freeList.append(index)
+    }
+}
+
+public class IOResource<T> {
+    typealias Resource = T
+    @usableFromInline let resource: T
+    @usableFromInline let index: Int
+    let manager: ResourceManager<T>
+
+    internal init(
+        rescource: T,
+        index: Int,
+        manager: ResourceManager<T>
+    ) {
+        self.resource = rescource
+        self.index = index
+        self.manager = manager
+    }
+
+    func withResource() {
+
+    }
+
+    deinit {
+        self.manager.releaseResource(index: self.index)
+    }
+}
+
+public typealias IORingFileSlot = IOResource<UInt32>
+public typealias IORingBuffer = IOResource<iovec>
+
+extension IORingFileSlot {
+    public var unsafeFileSlot: Int {
+        return index
+    }
+}
+extension IORingBuffer {
+    public var unsafeBuffer: UnsafeMutableRawBufferPointer {
+        get {
+            return .init(start: resource.iov_base, count: resource.iov_len)
+        }
+    }
+}
+
+
+
 // XXX: This should be a non-copyable type (?)
 // demo only runs on Swift 5.8.1
-public final class IORing: Sendable {
+public final class IORing: @unchecked Sendable {
     let ringFlags: UInt32
     let ringDescriptor: Int32
 
-    var submissionRing: SQRing
-    var submissionMutex: Mutex
+    @usableFromInline var submissionRing: SQRing
+    @usableFromInline var submissionMutex: Mutex
     // FEAT: set this eventually
     let submissionPolling: Bool = false
 
@@ -59,12 +137,13 @@ public final class IORing: Sendable {
     var completionMutex: Mutex
 
     let submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>
-    
-    var registeredFiles: UnsafeMutableBufferPointer<UInt32>?
 
     // kept around for unmap / cleanup
     let ringSize: Int
     let ringPtr: UnsafeMutableRawPointer
+
+    var registeredFiles: ResourceManager<UInt32>?
+    var registeredBuffers: ResourceManager<iovec>?
 
     public init(queueDepth: UInt32) throws {
         var params = io_uring_params()
@@ -77,7 +156,7 @@ public final class IORing: Sendable {
             || params.features & IORING_FEAT_NODROP == 0) {
             close(ringDescriptor)
             // TODO: error handling
-            fatalError("kernel not new enough")
+            throw IORingError.missingRequiredFeatures
         }
         
         if (ringDescriptor < 0) {
@@ -104,13 +183,8 @@ public final class IORing: Sendable {
         if (ringPtr == MAP_FAILED) {
             perror("mmap");
             // TODO: error handling
-            fatalError()
+            fatalError("mmap failed in ring setup")
         }
-
-        let kernelHead = UnsafeAtomic<UInt32>(at: 
-            ringPtr.advanced(by: params.sq_off.head)
-            .assumingMemoryBound(to: UInt32.AtomicRepresentation.self)
-        )
 
         submissionRing = SQRing(
             kernelHead: UnsafeAtomic<UInt32>(
@@ -154,7 +228,7 @@ public final class IORing: Sendable {
         if (sqes == MAP_FAILED) {
             perror("mmap");
             // TODO: error handling
-            fatalError()
+            fatalError("sqe mmap failed in ring setup")
         }
 
         submissionQueueEntries = UnsafeMutableBufferPointer(
@@ -195,14 +269,27 @@ public final class IORing: Sendable {
         if let completion = _tryConsumeCompletion() {
             return completion
         } else {
-            _waitForCompletion()
+            while true {
+                let res = io_uring_enter(ringDescriptor, 0, 1, IORING_ENTER_GETEVENTS, nil)
+                // error handling:
+                //     EAGAIN / EINTR (try again),
+                //     EBADF / EBADFD / EOPNOTSUPP / ENXIO
+                //     (failure in ring lifetime management, fatal),
+                //     EINVAL (bad constant flag?, fatal),
+                //     EFAULT (bad address for argument from library, fatal)
+                //     EBUSY (not enough space for events; implies events filled
+                //            by kernel between kernelTail load and now)
+                if res >= 0 || res == -EBUSY {
+                    break
+                } else if res == -EAGAIN || res == -EINTR {
+                    continue
+                }
+                fatalError("fatal error in receiving requests: " +
+                    Errno(rawValue: -res).debugDescription
+                )
+            }
             return _tryConsumeCompletion().unsafelyUnwrapped
         }
-    }
-
-    func _waitForCompletion() {
-        // TODO: error handling
-        io_uring_enter(ringDescriptor, 0, 1, IORING_ENTER_GETEVENTS, nil)
     }
 
     func tryConsumeCompletion() -> IOCompletion? {
@@ -213,7 +300,7 @@ public final class IORing: Sendable {
 
     func _tryConsumeCompletion() -> IOCompletion? {
         let tail = completionRing.kernelTail.load(ordering: .acquiring)
-        var head = completionRing.kernelHead.load(ordering: .relaxed)
+        let head = completionRing.kernelHead.load(ordering: .relaxed)
         
         if tail != head {
             // 32 byte copy - oh well
@@ -227,7 +314,6 @@ public final class IORing: Sendable {
 
 
     func registerFiles(count: UInt32) {
-        // TODO: implement
         guard self.registeredFiles == nil else { fatalError() }
         let fileBuf = UnsafeMutableBufferPointer<UInt32>.allocate(capacity: Int(count))
         fileBuf.initialize(repeating: UInt32.max)
@@ -238,31 +324,43 @@ public final class IORing: Sendable {
             count
         )
         // TODO: error handling
-        self.registeredFiles = fileBuf
+        self.registeredFiles = ResourceManager(fileBuf)
     }
 
     func unregisterFiles() {
-        if self.registeredFiles != nil {
-            io_uring_register(
-                self.ringDescriptor,
-                IORING_UNREGISTER_FILES,
-                self.registeredFiles!.baseAddress!,
-                UInt32(self.registeredFiles!.count)
-            )
-            // TODO: error handling
-            self.registeredFiles!.deallocate()
-            self.registeredFiles = nil
-        }
+        fatalError("failed to unregister files")
+    }
+
+    func getFile() -> IORingFileSlot? {
+        return self.registeredFiles?.getResource()
     }
 
     // register a group of buffers
     func registerBuffers(bufSize: UInt32, count: UInt32) {
-        //
-
+        let iovecs = UnsafeMutableBufferPointer<iovec>.allocate(capacity: Int(count))
+        let intBufSize = Int(bufSize)
+        for i in 0..<iovecs.count {
+            // TODO: mmap instead of allocate here, because there are
+            // certain restrictions about buffer memory behavior
+            let buf = UnsafeMutableRawBufferPointer.allocate(byteCount: intBufSize, alignment: 16384)
+            iovecs[i] = iovec(iov_base: buf.baseAddress!, iov_len: buf.count)
+        }
+        io_uring_register(
+            self.ringDescriptor,
+            IORING_REGISTER_BUFFERS,
+            iovecs.baseAddress!,
+            count
+        )
+        // TODO: error handling
+        self.registeredBuffers = ResourceManager(iovecs)
     }
 
-    func getBuffer() -> (index: Int, buf: UnsafeRawBufferPointer) {
-        fatalError()
+    func getBuffer() -> IORingBuffer? {
+        return self.registeredBuffers?.getResource()
+    }
+
+    func unregisterBuffers() {
+        fatalError("failed to unregister buffers: TODO")
     }
 
     // TODO: types
@@ -277,9 +375,22 @@ public final class IORing: Sendable {
         
         // Ring always needs enter right now;
         // TODO: support SQPOLL here
-
-        let ret = io_uring_enter(ringDescriptor, flushedEvents, 0, 0, nil)
-        // TODO: handle errors
+        while true {
+            let ret = io_uring_enter(ringDescriptor, flushedEvents, 0, 0, nil)
+            // error handling:
+            //     EAGAIN / EINTR (try again),
+            //     EBADF / EBADFD / EOPNOTSUPP / ENXIO
+            //     (failure in ring lifetime management, fatal),
+            //     EINVAL (bad constant flag?, fatal),
+            //     EFAULT (bad address for argument from library, fatal)
+            if ret == -EAGAIN || ret == -EINTR {
+                continue
+            } else if ret < 0 {
+                fatalError("fatal error in submitting requests: " +
+                    Errno(rawValue: -ret).debugDescription
+                )
+            }
+        }
     }
 
     internal func _flushQueue() -> UInt32 {
@@ -291,20 +402,28 @@ public final class IORing: Sendable {
     }
 
 
+    @inlinable @inline(__always)
     func writeRequest(_ request: __owned IORequest) -> Bool {
         self.submissionMutex.lock()
         defer { self.submissionMutex.unlock() }
-        return _writeRequest(request)
+        return _writeRequest(request.makeRawRequest())
     }
 
-    internal func _writeRequest(_ request: __owned IORequest) -> Bool {
-        if let entry = _getSubmissionEntry() {
-            entry.pointee = request.rawValue
-            return true
-        }
-        return false
+    @inlinable @inline(__always)
+    func writeAndSubmit(_ request: __owned IORequest) -> Bool {
+        self.submissionMutex.lock()
+        defer { self.submissionMutex.unlock() }
+        return _writeRequest(request.makeRawRequest())
     }
 
+    @inlinable @inline(__always)
+    internal func _writeRequest(_ request: __owned RawIORequest) -> Bool {
+        let entry = _blockingGetSubmissionEntry()
+        entry.pointee = request.rawValue
+        return true
+    }
+
+    @inlinable @inline(__always)
     internal func _blockingGetSubmissionEntry() -> UnsafeMutablePointer<io_uring_sqe> {
         while true {
             if let entry = _getSubmissionEntry() {
@@ -315,6 +434,7 @@ public final class IORing: Sendable {
 
     }
 
+    @usableFromInline @inline(__always)
     internal func _getSubmissionEntry() -> UnsafeMutablePointer<io_uring_sqe>? {
         let next = self.submissionRing.userTail + 1
 

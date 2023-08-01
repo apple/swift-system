@@ -1,140 +1,82 @@
-@_implementationOnly import CSystem
+import struct CSystem.io_uring_sqe
 
-public struct IORequest {
-    internal var rawValue: io_uring_sqe 
+public enum IORequest {
+    case nop // nothing here
+    case openat(
+        atDirectory: FileDescriptor, 
+        path: UnsafePointer<CChar>,
+        FileDescriptor.AccessMode,
+        options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
+        permissions: FilePermissions? = nil,
+        intoSlot: IORingFileSlot? = nil
+    )
+    case read(
+        file: File,
+        buffer: Buffer,
+        offset: UInt64 = 0
+    )
+    case write(
+        file: File,
+        buffer: Buffer,
+        offset: UInt64 = 0
+    )
 
-    public init() {
-        self.rawValue = io_uring_sqe()
+    public enum Buffer {
+        case registered(IORingBuffer)
+        case unregistered(UnsafeMutableRawBufferPointer)
+    }
+
+    public enum File {
+        case registered(IORingFileSlot)
+        case unregistered(FileDescriptor)
     }
 }
 
 extension IORequest {
-    public enum Operation: UInt8 {
-        case nop = 0
-        case readv = 1
-        case writev = 2
-        case fsync = 3
-        case readFixed = 4
-        case writeFixed = 5
-        case pollAdd = 6
-        case pollRemove = 7
-        case syncFileRange = 8
-        case sendMessage = 9
-        case receiveMessage = 10
-        // ...
-        case openAt = 18
-        case read = 22
-        case write = 23
-        case openAt2 = 28
-
-    }
-
-    public struct Flags: OptionSet, Hashable, Codable {
-        public let rawValue: UInt8
-
-        public init(rawValue: UInt8) {
-            self.rawValue = rawValue
+    @inlinable @inline(__always)
+    public func makeRawRequest() -> RawIORequest {
+        var request = RawIORequest()
+        switch self {
+            case .nop:
+                request.operation = .nop
+            case .openat(let atDirectory, let path, let mode, let options, let permissions, let slot):
+                // TODO: use rawValue less
+                request.operation = .openAt
+                request.fileDescriptor = atDirectory
+                request.rawValue.addr = unsafeBitCast(path, to: UInt64.self)
+                request.rawValue.open_flags = UInt32(bitPattern: options.rawValue | mode.rawValue)
+                request.rawValue.len = permissions?.rawValue ?? 0
+                request.rawValue.file_index = UInt32(slot?.index ?? 0)
+            case .read(let file, let buffer, let offset), .write(let file, let buffer, let offset):
+                if case .read = self {
+                    if case .registered = buffer {
+                        request.operation = .readFixed
+                    } else {
+                        request.operation = .read
+                    }
+                } else {
+                    if case .registered = buffer {
+                        request.operation = .writeFixed
+                    } else {
+                        request.operation = .write
+                    }
+                }
+                switch file {
+                    case .registered(let regFile):
+                        request.rawValue.fd = Int32(exactly: regFile.index)!
+                        request.flags = .fixedFile
+                    case .unregistered(let fd):
+                        request.fileDescriptor = fd
+                }
+                switch buffer {
+                    case .registered(let regBuf):
+                        request.buffer = regBuf.unsafeBuffer
+                        request.rawValue.buf_index = UInt16(exactly: regBuf.index)!
+                    case .unregistered(let buf):
+                        request.buffer = buf
+                }
+                request.offset = offset
         }
-
-        public static let fixedFile = Flags(rawValue: 1 << 0)
-        public static let drainQueue = Flags(rawValue: 1 << 1)
-        public static let linkRequest = Flags(rawValue: 1 << 2)
-        public static let hardlinkRequest = Flags(rawValue: 1 << 3)
-        public static let asynchronous = Flags(rawValue: 1 << 4)
-        public static let selectBuffer = Flags(rawValue: 1 << 5)
-        public static let skipSuccess = Flags(rawValue: 1 << 6)
-    }
-
-    public var operation: Operation {
-        get { Operation(rawValue: rawValue.opcode)! }
-        set { rawValue.opcode = newValue.rawValue }
-    }
-
-    public var flags: Flags {
-        get { Flags(rawValue: rawValue.flags) }
-        set { rawValue.flags = newValue.rawValue }
-    }
-
-    public var fileDescriptor: FileDescriptor {
-        get { FileDescriptor(rawValue: rawValue.fd) }
-        set { rawValue.fd = newValue.rawValue }
-    }
-
-    public var offset: UInt64? {
-        get { 
-            if (rawValue.off == UInt64.max) {
-                return nil
-            } else {
-                return rawValue.off
-            }
-        }
-        set {
-            if let val = newValue {
-                rawValue.off = val
-            } else {
-                rawValue.off = UInt64.max
-            }
-        }
-    }
-
-    public var buffer: UnsafeMutableRawBufferPointer {
-        get {
-            let ptr = UnsafeMutableRawPointer(bitPattern: UInt(exactly: rawValue.addr)!)
-            return UnsafeMutableRawBufferPointer(start: ptr, count: Int(rawValue.len))
-        }
-
-        set {
-            // TODO: cleanup?
-            rawValue.addr = UInt64(Int(bitPattern: newValue.baseAddress!))
-            rawValue.len = UInt32(exactly: newValue.count)!
-        }
-    }
-}
-
-extension IORequest {
-    static func nop() -> IORequest {
-        var req = IORequest()
-        req.operation = .nop
-        return req
-    }
-
-    static func read(
-        from fileDescriptor: FileDescriptor,
-        into buffer: UnsafeMutableRawBufferPointer,
-        at offset: UInt64? = nil
-    ) -> IORequest {
-        var req = IORequest.readWrite(
-            op: Operation.read,
-            fd: fileDescriptor,
-            buffer: buffer,
-            offset: offset
-        )
-        fatalError()
-    }
-
-    static func read(
-        fixedFile: Int // TODO: AsyncFileDescriptor
-    ) -> IORequest {
-        fatalError()
-    }
-
-    static func write(
-    
-    ) -> IORequest {
-        fatalError()
-    }
-
-    internal static func readWrite(
-        op: Operation,
-        fd: FileDescriptor,
-        buffer: UnsafeMutableRawBufferPointer,
-        offset: UInt64? = nil
-    ) -> IORequest {
-        var req = IORequest()
-        req.operation = op
-        req.fileDescriptor = fd
-        req.offset = offset
-        req.buffer = buffer
-        return req
+        return request
     }
 }

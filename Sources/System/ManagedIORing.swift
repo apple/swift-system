@@ -3,6 +3,8 @@ final public class ManagedIORing: @unchecked Sendable {
 
     init(queueDepth: UInt32) throws {
         self.internalRing = try IORing(queueDepth: queueDepth)
+        self.internalRing.registerBuffers(bufSize: 655336, count: 4)
+        self.internalRing.registerFiles(count: 32)
         self.startWaiter()        
     }
 
@@ -22,12 +24,19 @@ final public class ManagedIORing: @unchecked Sendable {
         self.internalRing.submissionMutex.lock()
         return await withUnsafeContinuation { cont in
             let entry = internalRing._blockingGetSubmissionEntry()
-            entry.pointee = request.rawValue
+            entry.pointee = request.makeRawRequest().rawValue
             entry.pointee.user_data = unsafeBitCast(cont, to: UInt64.self)
             self.internalRing._submitRequests()
             self.internalRing.submissionMutex.unlock()
         }
     }
 
+    internal func getFileSlot() -> IORingFileSlot? {
+        self.internalRing.getFile()
+    }
+
+    internal func getBuffer() -> IORingBuffer? {
+        self.internalRing.getBuffer()
+    }
 
 }

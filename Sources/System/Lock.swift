@@ -1,7 +1,7 @@
 // TODO: write against kernel APIs directly?
 import Glibc
 
-public final class Mutex {
+@usableFromInline final class Mutex {
     @usableFromInline let mutex: UnsafeMutablePointer<pthread_mutex_t>
 
     @inlinable init() {
