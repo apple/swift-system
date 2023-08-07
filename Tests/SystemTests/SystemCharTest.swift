@@ -17,7 +17,7 @@ import XCTest
 
 final class SystemCharTest: XCTestCase {
   func testIsLetter() {
-    let valid = SystemString(
+    let valid = _SystemString(
       "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
     for char in valid {
       XCTAssertTrue(char.isLetter)
@@ -25,12 +25,12 @@ final class SystemCharTest: XCTestCase {
 
     // non printable
     for value in 0..<(UInt8(ascii: " ")) {
-      XCTAssertFalse(SystemChar(codeUnit: CInterop.PlatformUnicodeEncoding.CodeUnit(value)).isLetter)
+      XCTAssertFalse(_SystemChar(codeUnit: CInterop.PlatformUnicodeEncoding.CodeUnit(value)).isLetter)
     }
-    XCTAssertFalse(SystemChar(codeUnit: 0x7F).isLetter) // DEL
+    XCTAssertFalse(_SystemChar(codeUnit: 0x7F).isLetter) // DEL
 
     // misc other
-    let invalid = SystemString(
+    let invalid = _SystemString(
       ##" !"#$%&'()*+,-./0123456789:;<=>?@[\]^_`{|}~"##)
     for char in invalid {
       XCTAssertFalse(char.isLetter)

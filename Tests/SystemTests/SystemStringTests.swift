@@ -74,13 +74,13 @@ struct StringTest: TestCase {
     }
 
     // Test String, SystemString, FilePath construction
-    let sysStr = SystemString(string)
+    let sysStr = _SystemString(string)
     expectEqualSequence(string.unicodeScalars, sysStr.string.unicodeScalars)
     expectEqual(string, String(decoding: sysStr))
     expectEqual(string, String(validating: sysStr))
 
     let sysRaw = raw.withUnsafeBufferPointer {
-      SystemString(platformString: $0.baseAddress!)
+      _SystemString(platformString: $0.baseAddress!)
     }
     expectEqual(string, String(decoding: sysRaw))
     expectEqual(isValid, nil != String(validating: sysRaw))
@@ -99,8 +99,8 @@ struct StringTest: TestCase {
       "String(validatingPlatformString:)")
 
     // Test null insertion
-    let rawChars = raw.lazy.map { SystemChar($0) }
-    expectEqual(sysRaw, SystemString(rawChars.dropLast()))
+    let rawChars = raw.lazy.map { _SystemChar($0) }
+    expectEqual(sysRaw, _SystemString(rawChars.dropLast()))
     sysRaw.withSystemChars {  // TODO: assuming we want null in withSysChars
       expectEqualSequence(rawChars, $0, "rawChars")
     }
@@ -244,8 +244,8 @@ final class SystemStringTest: XCTestCase {
   // TODO: More exhaustive RAC+RRC SystemString tests
 
   func testAdHoc() {
-    var str: SystemString = "abc"
-    str.append(SystemChar(ascii: "d"))
+    var str: _SystemString = "abc"
+    str.append(_SystemChar(ascii: "d"))
     XCTAssert(str == "abcd")
     XCTAssert(str.count == 4)
     XCTAssert(str.count == str.length)

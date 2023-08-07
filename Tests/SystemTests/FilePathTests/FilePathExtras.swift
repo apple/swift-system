@@ -8,7 +8,7 @@
 // Why can't I write this extension on `FilePath.ComponentView.SubSequence`?
 @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension Slice where Base == FilePath.ComponentView {
-  internal var _storageSlice: SystemString.SubSequence {
+  internal var _storageSlice: _SystemString.SubSequence {
     base._path._storage[self.startIndex._storage ..< self.endIndex._storage]
   }
 }
@@ -39,7 +39,7 @@ extension FilePath {
 
     let (tail, baseTail) = _dropCommonPrefix(components, base.components)
 
-    var prefix = SystemString()
+    var prefix = _SystemString()
     for _ in 0..<baseTail.count {
       prefix.append(.dot)
       prefix.append(.dot)

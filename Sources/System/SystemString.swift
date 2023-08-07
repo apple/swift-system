@@ -8,21 +8,21 @@
 */
 
 // A platform-native character representation, currently used for file paths
-internal struct SystemChar: RawRepresentable, Comparable, Hashable, Codable {
-  internal typealias RawValue = CInterop.PlatformChar
+public struct _SystemChar: RawRepresentable, Comparable, Hashable, Codable {
+  public typealias RawValue = CInterop.PlatformChar
 
-  internal var rawValue: RawValue
+  public var rawValue: RawValue
 
-  internal init(rawValue: RawValue) { self.rawValue = rawValue }
+  public init(rawValue: RawValue) { self.rawValue = rawValue }
 
-  internal init(_ rawValue: RawValue) { self.init(rawValue: rawValue) }
+  public init(_ rawValue: RawValue) { self.init(rawValue: rawValue) }
 
-  static func < (lhs: SystemChar, rhs: SystemChar) -> Bool {
+  public static func < (lhs: _SystemChar, rhs: _SystemChar) -> Bool {
     lhs.rawValue < rhs.rawValue
   }
 }
 
-extension SystemChar {
+extension _SystemChar {
   internal init(ascii: Unicode.Scalar) {
     self.init(rawValue: numericCast(UInt8(ascii: ascii)))
   }
@@ -30,12 +30,12 @@ extension SystemChar {
     self.init(rawValue: codeUnit._platformChar)
   }
 
-  internal static var null: SystemChar { SystemChar(0x0) }
-  internal static var slash: SystemChar { SystemChar(ascii: "/") }
-  internal static var backslash: SystemChar { SystemChar(ascii: #"\"#) }
-  internal static var dot: SystemChar { SystemChar(ascii: ".") }
-  internal static var colon: SystemChar { SystemChar(ascii: ":") }
-  internal static var question: SystemChar { SystemChar(ascii: "?") }
+  internal static var null: _SystemChar { _SystemChar(0x0) }
+  internal static var slash: _SystemChar { _SystemChar(ascii: "/") }
+  internal static var backslash: _SystemChar { _SystemChar(ascii: #"\"#) }
+  internal static var dot: _SystemChar { _SystemChar(ascii: ".") }
+  internal static var colon: _SystemChar { _SystemChar(ascii: ":") }
+  internal static var question: _SystemChar { _SystemChar(ascii: "?") }
 
   internal var codeUnit: CInterop.PlatformUnicodeEncoding.CodeUnit {
     rawValue._platformCodeUnit
@@ -61,13 +61,14 @@ extension SystemChar {
 // A platform-native string representation, currently for file paths
 //
 // Always null-terminated.
-internal struct SystemString {
-  internal typealias Storage = [SystemChar]
+
+public struct _SystemString {
+  public typealias Storage = [_SystemChar]
   internal var nullTerminatedStorage: Storage
 }
 
-extension SystemString {
-  internal init() {
+extension _SystemString {
+  public init() {
     self.nullTerminatedStorage = [.null]
     _invariantCheck()
   }
@@ -85,7 +86,7 @@ extension SystemString {
   }
 
   // Ensures that result is null-terminated
-  internal init<C: Collection>(_ chars: C) where C.Element == SystemChar {
+  internal init<C: Collection>(_ chars: C) where C.Element == _SystemChar {
     var rawChars = Storage(chars)
     if rawChars.last != .null {
       rawChars.append(.null)
@@ -94,7 +95,7 @@ extension SystemString {
   }
 }
 
-extension SystemString {
+extension _SystemString {
   fileprivate func _invariantCheck() {
     #if DEBUG
     precondition(nullTerminatedStorage.last! == .null)
@@ -103,20 +104,20 @@ extension SystemString {
   }
 }
 
-extension SystemString: RandomAccessCollection, MutableCollection {
-  internal typealias Element = SystemChar
-  internal typealias Index = Storage.Index
-  internal typealias Indices = Range<Index>
+extension _SystemString: RandomAccessCollection, MutableCollection {
+  public typealias Element = _SystemChar
+  public typealias Index = Storage.Index
+  public typealias Indices = Range<Index>
 
-  internal var startIndex: Index {
+  public var startIndex: Index {
     nullTerminatedStorage.startIndex
   }
 
-  internal var endIndex: Index {
+  public var endIndex: Index {
     nullTerminatedStorage.index(before: nullTerminatedStorage.endIndex)
   }
 
-  internal subscript(position: Index) -> SystemChar {
+  public subscript(position: Index) -> _SystemChar {
     _read {
       precondition(position >= startIndex && position <= endIndex)
       yield nullTerminatedStorage[position]
@@ -128,42 +129,42 @@ extension SystemString: RandomAccessCollection, MutableCollection {
     }
   }
 }
-extension SystemString: RangeReplaceableCollection {
-  internal mutating func replaceSubrange<C: Collection>(
+extension _SystemString: RangeReplaceableCollection {
+  public mutating func replaceSubrange<C: Collection>(
     _ subrange: Range<Index>, with newElements: C
-  ) where C.Element == SystemChar {
+  ) where C.Element == _SystemChar {
     defer { _invariantCheck() }
     nullTerminatedStorage.replaceSubrange(subrange, with: newElements)
   }
 
-  internal mutating func reserveCapacity(_ n: Int) {
+  public mutating func reserveCapacity(_ n: Int) {
     defer { _invariantCheck() }
     nullTerminatedStorage.reserveCapacity(1 + n)
   }
 
   // TODO: Below include null terminator, is this desired?
 
-  internal func withContiguousStorageIfAvailable<R>(
-    _ body: (UnsafeBufferPointer<SystemChar>) throws -> R
+  public func withContiguousStorageIfAvailable<R>(
+    _ body: (UnsafeBufferPointer<_SystemChar>) throws -> R
   ) rethrows -> R? {
     try nullTerminatedStorage.withContiguousStorageIfAvailable(body)
   }
 
-  internal mutating func withContiguousMutableStorageIfAvailable<R>(
-    _ body: (inout UnsafeMutableBufferPointer<SystemChar>) throws -> R
+  public mutating func withContiguousMutableStorageIfAvailable<R>(
+    _ body: (inout UnsafeMutableBufferPointer<_SystemChar>) throws -> R
   ) rethrows -> R? {
     defer { _invariantCheck() }
     return try nullTerminatedStorage.withContiguousMutableStorageIfAvailable(body)
   }
 }
 
-extension SystemString: Hashable, Codable {}
+extension _SystemString: Hashable, Codable {}
 
-extension SystemString {
+extension _SystemString {
   // TODO: Below include null terminator, is this desired?
 
   internal func withSystemChars<T>(
-    _ f: (UnsafeBufferPointer<SystemChar>) throws -> T
+    _ f: (UnsafeBufferPointer<_SystemChar>) throws -> T
   ) rethrows -> T {
     try withContiguousStorageIfAvailable(f)!
   }
@@ -172,7 +173,7 @@ extension SystemString {
     _ f: (UnsafeBufferPointer<CInterop.PlatformUnicodeEncoding.CodeUnit>) throws -> T
   ) rethrows -> T {
     try withSystemChars { chars in
-      let length = chars.count * MemoryLayout<SystemChar>.stride
+      let length = chars.count * MemoryLayout<_SystemChar>.stride
       let count = length / MemoryLayout<CInterop.PlatformUnicodeEncoding.CodeUnit>.stride
       return try chars.baseAddress!.withMemoryRebound(
         to: CInterop.PlatformUnicodeEncoding.CodeUnit.self,
@@ -184,7 +185,7 @@ extension SystemString {
   }
 }
 
-extension Slice where Base == SystemString {
+extension Slice where Base == _SystemString {
   internal func withCodeUnits<T>(
     _ f: (UnsafeBufferPointer<CInterop.PlatformUnicodeEncoding.CodeUnit>) throws -> T
   ) rethrows -> T {
@@ -201,19 +202,19 @@ extension Slice where Base == SystemString {
     _ f: (UnsafePointer<CInterop.PlatformChar>) throws -> T
   ) rethrows -> T {
     // FIXME: avoid allocation if we're at the end
-    return try SystemString(self).withPlatformString(f)
+    return try _SystemString(self).withPlatformString(f)
   }
 
 }
 
 extension String {
-  internal init(decoding str: SystemString) {
+  internal init(decoding str: _SystemString) {
     // TODO: Can avoid extra strlen
     self = str.withPlatformString {
       String(platformString: $0)
     }
   }
-  internal init?(validating str: SystemString) {
+  internal init?(validating str: _SystemString) {
     // TODO: Can avoid extra strlen
     guard let str = str.withPlatformString(String.init(validatingPlatformString:))
     else { return nil }
@@ -222,27 +223,27 @@ extension String {
   }
 }
 
-extension SystemString: ExpressibleByStringLiteral {
-  internal init(stringLiteral: String) {
+extension _SystemString: ExpressibleByStringLiteral {
+  public init(stringLiteral: String) {
     self.init(stringLiteral)
   }
 
   internal init(_ string: String) {
     // TODO: can avoid extra strlen
     self = string.withPlatformString {
-      SystemString(platformString: $0)
+     _SystemString(platformString: $0)
     }
   }
 }
 
-extension SystemString: CustomStringConvertible, CustomDebugStringConvertible {
+extension _SystemString: CustomStringConvertible, CustomDebugStringConvertible {
   internal var string: String { String(decoding: self) }
 
-  internal var description: String { string }
-  internal var debugDescription: String { description.debugDescription }
+  public var description: String { string }
+  public var debugDescription: String { description.debugDescription }
 }
 
-extension SystemString {
+extension _SystemString {
   /// Creates a system string by copying bytes from a null-terminated platform string.
   ///
   /// - Parameter platformString: A pointer to a null-terminated platform string.
@@ -250,8 +251,8 @@ extension SystemString {
     let count = 1 + system_platform_strlen(platformString)
 
     // TODO: Is this the right way?
-    let chars: Array<SystemChar> = platformString.withMemoryRebound(
-      to: SystemChar.self, capacity: count
+    let chars: Array<_SystemChar> = platformString.withMemoryRebound(
+      to: _SystemChar.self, capacity: count
     ) {
       let bufPtr = UnsafeBufferPointer(start: $0, count: count)
       return Array(bufPtr)
@@ -276,7 +277,7 @@ extension SystemString {
     _ f: (UnsafePointer<CInterop.PlatformChar>) throws -> T
   ) rethrows -> T {
     try withSystemChars { chars in
-      let length = chars.count * MemoryLayout<SystemChar>.stride
+      let length = chars.count * MemoryLayout<_SystemChar>.stride
       return try chars.baseAddress!.withMemoryRebound(
         to: CInterop.PlatformChar.self,
         capacity: length / MemoryLayout<CInterop.PlatformChar>.stride
@@ -289,10 +290,10 @@ extension SystemString {
 }
 
 #if compiler(>=5.5) && canImport(_Concurrency)
-extension SystemChar: Sendable {}
-extension SystemString: Sendable {}
+extension _SystemChar: Sendable {}
+extension _SystemString: Sendable {}
 #endif
 
-// TODO: SystemString should use a COW-interchangable storage form rather
+// TODO: _SystemString should use a COW-interchangable storage form rather
 // than array, so you could "borrow" the storage from a non-bridged String
 // or Data or whatever

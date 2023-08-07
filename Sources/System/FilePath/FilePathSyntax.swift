@@ -320,11 +320,11 @@ extension FilePath {
       defer { _invariantCheck() }
       guard let base = lastComponent, base.kind == .regular else { return }
 
-      let suffix: SystemString
+      let suffix: _SystemString
       if let ext = newValue {
         suffix = _makeExtension(ext)
       } else {
-        suffix = SystemString()
+        suffix = _SystemString()
       }
 
       let extRange = (

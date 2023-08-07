@@ -41,18 +41,18 @@
 public struct FilePath {
   // TODO(docs): Section on all the new syntactic operations, lexical normalization, decomposition,
   // components, etc.
-  internal var _storage: SystemString
+  internal var _storage: _SystemString
 
   /// Creates an empty, null-terminated path.
   public init() {
-    self._storage = SystemString()
+    self._storage = _SystemString()
     _invariantCheck()
   }
 
   // In addition to the empty init, this init will properly normalize
   // separators. All other initializers should be implemented by
   // ultimately deferring to a normalizing init.
-  internal init(_ str: SystemString) {
+  internal init(_ str: _SystemString) {
     self._storage = str
     self._normalizeSeparators()
     _invariantCheck()

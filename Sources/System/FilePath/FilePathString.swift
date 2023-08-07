@@ -302,7 +302,7 @@ extension FilePath: ExpressibleByStringLiteral {
   /// - Parameter string: A string
   ///   whose Unicode encoded contents to use as the contents of the path.
   public init(_ string: String) {
-    self.init(SystemString(string))
+    self.init(_SystemString(string))
   }
 }
 
@@ -327,7 +327,7 @@ extension FilePath.Component: ExpressibleByStringLiteral {
   /// Returns `nil` if `string` is empty, a root, or has more than one component
   /// in it.
   public init?(_ string: String) {
-    self.init(SystemString(string))
+    self.init(_SystemString(string))
   }
 }
 
@@ -350,7 +350,7 @@ extension FilePath.Root: ExpressibleByStringLiteral {
   ///
   /// Returns `nil` if `string` is empty or is not a root.
   public init?(_ string: String) {
-    self.init(SystemString(string))
+    self.init(_SystemString(string))
   }
 }
 

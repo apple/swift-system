@@ -186,7 +186,7 @@ extension CInterop.PlatformUnicodeEncoding.CodeUnit {
   }
 }
 
-internal protocol _PlatformStringable {
+public protocol _PlatformStringable {
   func _withPlatformString<Result>(
     _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
   ) rethrows -> Result

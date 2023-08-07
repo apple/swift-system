@@ -11,30 +11,30 @@
 // manages (and hides) the null terminator
 
 // The separator we use internally
-private var genericSeparator: SystemChar { .slash }
+private var genericSeparator: _SystemChar { .slash }
 
 // The platform preferred separator
 //
 // TODO: Make private
-internal var platformSeparator: SystemChar {
+internal var platformSeparator: _SystemChar {
   _windowsPaths ? .backslash : genericSeparator
 }
 
 // Whether the character is the canonical separator
 // TODO: Make private
-internal func isSeparator(_ c: SystemChar) -> Bool {
+internal func isSeparator(_ c: _SystemChar) -> Bool {
   c == platformSeparator
 }
 
 // Whether the character is a pre-normalized separator
-internal func isPrenormalSeparator(_ c: SystemChar) -> Bool {
+internal func isPrenormalSeparator(_ c: _SystemChar) -> Bool {
   c == genericSeparator || c == platformSeparator
 }
 
 // Separator normalization, checking, and root parsing is internally hosted
 // on SystemString for ease of unit testing.
 
-extension SystemString {
+extension _SystemString {
   // For invariant enforcing/checking. Should always return false on
   // a fully-formed path
   fileprivate func _hasTrailingSeparator() -> Bool {
@@ -186,7 +186,7 @@ extension FilePath {
   }
 }
 
-extension SystemString {
+extension _SystemString {
   internal var _relativePathStart: Index {
     _parseRoot().relativeBegin
   }
@@ -194,7 +194,7 @@ extension SystemString {
 
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FilePath {
-  internal var _relativeStart: SystemString.Index {
+  internal var _relativeStart: _SystemString.Index {
     _storage._relativePathStart
   }
   internal var _hasRoot: Bool {
@@ -206,7 +206,7 @@ extension FilePath {
 
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FilePath {
-  internal typealias _Index = SystemString.Index
+  internal typealias _Index = _SystemString.Index
 
   // Parse a component that starts at `i`. Returns the end
   // of the component and the start of the next. Parsing terminates
@@ -271,12 +271,12 @@ extension FilePath {
 @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.ComponentView {
   // TODO: Store this...
-  internal var _relativeStart: SystemString.Index {
+  internal var _relativeStart: _SystemString.Index {
     _path._relativeStart
   }
 }
 
-extension SystemString {
+extension _SystemString {
   internal func _parseRoot() -> (
     rootEnd: Index, relativeBegin: Index
   ) {
@@ -303,7 +303,7 @@ extension FilePath.Root {
   //
   // TODO: public
   internal var isAbsolute: Bool {
-    assert(FilePath(SystemString(self._slice)).root == self, "not a root")
+    assert(FilePath(_SystemString(self._slice)).root == self, "not a root")
 
     guard _windowsPaths else { return true }
 
@@ -354,8 +354,8 @@ extension FilePath {
 
   // Perform an append, inseting a separator if needed.
   // Note that this will not check whether `content` is a root
-  internal mutating func _append(unchecked content: Slice<SystemString>) {
-    assert(FilePath(SystemString(content)).root == nil)
+  internal mutating func _append(unchecked content: Slice<_SystemString>) {
+    assert(FilePath(_SystemString(content)).root == nil)
     if content.isEmpty { return }
     if _needsSeparatorForAppend {
       _storage.append(platformSeparator)

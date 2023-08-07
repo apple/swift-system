@@ -8,24 +8,24 @@
 */
 
 internal struct _ParsedWindowsRoot {
-  var rootEnd: SystemString.Index
+  var rootEnd: _SystemString.Index
 
   // TODO: Remove when I normalize to always (except `C:`)
   // have trailing separator
-  var relativeBegin: SystemString.Index
+  var relativeBegin: _SystemString.Index
 
-  var drive: SystemChar?
+  var drive: _SystemChar?
   var fullyQualified: Bool
 
-  var deviceSigil: SystemChar?
+  var deviceSigil: _SystemChar?
 
-  var host: Range<SystemString.Index>?
-  var volume: Range<SystemString.Index>?
+  var host: Range<_SystemString.Index>?
+  var volume: Range<_SystemString.Index>?
 }
 
 extension _ParsedWindowsRoot {
   static func traditional(
-    drive: SystemChar?, fullQualified: Bool, endingAt idx: SystemString.Index
+    drive: _SystemChar?, fullQualified: Bool, endingAt idx: _SystemString.Index
   ) -> _ParsedWindowsRoot {
     _ParsedWindowsRoot(
       rootEnd: idx,
@@ -38,11 +38,11 @@ extension _ParsedWindowsRoot {
   }
 
   static func unc(
-    deviceSigil: SystemChar?,
-    server: Range<SystemString.Index>,
-    share: Range<SystemString.Index>,
-    endingAt end: SystemString.Index,
-    relativeBegin relBegin: SystemString.Index
+    deviceSigil: _SystemChar?,
+    server: Range<_SystemString.Index>,
+    share: Range<_SystemString.Index>,
+    endingAt end: _SystemString.Index,
+    relativeBegin relBegin: _SystemString.Index
   ) -> _ParsedWindowsRoot {
     _ParsedWindowsRoot(
       rootEnd: end,
@@ -55,10 +55,10 @@ extension _ParsedWindowsRoot {
   }
 
   static func device(
-    deviceSigil: SystemChar,
-    volume: Range<SystemString.Index>,
-    endingAt end: SystemString.Index,
-    relativeBegin relBegin: SystemString.Index
+    deviceSigil: _SystemChar,
+    volume: Range<_SystemString.Index>,
+    endingAt end: _SystemString.Index,
+    relativeBegin relBegin: _SystemString.Index
   ) -> _ParsedWindowsRoot {
     _ParsedWindowsRoot(
       rootEnd: end,
@@ -72,13 +72,13 @@ extension _ParsedWindowsRoot {
 }
 
 struct _Lexer {
-  var slice: Slice<SystemString>
+  var slice: Slice<_SystemString>
 
-  init(_ str: SystemString) {
+  init(_ str: _SystemString) {
     self.slice = str[...]
   }
 
-  var backslash: SystemChar { .backslash }
+  var backslash: _SystemChar { .backslash }
 
   // Try to eat a backslash, returns false if nothing happened
   mutating func eatBackslash() -> Bool {
@@ -86,7 +86,7 @@ struct _Lexer {
   }
 
   // Try to consume a drive letter and subsequent `:`.
-  mutating func eatDrive() -> SystemChar? {
+  mutating func eatDrive() -> _SystemChar? {
     let copy = slice
     if let d = slice._eat(if: { $0.isLetter }), slice._eat(.colon) != nil {
       return d
@@ -97,7 +97,7 @@ struct _Lexer {
   }
 
   // Try to consume a device sigil (stand-alone . or ?)
-  mutating func eatSigil() -> SystemChar? {
+  mutating func eatSigil() -> _SystemChar? {
     let copy = slice
     guard let sigil = slice._eat(.question) ?? slice._eat(.dot) else {
       return nil
@@ -114,11 +114,11 @@ struct _Lexer {
 
   // Try to consume an explicit "UNC" directory
   mutating func eatUNC() -> Bool {
-    slice._eatSequence("UNC".unicodeScalars.lazy.map { SystemChar(ascii: $0) }) != nil
+    slice._eatSequence("UNC".unicodeScalars.lazy.map { _SystemChar(ascii: $0) }) != nil
   }
 
   // Eat everything up to but not including a backslash or null
-  mutating func eatComponent() -> Range<SystemString.Index> {
+  mutating func eatComponent() -> Range<_SystemString.Index> {
     let backslash = self.backslash
     let component = slice._eatWhile({ $0 != backslash })
       ?? slice[slice.startIndex ..< slice.startIndex]
@@ -129,14 +129,14 @@ struct _Lexer {
     return slice.isEmpty
   }
 
-  var current: SystemString.Index { slice.startIndex }
+  var current: _SystemString.Index { slice.startIndex }
 
   mutating func clear() {
     // TODO: Intern empty system string
-    self = _Lexer(SystemString())
+    self = _Lexer(_SystemString())
   }
 
-  mutating func reset(to: SystemString, at: SystemString.Index) {
+  mutating func reset(to: _SystemString, at: _SystemString.Index) {
     self.slice = to[at...]
   }
 }
@@ -209,7 +209,7 @@ internal struct WindowsRootInfo {
 }
 
 extension _ParsedWindowsRoot {
-  fileprivate func volumeInfo(_ root: SystemString) -> WindowsRootInfo.Volume {
+  fileprivate func volumeInfo(_ root: _SystemString) -> WindowsRootInfo.Volume {
     if let d = self.drive {
       return .drive(Character(d.asciiScalar!))
     }
@@ -223,7 +223,7 @@ extension _ParsedWindowsRoot {
 }
 
 extension WindowsRootInfo {
-  internal init(_ root: SystemString, _ parsed: _ParsedWindowsRoot) {
+  internal init(_ root: _SystemString, _ parsed: _ParsedWindowsRoot) {
     self.volume = parsed.volumeInfo(root)
 
     if let host = parsed.host {
@@ -308,7 +308,7 @@ extension WindowsRootInfo {
 
 }
 
-extension SystemString {
+extension _SystemString {
   // TODO: Or, should I always inline this to remove some of the bookeeping?
   private func _parseWindowsRootInternal() -> _ParsedWindowsRoot? {
     assert(_windowsPaths)
@@ -334,7 +334,7 @@ extension SystemString {
     var lexer = _Lexer(self)
 
     // Helper to parse a UNC root
-    func parseUNC(deviceSigil: SystemChar?) -> _ParsedWindowsRoot {
+    func parseUNC(deviceSigil: _SystemChar?) -> _ParsedWindowsRoot {
       let serverRange = lexer.eatComponent()
       guard lexer.eatBackslash() else {
         fatalError("expected normalized root to contain backslash")
@@ -394,7 +394,7 @@ extension SystemString {
 
   @inline(never)
   internal func _parseWindowsRoot() -> (
-    rootEnd: SystemString.Index, relativeBegin: SystemString.Index
+    rootEnd: _SystemString.Index, relativeBegin: _SystemString.Index
   ) {
     guard let parsed = _parseWindowsRootInternal() else {
       return (startIndex, startIndex)
@@ -403,7 +403,7 @@ extension SystemString {
   }
 }
 
-extension SystemString {
+extension _SystemString {
   // UNC and device roots can have multiple repeated roots that are meaningful,
   // and extra backslashes may need to be inserted for partial roots (e.g. empty
   // volume).
