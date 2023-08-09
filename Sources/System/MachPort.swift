@@ -167,9 +167,11 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
   /// After this function completes, the Mach.Port is destroyed and no longer
   /// usable.
   @inlinable
-  public __consuming func relinquish(
+  public consuming func relinquish(
   ) -> (name: mach_port_name_t, context: mach_port_context_t) {
-    return (name: _name, context: _context)
+    let destructured = (name: _name, context: _context)
+    discard self
+    return destructured
   }
 
   /// Remove guard and transfer ownership of the underlying port right to
@@ -187,9 +189,11 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
   /// Mach.ReceiveRights. Use relinquish() to avoid the syscall and extract
   /// the context value along with the port name.
   @inlinable
-  public __consuming func unguardAndRelinquish() -> mach_port_name_t {
-    _machPrecondition(mach_port_unguard(mach_task_self_, _name, _context))
-    return _name
+  public consuming func unguardAndRelinquish() -> mach_port_name_t {
+    let (name, context) = (_name, _context)
+    discard self
+    _machPrecondition(mach_port_unguard(mach_task_self_, name, context))
+    return name
   }
 
   /// Borrow access to the port name in a block that can perform
@@ -288,8 +292,10 @@ extension Mach.Port where RightType == Mach.SendRight {
   /// After this function completes, the Mach.Port is destroyed and no longer
   /// usable.
   @inlinable
-  public __consuming func relinquish() -> mach_port_name_t {
-    return _name
+  public consuming func relinquish() -> mach_port_name_t {
+    let name = _name
+    discard self
+    return name
   }
 
   /// Create another send right from a given send right.
@@ -326,8 +332,10 @@ extension Mach.Port where RightType == Mach.SendOnceRight {
   /// After this function completes, the Mach.Port is destroyed and no longer
   /// usable.
   @inlinable
-  public __consuming func relinquish() -> mach_port_name_t {
-    return _name
+  public consuming func relinquish() -> mach_port_name_t {
+    let name = _name
+    discard self
+    return name
   }
 }
 

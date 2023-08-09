@@ -92,6 +92,11 @@ final class MachPortTests: XCTestCase {
 
         let stillOne = refCountForMachPortName(name:name, kind:MACH_PORT_RIGHT_SEND)
         XCTAssertEqual(stillOne, 1)
+
+        recv.withBorrowedName {
+            let alsoOne = refCountForMachPortName(name: $0, kind: MACH_PORT_RIGHT_RECEIVE)
+            XCTAssertEqual(alsoOne, 1)
+        }
     }
 
     func testMakeSendCountSettable() throws {
