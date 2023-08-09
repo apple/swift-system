@@ -86,7 +86,7 @@ public enum Mach {
         _machPrecondition(mach_port_mod_refs(mach_task_self_, _name, MACH_PORT_RIGHT_DEAD_NAME, -1))
       } else {
         if RightType.self == ReceiveRight.self {
-          _machPrecondition(mach_port_destruct(mach_task_self_, _name, -1, _context))
+          _machPrecondition(mach_port_destruct(mach_task_self_, _name, 0, _context))
         } else if RightType.self == SendRight.self {
           _machPrecondition(mach_port_mod_refs(mach_task_self_, _name, MACH_PORT_RIGHT_SEND, -1))
         } else if RightType.self == SendOnceRight.self {
