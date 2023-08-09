@@ -147,9 +147,9 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
   @inlinable
   public init() {
     var storage: mach_port_name_t = mach_port_name_t(MACH_PORT_NULL)
-    withUnsafeMutablePointer(to: &storage) { storage in
-      _machPrecondition(mach_port_allocate(mach_task_self_, MACH_PORT_RIGHT_RECEIVE, storage))
-    }
+    _machPrecondition(
+      mach_port_allocate(mach_task_self_, MACH_PORT_RIGHT_RECEIVE, &storage)
+    )
 
     // name-only init will guard ReceiveRights
     self.init(name: storage)
@@ -224,17 +224,15 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
     var newRight: mach_port_name_t = mach_port_name_t(MACH_PORT_NULL)
     var newRightType: mach_port_type_t = MACH_PORT_TYPE_NONE
 
-    withUnsafeMutablePointer(to: &newRight) { newRight in
-      withUnsafeMutablePointer(to: &newRightType) { newRightType in
-        _machPrecondition(
-          mach_port_extract_right(mach_task_self_,
-                                  _name,
-                                  mach_msg_type_name_t(MACH_MSG_TYPE_MAKE_SEND_ONCE),
-                                  newRight,
-                                  newRightType)
-        )
-      }
-    }
+    _machPrecondition(
+      mach_port_extract_right(
+        mach_task_self_,
+        _name,
+        mach_msg_type_name_t(MACH_MSG_TYPE_MAKE_SEND_ONCE),
+        &newRight,
+        &newRightType
+      )
+    )
 
     // The value of newRight is validated by the Mach.Port initializer
     precondition(newRightType == MACH_MSG_TYPE_MOVE_SEND_ONCE)

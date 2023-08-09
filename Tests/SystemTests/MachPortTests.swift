@@ -20,14 +20,12 @@ import System
 
 final class MachPortTests: XCTestCase {
     func refCountForMachPortName(name:mach_port_name_t, kind:mach_port_right_t) -> mach_port_urefs_t {
-        var refCount:mach_port_urefs_t = 0
-        withUnsafeMutablePointer(to: &refCount) { refCount in
-            let kr = mach_port_get_refs(mach_task_self_, name, kind, refCount)
-            if kr == KERN_INVALID_NAME {
-                refCount.pointee = 0
-            } else {
-                XCTAssertEqual(kr, KERN_SUCCESS)
-            }
+        var refCount:mach_port_urefs_t = .max
+        let kr = mach_port_get_refs(mach_task_self_, name, kind, &refCount)
+        if kr == KERN_INVALID_NAME {
+            refCount = 0
+        } else {
+            XCTAssertEqual(kr, KERN_SUCCESS)
         }
         return refCount
     }
@@ -39,11 +37,9 @@ final class MachPortTests: XCTestCase {
     }
 
     func testReceiveRightDeallocation() throws {
-        var name:mach_port_name_t = 0 // Never read
-        withUnsafeMutablePointer(to:&name) { name in
-            let kr = mach_port_allocate(mach_task_self_, MACH_PORT_RIGHT_RECEIVE, name)
-            XCTAssertEqual(kr, KERN_SUCCESS)
-        }
+        var name: mach_port_name_t = 0xFFFFFFFF
+        let kr = mach_port_allocate(mach_task_self_, MACH_PORT_RIGHT_RECEIVE, &name)
+        XCTAssertEqual(kr, KERN_SUCCESS)
 
         XCTAssertNotEqual(name, 0xFFFFFFFF)
 
