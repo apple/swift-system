@@ -23,7 +23,11 @@ final class MachPortTests: XCTestCase {
         var refCount:mach_port_urefs_t = 0
         withUnsafeMutablePointer(to: &refCount) { refCount in
             let kr = mach_port_get_refs(mach_task_self_, name, kind, refCount)
-            XCTAssertEqual(kr, KERN_SUCCESS)
+            if kr == KERN_INVALID_NAME {
+                refCount.pointee = 0
+            } else {
+                XCTAssertEqual(kr, KERN_SUCCESS)
+            }
         }
         return refCount
     }
@@ -43,11 +47,14 @@ final class MachPortTests: XCTestCase {
 
         XCTAssertNotEqual(name, 0xFFFFFFFF)
 
-        let one = scopedReceiveRight(name:name)
-        let zero = refCountForMachPortName(name:name, kind: MACH_PORT_RIGHT_RECEIVE)
+        let originalCount = refCountForMachPortName(name: name, kind: MACH_PORT_RIGHT_RECEIVE)
+        XCTAssertEqual(originalCount, 1)
 
-        XCTAssertEqual(one, 1);
-        XCTAssertEqual(zero, 0);
+        let incrementedCount = scopedReceiveRight(name:name)
+        XCTAssertEqual(incrementedCount, 1);
+
+        let deallocated = refCountForMachPortName(name:name, kind: MACH_PORT_RIGHT_RECEIVE)
+        XCTAssertEqual(deallocated, 0);
     }
 
     func consumeSendRightAutomatically(name:mach_port_name_t) -> mach_port_urefs_t {
