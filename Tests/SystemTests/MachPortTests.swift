@@ -29,7 +29,8 @@ final class MachPortTests: XCTestCase {
     }
 
     func scopedReceiveRight(name:mach_port_name_t) -> mach_port_urefs_t {
-        _ = Mach.Port<Mach.ReceiveRight>(name:name) // this should automatically deallocate when going out of scope
+        let right = Mach.Port<Mach.ReceiveRight>(name:name) // this should automatically deallocate when going out of scope
+        defer { _ = right }
         return refCountForMachPortName(name:name, kind:MACH_PORT_RIGHT_RECEIVE)
     }
 
