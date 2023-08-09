@@ -95,6 +95,42 @@ final class MachPortTests: XCTestCase {
         }
     }
 
+    func testSendOnceRightRelinquishment() throws {
+        let recv = Mach.Port<Mach.ReceiveRight>()
+
+        let name = ({
+            let send = recv.makeSendOnceRight()
+            let one = send.withBorrowedName { name in
+                return self.refCountForMachPortName(name: name, kind: MACH_PORT_RIGHT_SEND_ONCE)
+            }
+            XCTAssertEqual(one, 1)
+
+            return send.relinquish()
+        })()
+
+        let stillOne = refCountForMachPortName(name: name, kind: MACH_PORT_RIGHT_SEND_ONCE)
+        XCTAssertEqual(stillOne, 1)
+
+        recv.withBorrowedName {
+            let alsoOne = refCountForMachPortName(name: $0, kind: MACH_PORT_RIGHT_RECEIVE)
+            XCTAssertEqual(alsoOne, 1)
+        }
+    }
+
+    func testReceiveRightRelinquishment() throws {
+        let recv = Mach.Port<Mach.ReceiveRight>()
+
+        let one = recv.withBorrowedName {
+            self.refCountForMachPortName(name: $0, kind: MACH_PORT_RIGHT_RECEIVE)
+        }
+        XCTAssertEqual(one, 1)
+
+        let name = recv.unguardAndRelinquish()
+
+        let stillOne = refCountForMachPortName(name: name, kind: MACH_PORT_RIGHT_RECEIVE)
+        XCTAssertEqual(stillOne, 1)
+    }
+
     func testMakeSendCountSettable() throws {
         var recv = Mach.Port<Mach.ReceiveRight>()
         XCTAssertEqual(recv.makeSendCount, 0)

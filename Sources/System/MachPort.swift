@@ -190,8 +190,7 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
   /// the context value along with the port name.
   @inlinable
   public consuming func unguardAndRelinquish() -> mach_port_name_t {
-    let (name, context) = (_name, _context)
-    discard self
+    let (name, context) = self.relinquish()
     _machPrecondition(mach_port_unguard(mach_task_self_, name, context))
     return name
   }
