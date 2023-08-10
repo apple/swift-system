@@ -81,17 +81,17 @@ public enum Mach {
     }
 
     deinit {
-      if _name == 0xFFFFFFFF /* MACH_PORT_DEAD */ {
-        precondition(RightType.self != ReceiveRight.self, "Receive rights cannot be dead names")
-        _machPrecondition(mach_port_mod_refs(mach_task_self_, _name, MACH_PORT_RIGHT_DEAD_NAME, -1))
+      if RightType.self == ReceiveRight.self {
+        precondition(_name != 0xffffffff, "Receive rights cannot be dead names")
+        _machPrecondition(
+          mach_port_destruct(mach_task_self_, _name, 0, _context)
+        )
       } else {
-        if RightType.self == ReceiveRight.self {
-          _machPrecondition(mach_port_destruct(mach_task_self_, _name, 0, _context))
-        } else if RightType.self == SendRight.self {
-          _machPrecondition(mach_port_deallocate(mach_task_self_, _name))
-        } else if RightType.self == SendOnceRight.self {
-          _machPrecondition(mach_port_mod_refs(mach_task_self_, _name, MACH_PORT_RIGHT_SEND_ONCE, -1))
-        }
+        assert(
+          RightType.self == SendRight.self ||
+          RightType.self == SendOnceRight.self
+        )
+        _machPrecondition(mach_port_deallocate(mach_task_self_, _name))
       }
     }
   }

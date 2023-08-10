@@ -210,6 +210,20 @@ final class MachPortTests: XCTestCase {
             XCTAssertEqual(context, $1)
         }
     }
+
+    func testDeinitDeadSendRight() throws {
+        let send = Mach.Port<Mach.SendRight>(name: 0xffffffff)
+        send.withBorrowedName {
+            XCTAssertEqual($0, .max)
+        }
+        _ = consume send
+
+        let send1 = Mach.Port<Mach.SendOnceRight>(name: 0xffffffff)
+        send1.withBorrowedName {
+            XCTAssertEqual($0, .max)
+        }
+        _ = consume send1
+    }
 }
 
 #endif
