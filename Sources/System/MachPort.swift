@@ -308,7 +308,7 @@ extension Mach.Port where RightType == Mach.SendRight {
 
     // name is the same because send rights are coalesced
     let kr = mach_port_insert_right(mach_task_self_, _name, _name, mach_msg_type_name_t(how))
-    if kr == KERN_INVALID_CAPABILITY {
+    if kr == KERN_INVALID_NAME {
       throw Mach.PortRightError.deadName
     }
     _machPrecondition(kr)

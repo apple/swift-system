@@ -183,6 +183,17 @@ final class MachPortTests: XCTestCase {
         XCTAssertEqual(same, one)
 
     }
+
+    func testCopyDeadName() throws {
+        let send = Mach.Port<Mach.SendRight>(name: 0xffffffff)
+        do {
+            let copy = try send.copySendRight()
+            _ = copy
+        }
+        catch Mach.PortRightError.deadName {
+            _ = send.relinquish()
+        }
+    }
 }
 
 #endif
