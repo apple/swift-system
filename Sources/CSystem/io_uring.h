@@ -5,6 +5,9 @@
 #include <signal.h>
 #include <linux/io_uring.h>
 
+#ifndef SWIFT_IORING_C_WRAPPER
+#define SWIFT_IORING_C_WRAPPER
+
 #ifdef __alpha__
 /*
  * alpha is the only exception, all other architectures
@@ -48,3 +51,5 @@ int io_uring_enter(int fd, unsigned int to_submit, unsigned int min_complete,
 	return syscall(__NR_io_uring_enter, fd, to_submit, min_complete,
 			flags, sig, _NSIG / 8);
 }
+
+#endif

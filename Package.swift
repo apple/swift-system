@@ -21,9 +21,8 @@ let package = Package(
       .package(url: "https://github.com/apple/swift-atomics", from: "1.1.0")
     ],
     targets: [
-      .target(
-        name: "CSystem",
-        dependencies: []),
+      .systemLibrary(
+        name: "CSystem"),
       .target(
         name: "SystemPackage",
         dependencies: [
