@@ -194,6 +194,22 @@ final class MachPortTests: XCTestCase {
             _ = send.relinquish()
         }
     }
+
+    func testMakeReceivedRightFromExistingName() throws {
+        var name = mach_port_name_t(MACH_PORT_NULL)
+        var kr = mach_port_allocate(mach_task_self_, MACH_PORT_RIGHT_RECEIVE, &name)
+        XCTAssertEqual(kr, KERN_SUCCESS)
+        XCTAssertNotEqual(name, mach_port_name_t(MACH_PORT_NULL))
+        let context = mach_port_context_t(arc4random())
+        kr = mach_port_guard(mach_task_self_, name, context, 0)
+        XCTAssertEqual(kr, KERN_SUCCESS)
+
+        let right = Mach.Port<Mach.ReceiveRight>(name: name, context: context)
+        right.withBorrowedName {
+            XCTAssertEqual(name, $0)
+            XCTAssertEqual(context, $1)
+        }
+    }
 }
 
 #endif

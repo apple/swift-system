@@ -135,6 +135,7 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
   /// The underlying port right will be automatically deallocated when
   /// the Mach.Port object is destroyed.
   public init(name: mach_port_name_t, context: mach_port_context_t) {
+    precondition(name != mach_port_name_t(MACH_PORT_NULL), "Mach.Port cannot be initialized with MACH_PORT_NULL")
     self._name = name
     self._context = context
   }
