@@ -185,13 +185,24 @@ final class MachPortTests: XCTestCase {
     }
 
     func testCopyDeadName() throws {
+        let recv = Mach.Port<Mach.ReceiveRight>()
+        let send = recv.makeSendRight()
+        _ = consume recv // and turn `send` into a dead name
+        do {
+            let copy = try send.copySendRight()
+            _ = copy
+        }
+        catch Mach.PortRightError.deadName {
+        }
+    }
+
+    func testCopyDeadName2() throws {
         let send = Mach.Port<Mach.SendRight>(name: 0xffffffff)
         do {
             let copy = try send.copySendRight()
             _ = copy
         }
         catch Mach.PortRightError.deadName {
-            _ = send.relinquish()
         }
     }
 
