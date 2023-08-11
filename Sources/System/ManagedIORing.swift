@@ -1,7 +1,7 @@
 final public class ManagedIORing: @unchecked Sendable {
     var internalRing: IORing
 
-    init(queueDepth: UInt32) throws {
+    public init(queueDepth: UInt32) throws {
         self.internalRing = try IORing(queueDepth: queueDepth)
         self.internalRing.registerBuffers(bufSize: 655336, count: 4)
         self.internalRing.registerFiles(count: 32)

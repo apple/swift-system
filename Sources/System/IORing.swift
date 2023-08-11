@@ -262,7 +262,7 @@ public final class IORing: @unchecked Sendable {
         self.ringFlags = params.flags
     }
 
-    func blockingConsumeCompletion() -> IOCompletion {
+    public func blockingConsumeCompletion() -> IOCompletion {
         self.completionMutex.lock()
         defer { self.completionMutex.unlock() }
         
@@ -292,7 +292,7 @@ public final class IORing: @unchecked Sendable {
         }
     }
 
-    func tryConsumeCompletion() -> IOCompletion? {
+    public func tryConsumeCompletion() -> IOCompletion? {
         self.completionMutex.lock()
         defer { self.completionMutex.unlock() }
         return _tryConsumeCompletion()
@@ -312,8 +312,7 @@ public final class IORing: @unchecked Sendable {
         return nil
     }
 
-
-    func registerFiles(count: UInt32) {
+    public func registerFiles(count: UInt32) {
         guard self.registeredFiles == nil else { fatalError() }
         let fileBuf = UnsafeMutableBufferPointer<UInt32>.allocate(capacity: Int(count))
         fileBuf.initialize(repeating: UInt32.max)
@@ -327,16 +326,15 @@ public final class IORing: @unchecked Sendable {
         self.registeredFiles = ResourceManager(fileBuf)
     }
 
-    func unregisterFiles() {
+    public func unregisterFiles() {
         fatalError("failed to unregister files")
     }
 
-    func getFile() -> IORingFileSlot? {
+    public func getFile() -> IORingFileSlot? {
         return self.registeredFiles?.getResource()
     }
 
-    // register a group of buffers
-    func registerBuffers(bufSize: UInt32, count: UInt32) {
+    public func registerBuffers(bufSize: UInt32, count: UInt32) {
         let iovecs = UnsafeMutableBufferPointer<iovec>.allocate(capacity: Int(count))
         let intBufSize = Int(bufSize)
         for i in 0..<iovecs.count {
@@ -355,22 +353,21 @@ public final class IORing: @unchecked Sendable {
         self.registeredBuffers = ResourceManager(iovecs)
     }
 
-    func getBuffer() -> IORingBuffer? {
+    public func getBuffer() -> IORingBuffer? {
         return self.registeredBuffers?.getResource()
     }
 
-    func unregisterBuffers() {
+    public func unregisterBuffers() {
         fatalError("failed to unregister buffers: TODO")
     }
 
-    // TODO: types
-    func submitRequests() {
+    public func submitRequests() {
         self.submissionMutex.lock()
         defer { self.submissionMutex.unlock() }
         self._submitRequests()
     }
 
-    func _submitRequests() {
+    internal func _submitRequests() {
         let flushedEvents = _flushQueue()
         
         // Ring always needs enter right now;
@@ -389,6 +386,8 @@ public final class IORing: @unchecked Sendable {
                 fatalError("fatal error in submitting requests: " +
                     Errno(rawValue: -ret).debugDescription
                 )
+            } else {
+                break
             }
         }
     }
@@ -403,14 +402,7 @@ public final class IORing: @unchecked Sendable {
 
 
     @inlinable @inline(__always)
-    func writeRequest(_ request: __owned IORequest) -> Bool {
-        self.submissionMutex.lock()
-        defer { self.submissionMutex.unlock() }
-        return _writeRequest(request.makeRawRequest())
-    }
-
-    @inlinable @inline(__always)
-    func writeAndSubmit(_ request: __owned IORequest) -> Bool {
+    public func writeRequest(_ request: __owned IORequest) -> Bool {
         self.submissionMutex.lock()
         defer { self.submissionMutex.unlock() }
         return _writeRequest(request.makeRawRequest())

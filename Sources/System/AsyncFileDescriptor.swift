@@ -1,12 +1,13 @@
 @_implementationOnly import CSystem
 
-public class AsyncFileDescriptor {    
-    var open: Bool = true
+
+public final class AsyncFileDescriptor {    
+    @usableFromInline var open: Bool = true
     @usableFromInline let fileSlot: IORingFileSlot
     @usableFromInline let ring: ManagedIORing
     
-    static func openat(
-        atDirectory: FileDescriptor = FileDescriptor(rawValue: AT_FDCWD), 
+    public static func openat(
+        atDirectory: FileDescriptor = FileDescriptor(rawValue: -100), 
         path: FilePath,
         _ mode: FileDescriptor.AccessMode,
         options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
@@ -25,7 +26,8 @@ public class AsyncFileDescriptor {
             path: cstr,
             mode,
             options: options,
-            permissions: permissions, intoSlot: fileSlot
+            permissions: permissions,
+            intoSlot: fileSlot
         ))
         if res.result < 0 {
             throw Errno(rawValue: -res.result)
@@ -47,7 +49,7 @@ public class AsyncFileDescriptor {
     }
 
     @inlinable @inline(__always) @_unsafeInheritExecutor
-    func read(
+    public func read(
         into buffer: IORequest.Buffer,
         atAbsoluteOffset offset: UInt64 = UInt64.max
     ) async throws -> UInt32 {
