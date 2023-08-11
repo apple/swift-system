@@ -46,7 +46,9 @@ extension IORequest {
                 request.rawValue.addr = unsafeBitCast(path, to: UInt64.self)
                 request.rawValue.open_flags = UInt32(bitPattern: options.rawValue | mode.rawValue)
                 request.rawValue.len = permissions?.rawValue ?? 0
-                request.rawValue.file_index = UInt32(slot?.index ?? 0)
+                if let fileSlot = slot {
+                    request.rawValue.file_index = UInt32(fileSlot.index + 1)
+                }
             case .read(let file, let buffer, let offset), .write(let file, let buffer, let offset):
                 if case .read = self {
                     if case .registered = buffer {
