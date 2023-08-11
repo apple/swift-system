@@ -20,6 +20,7 @@ public enum IORequest {
         buffer: Buffer,
         offset: UInt64 = 0
     )
+    case close(File)
 
     public enum Buffer {
         case registered(IORingBuffer)
@@ -78,6 +79,14 @@ extension IORequest {
                         request.buffer = buf
                 }
                 request.offset = offset
+            case .close(let file):
+                request.operation = .close
+                switch file {
+                    case .registered(let regFile):
+                        request.rawValue.file_index = UInt32(regFile.index + 1)
+                    case .unregistered(let normalFile):
+                        request.fileDescriptor = normalFile
+                }
         }
         return request
     }

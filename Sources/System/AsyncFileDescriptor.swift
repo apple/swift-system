@@ -43,9 +43,15 @@ public final class AsyncFileDescriptor {
         self.ring = ring
     }
 
-    func close() async throws {
+    @inlinable @inline(__always) @_unsafeInheritExecutor
+    public func close() async throws {
+        let res = await ring.submitAndWait(.close(
+            .registered(self.fileSlot)
+        ))
+        if res.result < 0 {
+            throw Errno(rawValue: -res.result)
+        }
         self.open = false
-        fatalError()
     }
 
     @inlinable @inline(__always) @_unsafeInheritExecutor
@@ -67,7 +73,7 @@ public final class AsyncFileDescriptor {
 
     deinit {
         if (self.open) {
-            // TODO: close
+            // TODO: close or error? TBD
         }
     }
 }

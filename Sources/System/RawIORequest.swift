@@ -25,10 +25,14 @@ extension RawIORequest {
         case receiveMessage = 10
         // ...
         case openAt = 18
+        case close = 19
+        case filesUpdate = 20
+        case statx = 21
         case read = 22
         case write = 23
+        // ...
         case openAt2 = 28
-
+        // ...
     }
 
     public struct Flags: OptionSet, Hashable, Codable {
