@@ -193,6 +193,7 @@ final class MachPortTests: XCTestCase {
             _ = copy
         }
         catch Mach.PortRightError.deadName {
+          // success
         }
     }
 
@@ -203,10 +204,11 @@ final class MachPortTests: XCTestCase {
             _ = copy
         }
         catch Mach.PortRightError.deadName {
+          // success
         }
     }
 
-    func testMakeReceivedRightFromExistingName() throws {
+    func testMakeReceiveRightFromExistingName() throws {
         var name = mach_port_name_t(MACH_PORT_NULL)
         var kr = mach_port_allocate(mach_task_self_, MACH_PORT_RIGHT_RECEIVE, &name)
         XCTAssertEqual(kr, KERN_SUCCESS)
@@ -222,17 +224,14 @@ final class MachPortTests: XCTestCase {
         }
     }
 
-    func testDeinitDeadSendRight() throws {
-        let send = Mach.Port<Mach.SendRight>(name: 0xffffffff)
-        send.withBorrowedName {
-            XCTAssertEqual($0, .max)
-        }
-        _ = consume send
+    func testDeinitDeadSendRights() throws {
+        let recv = Mach.Port<Mach.ReceiveRight>()
+        let send = recv.makeSendRight()
+        let send1 = recv.makeSendOnceRight()
 
-        let send1 = Mach.Port<Mach.SendOnceRight>(name: 0xffffffff)
-        send1.withBorrowedName {
-            XCTAssertEqual($0, .max)
-        }
+        _ = consume recv
+        // `send` and `send1` have become dead names
+        _ = consume send
         _ = consume send1
     }
 }
