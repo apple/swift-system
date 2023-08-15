@@ -48,11 +48,13 @@ public enum Mach {
     ///
     /// This initializer makes a syscall to guard the right.
     public init(name: mach_port_name_t) {
-      precondition(name != mach_port_name_t(MACH_PORT_NULL), "Mach.Port cannot be initialized with MACH_PORT_NULL")
+      precondition(name != mach_port_name_t(MACH_PORT_NULL),
+                   "Mach.Port cannot be initialized with MACH_PORT_NULL")
       self._name = name
 
       if RightType.self == ReceiveRight.self {
-        precondition(name != 0xFFFFFFFF /* MACH_PORT_DEAD */, "Receive rights cannot be dead names")
+        precondition(name != 0xFFFFFFFF /* MACH_PORT_DEAD */,
+                     "Receive rights cannot be dead names")
 
         let secret = mach_port_context_t(arc4random())
         _machPrecondition(mach_port_guard(mach_task_self_, name, secret, 0))
@@ -82,7 +84,8 @@ public enum Mach {
 
     deinit {
       if RightType.self == ReceiveRight.self {
-        precondition(_name != 0xffffffff, "Receive rights cannot be dead names")
+        precondition(_name != 0xFFFFFFFF /* MACH_PORT_DEAD */,
+                     "Receive rights cannot be dead names")
         _machPrecondition(
           mach_port_destruct(mach_task_self_, _name, 0, _context)
         )
@@ -135,7 +138,8 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
   /// The underlying port right will be automatically deallocated when
   /// the Mach.Port object is destroyed.
   public init(name: mach_port_name_t, context: mach_port_context_t) {
-    precondition(name != mach_port_name_t(MACH_PORT_NULL), "Mach.Port cannot be initialized with MACH_PORT_NULL")
+    precondition(name != mach_port_name_t(MACH_PORT_NULL),
+                 "Mach.Port cannot be initialized with MACH_PORT_NULL")
     self._name = name
     self._context = context
   }
@@ -251,7 +255,11 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
     let how = MACH_MSG_TYPE_MAKE_SEND
 
     // name is the same because send and recv rights are coalesced
-    _machPrecondition(mach_port_insert_right(mach_task_self_, _name, _name, mach_msg_type_name_t(how)))
+    _machPrecondition(
+      mach_port_insert_right(
+        mach_task_self_, _name, _name, mach_msg_type_name_t(how)
+      )
+    )
 
     return Mach.Port(name: _name)
   }
@@ -316,7 +324,9 @@ extension Mach.Port where RightType == Mach.SendRight {
     let how = MACH_MSG_TYPE_COPY_SEND
 
     // name is the same because send rights are coalesced
-    let kr = mach_port_insert_right(mach_task_self_, _name, _name, mach_msg_type_name_t(how))
+    let kr = mach_port_insert_right(
+      mach_task_self_, _name, _name, mach_msg_type_name_t(how)
+    )
     if kr == KERN_INVALID_NAME || kr == KERN_INVALID_CAPABILITY {
       throw Mach.PortRightError.deadName
     }
