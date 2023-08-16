@@ -8,7 +8,8 @@
 */
 
 // A platform-native character representation, currently used for file paths
-internal struct SystemChar: RawRepresentable, Comparable, Hashable, Codable {
+internal struct SystemChar:
+  RawRepresentable, Sendable, Comparable, Hashable, Codable {
   internal typealias RawValue = CInterop.PlatformChar
 
   internal var rawValue: RawValue
@@ -61,7 +62,7 @@ extension SystemChar {
 // A platform-native string representation, currently for file paths
 //
 // Always null-terminated.
-internal struct SystemString {
+internal struct SystemString: Sendable {
   internal typealias Storage = [SystemChar]
   internal var nullTerminatedStorage: Storage
 }
@@ -287,11 +288,6 @@ extension SystemString {
     }
   }
 }
-
-#if compiler(>=5.5) && canImport(_Concurrency)
-extension SystemChar: Sendable {}
-extension SystemString: Sendable {}
-#endif
 
 // TODO: SystemString should use a COW-interchangable storage form rather
 // than array, so you could "borrow" the storage from a non-bridged String

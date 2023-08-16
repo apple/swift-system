@@ -45,7 +45,8 @@ extension FileDescriptor {
 extension FileDescriptor {
   /// The desired read and write access for a newly opened file.
   @frozen
-  public struct AccessMode: RawRepresentable, Hashable, Codable {
+  @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+  public struct AccessMode: RawRepresentable, Sendable, Hashable, Codable {
     /// The raw C access mode.
     @_alwaysEmitIntoClient
     public var rawValue: CInt
@@ -87,7 +88,8 @@ extension FileDescriptor {
 
   /// Options that specify behavior for a newly-opened file.
   @frozen
-  public struct OpenOptions: OptionSet, Hashable, Codable {
+  @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+  public struct OpenOptions: OptionSet, Sendable, Hashable, Codable {
     /// The raw C options.
     @_alwaysEmitIntoClient
     public var rawValue: CInt
@@ -311,7 +313,8 @@ extension FileDescriptor {
 
   /// Options for specifying what a file descriptor's offset is relative to.
   @frozen
-  public struct SeekOrigin: RawRepresentable, Hashable, Codable {
+  @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+  public struct SeekOrigin: RawRepresentable, Sendable, Hashable, Codable {
     /// The raw C value.
     @_alwaysEmitIntoClient
     public var rawValue: CInt
@@ -475,18 +478,7 @@ extension FileDescriptor.OpenOptions
   public var debugDescription: String { self.description }
 }
 
-#if compiler(>=5.5) && canImport(_Concurrency)
 // The decision on whether to make FileDescriptor Sendable or not
 // is currently being discussed in https://github.com/apple/swift-system/pull/112
 //@available(*, unavailable, message: "File descriptors are not completely thread-safe.")
 //extension FileDescriptor: Sendable {}
-
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
-extension FileDescriptor.AccessMode: Sendable {}
-
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
-extension FileDescriptor.OpenOptions: Sendable {}
-
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
-extension FileDescriptor.SeekOrigin: Sendable {}
-#endif

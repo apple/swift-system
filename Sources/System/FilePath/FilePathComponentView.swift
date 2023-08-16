@@ -28,7 +28,8 @@ extension FilePath {
   ///
   ///     path.components.removeAll { $0.kind == .currentDirectory }
   ///     // path is "/home/username/bin/scripts/tree"
-  public struct ComponentView {
+  @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
+  public struct ComponentView: Sendable {
     internal var _path: FilePath
     internal var _start: SystemString.Index
 
@@ -66,7 +67,9 @@ extension FilePath {
 @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.ComponentView: BidirectionalCollection {
   public typealias Element = FilePath.Component
-  public struct Index: Comparable, Hashable {
+
+  @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
+  public struct Index: Sendable, Comparable, Hashable {
     internal typealias Storage = SystemString.Index
 
     internal var _storage: Storage
@@ -214,11 +217,3 @@ extension FilePath.ComponentView {
     #endif // DEBUG
   }
 }
-
-#if compiler(>=5.5) && canImport(_Concurrency)
-@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
-extension FilePath.ComponentView: Sendable {}
-
-@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
-extension FilePath.ComponentView.Index: Sendable {}
-#endif
