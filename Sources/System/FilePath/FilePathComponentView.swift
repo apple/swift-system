@@ -39,30 +39,6 @@ extension FilePath {
     }
   }
 
-  #if SYSTEM_PACKAGE // Workaround for a __consuming getter bug in Swift 5.3.3
-  /// View the non-root components that make up this path.
-  public var components: ComponentView {
-    get { ComponentView(self) }
-    _modify {
-      // RRC's empty init means that we can't guarantee that the yielded
-      // view will restore our root. So copy it out first.
-      //
-      // TODO(perf): Small-form root (especially on Unix). Have Root
-      // always copy out (not worth ref counting). Make sure that we're
-      // not needlessly sliding values around or triggering a COW
-      let rootStr = self.root?._systemString ?? SystemString()
-      var comp = ComponentView(self)
-      self = FilePath()
-      defer {
-        self = comp._path
-        if root?._slice.elementsEqual(rootStr) != true {
-          self.root = Root(rootStr)
-        }
-      }
-      yield &comp
-    }
-  }
-  #else
   /// View the non-root components that make up this path.
   public var components: ComponentView {
     __consuming get { ComponentView(self) }
@@ -85,7 +61,6 @@ extension FilePath {
       yield &comp
     }
   }
-  #endif
 }
 
 @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
