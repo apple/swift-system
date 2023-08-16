@@ -18,7 +18,7 @@
 ///     perms == [.ownerReadWrite, .groupRead, .otherRead] // true
 @frozen
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
-public struct FilePermissions: OptionSet, Hashable, Codable {
+public struct FilePermissions: OptionSet, Sendable, Hashable, Codable {
   /// The raw C file permissions.
   @_alwaysEmitIntoClient
   public let rawValue: CModeT
@@ -175,8 +175,3 @@ extension FilePermissions
   /// A textual representation of the file permissions, suitable for debugging.
   public var debugDescription: String { self.description }
 }
-
-#if compiler(>=5.5) && canImport(_Concurrency)
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
-extension FilePermissions: Sendable {}
-#endif

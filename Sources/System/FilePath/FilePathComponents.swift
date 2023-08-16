@@ -28,7 +28,8 @@ extension FilePath {
   ///   * `\\server\share\`
   ///   * `\\?\UNC\server\share\`
   ///   * `\\?\Volume{12345678-abcd-1111-2222-123445789abc}\`
-  public struct Root {
+  @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
+  public struct Root: Sendable {
     internal var _path: FilePath
     internal var _rootEnd: SystemString.Index
 
@@ -54,7 +55,8 @@ extension FilePath {
   ///     file.kind == .regular           // true
   ///     file.extension                  // "txt"
   ///     path.append(file)               // path is "/tmp/foo.txt"
-  public struct Component {
+  @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
+  public struct Component: Sendable {
     internal var _path: FilePath
     internal var _range: Range<SystemString.Index>
 
@@ -78,7 +80,8 @@ extension FilePath.Component {
   /// Whether a component is a regular file or directory name, or a special
   /// directory `.` or `..`
   @frozen
-  public enum Kind {
+  @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
+  public enum Kind: Sendable {
     /// The special directory `.`, representing the current directory.
     case currentDirectory
 
@@ -285,14 +288,3 @@ extension FilePath.Root {
     #endif
   }
 }
-
-#if compiler(>=5.5) && canImport(_Concurrency)
-@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
-extension FilePath.Root: Sendable {}
-
-@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
-extension FilePath.Component: Sendable {}
-
-@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
-extension FilePath.Component.Kind: Sendable {}
-#endif
