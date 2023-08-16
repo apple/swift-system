@@ -188,15 +188,25 @@ final class MachPortTests: XCTestCase {
         let recv = Mach.Port<Mach.ReceiveRight>()
         let send = recv.makeSendRight()
         _ = consume recv // and turn `send` into a dead name
-        XCTAssertThrowsError(try send.copySendRight(), "Copying a dead name should throw") { error in
-            XCTAssertEqual(error, Mach.PortRightError.deadName)
+        XCTAssertThrowsError(
+          _ = try send.copySendRight(),
+          "Copying a dead name should throw"
+        ) { error in
+            XCTAssertEqual(
+              error as! Mach.PortRightError, Mach.PortRightError.deadName
+            )
         }
     }
 
     func testCopyDeadName2() throws {
         let send = Mach.Port<Mach.SendRight>(name: 0xffffffff)
-        XCTAssertThrowsError(try send.copySendRight(), "Copying a dead name should throw") { error in
-            XCTAssertEqual(error, Mach.PortRightError.deadName)
+        XCTAssertThrowsError(
+          _ = try send.copySendRight(),
+          "Copying a dead name should throw"
+        ) { error in
+            XCTAssertEqual(
+              error as! Mach.PortRightError, Mach.PortRightError.deadName
+            )
         }
     }
 
