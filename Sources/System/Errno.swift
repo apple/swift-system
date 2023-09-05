@@ -142,7 +142,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   public static var execFormatError: Errno { Errno(_ENOEXEC) }
 
   @_alwaysEmitIntoClient
-  @available(*, unavailable, renamed: "noExec")
+  @available(*, unavailable, renamed: "execFormatError")
   public static var ENOEXEC: Errno { execFormatError }
 
   /// Bad file descriptor.
@@ -529,7 +529,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   public static var nowInProgress: Errno { Errno(_EINPROGRESS) }
 
   @_alwaysEmitIntoClient
-  @available(*, unavailable, renamed: "nowInProcess")
+  @available(*, unavailable, renamed: "nowInProgress")
   public static var EINPROGRESS: Errno { nowInProgress }
 
   /// Operation already in progress.
