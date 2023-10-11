@@ -279,6 +279,7 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
       )
 
       withUnsafeMutablePointer(to: &status) {
+        [ _name = self._name ] in
         let status = UnsafeMutableBufferPointer(start: $0, count: 1)
         status.withMemoryRebound(to: integer_t.self) {
           let info = $0.baseAddress
