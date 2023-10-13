@@ -11,8 +11,10 @@
 
 import Darwin.Mach
 
+@available(/*System 1.3.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
 public protocol MachPortRight {}
 
+@available(/*System 1.3.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
 @inlinable
 internal func _machPrecondition(
   file: StaticString = #file,
@@ -27,6 +29,7 @@ internal func _machPrecondition(
 @available(/*System 1.3.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
 @frozen
 public enum Mach {
+  @available(/*System 1.3.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
   public struct Port<RightType: MachPortRight>: ~Copyable {
     @usableFromInline
     internal var _name: mach_port_name_t
@@ -276,6 +279,7 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
       )
 
       withUnsafeMutablePointer(to: &status) {
+        [ _name = self._name ] in
         let status = UnsafeMutableBufferPointer(start: $0, count: 1)
         status.withMemoryRebound(to: integer_t.self) {
           let info = $0.baseAddress
