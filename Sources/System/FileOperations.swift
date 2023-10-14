@@ -435,7 +435,7 @@ extension FileDescriptor {
 }
 
 #if !os(Windows)
-@available(/*System 1.1.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
+@available(/*System 1.1.0: macOS 12.3, iOS 15.4, watchOS 8.5, tvOS 15.4*/iOS 8, *)
 extension FileDescriptor {
   /// Creates a unidirectional data channel, which can be used for interprocess communication.
   ///
@@ -443,12 +443,12 @@ extension FileDescriptor {
   ///
   /// The corresponding C function is `pipe`.
   @_alwaysEmitIntoClient
-  @available(/*System 1.1.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
+  @available(/*System 1.1.0: macOS 12.3, iOS 15.4, watchOS 8.5, tvOS 15.4*/iOS 8, *)
   public static func pipe() throws -> (readEnd: FileDescriptor, writeEnd: FileDescriptor) {
     try _pipe().get()
   }
 
-  @available(/*System 1.1.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
+  @available(/*System 1.1.0: macOS 12.3, iOS 15.4, watchOS 8.5, tvOS 15.4*/iOS 8, *)
   @usableFromInline
   internal static func _pipe() -> Result<(readEnd: FileDescriptor, writeEnd: FileDescriptor), Errno> {
     var fds: (Int32, Int32) = (-1, -1)
