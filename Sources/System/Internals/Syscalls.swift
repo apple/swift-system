@@ -71,7 +71,7 @@ internal func system_pread(
 #if ENABLE_MOCKING
   if mockingEnabled { return _mockInt(fd, buf, nbyte, offset) }
 #endif
-  return pread(fd, buf, nbyte, offset)
+  return pread(fd, buf!, nbyte, offset)
 }
 
 // lseek
@@ -101,7 +101,7 @@ internal func system_pwrite(
 #if ENABLE_MOCKING
   if mockingEnabled { return _mockInt(fd, buf, nbyte, offset) }
 #endif
-  return pwrite(fd, buf, nbyte, offset)
+  return pwrite(fd, buf!, nbyte, offset)
 }
 
 internal func system_dup(_ fd: Int32) -> Int32 {
