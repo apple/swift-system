@@ -22,6 +22,8 @@ try fd.closeAfter {
 }
 ```
 
+[API documentation](https://swiftpackageindex.com/apple/swift-system/main/documentation/SystemPackage)
+
 ## Adding `SystemPackage` as a Dependency
 
 To use the `SystemPackage` library in a SwiftPM project,
