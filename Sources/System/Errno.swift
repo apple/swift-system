@@ -23,7 +23,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @_alwaysEmitIntoClient
   private init(_ raw: CInt) { self.init(rawValue: raw) }
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
   /// Error. Not used.
   @_alwaysEmitIntoClient
   public static var notUsed: Errno { Errno(_ERRNO_NOT_USED) }
@@ -911,7 +911,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "directoryNotEmpty")
   public static var ENOTEMPTY: Errno { directoryNotEmpty }
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
   /// Too many processes.
   ///
   /// The corresponding C error is `EPROCLIM`.
@@ -968,7 +968,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   public static var ESTALE: Errno { staleNFSFileHandle }
 
 // TODO: Add Linux's RPC equivalents
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
 
   /// The structure of the remote procedure call (RPC) is bad.
   ///
@@ -1060,7 +1060,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   public static var ENOSYS: Errno { noFunction }
 
 // BSD
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
   /// Inappropriate file type or format.
   ///
   /// The file was the wrong type for the operation,
@@ -1075,7 +1075,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   public static var EFTYPE: Errno { badFileTypeOrFormat }
 #endif
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
   /// Authentication error.
   ///
   /// The authentication ticket used to mount an NFS file system was invalid.
@@ -1102,7 +1102,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   public static var ENEEDAUTH: Errno { needAuthenticator }
 #endif
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
   /// Device power is off.
   ///
   /// The corresponding C error is `EPWROFF`.
@@ -1142,7 +1142,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   public static var EOVERFLOW: Errno { overflow }
 #endif
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
   /// Bad executable or shared library.
   ///
   /// The executable or shared library being referenced was malformed.
@@ -1246,7 +1246,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "illegalByteSequence")
   public static var EILSEQ: Errno { illegalByteSequence }
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
   /// Attribute not found.
   ///
   /// The specified extended attribute doesn't exist.
@@ -1413,7 +1413,7 @@ extension Errno {
   @available(*, unavailable, renamed: "tooManyRemoteLevels")
   public static var EREMOTE: Errno { tooManyRemoteLevels }
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
   /// No such policy registered.
   ///
   /// The corresponding C error is `ENOPOLICY`.
@@ -1447,7 +1447,7 @@ extension Errno {
   public static var EOWNERDEAD: Errno { previousOwnerDied }
 #endif
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
   /// Interface output queue is full.
   ///
   /// The corresponding C error is `EQFULL`.
