@@ -142,31 +142,38 @@ extension SystemString: RangeReplaceableCollection {
     nullTerminatedStorage.reserveCapacity(1 + n)
   }
 
-  // TODO: Below include null terminator, is this desired?
-
   internal func withContiguousStorageIfAvailable<R>(
     _ body: (UnsafeBufferPointer<SystemChar>) throws -> R
   ) rethrows -> R? {
-    try nullTerminatedStorage.withContiguousStorageIfAvailable(body)
+    // Do not include the null terminator, it is outside the Collection
+    try nullTerminatedStorage.withContiguousStorageIfAvailable {
+      try body(.init(start: $0.baseAddress, count: $0.count-1))
+    }
   }
 
   internal mutating func withContiguousMutableStorageIfAvailable<R>(
     _ body: (inout UnsafeMutableBufferPointer<SystemChar>) throws -> R
   ) rethrows -> R? {
     defer { _invariantCheck() }
-    return try nullTerminatedStorage.withContiguousMutableStorageIfAvailable(body)
+    // Do not include the null terminator, it is outside the Collection
+    return try nullTerminatedStorage.withContiguousMutableStorageIfAvailable {
+      var buffer = UnsafeMutableBufferPointer<SystemChar>(
+        start: $0.baseAddress, count: $0.count-1
+      )
+      return try body(&buffer)
+    }
   }
 }
 
 extension SystemString: Hashable, Codable {}
 
 extension SystemString {
-  // TODO: Below include null terminator, is this desired?
 
+  // withSystemChars includes the null terminator
   internal func withSystemChars<T>(
     _ f: (UnsafeBufferPointer<SystemChar>) throws -> T
   ) rethrows -> T {
-    try withContiguousStorageIfAvailable(f)!
+    try nullTerminatedStorage.withContiguousStorageIfAvailable(f)!
   }
 
   internal func withCodeUnits<T>(
