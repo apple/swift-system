@@ -42,7 +42,7 @@ final class FileDescriptorTest: XCTestCase {
 #endif
 
     // BSD only
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     XCTAssertEqual(O_SHLOCK, FileDescriptor.OpenOptions.sharedLock.rawValue)
     XCTAssertEqual(O_EXLOCK, FileDescriptor.OpenOptions.exclusiveLock.rawValue)
     XCTAssertEqual(O_SYMLINK, FileDescriptor.OpenOptions.symlink.rawValue)
@@ -53,7 +53,7 @@ final class FileDescriptorTest: XCTestCase {
     XCTAssertEqual(SEEK_CUR, FileDescriptor.SeekOrigin.current.rawValue)
     XCTAssertEqual(SEEK_END, FileDescriptor.SeekOrigin.end.rawValue)
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     XCTAssertEqual(SEEK_HOLE, FileDescriptor.SeekOrigin.nextHole.rawValue)
     XCTAssertEqual(SEEK_DATA, FileDescriptor.SeekOrigin.nextData.rawValue)
 #endif

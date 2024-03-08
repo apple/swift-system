@@ -185,7 +185,7 @@ extension FileDescriptor {
     @available(*, unavailable, renamed: "exclusiveCreate")
     public static var O_EXCL: OpenOptions { exclusiveCreate }
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     /// Indicates that opening the file
     /// atomically obtains a shared lock on the file.
     ///
@@ -253,7 +253,7 @@ extension FileDescriptor {
     public static var O_DIRECTORY: OpenOptions { directory }
 #endif
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     /// Indicates that opening the file
     /// opens symbolic links instead of following them.
     ///
@@ -357,7 +357,7 @@ extension FileDescriptor {
 
 // TODO: These are available on some versions of Linux with appropriate
 // macro defines.
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     /// Indicates that the offset should be set
     /// to the next hole after the specified number of bytes.
     ///
@@ -419,7 +419,7 @@ extension FileDescriptor.SeekOrigin
     case .start: return "start"
     case .current: return "current"
     case .end: return "end"
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     case .nextHole: return "nextHole"
     case .nextData: return "nextData"
 #endif
@@ -438,7 +438,7 @@ extension FileDescriptor.OpenOptions
   /// A textual representation of the open options.
   @inline(never)
   public var description: String {
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     let descriptions: [(Element, StaticString)] = [
       (.nonBlocking, ".nonBlocking"),
       (.append, ".append"),

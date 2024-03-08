@@ -30,6 +30,7 @@ let package = Package(
           .define("_CRT_SECURE_NO_WARNINGS")
         ],
         swiftSettings: [
+          .define("SYSTEM_PACKAGE_DARWIN", .when(platforms: [.macOS, .iOS, .watchOS, .tvOS, .visionOS])),
           .define("SYSTEM_PACKAGE"),
           .define("ENABLE_MOCKING", .when(configuration: .debug))
         ]),
@@ -37,6 +38,7 @@ let package = Package(
         name: "SystemTests",
         dependencies: ["SystemPackage"],
         swiftSettings: [
+          .define("SYSTEM_PACKAGE_DARWIN", .when(platforms: [.macOS, .iOS, .watchOS, .tvOS, .visionOS])),
           .define("SYSTEM_PACKAGE")
         ]),
     ]

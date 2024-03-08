@@ -7,7 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-#if swift(>=5.9) && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
+#if swift(>=5.9) && SYSTEM_PACKAGE_DARWIN
 
 import XCTest
 import Darwin.Mach

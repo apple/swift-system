@@ -106,7 +106,7 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(EHOSTUNREACH == Errno.noRouteToHost.rawValue)
     XCTAssert(ENOTEMPTY == Errno.directoryNotEmpty.rawValue)
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     XCTAssert(EPROCLIM == Errno.tooManyProcesses.rawValue)
 #endif
 
@@ -120,7 +120,7 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(ESTALE == Errno.staleNFSFileHandle.rawValue)
 #endif
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     XCTAssert(EBADRPC == Errno.rpcUnsuccessful.rawValue)
     XCTAssert(ERPCMISMATCH == Errno.rpcVersionMismatch.rawValue)
     XCTAssert(EPROGUNAVAIL == Errno.rpcProgramUnavailable.rawValue)
@@ -131,7 +131,7 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(ENOLCK == Errno.noLocks.rawValue)
     XCTAssert(ENOSYS == Errno.noFunction.rawValue)
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     XCTAssert(EFTYPE == Errno.badFileTypeOrFormat.rawValue)
     XCTAssert(EAUTH == Errno.authenticationError.rawValue)
     XCTAssert(ENEEDAUTH == Errno.needAuthenticator.rawValue)
@@ -143,7 +143,7 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(EOVERFLOW == Errno.overflow.rawValue)
 #endif
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     XCTAssert(EBADEXEC == Errno.badExecutable.rawValue)
     XCTAssert(EBADARCH == Errno.badCPUType.rawValue)
     XCTAssert(ESHLIBVERS == Errno.sharedLibraryVersionMismatch.rawValue)
@@ -157,7 +157,7 @@ final class ErrnoTest: XCTestCase {
 #endif
     XCTAssert(EILSEQ == Errno.illegalByteSequence.rawValue)
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     XCTAssert(ENOATTR == Errno.attributeNotFound.rawValue)
 #endif
 
@@ -183,7 +183,7 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(EREMOTE == Errno.tooManyRemoteLevels.rawValue)
 #endif
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     XCTAssert(ENOPOLICY == Errno.noSuchPolicy.rawValue)
 #endif
 
@@ -192,7 +192,7 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(EOWNERDEAD == Errno.previousOwnerDied.rawValue)
 #endif
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     XCTAssert(EQFULL == Errno.outputQueueFull.rawValue)
     XCTAssert(ELAST == Errno.lastErrnoValue.rawValue)
 #endif
