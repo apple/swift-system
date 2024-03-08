@@ -202,7 +202,9 @@ extension Slice where Base == SystemString {
   }
 
   internal var string: String {
-    withCodeUnits { String(decoding: $0, as: CInterop.PlatformUnicodeEncoding.self) }
+    withCodeUnits {
+      String(decoding: $0, as: CInterop.PlatformUnicodeEncoding.self)
+    }
   }
 
   internal func withPlatformString<T>(
@@ -244,7 +246,11 @@ extension SystemString: ExpressibleByStringLiteral {
 }
 
 extension SystemString: CustomStringConvertible, CustomDebugStringConvertible {
-  internal var string: String { String(decoding: self) }
+  internal var string: String {
+    self.withCodeUnits {
+      String(decoding: $0, as: CInterop.PlatformUnicodeEncoding.self)
+    }
+  }
 
   internal var description: String { string }
   internal var debugDescription: String { description.debugDescription }
