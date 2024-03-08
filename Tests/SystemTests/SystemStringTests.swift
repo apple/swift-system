@@ -254,6 +254,11 @@ final class SystemStringTest: XCTestCase {
     XCTAssert(str == "abcd")
   }
 
+  func testStringProperty() {
+    let source: [CInterop.PlatformChar] = [0x61, 0x62, 0, 0x63]
+    let str = SystemString(platformString: source)
+    XCTAssertEqual(str.string, str[...].string)
+  }
 }
 
 extension SystemStringTest {
