@@ -204,17 +204,14 @@ extension SystemString {
     try nullTerminatedStorage.withContiguousStorageIfAvailable(f)!
   }
 
+  // withCodeUnits does not include the null terminator
   internal func withCodeUnits<T>(
     _ f: (UnsafeBufferPointer<CInterop.PlatformUnicodeEncoding.CodeUnit>) throws -> T
   ) rethrows -> T {
-    try withSystemChars { chars in
-      let length = chars.count * MemoryLayout<SystemChar>.stride
-      let count = length / MemoryLayout<CInterop.PlatformUnicodeEncoding.CodeUnit>.stride
-      return try chars.baseAddress!.withMemoryRebound(
-        to: CInterop.PlatformUnicodeEncoding.CodeUnit.self,
-        capacity: count
-      ) { pointer in
-        try f(UnsafeBufferPointer(start: pointer, count: count))
+    try withSystemChars {
+      try $0.withMemoryRebound(to: CInterop.PlatformUnicodeEncoding.CodeUnit.self) {
+        assert($0.last == .zero)
+        return try f(.init(start: $0.baseAddress, count: $0.count&-1))
       }
     }
   }
