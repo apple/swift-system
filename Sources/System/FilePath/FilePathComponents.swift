@@ -146,7 +146,7 @@ extension _StrSlice {
   internal func _withSystemChars<T>(
     _ f: (UnsafeBufferPointer<SystemChar>) throws -> T
   ) rethrows -> T {
-    try _storage.withSystemChars {
+    try _storage.withNullTerminatedSystemChars {
       try f(UnsafeBufferPointer(rebasing: $0[_range]))
     }
   }
