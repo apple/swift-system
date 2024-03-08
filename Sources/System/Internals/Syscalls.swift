@@ -71,7 +71,15 @@ internal func system_pread(
 #if ENABLE_MOCKING
   if mockingEnabled { return _mockInt(fd, buf, nbyte, offset) }
 #endif
-  return buf.map({ pread(fd, $0, nbyte, offset) }) ?? 0
+#if os(Android)
+  var zero = UInt8.zero
+  return withUnsafeMutablePointer(to: &zero) {
+    // this pread has a non-nullable `buf` pointer
+    pread(fd, buf ?? UnsafeMutableRawPointer($0), nbyte, offset)
+  }
+#else
+  return pread(fd, buf, nbyte, offset)
+#endif
 }
 
 // lseek
@@ -101,7 +109,15 @@ internal func system_pwrite(
 #if ENABLE_MOCKING
   if mockingEnabled { return _mockInt(fd, buf, nbyte, offset) }
 #endif
-  return buf.map({ pwrite(fd, $0, nbyte, offset) }) ?? 0
+#if os(Android)
+  var zero = UInt8.zero
+  return withUnsafeMutablePointer(to: &zero) {
+    // this pwrite has a non-nullable `buf` pointer
+    pwrite(fd, buf ?? UnsafeRawPointer($0), nbyte, offset)
+  }
+#else
+  return pwrite(fd, buf, nbyte, offset)
+#endif
 }
 
 internal func system_dup(_ fd: Int32) -> Int32 {
