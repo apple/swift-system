@@ -110,7 +110,7 @@ private var contextualMockingEnabled: Bool {
 extension MockingDriver {
   internal static var enabled: Bool { mockingEnabled }
 
-  internal static var forceWindowsPaths: Optional<Bool> {
+  internal static var forceWindowsPaths: Bool? {
     currentMockingDriver?.forceWindowsSyntaxForPaths
   }
 }
@@ -128,7 +128,7 @@ internal var mockingEnabled: Bool {
 }
 
 @inline(__always)
-internal var forceWindowsPaths: Optional<Bool> {
+internal var forceWindowsPaths: Bool? {
   #if !ENABLE_MOCKING
   return false
   #else
