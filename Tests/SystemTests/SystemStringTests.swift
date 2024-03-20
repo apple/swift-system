@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2024 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -101,7 +101,7 @@ struct StringTest: TestCase {
     // Test null insertion
     let rawChars = raw.lazy.map { SystemChar($0) }
     expectEqual(sysRaw, SystemString(rawChars.dropLast()))
-    sysRaw.withSystemChars {  // TODO: assuming we want null in withSysChars
+    sysRaw.withNullTerminatedSystemChars {
       expectEqualSequence(rawChars, $0, "rawChars")
     }
 
@@ -254,6 +254,11 @@ final class SystemStringTest: XCTestCase {
     XCTAssert(str == "abcd")
   }
 
+  func testStringProperty() {
+    let source: [CInterop.PlatformChar] = [0x61, 0x62, 0, 0x63]
+    let str = SystemString(platformString: source)
+    XCTAssertEqual(str.string, str[...].string)
+  }
 }
 
 extension SystemStringTest {

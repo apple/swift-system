@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2024 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -146,7 +146,7 @@ extension _StrSlice {
   internal func _withSystemChars<T>(
     _ f: (UnsafeBufferPointer<SystemChar>) throws -> T
   ) rethrows -> T {
-    try _storage.withSystemChars {
+    try _storage.withNullTerminatedSystemChars {
       try f(UnsafeBufferPointer(rebasing: $0[_range]))
     }
   }
