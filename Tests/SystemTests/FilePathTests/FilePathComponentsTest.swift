@@ -249,6 +249,7 @@ final class FilePathComponentsTest: XCTestCase {
       TestPathComponents("/./..//", root: "/", [".", ".."]),
     ]
 #if !os(Windows)
+    // See https://github.com/apple/swift-system/issues/137
     testPaths += [
       TestPathComponents("//foo///bar/baz/", root: "/", ["foo", "bar", "baz"]),
     ]
