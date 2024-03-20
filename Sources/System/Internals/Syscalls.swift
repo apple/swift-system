@@ -173,6 +173,18 @@ internal func system_rmdir(
   return rmdir(path)
 }
 
+#if SYSTEM_PACKAGE_DARWIN
+internal let SYSTEM_CS_DARWIN_USER_TEMP_DIR = _CS_DARWIN_USER_TEMP_DIR
+
+internal func system_confstr(
+  _ name: CInt,
+  _ buf: UnsafeMutablePointer<CInterop.PlatformChar>,
+  _ len: Int
+) -> Int {
+  return confstr(name, buf, len)
+}
+#endif
+
 #if !os(Windows)
 internal let SYSTEM_AT_REMOVE_DIR = AT_REMOVEDIR
 internal let SYSTEM_DT_DIR = DT_DIR
