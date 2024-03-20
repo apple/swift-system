@@ -111,7 +111,33 @@ internal func recursiveRemove(at path: FilePath) throws {
 
 #else
 internal func getTemporaryDirectory() throws -> FilePath {
+  #if SYSTEM_PACKAGE_DARWIN
+  var capacity = 1024
+  while true {
+    let path: FilePath? = withUnsafeTemporaryAllocation(
+      of: CInterop.PlatformChar.self,
+      capacity: 1024) { buffer in
+      let len = system_confstr(SYSTEM_CS_DARWIN_USER_TEMP_DIR,
+                               buffer.baseAddress!,
+                               buffer.count)
+      if len == 0 {
+        // Fall back to "/tmp" if we can't read the temp directory
+        return "/tmp"
+      }
+      // If it was truncated, increase capaciy and try again
+      if len > buffer.count {
+        capacity = len
+        return nil
+      }
+      return FilePath(SystemString(platformString: buffer.baseAddress!))
+    }
+    if let path = path {
+      return path
+    }
+  }
+  #else
   return "/tmp"
+  #endif
 }
 
 internal func recursiveRemove(at path: FilePath) throws {
