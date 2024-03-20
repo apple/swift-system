@@ -29,8 +29,7 @@ internal func getTemporaryDirectory() throws -> FilePath {
                                            capacity: Int(MAX_PATH) + 1) {
     buffer in
 
-    let count = GetTempPath2W(DWORD(buffer.count), buffer.baseAddress)
-    if count == 0 {
+    guard GetTempPath2W(DWORD(buffer.count), buffer.baseAddress) != 0 else {
       throw Errno(windowsError: GetLastError())
     }
 
@@ -116,7 +115,7 @@ internal func getTemporaryDirectory() throws -> FilePath {
   while true {
     let path: FilePath? = withUnsafeTemporaryAllocation(
       of: CInterop.PlatformChar.self,
-      capacity: 1024) { buffer in
+      capacity: capacity) { buffer in
       let len = system_confstr(SYSTEM_CS_DARWIN_USER_TEMP_DIR,
                                buffer.baseAddress!,
                                buffer.count)
