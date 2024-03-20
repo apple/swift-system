@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 - 2021 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2024 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -13,6 +13,8 @@ import Darwin
 import Glibc
 #elseif canImport(Musl)
 import Musl
+#elseif canImport(WASILibc)
+import WASILibc
 #elseif os(Windows)
 import ucrt
 #else
@@ -120,6 +122,7 @@ internal func system_pwrite(
 #endif
 }
 
+#if !os(WASI)
 internal func system_dup(_ fd: Int32) -> Int32 {
   #if ENABLE_MOCKING
   if mockingEnabled { return _mock(fd) }
@@ -133,8 +136,9 @@ internal func system_dup2(_ fd: Int32, _ fd2: Int32) -> Int32 {
   #endif
   return dup2(fd, fd2)
 }
+#endif
 
-#if !os(Windows)
+#if !os(WASI)
 internal func system_pipe(_ fds: UnsafeMutablePointer<Int32>) -> CInt {
 #if ENABLE_MOCKING
   if mockingEnabled { return _mock(fds) }
@@ -143,11 +147,83 @@ internal func system_pipe(_ fds: UnsafeMutablePointer<Int32>) -> CInt {
 }
 #endif
 
-#if !os(Windows)
 internal func system_ftruncate(_ fd: Int32, _ length: off_t) -> Int32 {
 #if ENABLE_MOCKING
   if mockingEnabled { return _mock(fd, length) }
 #endif
   return ftruncate(fd, length)
+}
+
+internal func system_mkdir(
+    _ path: UnsafePointer<CInterop.PlatformChar>,
+    _ mode: CInterop.Mode
+) -> CInt {
+#if ENABLE_MOCKING
+  if mockingEnabled { return _mock(path: path, mode) }
+#endif
+  return mkdir(path, mode)
+}
+
+internal func system_rmdir(
+    _ path: UnsafePointer<CInterop.PlatformChar>
+) -> CInt {
+#if ENABLE_MOCKING
+  if mockingEnabled { return _mock(path: path) }
+#endif
+  return rmdir(path)
+}
+
+#if !os(Windows)
+internal let SYSTEM_AT_REMOVE_DIR = AT_REMOVEDIR
+internal let SYSTEM_DT_DIR = DT_DIR
+internal typealias system_dirent = dirent
+internal typealias system_DIR = DIR
+
+internal func system_unlinkat(
+  _ fd: CInt,
+  _ path: UnsafePointer<CInterop.PlatformChar>,
+  _ flag: CInt
+) -> CInt {
+#if ENABLE_MOCKING
+  if mockingEnabled { return _mock(fd, path, flag) }
+#endif
+return unlinkat(fd, path, flag)
+}
+
+internal func system_fdopendir(
+  _ fd: CInt
+) -> UnsafeMutablePointer<DIR>? {
+  return fdopendir(fd)
+}
+
+internal func system_readdir(
+  _ dir: UnsafeMutablePointer<DIR>
+) -> UnsafeMutablePointer<dirent>? {
+  return readdir(dir)
+}
+
+internal func system_rewinddir(
+  _ dir: UnsafeMutablePointer<DIR>
+) {
+  return rewinddir(dir)
+}
+
+internal func system_closedir(
+  _ dir: UnsafeMutablePointer<DIR>
+) -> CInt {
+  return closedir(dir)
+}
+
+internal func system_openat(
+  _ fd: CInt,
+  _ path: UnsafePointer<CInterop.PlatformChar>,
+  _ oflag: Int32
+) -> CInt {
+#if ENABLE_MOCKING
+  if mockingEnabled {
+    return _mock(fd, path, oflag)
+  }
+#endif
+  return openat(fd, path, oflag)
 }
 #endif

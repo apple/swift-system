@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2024 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -369,6 +369,7 @@ extension FileDescriptor {
   }
 }
 
+#if !os(WASI)
 @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FileDescriptor {
   /// Duplicates this file descriptor and return the newly created copy.
@@ -433,8 +434,9 @@ extension FileDescriptor {
     fatalError("Not implemented")
   }
 }
+#endif
 
-#if !os(Windows)
+#if !os(WASI)
 @available(/*System 1.1.0: macOS 12.3, iOS 15.4, watchOS 8.5, tvOS 15.4*/iOS 8, *)
 extension FileDescriptor {
   /// Creates a unidirectional data channel, which can be used for interprocess communication.
@@ -463,7 +465,6 @@ extension FileDescriptor {
 }
 #endif
 
-#if !os(Windows)
 @available(/*System 1.2.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
 extension FileDescriptor {
   /// Truncates or extends the file referenced by this file descriptor.
@@ -509,4 +510,3 @@ extension FileDescriptor {
     }
   }
 }
-#endif
