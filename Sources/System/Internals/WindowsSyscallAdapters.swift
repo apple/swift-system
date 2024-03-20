@@ -160,14 +160,25 @@ internal func mkdir(
   _ path: UnsafePointer<CInterop.PlatformChar>,
   _ mode: CInterop.Mode
 ) -> CInt {
-  return _wmkdir(path)
+  // TODO: Read/write permissions (these need mapping to a SECURITY_DESCRIPTOR).
+  if !CreateDirectoryW(path, nil) {
+    ucrt._set_errno(mapWindowsErrorToErrno(GetLastError()))
+    return -1
+  }
+
+  return 0;
 }
 
 @inline(__always)
 internal func rmdir(
   _ path: UnsafePointer<CInterop.PlatformChar>
 ) -> CInt {
-  return _wrmdir(path)
+  if !RemoveDirectoryW(path) {
+    ucrt._set_errno(mapWindowsErrorToErrno(GetLastError()))
+    return -1
+  }
+
+  return 0;
 }
 
 @usableFromInline
