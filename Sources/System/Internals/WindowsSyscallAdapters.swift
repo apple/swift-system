@@ -16,9 +16,35 @@ import WinSDK
 internal func open(
   _ path: UnsafePointer<CInterop.PlatformChar>, _ oflag: Int32
 ) -> CInt {
-  var fh: CInt = -1
-  _ = _wsopen_s(&fh, path, oflag, _SH_DENYNO, _S_IREAD | _S_IWRITE)
-  return fh
+  if (oflag & _O_CREAT) != 0 {
+    ucrt._set_errno(EINVAL)
+    return -1
+  }
+
+  let decodedFlags = DecodedOpenFlags(oflag)
+
+  var saAttrs = SECURITY_ATTRIBUTES(
+    nLength: DWORD(MemoryLayout<SECURITY_ATTRIBUTES>.size),
+    lpSecurityDescriptor: nil,
+    bInheritHandle: decodedFlags.bInheritHandle
+  )
+
+  let hFile = CreateFileW(path,
+                          decodedFlags.dwDesiredAccess,
+                          DWORD(FILE_SHARE_DELETE
+                                  | FILE_SHARE_READ
+                                  | FILE_SHARE_WRITE),
+                          &saAttrs,
+                          decodedFlags.dwCreationDisposition,
+                          decodedFlags.dwFlagsAndAttributes,
+                          nil)
+
+  if hFile == INVALID_HANDLE_VALUE {
+    ucrt._set_errno(mapWindowsErrorToErrno(GetLastError()))
+    return -1
+  }
+
+  return _open_osfhandle(intptr_t(bitPattern: hFile), oflag);
 }
 
 @inline(__always)
@@ -26,10 +52,39 @@ internal func open(
   _ path: UnsafePointer<CInterop.PlatformChar>, _ oflag: Int32,
   _ mode: CInterop.Mode
 ) -> CInt {
-  // TODO(compnerd): Apply read/write permissions
-  var fh: CInt = -1
-  _ = _wsopen_s(&fh, path, oflag, _SH_DENYNO, _S_IREAD | _S_IWRITE)
-  return fh
+  guard let pSD = createSecurityDescriptor(from: mode) else {
+    ucrt._set_errno(mapWindowsErrorToErrno(GetLastError()))
+    return -1
+  }
+
+  defer {
+    pSD.deallocate()
+  }
+
+  let decodedFlags = DecodedOpenFlags(oflag)
+
+  var saAttrs = SECURITY_ATTRIBUTES(
+    nLength: DWORD(MemoryLayout<SECURITY_ATTRIBUTES>.size),
+    lpSecurityDescriptor: pSD,
+    bInheritHandle: decodedFlags.bInheritHandle
+  )
+
+  let hFile = CreateFileW(path,
+                          decodedFlags.dwDesiredAccess,
+                          DWORD(FILE_SHARE_DELETE
+                                  | FILE_SHARE_READ
+                                  | FILE_SHARE_WRITE),
+                          &saAttrs,
+                          decodedFlags.dwCreationDisposition,
+                          decodedFlags.dwFlagsAndAttributes,
+                          nil)
+
+  if hFile == INVALID_HANDLE_VALUE {
+    ucrt._set_errno(mapWindowsErrorToErrno(GetLastError()))
+    return -1
+  }
+
+  return _open_osfhandle(intptr_t(bitPattern: hFile), oflag);
 }
 
 @inline(__always)
@@ -160,8 +215,21 @@ internal func mkdir(
   _ path: UnsafePointer<CInterop.PlatformChar>,
   _ mode: CInterop.Mode
 ) -> CInt {
-  // TODO: Read/write permissions (these need mapping to a SECURITY_DESCRIPTOR).
-  if !CreateDirectoryW(path, nil) {
+  guard let pSD = createSecurityDescriptor(from: mode) else {
+    ucrt._set_errno(mapWindowsErrorToErrno(GetLastError()))
+    return -1
+  }
+  defer {
+    pSD.deallocate()
+  }
+
+  var saAttrs = SECURITY_ATTRIBUTES(
+    nLength: DWORD(MemoryLayout<SECURITY_ATTRIBUTES>.size),
+    lpSecurityDescriptor: pSD,
+    bInheritHandle: false
+  )
+
+  if !CreateDirectoryW(path, &saAttrs) {
     ucrt._set_errno(mapWindowsErrorToErrno(GetLastError()))
     return -1
   }
@@ -251,6 +319,312 @@ internal func mapWindowsErrorToErrno(_ errorCode: DWORD) -> CInt {
     return EILSEQ
   default:
     return EINVAL
+  }
+}
+
+fileprivate func rightsFromModeBits(
+  _ bits: Int, sticky: Bool = false
+) -> DWORD {
+  var rights: DWORD = 0
+
+  if (bits & 0o4) != 0 {
+    rights |= DWORD(FILE_READ_ATTRIBUTES
+                      | FILE_READ_DATA
+                      | FILE_READ_EA
+                      | STANDARD_RIGHTS_READ
+                      | SYNCHRONIZE)
+  }
+  if (bits & 0o2) != 0 {
+    rights |= DWORD(FILE_APPEND_DATA
+                      | FILE_WRITE_ATTRIBUTES
+                      | FILE_WRITE_DATA
+                      | FILE_WRITE_EA
+                      | STANDARD_RIGHTS_WRITE
+                      | SYNCHRONIZE)
+    if !sticky {
+      rights |= DWORD(FILE_DELETE_CHILD)
+    }
+  }
+  if (bits & 0o1) != 0 {
+    rights |= DWORD(FILE_EXECUTE
+                      | FILE_READ_ATTRIBUTES
+                      | STANDARD_RIGHTS_EXECUTE
+                      | SYNCHRONIZE)
+  }
+
+  return rights
+}
+
+fileprivate func getTokenInformation<T>(
+  of: T.Type,
+  hToken: HANDLE,
+  ticTokenClass: TOKEN_INFORMATION_CLASS
+) -> UnsafePointer<T>? {
+  var capacity = 1024
+  for _ in 0..<2 {
+    let buffer = UnsafeMutableRawPointer.allocate(
+      byteCount: capacity,
+      alignment: MemoryLayout<T>.alignment
+    )
+
+    var dwLength = DWORD(0)
+
+    if GetTokenInformation(hToken,
+                           ticTokenClass,
+                           buffer,
+                           DWORD(capacity),
+                           &dwLength) {
+      return UnsafePointer(buffer.assumingMemoryBound(to: T.self))
+    }
+
+    buffer.deallocate()
+
+    capacity = Int(dwLength)
+  }
+  return nil
+}
+
+/// Build a SECURITY_DESCRIPTOR from UNIX-style "mode" bits.  This only
+/// takes account of the rwx and sticky bits; there's really nothing that
+/// we can do about setuid/setgid.
+@usableFromInline
+internal func createSecurityDescriptor(from mode: CInterop.Mode)
+  -> PSECURITY_DESCRIPTOR? {
+  let ownerPerm = (Int(mode) >> 6) & 0o7
+  let groupPerm = (Int(mode) >> 3) & 0o7
+  let otherPerm = Int(mode) & 0o7
+
+  let ownerRights = rightsFromModeBits(ownerPerm)
+  let groupRights = rightsFromModeBits(groupPerm, sticky: (mode & 0o1000) != 0)
+  let otherRights = rightsFromModeBits(otherPerm, sticky: (mode & 0o1000) != 0)
+
+  // If group or other permissions are *more* permissive, then we need
+  // some DENY ACEs as well to implement the expected semantics
+  let ownerDenyRights = ((ownerRights ^ groupRights) & groupRights) |
+    ((ownerRights ^ otherRights) & otherRights)
+  let groupDenyRights = (groupRights ^ otherRights) & otherRights
+
+  var SIDAuthWorld = SID_IDENTIFIER_AUTHORITY(Value: (0, 0, 0, 0, 0, 1))
+  var everyone: PSID? = nil
+
+  guard AllocateAndInitializeSid(&SIDAuthWorld, 1,
+                                 DWORD(SECURITY_WORLD_RID),
+                                 0, 0, 0, 0, 0, 0, 0,
+                                 &everyone) else {
+    return nil
+  }
+  guard let everyone = everyone else {
+    return nil
+  }
+  defer {
+    FreeSid(everyone)
+  }
+
+  let hToken = GetCurrentThreadEffectiveToken()!
+
+  guard let pTokenUser = getTokenInformation(of: TOKEN_USER.self,
+                                             hToken: hToken,
+                                             ticTokenClass: TokenUser) else {
+    return nil
+  }
+  defer {
+    pTokenUser.deallocate()
+  }
+
+  guard let pTokenPrimaryGroup = getTokenInformation(
+          of: TOKEN_PRIMARY_GROUP.self,
+          hToken: hToken,
+          ticTokenClass: TokenPrimaryGroup
+        ) else {
+    return nil
+  }
+  defer {
+    pTokenPrimaryGroup.deallocate()
+  }
+
+  let user = pTokenUser.pointee.User.Sid!
+  let group = pTokenPrimaryGroup.pointee.PrimaryGroup!
+
+  var eas = [
+    EXPLICIT_ACCESS_W(
+      grfAccessPermissions: ownerRights,
+      grfAccessMode: GRANT_ACCESS,
+      grfInheritance: DWORD(NO_INHERITANCE),
+      Trustee: TRUSTEE_W(
+        pMultipleTrustee: nil,
+        MultipleTrusteeOperation: NO_MULTIPLE_TRUSTEE,
+        TrusteeForm: TRUSTEE_IS_SID,
+        TrusteeType: TRUSTEE_IS_USER,
+        ptstrName:
+          user.assumingMemoryBound(to: CInterop.PlatformChar.self)
+      )
+    ),
+    EXPLICIT_ACCESS_W(
+      grfAccessPermissions: groupRights,
+      grfAccessMode: GRANT_ACCESS,
+      grfInheritance: DWORD(NO_INHERITANCE),
+      Trustee: TRUSTEE_W(
+        pMultipleTrustee: nil,
+        MultipleTrusteeOperation: NO_MULTIPLE_TRUSTEE,
+        TrusteeForm: TRUSTEE_IS_SID,
+        TrusteeType: TRUSTEE_IS_GROUP,
+        ptstrName:
+          group.assumingMemoryBound(to: CInterop.PlatformChar.self)
+      )
+    ),
+    EXPLICIT_ACCESS_W(
+      grfAccessPermissions: otherRights,
+      grfAccessMode: GRANT_ACCESS,
+      grfInheritance: DWORD(NO_INHERITANCE),
+      Trustee: TRUSTEE_W(
+        pMultipleTrustee: nil,
+        MultipleTrusteeOperation: NO_MULTIPLE_TRUSTEE,
+        TrusteeForm: TRUSTEE_IS_SID,
+        TrusteeType: TRUSTEE_IS_GROUP,
+        ptstrName:
+          everyone.assumingMemoryBound(to: CInterop.PlatformChar.self)
+      )
+    )
+  ]
+
+  if ownerDenyRights != 0 {
+    eas.append(
+      EXPLICIT_ACCESS_W(
+        grfAccessPermissions: ownerDenyRights,
+        grfAccessMode: DENY_ACCESS,
+        grfInheritance: DWORD(NO_INHERITANCE),
+        Trustee: TRUSTEE_W(
+          pMultipleTrustee: nil,
+          MultipleTrusteeOperation: NO_MULTIPLE_TRUSTEE,
+          TrusteeForm: TRUSTEE_IS_SID,
+          TrusteeType: TRUSTEE_IS_USER,
+          ptstrName:
+            user.assumingMemoryBound(to: CInterop.PlatformChar.self)
+        )
+      )
+    )
+  }
+
+  if groupDenyRights != 0 {
+    eas.append(
+      EXPLICIT_ACCESS_W(
+        grfAccessPermissions: groupDenyRights,
+        grfAccessMode: DENY_ACCESS,
+        grfInheritance: DWORD(NO_INHERITANCE),
+        Trustee: TRUSTEE_W(
+          pMultipleTrustee: nil,
+          MultipleTrusteeOperation: NO_MULTIPLE_TRUSTEE,
+          TrusteeForm: TRUSTEE_IS_SID,
+          TrusteeType: TRUSTEE_IS_GROUP,
+          ptstrName:
+            group.assumingMemoryBound(to: CInterop.PlatformChar.self)
+        )
+      )
+    )
+  }
+
+  var pACL: PACL? = nil
+  guard SetEntriesInAclW(ULONG(eas.count),
+                         &eas,
+                         nil,
+                         &pACL) == ERROR_SUCCESS else {
+    return nil
+  }
+  defer {
+    LocalFree(pACL)
+  }
+
+  // Create the security descriptor, making sure that inherited ACEs don't
+  // take effect, since that wouldn't match the behaviour of mode bits.
+  var descriptor = SECURITY_DESCRIPTOR()
+
+  guard InitializeSecurityDescriptor(&descriptor,
+                                     DWORD(SECURITY_DESCRIPTOR_REVISION)) else {
+    return nil
+  }
+
+  guard SetSecurityDescriptorControl(&descriptor,
+                                     SECURITY_DESCRIPTOR_CONTROL(SE_DACL_PROTECTED),
+                                     SECURITY_DESCRIPTOR_CONTROL(SE_DACL_PROTECTED))
+          && SetSecurityDescriptorOwner(&descriptor, user, false)
+          && SetSecurityDescriptorGroup(&descriptor, group, false)
+          && SetSecurityDescriptorDacl(&descriptor,
+                                  true,
+                                  pACL,
+                                  false) else {
+    return nil
+  }
+
+  // Make it self-contained (up to this point it uses pointers)
+  var dwRelativeSize = DWORD(0)
+
+  guard !MakeSelfRelativeSD(&descriptor, nil, &dwRelativeSize)
+          && GetLastError() == ERROR_INSUFFICIENT_BUFFER else {
+    return nil
+  }
+
+  let pDescriptor = UnsafeMutableRawPointer.allocate(
+    byteCount: Int(dwRelativeSize),
+    alignment: MemoryLayout<SECURITY_DESCRIPTOR>.alignment
+  ).assumingMemoryBound(to: SECURITY_DESCRIPTOR.self)
+
+  guard MakeSelfRelativeSD(&descriptor, pDescriptor, &dwRelativeSize) else {
+    pDescriptor.deallocate()
+    return nil
+  }
+
+  return UnsafeMutableRawPointer(pDescriptor)
+}
+
+fileprivate struct DecodedOpenFlags {
+  var dwDesiredAccess: DWORD
+  var dwCreationDisposition: DWORD
+  var bInheritHandle: WindowsBool
+  var dwFlagsAndAttributes: DWORD
+
+  init(_ oflag: Int32) {
+    switch oflag & (_O_CREAT | _O_EXCL | _O_TRUNC) {
+    case _O_CREAT | _O_EXCL, _O_CREAT | _O_EXCL | _O_TRUNC:
+      dwCreationDisposition = DWORD(CREATE_NEW)
+    case _O_CREAT:
+      dwCreationDisposition = DWORD(OPEN_ALWAYS)
+    case _O_CREAT | _O_TRUNC:
+      dwCreationDisposition = DWORD(CREATE_ALWAYS)
+    case _O_TRUNC:
+      dwCreationDisposition = DWORD(TRUNCATE_EXISTING)
+    default:
+      dwCreationDisposition = DWORD(OPEN_EXISTING)
+    }
+
+    dwDesiredAccess = 0
+    if (oflag & _O_RDONLY) != 0 {
+      dwDesiredAccess |= DWORD(GENERIC_READ)
+    }
+    if (oflag & _O_WRONLY) != 0 {
+      dwDesiredAccess |= DWORD(GENERIC_WRITE)
+    }
+    if (oflag & _O_RDWR) != 0 {
+      dwDesiredAccess |= DWORD(GENERIC_READ) | DWORD(GENERIC_WRITE)
+    }
+
+    bInheritHandle = WindowsBool((oflag & _O_NOINHERIT) == 0)
+
+    dwFlagsAndAttributes = 0
+    if (oflag & _O_SEQUENTIAL) != 0 {
+      dwFlagsAndAttributes |= DWORD(FILE_FLAG_SEQUENTIAL_SCAN)
+    }
+    if (oflag & _O_RANDOM) != 0 {
+      dwFlagsAndAttributes |= DWORD(FILE_FLAG_RANDOM_ACCESS)
+    }
+    if (oflag & _O_TEMPORARY) != 0 {
+      dwFlagsAndAttributes |= DWORD(FILE_FLAG_DELETE_ON_CLOSE)
+    }
+
+    if (oflag & _O_SHORT_LIVED) != 0 {
+      dwFlagsAndAttributes |= DWORD(FILE_ATTRIBUTE_TEMPORARY)
+    } else {
+      dwFlagsAndAttributes |= DWORD(FILE_ATTRIBUTE_NORMAL)
+    }
   }
 }
 
