@@ -9,8 +9,10 @@
 
 // MARK: - API
 
-public func withTemporaryPath<R>(basename: FilePath.Component,
-                                 _ body: (FilePath) throws -> R) throws -> R {
+public func withTemporaryPath<R>(
+  basename: FilePath.Component,
+  _ body: (FilePath) throws -> R
+) throws -> R {
   let temporaryDir = try createUniqueTemporaryDirectory(basename: basename)
   defer {
     try? recursiveRemove(at: temporaryDir)
