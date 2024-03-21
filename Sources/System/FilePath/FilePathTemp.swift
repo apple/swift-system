@@ -24,7 +24,7 @@ public func withTemporaryPath<R>(basename: FilePath.Component,
 #if os(Windows)
 import WinSDK
 
-internal func getTemporaryDirectory() throws -> FilePath {
+fileprivate func getTemporaryDirectory() throws -> FilePath {
   return try withUnsafeTemporaryAllocation(of: CInterop.PlatformChar.self,
                                            capacity: Int(MAX_PATH) + 1) {
     buffer in
@@ -37,7 +37,7 @@ internal func getTemporaryDirectory() throws -> FilePath {
   }
 }
 
-internal func forEachFile(
+fileprivate func forEachFile(
   at path: FilePath,
   _ body: (WIN32_FIND_DATAW) throws -> ()
 ) rethrows {
@@ -67,7 +67,7 @@ internal func forEachFile(
   }
 }
 
-internal func recursiveRemove(at path: FilePath) throws {
+fileprivate func recursiveRemove(at path: FilePath) throws {
   // First, deal with subdirectories
   try forEachFile(at: path) { findData in
     if (findData.dwFileAttributes & DWORD(FILE_ATTRIBUTE_DIRECTORY)) != 0 {
@@ -109,13 +109,14 @@ internal func recursiveRemove(at path: FilePath) throws {
 }
 
 #else
-internal func getTemporaryDirectory() throws -> FilePath {
+fileprivate func getTemporaryDirectory() throws -> FilePath {
   #if SYSTEM_PACKAGE_DARWIN
   var capacity = 1024
   while true {
     let path: FilePath? = withUnsafeTemporaryAllocation(
       of: CInterop.PlatformChar.self,
-      capacity: capacity) { buffer in
+      capacity: capacity
+    ) { buffer in
       let len = system_confstr(SYSTEM_CS_DARWIN_USER_TEMP_DIR,
                                buffer.baseAddress!,
                                buffer.count)
@@ -139,7 +140,7 @@ internal func getTemporaryDirectory() throws -> FilePath {
   #endif
 }
 
-internal func recursiveRemove(at path: FilePath) throws {
+fileprivate func recursiveRemove(at path: FilePath) throws {
   let dirfd = try FileDescriptor.open(path, .readOnly, options: .directory)
   defer {
     try? dirfd.close()
@@ -173,7 +174,7 @@ fileprivate func impl_opendirat(
   return system_fdopendir(fd)
 }
 
-internal func forEachFile(
+fileprivate func forEachFile(
   in dirfd: CInt, path: UnsafePointer<CInterop.PlatformChar>,
   _ body: (system_dirent) throws -> ()
 ) throws {
@@ -238,11 +239,11 @@ internal func recursiveRemove(
 }
 #endif
 
-internal let base64 = Array<UInt8>(
+fileprivate let base64 = Array<UInt8>(
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_".utf8
 )
 
-internal func makeDirectory(at: FilePath) throws -> Bool {
+fileprivate func makeTempDirectory(at: FilePath) throws -> Bool {
   return try at.withPlatformString {
     if system_mkdir($0, 0o700) == 0 {
       return true
@@ -256,7 +257,7 @@ internal func makeDirectory(at: FilePath) throws -> Bool {
   }
 }
 
-internal func createRandomString(length: Int) -> String {
+fileprivate func createRandomString(length: Int) -> String {
   return String(
     decoding: (0..<length).map{
       _ in base64[Int.random(in: 0..<64)]
@@ -274,7 +275,7 @@ internal func createUniqueTemporaryDirectory(
   while true {
     tempDir.extension = createRandomString(length: 16)
 
-    if try makeDirectory(at: tempDir) {
+    if try makeTempDirectory(at: tempDir) {
       return tempDir
     }
   }
