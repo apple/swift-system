@@ -18,7 +18,7 @@ import System
 final class TemporaryPathTest: XCTestCase {
   #if SYSTEM_PACKAGE_DARWIN
   func testNotInSlashTmp() throws {
-    try withTemporaryPath(basename: "NotInSlashTmp") { path in
+    try withTemporaryFilePath(basename: "NotInSlashTmp") { path in
       // We shouldn't be using "/tmp" on Darwin
       XCTAssertNotEqual(path.components.first!, "tmp")
     }
@@ -26,10 +26,10 @@ final class TemporaryPathTest: XCTestCase {
   #endif
 
   func testUnique() throws {
-    try withTemporaryPath(basename: "test") { path in
+    try withTemporaryFilePath(basename: "test") { path in
       let strPath = String(decoding: path)
       XCTAssert(strPath.contains("test"))
-      try withTemporaryPath(basename: "test") { path2 in
+      try withTemporaryFilePath(basename: "test") { path2 in
         let strPath2 = String(decoding: path2)
         XCTAssertNotEqual(strPath, strPath2)
       }
@@ -39,7 +39,7 @@ final class TemporaryPathTest: XCTestCase {
   func testCleanup() throws {
     var thePath: FilePath? = nil
 
-    try withTemporaryPath(basename: "test") { path in
+    try withTemporaryFilePath(basename: "test") { path in
       thePath = path.appending("foo.txt")
       let fd = try FileDescriptor.open(thePath!, .readWrite,
                                        options: [.create, .truncate],
