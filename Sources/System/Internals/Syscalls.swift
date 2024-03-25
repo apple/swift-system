@@ -239,3 +239,15 @@ internal func system_openat(
   return openat(fd, path, oflag)
 }
 #endif
+
+internal func system_umask(
+  _ mode: CInterop.Mode
+) -> CInterop.Mode {
+  return umask(mode)
+}
+
+internal func system_getenv(
+  _ name: UnsafePointer<CChar>
+) -> UnsafeMutablePointer<CChar>? {
+  return getenv(name)
+}
