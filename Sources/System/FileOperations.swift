@@ -135,8 +135,6 @@ extension FileDescriptor {
       if let permissions = permissions {
         return system_open(path, oFlag, permissions.rawValue)
       }
-      precondition(!options.contains(.create),
-        "Create must be given permissions")
       return system_open(path, oFlag)
     }
     return descOrError.map { FileDescriptor(rawValue: $0) }
@@ -508,5 +506,49 @@ extension FileDescriptor {
     nothingOrErrno(retryOnInterrupt: retryOnInterrupt) {
       system_ftruncate(self.rawValue, _COffT(newSize))
     }
+  }
+}
+
+extension FilePermissions {
+  /// The file creation permission mask (aka "umask").
+  ///
+  /// Permissions set in this mask will be cleared by functions that create
+  /// files or directories.  Note that this mask is process-wide, and that
+  /// *getting* it is not thread safe.
+  @_alwaysEmitIntoClient
+  public static var creationMask: FilePermissions {
+    get {
+      let oldMask = _umask(0o22)
+      _ = _umask(oldMask)
+      return FilePermissions(rawValue: oldMask)
+    }
+    set {
+      _ = _umask(newValue.rawValue)
+    }
+  }
+
+  /// Change the file creation permission mask, run some code, then
+  /// restore it to its original value.
+  ///
+  /// - Parameters:
+  ///   - permissions: The new permission mask.
+  ///
+  /// This is more efficient than reading `creationMask` and restoring it
+  /// afterwards, because of the way reading the creation mask works.
+  @_alwaysEmitIntoClient
+  public static func withCreationMask<R>(
+    _ permissions: FilePermissions,
+    body: () throws -> R
+  ) rethrows -> R {
+    let oldMask = _umask(permissions.rawValue)
+    defer {
+      _ = _umask(oldMask)
+    }
+    return try body()
+  }
+
+  @usableFromInline
+  internal static func _umask(_ mode: CModeT) -> CModeT {
+    return system_umask(mode)
   }
 }

@@ -137,7 +137,7 @@ final class FileOperationsTest: XCTestCase {
     // Ad-hoc test touching a file system.
     do {
       // TODO: Test this against a virtual in-memory file system
-      try withTemporaryPath(basename: "testAdhocOpen") { path in
+      try withTemporaryFilePath(basename: "testAdhocOpen") { path in
         let fd = try FileDescriptor.open(path.appending("b.txt"), .readWrite, options: [.create, .truncate], permissions: .ownerReadWrite)
         try fd.closeAfter {
           try fd.writeAll("abc".utf8)
@@ -186,7 +186,7 @@ final class FileOperationsTest: XCTestCase {
   }
 
   func testResizeFile() throws {
-    try withTemporaryPath(basename: "testResizeFile") { path in 
+    try withTemporaryFilePath(basename: "testResizeFile") { path in 
       let fd = try FileDescriptor.open(path.appending("\(UUID().uuidString).txt"), .readWrite, options: [.create, .truncate], permissions: .ownerReadWrite)
       try fd.closeAfter {
         // File should be empty initially.

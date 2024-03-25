@@ -12,15 +12,21 @@
 import ucrt
 import WinSDK
 
+fileprivate var _umask: CInterop.Mode = 0o22
+
+@inline(__always)
+func umask(
+  _ mode: CInterop.Mode
+) -> CInterop.Mode {
+  let oldMask = _umask
+  _umask = mode
+  return oldMask
+}
+
 @inline(__always)
 internal func open(
   _ path: UnsafePointer<CInterop.PlatformChar>, _ oflag: Int32
 ) -> CInt {
-  if (oflag & _O_CREAT) != 0 {
-    ucrt._set_errno(EINVAL)
-    return -1
-  }
-
   let decodedFlags = DecodedOpenFlags(oflag)
 
   var saAttrs = SECURITY_ATTRIBUTES(
@@ -40,7 +46,7 @@ internal func open(
                           nil)
 
   if hFile == INVALID_HANDLE_VALUE {
-    ucrt._set_errno(mapWindowsErrorToErrno(GetLastError()))
+    ucrt._set_errno(_mapWindowsErrorToErrno(GetLastError()))
     return -1
   }
 
@@ -52,8 +58,10 @@ internal func open(
   _ path: UnsafePointer<CInterop.PlatformChar>, _ oflag: Int32,
   _ mode: CInterop.Mode
 ) -> CInt {
-  guard let pSD = createSecurityDescriptor(from: mode) else {
-    ucrt._set_errno(mapWindowsErrorToErrno(GetLastError()))
+  let actualMode = mode & ~_umask
+
+  guard let pSD = _createSecurityDescriptor(from: actualMode, for: .file) else {
+    ucrt._set_errno(_mapWindowsErrorToErrno(GetLastError()))
     return -1
   }
 
@@ -80,7 +88,7 @@ internal func open(
                           nil)
 
   if hFile == INVALID_HANDLE_VALUE {
-    ucrt._set_errno(mapWindowsErrorToErrno(GetLastError()))
+    ucrt._set_errno(_mapWindowsErrorToErrno(GetLastError()))
     return -1
   }
 
@@ -146,7 +154,7 @@ internal func pread(
 
   var nNumberOfBytesRead: DWORD = 0
   if !ReadFile(hFile, buf, DWORD(nbyte), &nNumberOfBytesRead, &ovlOverlapped) {
-    ucrt._set_errno(mapWindowsErrorToErrno(GetLastError()))
+    ucrt._set_errno(_mapWindowsErrorToErrno(GetLastError()))
     return Int(-1)
   }
   return Int(nNumberOfBytesRead)
@@ -169,7 +177,7 @@ internal func pwrite(
   var nNumberOfBytesWritten: DWORD = 0
   if !WriteFile(hFile, buf, DWORD(nbyte), &nNumberOfBytesWritten,
                 &ovlOverlapped) {
-    ucrt._set_errno(mapWindowsErrorToErrno(GetLastError()))
+    ucrt._set_errno(_mapWindowsErrorToErrno(GetLastError()))
     return Int(-1)
   }
   return Int(nNumberOfBytesWritten)
@@ -193,7 +201,7 @@ internal func ftruncate(_ fd: Int32, _ length: off_t) -> Int32 {
   // Save the current position and restore it when we're done
   if !SetFilePointerEx(hFile, liCurrentOffset, &liCurrentOffset,
                        DWORD(FILE_CURRENT)) {
-    ucrt._set_errno(mapWindowsErrorToErrno(GetLastError()))
+    ucrt._set_errno(_mapWindowsErrorToErrno(GetLastError()))
     return -1
   }
   defer {
@@ -203,7 +211,7 @@ internal func ftruncate(_ fd: Int32, _ length: off_t) -> Int32 {
   // Truncate (or extend) the file
   if !SetFilePointerEx(hFile, liDesiredLength, nil, DWORD(FILE_BEGIN))
        || !SetEndOfFile(hFile) {
-    ucrt._set_errno(mapWindowsErrorToErrno(GetLastError()))
+    ucrt._set_errno(_mapWindowsErrorToErrno(GetLastError()))
     return -1
   }
 
@@ -215,8 +223,11 @@ internal func mkdir(
   _ path: UnsafePointer<CInterop.PlatformChar>,
   _ mode: CInterop.Mode
 ) -> CInt {
-  guard let pSD = createSecurityDescriptor(from: mode) else {
-    ucrt._set_errno(mapWindowsErrorToErrno(GetLastError()))
+  let actualMode = mode & ~_umask
+
+  guard let pSD = _createSecurityDescriptor(from: actualMode,
+                                            for: .directory) else {
+    ucrt._set_errno(_mapWindowsErrorToErrno(GetLastError()))
     return -1
   }
   defer {
@@ -230,7 +241,7 @@ internal func mkdir(
   )
 
   if !CreateDirectoryW(path, &saAttrs) {
-    ucrt._set_errno(mapWindowsErrorToErrno(GetLastError()))
+    ucrt._set_errno(_mapWindowsErrorToErrno(GetLastError()))
     return -1
   }
 
@@ -242,7 +253,7 @@ internal func rmdir(
   _ path: UnsafePointer<CInterop.PlatformChar>
 ) -> CInt {
   if !RemoveDirectoryW(path) {
-    ucrt._set_errno(mapWindowsErrorToErrno(GetLastError()))
+    ucrt._set_errno(_mapWindowsErrorToErrno(GetLastError()))
     return -1
   }
 
@@ -250,7 +261,7 @@ internal func rmdir(
 }
 
 @usableFromInline
-internal func mapWindowsErrorToErrno(_ errorCode: DWORD) -> CInt {
+internal func _mapWindowsErrorToErrno(_ errorCode: DWORD) -> CInt {
   switch Int32(errorCode) {
   case ERROR_SUCCESS:
     return 0
@@ -323,7 +334,9 @@ internal func mapWindowsErrorToErrno(_ errorCode: DWORD) -> CInt {
 }
 
 fileprivate func rightsFromModeBits(
-  _ bits: Int, sticky: Bool = false
+  _ bits: Int,
+  sticky: Bool = false,
+  for fileOrDirectory: _FileOrDirectory
 ) -> DWORD {
   var rights: DWORD = 0
 
@@ -341,7 +354,7 @@ fileprivate func rightsFromModeBits(
                       | FILE_WRITE_EA
                       | STANDARD_RIGHTS_WRITE
                       | SYNCHRONIZE)
-    if !sticky {
+    if fileOrDirectory == .directory && !sticky {
       rights |= DWORD(FILE_DELETE_CHILD)
     }
   }
@@ -384,19 +397,30 @@ fileprivate func getTokenInformation<T>(
   return nil
 }
 
+@usableFromInline
+internal enum _FileOrDirectory {
+  case file
+  case directory
+}
+
 /// Build a SECURITY_DESCRIPTOR from UNIX-style "mode" bits.  This only
 /// takes account of the rwx and sticky bits; there's really nothing that
 /// we can do about setuid/setgid.
 @usableFromInline
-internal func createSecurityDescriptor(from mode: CInterop.Mode)
+internal func _createSecurityDescriptor(from mode: CInterop.Mode,
+                                        for fileOrDirectory: _FileOrDirectory)
   -> PSECURITY_DESCRIPTOR? {
   let ownerPerm = (Int(mode) >> 6) & 0o7
   let groupPerm = (Int(mode) >> 3) & 0o7
   let otherPerm = Int(mode) & 0o7
 
-  let ownerRights = rightsFromModeBits(ownerPerm)
-  let groupRights = rightsFromModeBits(groupPerm, sticky: (mode & 0o1000) != 0)
-  let otherRights = rightsFromModeBits(otherPerm, sticky: (mode & 0o1000) != 0)
+  let ownerRights = rightsFromModeBits(ownerPerm, for: fileOrDirectory)
+  let groupRights = rightsFromModeBits(groupPerm,
+                                       sticky: (mode & 0o1000) != 0,
+                                       for: fileOrDirectory)
+  let otherRights = rightsFromModeBits(otherPerm,
+                                       sticky: (mode & 0o1000) != 0,
+                                       for: fileOrDirectory)
 
   // If group or other permissions are *more* permissive, then we need
   // some DENY ACEs as well to implement the expected semantics
