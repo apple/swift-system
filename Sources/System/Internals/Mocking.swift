@@ -63,7 +63,7 @@ internal class MockingDriver {
 
   // Whether we should pretend to be Windows for syntactic operations
   // inside FilePath
-  fileprivate var forceWindowsSyntaxForPaths = false
+  fileprivate var forceWindowsSyntaxForPaths: Bool? = nil
 }
 
 private let driverKey: _PlatformTLSKey = { makeTLSKey() }()
@@ -110,8 +110,8 @@ private var contextualMockingEnabled: Bool {
 extension MockingDriver {
   internal static var enabled: Bool { mockingEnabled }
 
-  internal static var forceWindowsPaths: Bool {
-    currentMockingDriver?.forceWindowsSyntaxForPaths ?? false
+  internal static var forceWindowsPaths: Bool? {
+    currentMockingDriver?.forceWindowsSyntaxForPaths
   }
 }
 
@@ -128,7 +128,7 @@ internal var mockingEnabled: Bool {
 }
 
 @inline(__always)
-internal var forceWindowsPaths: Bool {
+internal var forceWindowsPaths: Bool? {
   #if !ENABLE_MOCKING
   return false
   #else
@@ -196,15 +196,11 @@ internal func _mockOffT(
 #endif // ENABLE_MOCKING
 
 // Force paths to be treated as Windows syntactically if `enabled` is
-// true.
+// true, and as POSIX syntactically if not.
 internal func _withWindowsPaths(enabled: Bool, _ body: () -> ()) {
   #if ENABLE_MOCKING
-  guard enabled else {
-    body()
-    return
-  }
   MockingDriver.withMockingEnabled { driver in
-    driver.forceWindowsSyntaxForPaths = true
+    driver.forceWindowsSyntaxForPaths = enabled
     body()
   }
   #else
