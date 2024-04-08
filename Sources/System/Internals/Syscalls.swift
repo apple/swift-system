@@ -189,7 +189,11 @@ internal func system_confstr(
 internal let SYSTEM_AT_REMOVE_DIR = AT_REMOVEDIR
 internal let SYSTEM_DT_DIR = DT_DIR
 internal typealias system_dirent = dirent
-internal typealias system_DIR = DIR
+#if os(Linux)
+internal typealias system_DIRPtr = OpaquePointer
+#else
+internal typealias system_DIRPtr = UnsafeMutablePointer<DIR>
+#endif
 
 internal func system_unlinkat(
   _ fd: CInt,
@@ -204,24 +208,24 @@ return unlinkat(fd, path, flag)
 
 internal func system_fdopendir(
   _ fd: CInt
-) -> UnsafeMutablePointer<DIR>? {
+) -> system_DIRPtr? {
   return fdopendir(fd)
 }
 
 internal func system_readdir(
-  _ dir: UnsafeMutablePointer<DIR>
+  _ dir: system_DIRPtr
 ) -> UnsafeMutablePointer<dirent>? {
   return readdir(dir)
 }
 
 internal func system_rewinddir(
-  _ dir: UnsafeMutablePointer<DIR>
+  _ dir: system_DIRPtr
 ) {
   return rewinddir(dir)
 }
 
 internal func system_closedir(
-  _ dir: UnsafeMutablePointer<DIR>
+  _ dir: system_DIRPtr
 ) -> CInt {
   return closedir(dir)
 }

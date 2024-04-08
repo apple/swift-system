@@ -60,7 +60,7 @@ internal func _recursiveRemove(
 fileprivate func impl_opendirat(
   _ dirfd: CInt,
   _ name: UnsafePointer<CInterop.PlatformChar>
-) -> UnsafeMutablePointer<system_DIR>? {
+) -> system_DIRPtr? {
   let fd = system_openat(dirfd, name,
                          FileDescriptor.AccessMode.readOnly.rawValue
                            | FileDescriptor.OpenOptions.directory.rawValue)
