@@ -33,6 +33,10 @@ extension FilePath {
     internal var _path: FilePath
     internal var _start: SystemString.Index
 
+    internal var _slice: Slice<SystemString> {
+      _path._storage[_start...]
+    }
+
     internal init(_ path: FilePath) {
       self._path = path
       self._start = path._relativeStart
@@ -50,7 +54,7 @@ extension FilePath {
       // TODO(perf): Small-form root (especially on Unix). Have Root
       // always copy out (not worth ref counting). Make sure that we're
       // not needlessly sliding values around or triggering a COW
-      let rootStr = self.root?._systemString ?? SystemString()
+      let rootStr = SystemString(root?._slice ?? SystemString()[...])
       var comp = ComponentView(self)
       self = FilePath()
       defer {
@@ -156,7 +160,7 @@ extension FilePath {
   public init<C: Collection>(
     root: Root?, _ components: C
   ) where C.Element == Component {
-    var str = root?._systemString ?? SystemString()
+    var str = SystemString(root?._slice ?? SystemString()[...])
     str.appendComponents(components: components)
     self.init(str)
   }
@@ -169,7 +173,7 @@ extension FilePath {
   /// Create a file path from an optional root and a slice of another path's
   /// components.
   public init(root: Root?, _ components: ComponentView.SubSequence) {
-    var str = root?._systemString ?? SystemString()
+    var str = SystemString(root?._slice ?? SystemString()[...])
     let (start, end) =
       (components.startIndex._storage, components.endIndex._storage)
     str.append(contentsOf: components.base._slice[start..<end])

@@ -33,6 +33,10 @@ extension FilePath {
     internal var _path: FilePath
     internal var _rootEnd: SystemString.Index
 
+    internal var _slice: Slice<SystemString> {
+      _path._storage[..<_rootEnd]
+    }
+
     internal init(_ path: FilePath, rootEnd: SystemString.Index) {
       self._path = path
       self._rootEnd = rootEnd
@@ -59,6 +63,10 @@ extension FilePath {
   public struct Component: Sendable {
     internal var _path: FilePath
     internal var _range: Range<SystemString.Index>
+
+    internal var _slice: Slice<SystemString> {
+      _path._storage[_range]
+    }
 
     // TODO: Make a small-component form to save on ARC overhead when
     // extracted from a path, and especially to save on allocation overhead
