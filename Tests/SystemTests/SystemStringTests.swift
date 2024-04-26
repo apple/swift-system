@@ -248,7 +248,6 @@ final class SystemStringTest: XCTestCase {
     str.append(SystemChar(ascii: "d"))
     XCTAssert(str == "abcd")
     XCTAssert(str.count == 4)
-    XCTAssert(str.count == str.length)
 
     str.reserveCapacity(100)
     XCTAssert(str == "abcd")

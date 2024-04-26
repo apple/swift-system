@@ -62,7 +62,7 @@ public struct FilePath: Sendable {
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FilePath {
   /// The length of the file path, excluding the null terminator.
-  public var length: Int { _storage.length }
+  public var length: Int { _storage.count }
 }
 
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
