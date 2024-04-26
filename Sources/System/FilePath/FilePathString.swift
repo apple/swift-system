@@ -17,7 +17,7 @@ extension FilePath {
   /// - Parameter platformString: A pointer to a null-terminated platform
   ///   string.
   public init(platformString: UnsafePointer<CInterop.PlatformChar>) {
-    self.init(_platformString: platformString)
+    self.init(SystemString(platformString: platformString))
   }
 
   /// Creates a file path by copying bytes from a null-terminated platform
@@ -104,7 +104,7 @@ extension FilePath {
   public func withPlatformString<Result>(
     _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
   ) rethrows -> Result {
-    return try _withPlatformString(body)
+    return try _storage._withPlatformString(body)
   }
 #endif
 }
@@ -120,7 +120,7 @@ extension FilePath.Component {
   /// - Parameter platformString: A pointer to a null-terminated platform
   ///   string.
   public init?(platformString: UnsafePointer<CInterop.PlatformChar>) {
-    self.init(_platformString: platformString)
+    self.init(SystemString(platformString: platformString))
   }
 
   /// Creates a file path component by copying bytes from a null-terminated
@@ -194,7 +194,7 @@ extension FilePath.Component {
   public func withPlatformString<Result>(
     _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
   ) rethrows -> Result {
-    try _withPlatformString(body)
+    try _slice._withPlatformString(body)
   }
 }
 
@@ -208,7 +208,7 @@ extension FilePath.Root {
   /// - Parameter platformString: A pointer to a null-terminated platform
   ///   string.
   public init?(platformString: UnsafePointer<CInterop.PlatformChar>) {
-    self.init(_platformString: platformString)
+    self.init(SystemString(platformString: platformString))
   }
 
   /// Creates a file path root by copying bytes from a null-terminated platform
@@ -281,7 +281,7 @@ extension FilePath.Root {
   public func withPlatformString<Result>(
     _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
   ) rethrows -> Result {
-    try _withPlatformString(body)
+    try _slice._withPlatformString(body)
   }
 }
 
@@ -459,7 +459,7 @@ extension String {
   /// conversion to a string and back to a path
   /// might result in a value that's different from the original path.
   public init(decoding path: FilePath) {
-    self.init(_decoding: path)
+    self.init(decoding: path._storage)
   }
 
   /// Creates a string from a file path, validating its contents as UTF-8 on
@@ -471,7 +471,7 @@ extension String {
   /// If the contents of the file path isn't a well-formed Unicode string,
   /// this initializer returns `nil`.
   public init?(validating path: FilePath) {
-    self.init(_validating: path)
+    self.init(validating: path._storage)
   }
 }
 
@@ -489,7 +489,7 @@ extension String {
   /// conversion to a string and back to a path component
   /// might result in a value that's different from the original path component.
   public init(decoding component: FilePath.Component) {
-    self.init(_decoding: component)
+    self.init(decoding: SystemString(component._slice))
   }
 
   /// Creates a string from a path component, validating its contents as UTF-8
@@ -501,7 +501,7 @@ extension String {
   /// If the contents of the path component isn't a well-formed Unicode string,
   /// this initializer returns `nil`.
   public init?(validating component: FilePath.Component) {
-    self.init(_validating: component)
+    self.init(validating: SystemString(component._slice))
   }
 }
 
@@ -521,7 +521,7 @@ extension String {
   /// conversion to a string and back to a path root
   /// might result in a value that's different from the original path root.
   public init(decoding root: FilePath.Root) {
-    self.init(_decoding: root)
+    self.init(decoding: SystemString(root._slice))
   }
 
   /// On Unix, creates the string `"/"`
@@ -597,7 +597,7 @@ extension FilePath {
   public func withCString<Result>(
     _ body: (UnsafePointer<CChar>) throws -> Result
   ) rethrows -> Result {
-    return try _withPlatformString(body)
+    return try _storage.withPlatformString(body)
   }
 }
 #endif

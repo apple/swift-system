@@ -244,7 +244,6 @@ extension Slice where Base == SystemString {
     // FIXME: avoid allocation if we're at the end
     return try SystemString(self).withPlatformString(f)
   }
-
 }
 
 extension String {

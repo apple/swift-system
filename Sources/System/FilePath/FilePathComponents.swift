@@ -130,7 +130,7 @@ extension SystemString {
 
     for idx in components.indices {
       let component = components[idx]
-      component._withSystemChars { self.append(contentsOf: $0) }
+      self.append(contentsOf: component._slice)
       self.append(platformSeparator)
     }
   }
