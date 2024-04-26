@@ -218,7 +218,7 @@ extension _ParsedWindowsRoot {
 
     // TODO: check for GUID
     // TODO: check for drive
-    return .volume(root[vol].string)
+    return .volume(String(decoding: .init(root[vol])))
   }
 }
 
@@ -227,7 +227,7 @@ extension WindowsRootInfo {
     self.volume = parsed.volumeInfo(root)
 
     if let host = parsed.host {
-      self.host = root[host].string
+      self.host = String(decoding: .init(root[host]))
     } else {
       self.host = nil
     }

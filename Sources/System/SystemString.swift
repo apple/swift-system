@@ -238,13 +238,6 @@ extension SystemString {
 }
 
 extension Slice where Base == SystemString {
-  internal var string: String {
-    base.withCodeUnits {
-      String(decoding: $0[indices],
-             as: CInterop.PlatformUnicodeEncoding.self)
-    }
-  }
-
   internal func _withPlatformString<T>(
     _ f: (UnsafePointer<CInterop.PlatformChar>) throws -> T
   ) rethrows -> T {
@@ -303,10 +296,12 @@ extension SystemString: ExpressibleByStringLiteral {
 }
 
 extension SystemString: CustomStringConvertible, CustomDebugStringConvertible {
-  internal var string: String { String(decoding: self) }
 
-  public var description: String { string }
-  public var debugDescription: String { description.debugDescription }
+  public var description: String { String(decoding: self) }
+
+  public var debugDescription: String {
+    description.debugDescription
+  }
 }
 
 extension SystemString {

@@ -75,7 +75,7 @@ struct StringTest: TestCase {
 
     // Test String, SystemString, FilePath construction
     let sysStr = SystemString(string)
-    expectEqualSequence(string.unicodeScalars, sysStr.string.unicodeScalars)
+    expectEqualSequence(string.unicodeScalars, String(decoding: sysStr).unicodeScalars)
     expectEqual(string, String(decoding: sysStr))
     expectEqual(string, String(validating: sysStr))
 
