@@ -150,11 +150,6 @@ extension _StrSlice {
       try f(UnsafeBufferPointer(rebasing: $0[_range]))
     }
   }
-  internal func _withCodeUnits<T>(
-    _ f: (UnsafeBufferPointer<CInterop.PlatformUnicodeEncoding.CodeUnit>) throws -> T
-  ) rethrows -> T {
-    try _slice.withCodeUnits(f)
-  }
 
   internal init?(_platformString s: UnsafePointer<CInterop.PlatformChar>) {
     self.init(SystemString(platformString: s))
@@ -163,7 +158,7 @@ extension _StrSlice {
   internal func _withPlatformString<Result>(
     _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
   ) rethrows -> Result {
-    try _slice.withPlatformString(body)
+    try _slice._withPlatformString(body)
   }
 
   internal var _systemString: SystemString { SystemString(_slice) }

@@ -238,19 +238,14 @@ extension SystemString {
 }
 
 extension Slice where Base == SystemString {
-  internal func withCodeUnits<T>(
-    _ f: (UnsafeBufferPointer<CInterop.PlatformUnicodeEncoding.CodeUnit>) throws -> T
-  ) rethrows -> T {
-    try base.withCodeUnits {
-      try f(UnsafeBufferPointer(rebasing: $0[indices]))
+  internal var string: String {
+    base.withCodeUnits {
+      String(decoding: $0[indices],
+             as: CInterop.PlatformUnicodeEncoding.self)
     }
   }
 
-  internal var string: String {
-    withCodeUnits { String(decoding: $0, as: CInterop.PlatformUnicodeEncoding.self) }
-  }
-
-  internal func withPlatformString<T>(
+  internal func _withPlatformString<T>(
     _ f: (UnsafePointer<CInterop.PlatformChar>) throws -> T
   ) rethrows -> T {
     // FIXME: avoid allocation if we're at the end
@@ -260,13 +255,32 @@ extension Slice where Base == SystemString {
 }
 
 extension String {
-  internal init(decoding str: SystemString) {
+  /// Creates a string by interpreting `str`'s content as UTF-8 on Unix
+  /// and UTF-16 on Windows.
+  ///
+  /// - Parameter str: The system string to be interpreted as
+  /// `CInterop.PlatformUnicodeEncoding`.
+  ///
+  /// If the content of the system string isn't a well-formed Unicode string,
+  /// this initializer replaces invalid bytes with U+FFFD.
+  /// This means that conversion to a string and back to a system string
+  /// might result in a value that's different from the original system string.
+  public init(decoding str: SystemString) {
     // TODO: Can avoid extra strlen
     self = str.withPlatformString {
       String(platformString: $0)
     }
   }
-  internal init?(validating str: SystemString) {
+
+  /// Creates a string from a system string, validating its contents as UTF-8 on
+  /// Unix and UTF-16 on Windows.
+  ///
+  /// - Parameter str: The system string to be interpreted as
+  ///   `CInterop.PlatformUnicodeEncoding`.
+  ///
+  /// If the contents of the system string isn't well-formed Unicode,
+  /// this initializer returns `nil`.
+  public init?(validating str: SystemString) {
     // TODO: Can avoid extra strlen
     guard let str = str.withPlatformString(String.init(validatingPlatformString:))
     else { return nil }
