@@ -535,24 +535,7 @@ extension String {
   /// On Windows, if the contents of the path root isn't a well-formed Unicode
   /// string, this initializer returns `nil`.
   public init?(validating root: FilePath.Root) {
-    self.init(_validating: root)
-  }
-}
-
-// MARK: - Internal helpers
-
-extension String {
-  fileprivate init<PS: _PlatformStringable>(_decoding ps: PS) {
-    self = ps._withPlatformString { String(platformString: $0) }
-  }
-
-  fileprivate init?<PS: _PlatformStringable>(_validating ps: PS) {
-    guard let str = ps._withPlatformString(
-      String.init(validatingPlatformString:)
-    ) else {
-      return nil
-    }
-    self = str
+    self.init(validating: SystemString(root._slice))
   }
 }
 

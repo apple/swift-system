@@ -199,18 +199,6 @@ extension FilePath.Root: _PathSlice {
   }
 }
 
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
-extension FilePath: _PlatformStringable {
-  func _withPlatformString<Result>(_ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result) rethrows -> Result {
-    try _storage.withPlatformString(body)
-  }
-
-  init(_platformString: UnsafePointer<CInterop.PlatformChar>) {
-    self.init(SystemString(platformString: _platformString))
-  }
-
-}
-
 @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.Component {
   // The index of the `.` denoting an extension
