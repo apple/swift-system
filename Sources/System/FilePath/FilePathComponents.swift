@@ -136,42 +136,12 @@ extension SystemString {
   }
 }
 
-// Unifying protocol for common functionality between roots, components,
-// and views onto SystemString and FilePath.
-internal protocol _StrSlice: _PlatformStringable, Hashable, Codable {
-  var _storage: SystemString { get }
-  var _range: Range<SystemString.Index> { get }
-
-  init?(_ str: SystemString)
-
-  func _invariantCheck()
+// Protocol for types which hash and compare as their underlying
+// SystemString slices
+internal protocol _SystemStringBacked: Hashable, Codable {
+  var _slice: Slice<SystemString> { get }
 }
-extension _StrSlice {
-  internal var _slice: Slice<SystemString> {
-    Slice(base: _storage, bounds: _range)
-  }
-
-  internal func _withSystemChars<T>(
-    _ f: (UnsafeBufferPointer<SystemChar>) throws -> T
-  ) rethrows -> T {
-    try _storage.withSystemChars {
-      try f(UnsafeBufferPointer(rebasing: $0[_range]))
-    }
-  }
-
-  internal init?(_platformString s: UnsafePointer<CInterop.PlatformChar>) {
-    self.init(SystemString(platformString: s))
-  }
-
-  internal func _withPlatformString<Result>(
-    _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
-  ) rethrows -> Result {
-    try _slice._withPlatformString(body)
-  }
-
-  internal var _systemString: SystemString { SystemString(_slice) }
-}
-extension _StrSlice {
+extension _SystemStringBacked {
   public static func == (lhs: Self, rhs: Self) -> Bool {
     lhs._slice.elementsEqual(rhs._slice)
   }
@@ -182,22 +152,11 @@ extension _StrSlice {
     }
   }
 }
-internal protocol _PathSlice: _StrSlice {
-  var _path: FilePath { get }
+extension FilePath: _SystemStringBacked {
+  var _slice: Slice<SystemString> { _storage[...] }
 }
-extension _PathSlice {
-  internal var _storage: SystemString { _path._storage }
-}
-
-@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
-extension FilePath.Component: _PathSlice {
-}
-@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
-extension FilePath.Root: _PathSlice {
-  internal var _range: Range<SystemString.Index> {
-    (..<_rootEnd).relative(to: _path._storage)
-  }
-}
+extension FilePath.Component: _SystemStringBacked {}
+extension FilePath.Root: _SystemStringBacked {}
 
 @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.Component {

@@ -190,12 +190,3 @@ extension CInterop.PlatformUnicodeEncoding.CodeUnit {
     #endif
   }
 }
-
-internal protocol _PlatformStringable {
-  func _withPlatformString<Result>(
-    _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
-  ) rethrows -> Result
-
-  init?(_platformString: UnsafePointer<CInterop.PlatformChar>)
-}
-extension String: _PlatformStringable {}
