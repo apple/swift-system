@@ -189,7 +189,9 @@ internal func _makeExtension(_ ext: String) -> SystemString {
 
 @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.Component {
-  /// TODO: docs
+  /// Create a `FilePath.Component` with the contents of `str`.
+  ///
+  /// Returns `nil` if `str` is empty or contains the directory separator.
   public init?(_ str: SystemString) {
     // FIXME: explicit null root? Or something else?
     let path = FilePath(str)
@@ -203,7 +205,9 @@ extension FilePath.Component {
 
 @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.Root {
-  /// TODO: docs
+  /// Create a `FilePath.Root` with the contents of `str`.
+  ///
+  /// Returns `nil` if `str` is empty or is not a root
   public init?(_ str: SystemString) {
     // FIXME: explicit null root? Or something else?
     let path = FilePath(str)
