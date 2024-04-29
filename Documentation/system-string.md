@@ -266,11 +266,15 @@ This proposal is additive and ABI-compatible with existing code.
 
 ## Alternatives considered
 
-**TODO**: Consider not having `SystemChar`
+### The role of `SystemString` and `PlatformString`
 
-**TODO**: Consider separate `SystemByteString` and `SystemBytePairString` types.
+`PlatformString` is a typealias for the corresponding `UnsafePointer` you'd use with a raw syscall. `SystemString` is an owning type which provides memory safety, COW-semantics, and allows mutations and range-replaceable operations (such as appending). You can always get a `PlatformString` directly from a `SystemString`, and you can construct (by copying the memory) a `SystemString` from a `PlatformString`.
 
-**TODO**: Why we don't want to have a single-byte ASCII representation on Windows and have syscall wrapper adjust/dispatch appropriately.
+### **TODO**
+
+- Consider not having `SystemChar`
+- Consider separate `SystemByteString` and `SystemBytePairString` types.
+- Why we don't want to have a single-byte ASCII representation on Windows and have syscall wrapper adjust/dispatch appropriately.
 
 
 ## Future directions
