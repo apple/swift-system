@@ -118,7 +118,7 @@ extension FilePath.Root {
 extension SystemString {
   // TODO: take insertLeadingSlash: Bool
   // TODO: turn into an insert operation with slide
-  internal mutating func appendComponents<C: Collection>(
+  internal mutating func _appendComponents<C: Collection>(
     components: C
   ) where C.Element == FilePath.Component {
     // TODO(perf): Consider pre-pass to count capacity, slide
@@ -131,7 +131,7 @@ extension SystemString {
     for idx in components.indices {
       let component = components[idx]
       self.append(contentsOf: component._slice)
-      self.append(platformSeparator)
+      self.append(_platformSeparator)
     }
   }
 }
@@ -189,7 +189,8 @@ internal func _makeExtension(_ ext: String) -> SystemString {
 
 @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.Component {
-  internal init?(_ str: SystemString) {
+  /// TODO: docs
+  public init?(_ str: SystemString) {
     // FIXME: explicit null root? Or something else?
     let path = FilePath(str)
     guard path.root == nil, path.components.count == 1 else {
@@ -202,7 +203,8 @@ extension FilePath.Component {
 
 @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.Root {
-  internal init?(_ str: SystemString) {
+  /// TODO: docs
+  public init?(_ str: SystemString) {
     // FIXME: explicit null root? Or something else?
     let path = FilePath(str)
     guard path.root != nil, path.components.isEmpty else {
@@ -222,7 +224,7 @@ extension FilePath.Component {
     #if DEBUG
     precondition(!_slice.isEmpty)
     precondition(_slice.last != .null)
-    precondition(_slice.allSatisfy { !isSeparator($0) } )
+    precondition(_slice.allSatisfy { !_isSeparator($0) } )
     precondition(_path._relativeStart <= _slice.startIndex)
     #endif // DEBUG
   }

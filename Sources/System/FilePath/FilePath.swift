@@ -52,7 +52,9 @@ public struct FilePath: Sendable {
   // In addition to the empty init, this init will properly normalize
   // separators. All other initializers should be implemented by
   // ultimately deferring to a normalizing init.
-  internal init(_ str: SystemString) {
+
+  /// TODO: docs
+  public init(_ str: SystemString) {
     self._storage = str
     self._normalizeSeparators()
     _invariantCheck()

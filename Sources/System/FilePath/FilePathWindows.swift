@@ -141,7 +141,7 @@ struct _Lexer {
   }
 }
 
-internal struct WindowsRootInfo {
+internal struct _WindowsRootInfo {
   // The "volume" of a root. For UNC paths, this is also known as the "share".
   internal enum Volume: Equatable {
     /// No volume specified
@@ -209,7 +209,7 @@ internal struct WindowsRootInfo {
 }
 
 extension _ParsedWindowsRoot {
-  fileprivate func volumeInfo(_ root: SystemString) -> WindowsRootInfo.Volume {
+  fileprivate func volumeInfo(_ root: SystemString) -> _WindowsRootInfo.Volume {
     if let d = self.drive {
       return .drive(Character(d.asciiScalar!))
     }
@@ -222,7 +222,7 @@ extension _ParsedWindowsRoot {
   }
 }
 
-extension WindowsRootInfo {
+extension _WindowsRootInfo {
   internal init(_ root: SystemString, _ parsed: _ParsedWindowsRoot) {
     self.volume = parsed.volumeInfo(root)
 
@@ -243,7 +243,7 @@ extension WindowsRootInfo {
   }
 }
 
-extension WindowsRootInfo {
+extension _WindowsRootInfo {
   /// NOT `\foo\bar` nor `C:foo\bar`
   internal var isFullyQualified: Bool {
     return form != .traditional(fullyQualified: false)

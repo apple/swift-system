@@ -101,7 +101,7 @@ struct StringTest: TestCase {
     // Test null insertion
     let rawChars = raw.lazy.map { SystemChar($0) }
     expectEqual(sysRaw, SystemString(rawChars.dropLast()))
-    sysRaw.withSystemChars {  // TODO: assuming we want null in withSysChars
+    sysRaw.nullTerminatedStorage.withUnsafeBufferPointer {
       expectEqualSequence(rawChars, $0, "rawChars")
     }
 

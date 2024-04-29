@@ -37,7 +37,7 @@ extension FilePath {
   ///   * `\\?\UNC\server\share\bar.exe`
   ///   * `\\server\share\bar.exe`
   public var isAbsolute: Bool {
-    self.root?.isAbsolute ?? false
+    self.root?._isAbsolute ?? false
   }
 
   /// Returns true if this path is not absolute (see `isAbsolute`).

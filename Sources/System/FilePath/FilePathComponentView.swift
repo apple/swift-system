@@ -74,15 +74,15 @@ extension FilePath.ComponentView: BidirectionalCollection {
 
   @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
   public struct Index: Sendable, Comparable, Hashable {
-    internal typealias Storage = SystemString.Index
+    internal typealias _Storage = SystemString.Index
 
-    internal var _storage: Storage
+    internal var _storage: _Storage
 
     public static func < (lhs: Self, rhs: Self) -> Bool {
       lhs._storage < rhs._storage
     }
 
-    fileprivate init(_ idx: Storage) {
+    fileprivate init(_ idx: _Storage) {
       self._storage = idx
     }
   }
@@ -144,11 +144,11 @@ extension FilePath.ComponentView: RangeReplaceableCollection {
     var str = SystemString()
     let atEnd = subrange.lowerBound == endIndex
     if atEnd {
-      str.append(platformSeparator)
+      str.append(_platformSeparator)
     }
-    str.appendComponents(components: newElements)
+    str._appendComponents(components: newElements)
     if !atEnd {
-      str.append(platformSeparator)
+      str.append(_platformSeparator)
     }
     _path._storage.replaceSubrange(range, with: str)
   }
@@ -161,7 +161,7 @@ extension FilePath {
     root: Root?, _ components: C
   ) where C.Element == Component {
     var str = SystemString(root?._slice ?? SystemString()[...])
-    str.appendComponents(components: components)
+    str._appendComponents(components: components)
     self.init(str)
   }
 

@@ -212,31 +212,6 @@ extension SystemString: RangeReplaceableCollection {
 
 extension SystemString: Hashable, Codable {}
 
-extension SystemString {
-
-  // withSystemChars includes the null terminator
-  internal func withSystemChars<T>(
-    _ f: (UnsafeBufferPointer<SystemChar>) throws -> T
-  ) rethrows -> T {
-    try _nullTerminatedStorage.withContiguousStorageIfAvailable(f)!
-  }
-
-  internal func withCodeUnits<T>(
-    _ f: (UnsafeBufferPointer<CInterop.PlatformUnicodeEncoding.CodeUnit>) throws -> T
-  ) rethrows -> T {
-    try withSystemChars { chars in
-      let length = chars.count * MemoryLayout<SystemChar>.stride
-      let count = length / MemoryLayout<CInterop.PlatformUnicodeEncoding.CodeUnit>.stride
-      return try chars.baseAddress!.withMemoryRebound(
-        to: CInterop.PlatformUnicodeEncoding.CodeUnit.self,
-        capacity: count
-      ) { pointer in
-        try f(UnsafeBufferPointer(start: pointer, count: count))
-      }
-    }
-  }
-}
-
 extension Slice where Base == SystemString {
   internal func _withPlatformString<T>(
     _ f: (UnsafePointer<CInterop.PlatformChar>) throws -> T
@@ -334,7 +309,7 @@ extension SystemString {
   public func withPlatformString<T>(
     _ f: (UnsafePointer<CInterop.PlatformChar>) throws -> T
   ) rethrows -> T {
-    try withSystemChars { chars in
+    try _nullTerminatedStorage.withUnsafeBufferPointer { chars in
       let length = chars.count * MemoryLayout<SystemChar>.stride
       return try chars.baseAddress!.withMemoryRebound(
         to: CInterop.PlatformChar.self,
