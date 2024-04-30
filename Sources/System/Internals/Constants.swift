@@ -310,7 +310,6 @@ internal var _EDQUOT: CInt {
 #endif
 }
 
-#if !os(WASI)
 @_alwaysEmitIntoClient
 internal var _ESTALE: CInt {
 #if os(Windows)
@@ -320,6 +319,7 @@ internal var _ESTALE: CInt {
 #endif
 }
 
+#if !os(WASI)
 @_alwaysEmitIntoClient
 internal var _EREMOTE: CInt {
 #if os(Windows)

@@ -962,7 +962,6 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "diskQuotaExceeded")
   public static var EDQUOT: Errno { diskQuotaExceeded }
 
-#if !os(WASI)
   /// Stale NFS file handle.
   ///
   /// You attempted access an open file on an NFS filesystem,
@@ -977,7 +976,6 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "staleNFSFileHandle")
   public static var ESTALE: Errno { staleNFSFileHandle }
-#endif
 
 // TODO: Add Linux's RPC equivalents
 #if SYSTEM_PACKAGE_DARWIN
