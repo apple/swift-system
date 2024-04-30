@@ -143,10 +143,14 @@ internal var _ERANGE: CInt { ERANGE }
 @_alwaysEmitIntoClient
 internal var _EAGAIN: CInt { EAGAIN }
 
-#if !os(WASI)
 @_alwaysEmitIntoClient
-internal var _EWOULDBLOCK: CInt { EWOULDBLOCK }
+internal var _EWOULDBLOCK: CInt {
+#if os(WASI)
+  _getConst_EWOULDBLOCK()
+#else
+  EWOULDBLOCK
 #endif
+}
 
 @_alwaysEmitIntoClient
 internal var _EINPROGRESS: CInt { EINPROGRESS }
@@ -443,10 +447,14 @@ internal var _ETIME: CInt { ETIME }
 #endif
 
 
-#if !os(WASI)
 @_alwaysEmitIntoClient
-internal var _EOPNOTSUPP: CInt { EOPNOTSUPP }
+internal var _EOPNOTSUPP: CInt {
+#if os(WASI)
+  _getConst_EOPNOTSUPP()
+#else
+  EOPNOTSUPP
 #endif
+}
 
 #if SYSTEM_PACKAGE_DARWIN
 @_alwaysEmitIntoClient

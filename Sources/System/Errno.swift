@@ -1380,7 +1380,6 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
 #endif
 #endif
 
-#if !os(WASI)
   /// Operation not supported on socket.
   ///
   /// The attempted operation isn't supported for the type of socket referenced;
@@ -1393,13 +1392,11 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "notSupportedOnSocket")
   public static var EOPNOTSUPP: Errno { notSupportedOnSocket }
-#endif
 }
 
 // Constants defined in header but not man page
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension Errno {
-#if !os(WASI)
   /// Operation would block.
   ///
   /// The corresponding C error is `EWOULDBLOCK`.
@@ -1410,6 +1407,7 @@ extension Errno {
   @available(*, unavailable, renamed: "wouldBlock")
   public static var EWOULDBLOCK: Errno { wouldBlock }
 
+#if !os(WASI)
   /// Too many references: can't splice.
   ///
   /// The corresponding C error is `ETOOMANYREFS`.

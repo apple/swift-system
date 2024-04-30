@@ -11,6 +11,7 @@
 
 #if __wasi__
 
+#include <errno.h>
 #include <fcntl.h>
 
 // wasi-libc defines the following constants in a way that Clang Importer can't
@@ -23,5 +24,8 @@ static inline int32_t _getConst_O_EXCL(void) { return O_EXCL; }
 static inline int32_t _getConst_O_NONBLOCK(void) { return O_NONBLOCK; }
 static inline int32_t _getConst_O_TRUNC(void) { return O_TRUNC; }
 static inline int32_t _getConst_O_WRONLY(void) { return O_WRONLY; }
+
+static inline int32_t _getConst_EWOULDBLOCK(void) { return EWOULDBLOCK; }
+static inline int32_t _getConst_EOPNOTSUPP(void) { return EOPNOTSUPP; }
 
 #endif
