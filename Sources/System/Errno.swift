@@ -1297,7 +1297,6 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "multiHop")
   public static var EMULTIHOP: Errno { multiHop }
 
-
 #if !os(WASI)
   /// No message available.
   ///
