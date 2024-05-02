@@ -20,6 +20,7 @@ extension String {
   /// This means that, depending on the semantics of the specific platform,
   /// conversion to a string and back might result in a value that's different
   /// from the original platform string.
+  @_disfavoredOverload
   public init(platformString: UnsafePointer<CInterop.PlatformChar>) {
     self.init(_errorCorrectingPlatformString: platformString)
   }
