@@ -1064,7 +1064,10 @@ final class FilePathSyntaxTest: XCTestCase {
       XCTAssert(path.lexicallyContains("usr"))
       XCTAssert(path.lexicallyContains("/usr"))
       XCTAssert(path.lexicallyContains("local/bin"))
+#if !os(Windows)
+      // On Windows, this is a relative path and is still contained
       XCTAssert(!path.lexicallyContains("/local/bin"))
+#endif
       path.append("..")
       XCTAssert(!path.lexicallyContains("local/bin"))
       XCTAssert(path.lexicallyContains("local/bin/.."))

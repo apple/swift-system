@@ -135,8 +135,6 @@ extension FileDescriptor {
       if let permissions = permissions {
         return system_open(path, oFlag, permissions.rawValue)
       }
-      precondition(!options.contains(.create),
-        "Create must be given permissions")
       return system_open(path, oFlag)
     }
     return descOrError.map { FileDescriptor(rawValue: $0) }
@@ -436,7 +434,7 @@ extension FileDescriptor {
 }
 #endif
 
-#if !os(Windows) && !os(WASI)
+#if !os(WASI)
 @available(/*System 1.1.0: macOS 12.3, iOS 15.4, watchOS 8.5, tvOS 15.4*/iOS 8, *)
 extension FileDescriptor {
   /// Creates a unidirectional data channel, which can be used for interprocess communication.
@@ -465,7 +463,6 @@ extension FileDescriptor {
 }
 #endif
 
-#if !os(Windows)
 @available(/*System 1.2.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
 extension FileDescriptor {
   /// Truncates or extends the file referenced by this file descriptor.
@@ -511,4 +508,47 @@ extension FileDescriptor {
     }
   }
 }
-#endif
+
+extension FilePermissions {
+  /// The file creation permission mask (aka "umask").
+  ///
+  /// Permissions set in this mask will be cleared by functions that create
+  /// files or directories.  Note that this mask is process-wide, and that
+  /// *getting* it is not thread safe.
+  @_alwaysEmitIntoClient
+  public static var creationMask: FilePermissions {
+    get {
+      let oldMask = _umask(0o22)
+      _ = _umask(oldMask)
+      return FilePermissions(rawValue: oldMask)
+    }
+    set {
+      _ = _umask(newValue.rawValue)
+    }
+  }
+
+  /// Change the file creation permission mask, run some code, then
+  /// restore it to its original value.
+  ///
+  /// - Parameters:
+  ///   - permissions: The new permission mask.
+  ///
+  /// This is more efficient than reading `creationMask` and restoring it
+  /// afterwards, because of the way reading the creation mask works.
+  @_alwaysEmitIntoClient
+  public static func withCreationMask<R>(
+    _ permissions: FilePermissions,
+    body: () throws -> R
+  ) rethrows -> R {
+    let oldMask = _umask(permissions.rawValue)
+    defer {
+      _ = _umask(oldMask)
+    }
+    return try body()
+  }
+
+  @usableFromInline
+  internal static func _umask(_ mode: CModeT) -> CModeT {
+    return system_umask(mode)
+  }
+}

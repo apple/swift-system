@@ -15,7 +15,7 @@ import PackageDescription
 let package = Package(
     name: "swift-system",
     products: [
-        .library(name: "SystemPackage", targets: ["SystemPackage"]),
+      .library(name: "SystemPackage", targets: ["SystemPackage"])
     ],
     dependencies: [],
     targets: [
@@ -40,6 +40,6 @@ let package = Package(
         swiftSettings: [
           .define("SYSTEM_PACKAGE_DARWIN", .when(platforms: [.macOS, .iOS, .watchOS, .tvOS, .visionOS])),
           .define("SYSTEM_PACKAGE")
-        ]),
+        ])
     ]
 )
