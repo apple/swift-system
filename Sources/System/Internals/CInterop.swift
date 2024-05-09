@@ -16,12 +16,15 @@ public typealias CModeT =  CInterop.Mode
 
 #if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
 import Darwin
-#elseif os(Linux) || os(FreeBSD) || os(Android)
-@_implementationOnly import CSystem
-import Glibc
 #elseif os(Windows)
 import CSystem
 import ucrt
+#elseif canImport(Glibc)
+@_implementationOnly import CSystem
+import Glibc
+#elseif canImport(Musl)
+@_implementationOnly import CSystem
+import Musl
 #else
 #error("Unsupported Platform")
 #endif
