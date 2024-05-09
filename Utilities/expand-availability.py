@@ -57,6 +57,7 @@ versions = {
     "System 1.1.0": "macOS 12.3, iOS 15.4, watchOS 8.5, tvOS 15.4",
     "System 1.2.0": "macOS 9999, iOS 9999, watchOS 9999, tvOS 9999",
     "System 1.3.0": "macOS 9999, iOS 9999, watchOS 9999, tvOS 9999",
+    "System 1.4.0": "macOS 9999, iOS 9999, watchOS 9999, tvOS 9999",
 }
 
 parser = argparse.ArgumentParser(description="Expand availability macros.")
