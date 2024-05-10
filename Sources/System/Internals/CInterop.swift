@@ -14,7 +14,7 @@
 @available(*, deprecated, renamed: "CInterop.Mode")
 public typealias CModeT =  CInterop.Mode
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif os(Windows)
 import CSystem
