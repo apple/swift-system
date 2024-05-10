@@ -84,7 +84,7 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(EHOSTUNREACH == Errno.noRouteToHost.rawValue)
     XCTAssert(ENOTEMPTY == Errno.directoryNotEmpty.rawValue)
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     XCTAssert(EPROCLIM == Errno.tooManyProcesses.rawValue)
 #endif
 
@@ -92,7 +92,7 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(EDQUOT == Errno.diskQuotaExceeded.rawValue)
     XCTAssert(ESTALE == Errno.staleNFSFileHandle.rawValue)
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     XCTAssert(EBADRPC == Errno.rpcUnsuccessful.rawValue)
     XCTAssert(ERPCMISMATCH == Errno.rpcVersionMismatch.rawValue)
     XCTAssert(EPROGUNAVAIL == Errno.rpcProgramUnavailable.rawValue)
@@ -103,7 +103,7 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(ENOLCK == Errno.noLocks.rawValue)
     XCTAssert(ENOSYS == Errno.noFunction.rawValue)
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     XCTAssert(EFTYPE == Errno.badFileTypeOrFormat.rawValue)
     XCTAssert(EAUTH == Errno.authenticationError.rawValue)
     XCTAssert(ENEEDAUTH == Errno.needAuthenticator.rawValue)
@@ -113,7 +113,7 @@ final class ErrnoTest: XCTestCase {
 
     XCTAssert(EOVERFLOW == Errno.overflow.rawValue)
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     XCTAssert(EBADEXEC == Errno.badExecutable.rawValue)
     XCTAssert(EBADARCH == Errno.badCPUType.rawValue)
     XCTAssert(ESHLIBVERS == Errno.sharedLibraryVersionMismatch.rawValue)
@@ -125,7 +125,7 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(ENOMSG == Errno.noMessage.rawValue)
     XCTAssert(EILSEQ == Errno.illegalByteSequence.rawValue)
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     XCTAssert(ENOATTR == Errno.attributeNotFound.rawValue)
 #endif
 
@@ -144,14 +144,14 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(ETOOMANYREFS == Errno.tooManyReferences.rawValue)
     XCTAssert(EREMOTE == Errno.tooManyRemoteLevels.rawValue)
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     XCTAssert(ENOPOLICY == Errno.noSuchPolicy.rawValue)
 #endif
 
     XCTAssert(ENOTRECOVERABLE == Errno.notRecoverable.rawValue)
     XCTAssert(EOWNERDEAD == Errno.previousOwnerDied.rawValue)
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     XCTAssert(EQFULL == Errno.outputQueueFull.rawValue)
     XCTAssert(ELAST == Errno.lastErrnoValue.rawValue)
 #endif
