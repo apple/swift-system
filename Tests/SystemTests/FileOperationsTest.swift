@@ -86,6 +86,30 @@ final class FileOperationsTest: XCTestCase {
     for test in syscallTestCases { test.runAllTests() }
   }
 
+  func testWriteFromEmptyBuffer() throws {
+    let fd = try FileDescriptor.open(FilePath("/dev/null"), .writeOnly)
+    let written1 = try fd.write(toAbsoluteOffset: 0, .init(start: nil, count: 0))
+    XCTAssertEqual(written1, 0)
+
+    let pointer = UnsafeMutableRawPointer.allocate(byteCount: 8, alignment: 8)
+    defer { pointer.deallocate() }
+    let empty = UnsafeRawBufferPointer(start: pointer, count: 0)
+    let written2 = try fd.write(toAbsoluteOffset: 0, empty)
+    XCTAssertEqual(written2, 0)
+  }
+
+  func testReadToEmptyBuffer() throws {
+    let fd = try FileDescriptor.open(FilePath("/dev/random"), .readOnly)
+    let read1 = try fd.read(fromAbsoluteOffset: 0, into: .init(start: nil, count: 0))
+    XCTAssertEqual(read1, 0)
+
+    let pointer = UnsafeMutableRawPointer.allocate(byteCount: 8, alignment: 8)
+    defer { pointer.deallocate() }
+    let empty = UnsafeMutableRawBufferPointer(start: pointer, count: 0)
+    let read2 = try fd.read(fromAbsoluteOffset: 0, into: empty)
+    XCTAssertEqual(read2, 0)
+  }
+
   func testHelpers() {
     // TODO: Test writeAll, writeAll(toAbsoluteOffset), closeAfter
   }
