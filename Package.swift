@@ -27,7 +27,7 @@ let package = Package(
         dependencies: ["CSystem"],
         path: "Sources/System",
         cSettings: [
-          .define("_CRT_SECURE_NO_WARNINGS")
+          .define("_CRT_SECURE_NO_WARNINGS", .when(platforms: [.windows]))
         ],
         swiftSettings: [
           .define("SYSTEM_PACKAGE_DARWIN", .when(platforms: [.macOS, .iOS, .watchOS, .tvOS, .visionOS])),
