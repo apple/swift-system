@@ -12,6 +12,13 @@
 
 import PackageDescription
 
+let DarwinPlatforms: [Platform]
+#if swift(<5.9)
+DarwinPlatforms = [.macOS, .iOS, .watchOS, .tvOS]
+#else
+DarwinPlatforms = [.macOS, .iOS, .watchOS, .tvOS, .visionOS]
+#endif
+
 let package = Package(
     name: "swift-system",
     products: [
@@ -30,16 +37,16 @@ let package = Package(
           .define("_CRT_SECURE_NO_WARNINGS")
         ],
         swiftSettings: [
-          .define("SYSTEM_PACKAGE_DARWIN", .when(platforms: [.macOS, .iOS, .watchOS, .tvOS, .visionOS])),
           .define("SYSTEM_PACKAGE"),
+          .define("SYSTEM_PACKAGE_DARWIN", .when(platforms: DarwinPlatforms)),
           .define("ENABLE_MOCKING", .when(configuration: .debug))
         ]),
       .testTarget(
         name: "SystemTests",
         dependencies: ["SystemPackage"],
         swiftSettings: [
-          .define("SYSTEM_PACKAGE_DARWIN", .when(platforms: [.macOS, .iOS, .watchOS, .tvOS, .visionOS])),
-          .define("SYSTEM_PACKAGE")
+          .define("SYSTEM_PACKAGE"),
+          .define("SYSTEM_PACKAGE_DARWIN", .when(platforms: DarwinPlatforms)),
         ])
     ]
 )
