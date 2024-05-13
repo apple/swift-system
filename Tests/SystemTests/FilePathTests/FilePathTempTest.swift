@@ -10,9 +10,9 @@
 import XCTest
 
 #if SYSTEM_PACKAGE
-import SystemPackage
+@testable import SystemPackage
 #else
-import System
+@testable import System
 #endif
 
 final class TemporaryPathTest: XCTestCase {

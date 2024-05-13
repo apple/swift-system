@@ -12,9 +12,9 @@ import XCTest
 #if os(Windows)
 
 #if SYSTEM_PACKAGE
-import SystemPackage
+@testable import SystemPackage
 #else
-import System
+@testable import System
 #endif
 
 import WinSDK
