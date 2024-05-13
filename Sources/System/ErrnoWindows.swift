@@ -12,7 +12,7 @@
 import WinSDK
 
 extension Errno {
-  public init(windowsError: DWORD) {
+  internal init(windowsError: DWORD) {
     self.init(rawValue: _mapWindowsErrorToErrno(windowsError))
   }
 }

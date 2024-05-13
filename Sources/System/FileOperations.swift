@@ -516,7 +516,7 @@ extension FilePermissions {
   /// files or directories.  Note that this mask is process-wide, and that
   /// *getting* it is not thread safe.
   @_alwaysEmitIntoClient
-  public static var creationMask: FilePermissions {
+  internal static var creationMask: FilePermissions {
     get {
       let oldMask = _umask(0o22)
       _ = _umask(oldMask)
@@ -536,7 +536,7 @@ extension FilePermissions {
   /// This is more efficient than reading `creationMask` and restoring it
   /// afterwards, because of the way reading the creation mask works.
   @_alwaysEmitIntoClient
-  public static func withCreationMask<R>(
+  internal static func withCreationMask<R>(
     _ permissions: FilePermissions,
     body: () throws -> R
   ) rethrows -> R {

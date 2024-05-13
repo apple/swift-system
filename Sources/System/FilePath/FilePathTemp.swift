@@ -18,7 +18,7 @@
 /// Creates a temporary directory with a name based on the given `basename`,
 /// executes `body`, passing in the path of the created directory, then
 /// deletes the directory and all of its contents before returning.
-public func withTemporaryFilePath<R>(
+internal func withTemporaryFilePath<R>(
   basename: FilePath.Component,
   _ body: (FilePath) throws -> R
 ) throws -> R {
