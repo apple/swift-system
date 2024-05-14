@@ -620,6 +620,9 @@ fileprivate struct DecodedOpenFlags {
       dwCreationDisposition = DWORD(OPEN_EXISTING)
     }
 
+    // The _O_RDONLY, _O_WRONLY and _O_RDWR flags are non-overlapping
+    // on Windows; in particular, _O_RDONLY is zero, which means we can't
+    // test for it by AND-ing.
     dwDesiredAccess = 0
     switch (oflag & (_O_RDONLY|_O_WRONLY|_O_RDWR)) {
     case _O_RDONLY:
