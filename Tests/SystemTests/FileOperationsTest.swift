@@ -10,9 +10,9 @@
 import XCTest
 
 #if SYSTEM_PACKAGE
-import SystemPackage
+@testable import SystemPackage
 #else
-import System
+@testable import System
 #endif
 
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
@@ -87,7 +87,11 @@ final class FileOperationsTest: XCTestCase {
   }
 
   func testWriteFromEmptyBuffer() throws {
+    #if os(Windows)
+    let fd = try FileDescriptor.open(FilePath("NUL"), .writeOnly)
+    #else
     let fd = try FileDescriptor.open(FilePath("/dev/null"), .writeOnly)
+    #endif
     let written1 = try fd.write(toAbsoluteOffset: 0, .init(start: nil, count: 0))
     XCTAssertEqual(written1, 0)
 
@@ -98,16 +102,48 @@ final class FileOperationsTest: XCTestCase {
     XCTAssertEqual(written2, 0)
   }
 
-  func testReadToEmptyBuffer() throws {
-    let fd = try FileDescriptor.open(FilePath("/dev/random"), .readOnly)
-    let read1 = try fd.read(fromAbsoluteOffset: 0, into: .init(start: nil, count: 0))
-    XCTAssertEqual(read1, 0)
+  #if os(Windows)
+  // Generate a file containing random bytes; this should not be used
+  // for cryptography, it's just for testing.
+  func generateRandomData(at path: FilePath, count: Int) throws {
+    let fd = try FileDescriptor.open(path, .readWrite,
+                                     options: [.create, .truncate])
+    defer {
+      try! fd.close()
+    }
+    let data = [UInt8](
+      sequence(first: 0,
+               next: {
+                 _ in UInt8.random(in: UInt8.min...UInt8.max)
+               }).dropFirst().prefix(count)
+    )
 
-    let pointer = UnsafeMutableRawPointer.allocate(byteCount: 8, alignment: 8)
-    defer { pointer.deallocate() }
-    let empty = UnsafeMutableRawBufferPointer(start: pointer, count: 0)
-    let read2 = try fd.read(fromAbsoluteOffset: 0, into: empty)
-    XCTAssertEqual(read2, 0)
+    try data.withUnsafeBytes {
+      _ = try fd.write($0)
+    }
+  }
+  #endif
+
+  func testReadToEmptyBuffer() throws {
+    try withTemporaryFilePath(basename: "testReadToEmptyBuffer") { path in
+      #if os(Windows)
+      // Windows doesn't have an equivalent to /dev/random, so generate
+      // some random bytes and write them to a file for the next step.
+      let randomPath = path.appending("random.txt")
+      try generateRandomData(at: randomPath, count: 16)
+      let fd = try FileDescriptor.open(randomPath, .readOnly)
+      #else // !os(Windows)
+      let fd = try FileDescriptor.open(FilePath("/dev/random"), .readOnly)
+      #endif
+      let read1 = try fd.read(fromAbsoluteOffset: 0, into: .init(start: nil, count: 0))
+      XCTAssertEqual(read1, 0)
+
+      let pointer = UnsafeMutableRawPointer.allocate(byteCount: 8, alignment: 8)
+      defer { pointer.deallocate() }
+      let empty = UnsafeMutableRawBufferPointer(start: pointer, count: 0)
+      let read2 = try fd.read(fromAbsoluteOffset: 0, into: empty)
+      XCTAssertEqual(read2, 0)
+    }
   }
 
   func testHelpers() {

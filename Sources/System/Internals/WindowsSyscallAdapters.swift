@@ -620,15 +620,19 @@ fileprivate struct DecodedOpenFlags {
       dwCreationDisposition = DWORD(OPEN_EXISTING)
     }
 
+    // The _O_RDONLY, _O_WRONLY and _O_RDWR flags are non-overlapping
+    // on Windows; in particular, _O_RDONLY is zero, which means we can't
+    // test for it by AND-ing.
     dwDesiredAccess = 0
-    if (oflag & _O_RDONLY) != 0 {
+    switch (oflag & (_O_RDONLY|_O_WRONLY|_O_RDWR)) {
+    case _O_RDONLY:
       dwDesiredAccess |= DWORD(GENERIC_READ)
-    }
-    if (oflag & _O_WRONLY) != 0 {
+    case _O_WRONLY:
       dwDesiredAccess |= DWORD(GENERIC_WRITE)
-    }
-    if (oflag & _O_RDWR) != 0 {
+    case _O_RDWR:
       dwDesiredAccess |= DWORD(GENERIC_READ) | DWORD(GENERIC_WRITE)
+    default:
+      break
     }
 
     bInheritHandle = WindowsBool((oflag & _O_NOINHERIT) == 0)
