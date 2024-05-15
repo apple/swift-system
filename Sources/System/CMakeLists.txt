@@ -37,6 +37,10 @@ target_sources(SystemPackage PRIVATE
 target_link_libraries(SystemPackage PUBLIC
   CSystem)
 
+set(SWIFT_SYSTEM_APPLE_PLATFORMS "Darwin" "iOS" "watchOS" "tvOS" "visionOS")
+if(CMAKE_SYSTEM_NAME IN_LIST SWIFT_SYSTEM_APPLE_PLATFORMS)
+  target_compile_definitions(SystemPackage PRIVATE SYSTEM_PACKAGE_DARWIN)
+endif()
 
 _install_target(SystemPackage)
 set_property(GLOBAL APPEND PROPERTY SWIFT_SYSTEM_EXPORTS SystemPackage)
