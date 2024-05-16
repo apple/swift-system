@@ -2,7 +2,8 @@
 /.swiftpm
 /.build
 /Packages
-swift-system.xcodeproj
+/*.xcodeproj
 xcuserdata/
 .*.sw?
+/.swiftpm
 .docc-build
