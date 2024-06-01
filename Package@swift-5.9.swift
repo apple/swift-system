@@ -1,4 +1,4 @@
-// swift-tools-version:5.8
+// swift-tools-version:5.9
 
 /*
  This source file is part of the Swift System open source project
@@ -11,11 +11,11 @@
 
 import PackageDescription
 
-let DarwinPlatforms: [Platform] = [.macOS, .iOS, .watchOS, .tvOS]
+let DarwinPlatforms: [Platform] = [.macOS, .iOS, .watchOS, .tvOS, .visionOS]
 
 let package = Package(
     name: "swift-system",
-    platforms: [.macOS(.v10_13), .iOS(.v12), .watchOS(.v4), .tvOS(.v12)],
+    platforms: [.macOS(.v10_13), .iOS(.v12), .watchOS(.v4), .tvOS(.v12), .visionOS(.v1)],
     products: [
       .library(name: "SystemPackage", targets: ["SystemPackage"])
     ],
