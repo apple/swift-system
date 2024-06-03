@@ -66,4 +66,41 @@ extension FilePath {
 }
 
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
-extension FilePath: Hashable, Codable {}
+extension FilePath: Hashable {}
+
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+extension FilePath: Codable {
+  public init(from decoder: any Decoder) throws {
+    // Try to decode as a string first for the common case where the path can be
+    // losslessly represented as a UTF-8 string.
+    let singleValueContainer = try decoder.singleValueContainer()
+    if let string = try? singleValueContainer.decode(String.self) {
+      self.init(string)
+      return
+    }
+    // Try to decode as an array of UTF-8 code unit on Unix and UTF-16 code unit on Windows.
+    if let chars = try? singleValueContainer.decode([CInterop.PlatformChar].self) {
+      // Decode code units in a fault-tolerant way instead of fatalError on non-null-terminated input
+      // unlike the `init(platformString: [CInterop.PlatformChar])` initializer.
+      guard let _ = chars.firstIndex(of: 0) else {
+        throw DecodingError.dataCorruptedError(in: singleValueContainer, debugDescription: "Expected null-terminated array of \(CInterop.PlatformChar.self)")
+      }
+      self = chars.withUnsafeBufferPointer {
+        FilePath(platformString: $0.baseAddress!)
+      }
+      return
+    }
+
+    // Otherwise, data is corrupted.
+    throw DecodingError.dataCorruptedError(in: singleValueContainer, debugDescription: "Expected String or Array of \(CInterop.PlatformChar.self)")
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var container = encoder.singleValueContainer()
+    if let string = String(validating: self) {
+      try container.encode(string)
+    } else {
+      try container.encode(_storage.nullTerminatedStorage)
+    }
+  }
+}
