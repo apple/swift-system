@@ -21,11 +21,13 @@ let package = Package(
     targets: [
       .target(
         name: "CSystem",
-        dependencies: []),
+        dependencies: [],
+        exclude: ["CMakeLists.txt"]),
       .target(
         name: "SystemPackage",
         dependencies: ["CSystem"],
         path: "Sources/System",
+        exclude: ["CMakeLists.txt"],
         cSettings: [
           .define("_CRT_SECURE_NO_WARNINGS")
         ],
