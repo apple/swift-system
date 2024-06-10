@@ -20,20 +20,20 @@ final class SystemCharTest: XCTestCase {
     let valid = SystemString(
       "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
     for char in valid {
-      XCTAssertTrue(char.isLetter)
+      XCTAssertTrue(char.isASCIILetter)
     }
 
     // non printable
     for value in 0..<(UInt8(ascii: " ")) {
-      XCTAssertFalse(SystemChar(codeUnit: CInterop.PlatformUnicodeEncoding.CodeUnit(value)).isLetter)
+      XCTAssertFalse(SystemChar(CInterop.PlatformUnicodeEncoding.CodeUnit(value)).isASCIILetter)
     }
-    XCTAssertFalse(SystemChar(codeUnit: 0x7F).isLetter) // DEL
+    XCTAssertFalse(SystemChar(0x7F).isASCIILetter) // DEL
 
     // misc other
     let invalid = SystemString(
       ##" !"#$%&'()*+,-./0123456789:;<=>?@[\]^_`{|}~"##)
     for char in invalid {
-      XCTAssertFalse(char.isLetter)
+      XCTAssertFalse(char.isASCIILetter)
     }
   }
 }

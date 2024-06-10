@@ -33,6 +33,10 @@ extension FilePath {
     internal var _path: FilePath
     internal var _rootEnd: SystemString.Index
 
+    internal var _slice: Slice<SystemString> {
+      _path._storage[..<_rootEnd]
+    }
+
     internal init(_ path: FilePath, rootEnd: SystemString.Index) {
       self._path = path
       self._rootEnd = rootEnd
@@ -59,6 +63,10 @@ extension FilePath {
   public struct Component: Sendable {
     internal var _path: FilePath
     internal var _range: Range<SystemString.Index>
+
+    internal var _slice: Slice<SystemString> {
+      _path._storage[_range]
+    }
 
     // TODO: Make a small-component form to save on ARC overhead when
     // extracted from a path, and especially to save on allocation overhead
@@ -110,7 +118,7 @@ extension FilePath.Root {
 extension SystemString {
   // TODO: take insertLeadingSlash: Bool
   // TODO: turn into an insert operation with slide
-  internal mutating func appendComponents<C: Collection>(
+  internal mutating func _appendComponents<C: Collection>(
     components: C
   ) where C.Element == FilePath.Component {
     // TODO(perf): Consider pre-pass to count capacity, slide
@@ -122,53 +130,18 @@ extension SystemString {
 
     for idx in components.indices {
       let component = components[idx]
-      component._withSystemChars { self.append(contentsOf: $0) }
-      self.append(platformSeparator)
+      self.append(contentsOf: component._slice)
+      self.append(_platformSeparator)
     }
   }
 }
 
-// Unifying protocol for common functionality between roots, components,
-// and views onto SystemString and FilePath.
-internal protocol _StrSlice: _PlatformStringable, Hashable, Codable {
-  var _storage: SystemString { get }
-  var _range: Range<SystemString.Index> { get }
-
-  init?(_ str: SystemString)
-
-  func _invariantCheck()
+// Protocol for types which hash and compare as their underlying
+// SystemString slices
+internal protocol _SystemStringBacked: Hashable, Codable {
+  var _slice: Slice<SystemString> { get }
 }
-extension _StrSlice {
-  internal var _slice: Slice<SystemString> {
-    Slice(base: _storage, bounds: _range)
-  }
-
-  internal func _withSystemChars<T>(
-    _ f: (UnsafeBufferPointer<SystemChar>) throws -> T
-  ) rethrows -> T {
-    try _storage.withSystemChars {
-      try f(UnsafeBufferPointer(rebasing: $0[_range]))
-    }
-  }
-  internal func _withCodeUnits<T>(
-    _ f: (UnsafeBufferPointer<CInterop.PlatformUnicodeEncoding.CodeUnit>) throws -> T
-  ) rethrows -> T {
-    try _slice.withCodeUnits(f)
-  }
-
-  internal init?(_platformString s: UnsafePointer<CInterop.PlatformChar>) {
-    self.init(SystemString(platformString: s))
-  }
-
-  internal func _withPlatformString<Result>(
-    _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
-  ) rethrows -> Result {
-    try _slice.withPlatformString(body)
-  }
-
-  internal var _systemString: SystemString { SystemString(_slice) }
-}
-extension _StrSlice {
+extension _SystemStringBacked {
   public static func == (lhs: Self, rhs: Self) -> Bool {
     lhs._slice.elementsEqual(rhs._slice)
   }
@@ -179,34 +152,11 @@ extension _StrSlice {
     }
   }
 }
-internal protocol _PathSlice: _StrSlice {
-  var _path: FilePath { get }
+extension FilePath: _SystemStringBacked {
+  var _slice: Slice<SystemString> { _storage[...] }
 }
-extension _PathSlice {
-  internal var _storage: SystemString { _path._storage }
-}
-
-@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
-extension FilePath.Component: _PathSlice {
-}
-@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
-extension FilePath.Root: _PathSlice {
-  internal var _range: Range<SystemString.Index> {
-    (..<_rootEnd).relative(to: _path._storage)
-  }
-}
-
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
-extension FilePath: _PlatformStringable {
-  func _withPlatformString<Result>(_ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result) rethrows -> Result {
-    try _storage.withPlatformString(body)
-  }
-
-  init(_platformString: UnsafePointer<CInterop.PlatformChar>) {
-    self.init(SystemString(platformString: _platformString))
-  }
-
-}
+extension FilePath.Component: _SystemStringBacked {}
+extension FilePath.Root: _SystemStringBacked {}
 
 @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.Component {
@@ -239,7 +189,10 @@ internal func _makeExtension(_ ext: String) -> SystemString {
 
 @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.Component {
-  internal init?(_ str: SystemString) {
+  /// Create a `FilePath.Component` with the contents of `str`.
+  ///
+  /// Returns `nil` if `str` is empty or contains the directory separator.
+  public init?(_ str: SystemString) {
     // FIXME: explicit null root? Or something else?
     let path = FilePath(str)
     guard path.root == nil, path.components.count == 1 else {
@@ -252,7 +205,10 @@ extension FilePath.Component {
 
 @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.Root {
-  internal init?(_ str: SystemString) {
+  /// Create a `FilePath.Root` with the contents of `str`.
+  ///
+  /// Returns `nil` if `str` is empty or is not a root
+  public init?(_ str: SystemString) {
     // FIXME: explicit null root? Or something else?
     let path = FilePath(str)
     guard path.root != nil, path.components.isEmpty else {
@@ -272,7 +228,7 @@ extension FilePath.Component {
     #if DEBUG
     precondition(!_slice.isEmpty)
     precondition(_slice.last != .null)
-    precondition(_slice.allSatisfy { !isSeparator($0) } )
+    precondition(_slice.allSatisfy { !_isSeparator($0) } )
     precondition(_path._relativeStart <= _slice.startIndex)
     #endif // DEBUG
   }

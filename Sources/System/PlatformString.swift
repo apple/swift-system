@@ -160,7 +160,12 @@ extension String {
   public func withPlatformString<Result>(
     _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
   ) rethrows -> Result {
-    try _withPlatformString(body)
+    // Need to #if because CChar may be signed
+    #if os(Windows)
+    return try withCString(encodedAs: CInterop.PlatformUnicodeEncoding.self, body)
+    #else
+    return try withCString(body)
+    #endif
   }
 
 }
@@ -186,12 +191,3 @@ extension CInterop.PlatformUnicodeEncoding.CodeUnit {
     #endif
   }
 }
-
-internal protocol _PlatformStringable {
-  func _withPlatformString<Result>(
-    _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
-  ) rethrows -> Result
-
-  init?(_platformString: UnsafePointer<CInterop.PlatformChar>)
-}
-extension String: _PlatformStringable {}

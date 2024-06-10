@@ -75,7 +75,7 @@ struct StringTest: TestCase {
 
     // Test String, SystemString, FilePath construction
     let sysStr = SystemString(string)
-    expectEqualSequence(string.unicodeScalars, sysStr.string.unicodeScalars)
+    expectEqualSequence(string.unicodeScalars, String(decoding: sysStr).unicodeScalars)
     expectEqual(string, String(decoding: sysStr))
     expectEqual(string, String(validating: sysStr))
 
@@ -101,7 +101,7 @@ struct StringTest: TestCase {
     // Test null insertion
     let rawChars = raw.lazy.map { SystemChar($0) }
     expectEqual(sysRaw, SystemString(rawChars.dropLast()))
-    sysRaw.withSystemChars {  // TODO: assuming we want null in withSysChars
+    sysRaw.nullTerminatedStorage.withUnsafeBufferPointer {
       expectEqualSequence(rawChars, $0, "rawChars")
     }
 
@@ -248,7 +248,6 @@ final class SystemStringTest: XCTestCase {
     str.append(SystemChar(ascii: "d"))
     XCTAssert(str == "abcd")
     XCTAssert(str.count == 4)
-    XCTAssert(str.count == str.length)
 
     str.reserveCapacity(100)
     XCTAssert(str == "abcd")

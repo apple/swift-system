@@ -7,221 +7,247 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-// A platform-native character representation, currently used for file paths
-internal struct SystemChar:
+/// A platform-native character representation.
+///
+/// A SystemChar is a `CChar` on Linux and Darwin, and a `UInt16` on Windows.
+///
+/// Note that no particular encoding is assumed.
+@frozen
+public struct SystemChar:
   RawRepresentable, Sendable, Comparable, Hashable, Codable {
-  internal typealias RawValue = CInterop.PlatformChar
+  public typealias RawValue = CInterop.PlatformChar
 
-  internal var rawValue: RawValue
+  public var rawValue: RawValue
 
-  internal init(rawValue: RawValue) { self.rawValue = rawValue }
+  @inlinable
+  public init(rawValue: RawValue) { self.rawValue = rawValue }
 
-  internal init(_ rawValue: RawValue) { self.init(rawValue: rawValue) }
+  @_alwaysEmitIntoClient
+  public init(_ rawValue: RawValue) {
+    self.init(rawValue: rawValue)
+  }
 
-  static func < (lhs: SystemChar, rhs: SystemChar) -> Bool {
+  @inlinable
+  public static func < (lhs: SystemChar, rhs: SystemChar) -> Bool {
     lhs.rawValue < rhs.rawValue
   }
 }
 
 extension SystemChar {
-  internal init(ascii: Unicode.Scalar) {
-    self.init(rawValue: numericCast(UInt8(ascii: ascii)))
-  }
-  internal init(codeUnit: CInterop.PlatformUnicodeEncoding.CodeUnit) {
-    self.init(rawValue: codeUnit._platformChar)
-  }
-
-  internal static var null: SystemChar { SystemChar(0x0) }
-  internal static var slash: SystemChar { SystemChar(ascii: "/") }
-  internal static var backslash: SystemChar { SystemChar(ascii: #"\"#) }
-  internal static var dot: SystemChar { SystemChar(ascii: ".") }
-  internal static var colon: SystemChar { SystemChar(ascii: ":") }
-  internal static var question: SystemChar { SystemChar(ascii: "?") }
-
-  internal var codeUnit: CInterop.PlatformUnicodeEncoding.CodeUnit {
-    rawValue._platformCodeUnit
+  /// Create a SystemChar from an ASCII scalar.
+  @_alwaysEmitIntoClient
+  public init(ascii: Unicode.Scalar) {
+    precondition(ascii.isASCII)
+    self.init(rawValue: numericCast(ascii.value))
   }
 
-  internal var asciiScalar: Unicode.Scalar? {
+  /// Cast `x` to a `SystemChar`
+  @_alwaysEmitIntoClient
+  public init(_ x: some FixedWidthInteger) {
+    self.init(numericCast(x))
+  }
+
+  /// The NULL character `\0`
+  @_alwaysEmitIntoClient
+  public static var null: SystemChar { SystemChar(0x0) }
+
+  /// The slash character `/`
+  @_alwaysEmitIntoClient
+  public static var slash: SystemChar { SystemChar(ascii: "/") }
+
+  /// The backslash character `\`
+  @_alwaysEmitIntoClient
+  public static var backslash: SystemChar { SystemChar(ascii: #"\"#) }
+
+  /// The dot character `.`
+  @_alwaysEmitIntoClient
+  public static var dot: SystemChar { SystemChar(ascii: ".") }
+
+  /// The colon character `:`
+  @_alwaysEmitIntoClient
+  public static var colon: SystemChar { SystemChar(ascii: ":") }
+
+  /// The question mark character `?`
+  @_alwaysEmitIntoClient
+  public static var question: SystemChar { SystemChar(ascii: "?") }
+
+  /// Returns `self` as a `Unicode.Scalar` if ASCII, else `nil`
+  @_alwaysEmitIntoClient
+  public var asciiScalar: Unicode.Scalar? {
     guard isASCII else { return nil }
     return Unicode.Scalar(UInt8(truncatingIfNeeded: rawValue))
   }
 
-  internal var isASCII: Bool {
+  /// Whether `self` is ASCII
+  @_alwaysEmitIntoClient
+  public var isASCII: Bool {
     (0...0x7F).contains(rawValue)
   }
 
-  internal var isLetter: Bool {
+  /// Whether `self` is an ASCII letter, i.e. in `[a-zA-Z]`
+  @_alwaysEmitIntoClient
+  public var isASCIILetter: Bool {
     guard isASCII else { return false }
     let asciiRaw: UInt8 = numericCast(rawValue)
-    return (UInt8(ascii: "a") ... UInt8(ascii: "z")).contains(asciiRaw) ||
-           (UInt8(ascii: "A") ... UInt8(ascii: "Z")).contains(asciiRaw)
+    switch asciiRaw {
+    case UInt8(ascii: "a")...UInt8(ascii: "z"): return true
+    case UInt8(ascii: "A")...UInt8(ascii: "Z"): return true
+    default: return false
+    }
   }
 }
 
-// A platform-native string representation, currently for file paths
-//
-// Always null-terminated.
-internal struct SystemString: Sendable {
-  internal typealias Storage = [SystemChar]
-  internal var nullTerminatedStorage: Storage
+
+/// A platform-native string representation. A `SystemString` is a collection
+/// of non-NULL `SystemChar`s followed by a NULL terminator.
+///
+/// TODO: example use or two, showing that innards are not NULL, but there's
+/// always a null at the end, NULL is not part of the count
+@frozen
+public struct SystemString: Sendable {
+  public typealias Storage = [SystemChar]
+
+  @usableFromInline
+  internal var _nullTerminatedStorage: Storage
+
+  /// Access the back storage, including the null terminator. Note that
+  /// `nullTerminatedStorage.count == self.count + 1`, due
+  /// to the null terminator.
+  @_alwaysEmitIntoClient
+  public var nullTerminatedStorage: Storage { _nullTerminatedStorage }
+
+  /// Create a SystemString from pre-existing null-terminated storage
+  @usableFromInline
+  internal init(_nullTerminatedStorage storage: [SystemChar]) {
+    self._nullTerminatedStorage = storage
+    _invariantCheck()
+  }
 }
 
 extension SystemString {
-  internal init() {
-    self.nullTerminatedStorage = [.null]
-    _invariantCheck()
+  /// Create an empty `SystemString`
+  public init() {
+    self.init(_nullTerminatedStorage: [.null])
   }
 
-  internal var length: Int {
-    let len = nullTerminatedStorage.count - 1
-    assert(len == self.count)
-    return len
-  }
-
-  // Common funnel point. Ensure all non-empty inits go here.
-  internal init(nullTerminated storage: Storage) {
-    self.nullTerminatedStorage = storage
-    _invariantCheck()
-  }
-
-  // Ensures that result is null-terminated
-  internal init<C: Collection>(_ chars: C) where C.Element == SystemChar {
-    var rawChars = Storage(chars)
+  /// Create a `SystemString` from a collection of `SystemChar`s.
+  /// A NULL terminator will be added if `chars` lacks one. `chars` must not
+  /// include any interior NULLs.
+  @_alwaysEmitIntoClient
+  public init<C: Collection>(_ chars: C) where C.Element == SystemChar {
+    var rawChars = Array(chars)
     if rawChars.last != .null {
       rawChars.append(.null)
     }
-    self.init(nullTerminated: rawChars)
+    precondition(
+      rawChars.dropLast(1).allSatisfy { $0 != .null },
+      "Embedded NULL detected")
+    self.init(_nullTerminatedStorage: rawChars)
   }
 }
 
 extension SystemString {
-  fileprivate func _invariantCheck() {
+  @_alwaysEmitIntoClient
+  internal func _invariantCheck() {
     #if DEBUG
-    precondition(nullTerminatedStorage.last! == .null)
-    precondition(nullTerminatedStorage.firstIndex(of: .null) == length)
+    precondition(_nullTerminatedStorage.last! == .null)
+    precondition(_nullTerminatedStorage.firstIndex(of: .null) == endIndex)
     #endif // DEBUG
   }
 }
 
 extension SystemString: RandomAccessCollection, MutableCollection {
-  internal typealias Element = SystemChar
-  internal typealias Index = Storage.Index
-  internal typealias Indices = Range<Index>
+  public typealias Element = SystemChar
+  public typealias Index = Int
+  public typealias Indices = Range<Index>
 
-  internal var startIndex: Index {
-    nullTerminatedStorage.startIndex
+  @inlinable
+  public var startIndex: Index {
+    _nullTerminatedStorage.startIndex
   }
 
-  internal var endIndex: Index {
-    nullTerminatedStorage.index(before: nullTerminatedStorage.endIndex)
+  @inlinable
+  public var endIndex: Index {
+    _nullTerminatedStorage.index(before: _nullTerminatedStorage.endIndex)
   }
 
-  internal subscript(position: Index) -> SystemChar {
+  @inlinable
+  public subscript(position: Index) -> SystemChar {
     _read {
       precondition(position >= startIndex && position <= endIndex)
-      yield nullTerminatedStorage[position]
+      yield _nullTerminatedStorage[position]
     }
     set(newValue) {
       precondition(position >= startIndex && position <= endIndex)
-      nullTerminatedStorage[position] = newValue
+      _nullTerminatedStorage[position] = newValue
       _invariantCheck()
     }
   }
 }
 extension SystemString: RangeReplaceableCollection {
-  internal mutating func replaceSubrange<C: Collection>(
+  @inlinable
+  public mutating func replaceSubrange<C: Collection>(
     _ subrange: Range<Index>, with newElements: C
   ) where C.Element == SystemChar {
     defer { _invariantCheck() }
-    nullTerminatedStorage.replaceSubrange(subrange, with: newElements)
+    _nullTerminatedStorage.replaceSubrange(subrange, with: newElements)
   }
 
-  internal mutating func reserveCapacity(_ n: Int) {
+  @inlinable
+  public mutating func reserveCapacity(_ n: Int) {
     defer { _invariantCheck() }
-    nullTerminatedStorage.reserveCapacity(1 + n)
+    _nullTerminatedStorage.reserveCapacity(1 + n)
   }
 
-  internal func withContiguousStorageIfAvailable<R>(
+  @inlinable
+  public func withContiguousStorageIfAvailable<R>(
     _ body: (UnsafeBufferPointer<SystemChar>) throws -> R
   ) rethrows -> R? {
     // Do not include the null terminator, it is outside the Collection
-    try nullTerminatedStorage.withContiguousStorageIfAvailable {
+    try _nullTerminatedStorage.withContiguousStorageIfAvailable {
       try body(.init(start: $0.baseAddress, count: $0.count-1))
-    }
-  }
-
-  internal mutating func withContiguousMutableStorageIfAvailable<R>(
-    _ body: (inout UnsafeMutableBufferPointer<SystemChar>) throws -> R
-  ) rethrows -> R? {
-    defer { _invariantCheck() }
-    // Do not include the null terminator, it is outside the Collection
-    return try nullTerminatedStorage.withContiguousMutableStorageIfAvailable {
-      var buffer = UnsafeMutableBufferPointer<SystemChar>(
-        start: $0.baseAddress, count: $0.count-1
-      )
-      return try body(&buffer)
     }
   }
 }
 
 extension SystemString: Hashable, Codable {}
 
-extension SystemString {
-
-  // withSystemChars includes the null terminator
-  internal func withSystemChars<T>(
-    _ f: (UnsafeBufferPointer<SystemChar>) throws -> T
-  ) rethrows -> T {
-    try nullTerminatedStorage.withContiguousStorageIfAvailable(f)!
-  }
-
-  internal func withCodeUnits<T>(
-    _ f: (UnsafeBufferPointer<CInterop.PlatformUnicodeEncoding.CodeUnit>) throws -> T
-  ) rethrows -> T {
-    try withSystemChars { chars in
-      let length = chars.count * MemoryLayout<SystemChar>.stride
-      let count = length / MemoryLayout<CInterop.PlatformUnicodeEncoding.CodeUnit>.stride
-      return try chars.baseAddress!.withMemoryRebound(
-        to: CInterop.PlatformUnicodeEncoding.CodeUnit.self,
-        capacity: count
-      ) { pointer in
-        try f(UnsafeBufferPointer(start: pointer, count: count))
-      }
-    }
-  }
-}
-
 extension Slice where Base == SystemString {
-  internal func withCodeUnits<T>(
-    _ f: (UnsafeBufferPointer<CInterop.PlatformUnicodeEncoding.CodeUnit>) throws -> T
-  ) rethrows -> T {
-    try base.withCodeUnits {
-      try f(UnsafeBufferPointer(rebasing: $0[indices]))
-    }
-  }
-
-  internal var string: String {
-    withCodeUnits { String(decoding: $0, as: CInterop.PlatformUnicodeEncoding.self) }
-  }
-
-  internal func withPlatformString<T>(
+  internal func _withPlatformString<T>(
     _ f: (UnsafePointer<CInterop.PlatformChar>) throws -> T
   ) rethrows -> T {
     // FIXME: avoid allocation if we're at the end
     return try SystemString(self).withPlatformString(f)
   }
-
 }
 
 extension String {
-  internal init(decoding str: SystemString) {
+  /// Creates a string by interpreting `str`'s content as UTF-8 on Unix
+  /// and UTF-16 on Windows.
+  ///
+  /// - Parameter str: The system string to be interpreted as
+  /// `CInterop.PlatformUnicodeEncoding`.
+  ///
+  /// If the content of the system string isn't a well-formed Unicode string,
+  /// this initializer replaces invalid bytes with U+FFFD.
+  /// This means that conversion to a string and back to a system string
+  /// might result in a value that's different from the original system string.
+  public init(decoding str: SystemString) {
     // TODO: Can avoid extra strlen
     self = str.withPlatformString {
       String(platformString: $0)
     }
   }
-  internal init?(validating str: SystemString) {
+
+  /// Creates a string from a system string, validating its contents as UTF-8 on
+  /// Unix and UTF-16 on Windows.
+  ///
+  /// - Parameter str: The system string to be interpreted as
+  ///   `CInterop.PlatformUnicodeEncoding`.
+  ///
+  /// If the contents of the system string isn't well-formed Unicode,
+  /// this initializer returns `nil`.
+  public init?(validating str: SystemString) {
     // TODO: Can avoid extra strlen
     guard let str = str.withPlatformString(String.init(validatingPlatformString:))
     else { return nil }
@@ -231,11 +257,11 @@ extension String {
 }
 
 extension SystemString: ExpressibleByStringLiteral {
-  internal init(stringLiteral: String) {
+  public init(stringLiteral: String) {
     self.init(stringLiteral)
   }
 
-  internal init(_ string: String) {
+  public init(_ string: String) {
     // TODO: can avoid extra strlen
     self = string.withPlatformString {
       SystemString(platformString: $0)
@@ -244,28 +270,28 @@ extension SystemString: ExpressibleByStringLiteral {
 }
 
 extension SystemString: CustomStringConvertible, CustomDebugStringConvertible {
-  internal var string: String { String(decoding: self) }
 
-  internal var description: String { string }
-  internal var debugDescription: String { description.debugDescription }
+  public var description: String { String(decoding: self) }
+
+  public var debugDescription: String {
+    description.debugDescription
+  }
 }
 
 extension SystemString {
-  /// Creates a system string by copying bytes from a null-terminated platform string.
+  /// Creates a `SystemString` by copying bytes from a null-terminated platform string.
   ///
   /// - Parameter platformString: A pointer to a null-terminated platform string.
-  internal init(platformString: UnsafePointer<CInterop.PlatformChar>) {
+  public init(platformString: UnsafePointer<CInterop.PlatformChar>) {
     let count = 1 + system_platform_strlen(platformString)
 
     // TODO: Is this the right way?
     let chars: Array<SystemChar> = platformString.withMemoryRebound(
       to: SystemChar.self, capacity: count
     ) {
-      let bufPtr = UnsafeBufferPointer(start: $0, count: count)
-      return Array(bufPtr)
+      Array(UnsafeBufferPointer(start: $0, count: count))
     }
-
-    self.init(nullTerminated: chars)
+    self.init(_nullTerminatedStorage: chars)
   }
 
   /// Calls the given closure with a pointer to the contents of the sytem string,
@@ -280,10 +306,10 @@ extension SystemString {
   /// The pointer passed as an argument to `body` is valid
   /// only during the execution of this method.
   /// Don't try to store the pointer for later use.
-  internal func withPlatformString<T>(
+  public func withPlatformString<T>(
     _ f: (UnsafePointer<CInterop.PlatformChar>) throws -> T
   ) rethrows -> T {
-    try withSystemChars { chars in
+    try _nullTerminatedStorage.withUnsafeBufferPointer { chars in
       let length = chars.count * MemoryLayout<SystemChar>.stride
       return try chars.baseAddress!.withMemoryRebound(
         to: CInterop.PlatformChar.self,

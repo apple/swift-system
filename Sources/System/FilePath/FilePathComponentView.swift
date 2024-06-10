@@ -33,6 +33,10 @@ extension FilePath {
     internal var _path: FilePath
     internal var _start: SystemString.Index
 
+    internal var _slice: Slice<SystemString> {
+      _path._storage[_start...]
+    }
+
     internal init(_ path: FilePath) {
       self._path = path
       self._start = path._relativeStart
@@ -50,7 +54,7 @@ extension FilePath {
       // TODO(perf): Small-form root (especially on Unix). Have Root
       // always copy out (not worth ref counting). Make sure that we're
       // not needlessly sliding values around or triggering a COW
-      let rootStr = self.root?._systemString ?? SystemString()
+      let rootStr = SystemString(root?._slice ?? SystemString()[...])
       var comp = ComponentView(self)
       self = FilePath()
       defer {
@@ -70,15 +74,15 @@ extension FilePath.ComponentView: BidirectionalCollection {
 
   @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
   public struct Index: Sendable, Comparable, Hashable {
-    internal typealias Storage = SystemString.Index
+    internal typealias _Storage = SystemString.Index
 
-    internal var _storage: Storage
+    internal var _storage: _Storage
 
     public static func < (lhs: Self, rhs: Self) -> Bool {
       lhs._storage < rhs._storage
     }
 
-    fileprivate init(_ idx: Storage) {
+    fileprivate init(_ idx: _Storage) {
       self._storage = idx
     }
   }
@@ -140,11 +144,11 @@ extension FilePath.ComponentView: RangeReplaceableCollection {
     var str = SystemString()
     let atEnd = subrange.lowerBound == endIndex
     if atEnd {
-      str.append(platformSeparator)
+      str.append(_platformSeparator)
     }
-    str.appendComponents(components: newElements)
+    str._appendComponents(components: newElements)
     if !atEnd {
-      str.append(platformSeparator)
+      str.append(_platformSeparator)
     }
     _path._storage.replaceSubrange(range, with: str)
   }
@@ -156,8 +160,8 @@ extension FilePath {
   public init<C: Collection>(
     root: Root?, _ components: C
   ) where C.Element == Component {
-    var str = root?._systemString ?? SystemString()
-    str.appendComponents(components: components)
+    var str = SystemString(root?._slice ?? SystemString()[...])
+    str._appendComponents(components: components)
     self.init(str)
   }
 
@@ -169,24 +173,11 @@ extension FilePath {
   /// Create a file path from an optional root and a slice of another path's
   /// components.
   public init(root: Root?, _ components: ComponentView.SubSequence) {
-    var str = root?._systemString ?? SystemString()
+    var str = SystemString(root?._slice ?? SystemString()[...])
     let (start, end) =
       (components.startIndex._storage, components.endIndex._storage)
     str.append(contentsOf: components.base._slice[start..<end])
     self.init(str)
-  }
-}
-
-// MARK: - Internals
-
-@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
-extension FilePath.ComponentView: _PathSlice {
-  internal var _range: Range<SystemString.Index> {
-    _start ..< _path._storage.endIndex
-  }
-
-  internal init(_ str: SystemString) {
-    fatalError("TODO: consider dropping proto req")
   }
 }
 

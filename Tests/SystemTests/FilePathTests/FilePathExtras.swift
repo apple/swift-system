@@ -43,7 +43,7 @@ extension FilePath {
     for _ in 0..<baseTail.count {
       prefix.append(.dot)
       prefix.append(.dot)
-      prefix.append(platformSeparator)
+      prefix.append(_platformSeparator)
     }
 
     return FilePath(prefix + tail._storageSlice)
