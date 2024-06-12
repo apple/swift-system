@@ -74,6 +74,16 @@ extension FilePath {
   }
 }
 
+extension FilePath.Component {
+  public static func == (lhs: Self, rhs: Self) -> Bool {
+    return Self.strSliceEqual(lhs: lhs, rhs: rhs)
+  }
+
+  public func hash(into hasher: inout Hasher) {
+    return self.strSliceHash(into: &hasher)
+  }
+}
+
 @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.Component {
 
@@ -169,14 +179,21 @@ extension _StrSlice {
   internal var _systemString: SystemString { SystemString(_slice) }
 }
 extension _StrSlice {
-  public static func == (lhs: Self, rhs: Self) -> Bool {
+  public static func strSliceEqual(lhs: Self, rhs: Self) -> Bool {
     lhs._slice.elementsEqual(rhs._slice)
   }
-  public func hash(into hasher: inout Hasher) {
+  public static func == (lhs: Self, rhs: Self) -> Bool {
+    return Self.strSliceEqual(lhs: lhs, rhs: rhs)
+  }
+
+  public func strSliceHash(into hasher: inout Hasher) {
     hasher.combine(_slice.count) // discriminator
     for element in _slice {
       hasher.combine(element)
     }
+  }
+  public func hash(into hasher: inout Hasher) {
+    return self.strSliceHash(into: &hasher)
   }
 }
 internal protocol _PathSlice: _StrSlice {
