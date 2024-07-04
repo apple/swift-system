@@ -25,6 +25,9 @@ import Glibc
 import Musl
 #elseif canImport(WASILibc)
 import WASILibc
+#elseif canImport(Android)
+@_implementationOnly import CSystem
+import Android
 #else
 #error("Unsupported Platform")
 #endif
@@ -64,6 +67,11 @@ internal var system_errno: CInt {
 internal var system_errno: CInt {
   get { WASILibc.errno }
   set { WASILibc.errno = newValue }
+}
+#elseif canImport(Android)
+internal var system_errno: CInt {
+  get { Android.errno }
+  set { Android.errno = newValue }
 }
 #endif
 
