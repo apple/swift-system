@@ -35,7 +35,7 @@ let package = Package(
         path: "Sources/System",
         exclude: ["CMakeLists.txt"],
         cSettings: [
-          .define("_CRT_SECURE_NO_WARNINGS")
+          .define("_CRT_SECURE_NO_WARNINGS", .when(platforms: [.windows]))
         ],
         swiftSettings: [
           .define("SYSTEM_PACKAGE"),
