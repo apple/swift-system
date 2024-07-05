@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2024 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -169,24 +169,20 @@ extension SystemString: Hashable, Codable {}
 
 extension SystemString {
 
-  // withSystemChars includes the null terminator
-  internal func withSystemChars<T>(
+  internal func withNullTerminatedSystemChars<T>(
     _ f: (UnsafeBufferPointer<SystemChar>) throws -> T
   ) rethrows -> T {
-    try nullTerminatedStorage.withContiguousStorageIfAvailable(f)!
+    try nullTerminatedStorage.withUnsafeBufferPointer(f)
   }
 
+  // withCodeUnits does not include the null terminator
   internal func withCodeUnits<T>(
     _ f: (UnsafeBufferPointer<CInterop.PlatformUnicodeEncoding.CodeUnit>) throws -> T
   ) rethrows -> T {
-    try withSystemChars { chars in
-      let length = chars.count * MemoryLayout<SystemChar>.stride
-      let count = length / MemoryLayout<CInterop.PlatformUnicodeEncoding.CodeUnit>.stride
-      return try chars.baseAddress!.withMemoryRebound(
-        to: CInterop.PlatformUnicodeEncoding.CodeUnit.self,
-        capacity: count
-      ) { pointer in
-        try f(UnsafeBufferPointer(start: pointer, count: count))
+    try withNullTerminatedSystemChars {
+      try $0.withMemoryRebound(to: CInterop.PlatformUnicodeEncoding.CodeUnit.self) {
+        assert($0.last == .zero)
+        return try f(.init(start: $0.baseAddress, count: $0.count&-1))
       }
     }
   }
@@ -202,7 +198,9 @@ extension Slice where Base == SystemString {
   }
 
   internal var string: String {
-    withCodeUnits { String(decoding: $0, as: CInterop.PlatformUnicodeEncoding.self) }
+    withCodeUnits {
+      String(decoding: $0, as: CInterop.PlatformUnicodeEncoding.self)
+    }
   }
 
   internal func withPlatformString<T>(
@@ -244,7 +242,11 @@ extension SystemString: ExpressibleByStringLiteral {
 }
 
 extension SystemString: CustomStringConvertible, CustomDebugStringConvertible {
-  internal var string: String { String(decoding: self) }
+  internal var string: String {
+    self.withCodeUnits {
+      String(decoding: $0, as: CInterop.PlatformUnicodeEncoding.self)
+    }
+  }
 
   internal var description: String { string }
   internal var debugDescription: String { description.debugDescription }
@@ -283,7 +285,7 @@ extension SystemString {
   internal func withPlatformString<T>(
     _ f: (UnsafePointer<CInterop.PlatformChar>) throws -> T
   ) rethrows -> T {
-    try withSystemChars { chars in
+    try withNullTerminatedSystemChars { chars in
       let length = chars.count * MemoryLayout<SystemChar>.stride
       return try chars.baseAddress!.withMemoryRebound(
         to: CInterop.PlatformChar.self,
