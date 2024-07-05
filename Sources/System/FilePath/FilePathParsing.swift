@@ -11,24 +11,19 @@
 // manages (and hides) the null terminator
 
 // The separator we use internally
-private var genericSeparator: SystemChar { .slash }
+private var _genericSeparator: SystemChar { .slash }
 
 // The platform preferred separator
 //
 // TODO: Make private
-internal var platformSeparator: SystemChar {
-  _windowsPaths ? .backslash : genericSeparator
+internal var _platformSeparator: SystemChar {
+  _windowsPaths ? .backslash : _genericSeparator
 }
 
 // Whether the character is the canonical separator
 // TODO: Make private
-internal func isSeparator(_ c: SystemChar) -> Bool {
-  c == platformSeparator
-}
-
-// Whether the character is a pre-normalized separator
-internal func isPrenormalSeparator(_ c: SystemChar) -> Bool {
-  c == genericSeparator || c == platformSeparator
+internal func _isSeparator(_ c: SystemChar) -> Bool {
+  c == _platformSeparator
 }
 
 // Separator normalization, checking, and root parsing is internally hosted
@@ -42,7 +37,7 @@ extension SystemString {
     guard _relativePathStart != endIndex else { return false }
     assert(!isEmpty)
 
-    return isSeparator(self.last!)
+    return _isSeparator(self.last!)
   }
 
   // Enforce invariants by removing a trailing separator.
@@ -82,7 +77,7 @@ extension SystemString {
       // parsing and (potentially) fixing up semi-formed roots. This
       // normalization reduces the complexity of the task by allowing us to
       // use a read-only lexer.
-      self._replaceAll(genericSeparator, with: platformSeparator)
+      self._replaceAll(_genericSeparator, with: _platformSeparator)
 
       // Windows roots can have meaningful repeated backslashes or may
       // need backslashes inserted for partially-formed roots. Delegate that to
@@ -95,19 +90,19 @@ extension SystemString {
           self.formIndex(after: &readIdx)
       }
     } else {
-      assert(genericSeparator == platformSeparator)
+      assert(_genericSeparator == _platformSeparator)
     }
 
     while readIdx < endIndex {
       assert(writeIdx <= readIdx)
 
       // Swap and advance our indices.
-      let wasSeparator = isSeparator(self[readIdx])
+      let wasSeparator = _isSeparator(self[readIdx])
       self.swapAt(writeIdx, readIdx)
       self.formIndex(after: &writeIdx)
       self.formIndex(after: &readIdx)
 
-      while wasSeparator, readIdx < endIndex, isSeparator(self[readIdx]) {
+      while wasSeparator, readIdx < endIndex, _isSeparator(self[readIdx]) {
         self.formIndex(after: &readIdx)
       }
     }
@@ -228,8 +223,8 @@ extension FilePath {
       }
     }
 
-    assert(!isSeparator(_storage[i]))
-    guard let nextSep = _storage[i...].firstIndex(where: isSeparator) else {
+    assert(!_isSeparator(_storage[i]))
+    guard let nextSep = _storage[i...].firstIndex(where: _isSeparator) else {
       return (_storage.endIndex, _storage.endIndex)
     }
     return (nextSep, _storage.index(after: nextSep))
@@ -249,11 +244,11 @@ extension FilePath {
 
     var slice = _storage[..<i]
     if i != _storage.endIndex {
-      assert(isSeparator(slice.last!))
+      assert(_isSeparator(slice.last!))
       slice.removeLast()
     }
     let end = slice.endIndex
-    while slice.endIndex != relStart, let c = slice.last, !isSeparator(c) {
+    while slice.endIndex != relStart, let c = slice.last, !_isSeparator(c) {
       slice.removeLast()
     }
 
@@ -291,7 +286,7 @@ extension SystemString {
     if _windowsPaths { return _parseWindowsRoot() }
 
     // A leading `/` is a root
-    guard isSeparator(self.first!) else { return (startIndex, startIndex) }
+    guard _isSeparator(self.first!) else { return (startIndex, startIndex) }
 
     let next = self.index(after: startIndex)
     return (next, next)
@@ -307,7 +302,7 @@ extension FilePath.Root {
   // relative roots
   //
   // TODO: public
-  internal var isAbsolute: Bool {
+  internal var _isAbsolute: Bool {
     assert(FilePath(SystemString(self._slice)).root == self, "not a root")
 
     guard _windowsPaths else { return true }
@@ -349,7 +344,7 @@ internal var _windowsPaths: Bool {
 extension FilePath {
   // Whether we should add a separator when doing an append
   internal var _needsSeparatorForAppend: Bool {
-    guard let last = _storage.last, !isSeparator(last) else { return false }
+    guard let last = _storage.last, !_isSeparator(last) else { return false }
 
     // On Windows, we can have a path of the form `C:` which is a root and
     // does not need a separator after it
@@ -366,7 +361,7 @@ extension FilePath {
     assert(FilePath(SystemString(content)).root == nil)
     if content.isEmpty { return }
     if _needsSeparatorForAppend {
-      _storage.append(platformSeparator)
+      _storage.append(_platformSeparator)
     }
     _storage.append(contentsOf: content)
   }

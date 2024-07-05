@@ -88,7 +88,7 @@ struct _Lexer {
   // Try to consume a drive letter and subsequent `:`.
   mutating func eatDrive() -> SystemChar? {
     let copy = slice
-    if let d = slice._eat(if: { $0.isLetter }), slice._eat(.colon) != nil {
+    if let d = slice._eat(if: { $0.isASCIILetter }), slice._eat(.colon) != nil {
       return d
     }
     // Restore slice
@@ -141,7 +141,7 @@ struct _Lexer {
   }
 }
 
-internal struct WindowsRootInfo {
+internal struct _WindowsRootInfo {
   // The "volume" of a root. For UNC paths, this is also known as the "share".
   internal enum Volume: Equatable {
     /// No volume specified
@@ -209,7 +209,7 @@ internal struct WindowsRootInfo {
 }
 
 extension _ParsedWindowsRoot {
-  fileprivate func volumeInfo(_ root: SystemString) -> WindowsRootInfo.Volume {
+  fileprivate func volumeInfo(_ root: SystemString) -> _WindowsRootInfo.Volume {
     if let d = self.drive {
       return .drive(Character(d.asciiScalar!))
     }
@@ -218,16 +218,16 @@ extension _ParsedWindowsRoot {
 
     // TODO: check for GUID
     // TODO: check for drive
-    return .volume(root[vol].string)
+    return .volume(String(decoding: .init(root[vol])))
   }
 }
 
-extension WindowsRootInfo {
+extension _WindowsRootInfo {
   internal init(_ root: SystemString, _ parsed: _ParsedWindowsRoot) {
     self.volume = parsed.volumeInfo(root)
 
     if let host = parsed.host {
-      self.host = root[host].string
+      self.host = String(decoding: .init(root[host]))
     } else {
       self.host = nil
     }
@@ -243,7 +243,7 @@ extension WindowsRootInfo {
   }
 }
 
-extension WindowsRootInfo {
+extension _WindowsRootInfo {
   /// NOT `\foo\bar` nor `C:foo\bar`
   internal var isFullyQualified: Bool {
     return form != .traditional(fullyQualified: false)

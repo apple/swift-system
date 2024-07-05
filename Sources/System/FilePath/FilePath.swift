@@ -52,7 +52,9 @@ public struct FilePath: Sendable {
   // In addition to the empty init, this init will properly normalize
   // separators. All other initializers should be implemented by
   // ultimately deferring to a normalizing init.
-  internal init(_ str: SystemString) {
+
+  /// Create a `FilePath` with the contents of `str`, normalizing separators.
+  public init(_ str: SystemString) {
     self._storage = str
     self._normalizeSeparators()
     _invariantCheck()
@@ -62,7 +64,7 @@ public struct FilePath: Sendable {
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FilePath {
   /// The length of the file path, excluding the null terminator.
-  public var length: Int { _storage.length }
+  public var length: Int { _storage.count }
 }
 
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
