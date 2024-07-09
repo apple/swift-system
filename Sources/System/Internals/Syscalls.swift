@@ -17,6 +17,8 @@ import Musl
 import WASILibc
 #elseif os(Windows)
 import ucrt
+#elseif canImport(Android)
+import Android
 #else
 #error("Unsupported Platform")
 #endif
