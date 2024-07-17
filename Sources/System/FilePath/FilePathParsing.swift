@@ -359,13 +359,18 @@ extension FilePath {
 
 // MARK: - Invariants
 extension FilePath {
-  internal func _invariantCheck() {
-    #if DEBUG
+  internal func _invariantsSatisfied() -> Bool {
     var normal = self
     normal._normalizeSeparators()
-    precondition(self == normal)
-    precondition(!self._storage._hasTrailingSeparator())
-    precondition(_hasRoot == (self.root != nil))
+    guard self == normal else { return false }
+    guard !self._storage._hasTrailingSeparator() else { return false }
+    guard _hasRoot == (self.root != nil) else { return false }
+    return true
+  }
+  
+  internal func _invariantCheck() {
+    #if DEBUG
+    precondition(_invariantsSatisfied())
     #endif // DEBUG
   }
 }
