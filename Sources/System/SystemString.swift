@@ -174,6 +174,11 @@ extension SystemString: RangeReplaceableCollection {
 }
 
 extension SystemString: Hashable, Codable {
+  // Encoder is synthesized; it probably should have been explicit and used
+  // a single-value container, but making that change now is somewhat risky.
+  
+  // Decoder is written explicitly to ensure that we validate invariants on
+  // untrusted input.
   public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     self.nullTerminatedStorage = try container.decode(
