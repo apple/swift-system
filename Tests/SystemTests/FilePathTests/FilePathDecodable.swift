@@ -19,7 +19,7 @@ import XCTest
 final class FilePathDecodableTest: XCTestCase {
   func testInvalidFilePath() {
     // _storage is a valid SystemString, but the invariants of FilePath are
-    // violated.
+    // violated (specifically, _storage is not normal).
     let input: [UInt8] = [
       123, 34, 95,115,116,111,114, 97,103,101, 34, 58,123, 34,110,117,108,108,
        84,101,114,109,105,110, 97,116,101,100, 83,116,111,114, 97,103,101, 34,
@@ -77,7 +77,8 @@ final class FilePathDecodableTest: XCTestCase {
   }
   
   func testInvalidSystemString() {
-    // _storage is a SystemString whose invariants are violated
+    // _storage is a SystemString whose invariants are violated; it contains
+    // a non-terminating null byte.
     let input: [UInt8] = [
       123, 34, 95,115,116,111,114, 97,103,101, 34, 58,123, 34,110,117,108,108,
        84,101,114,109,105,110, 97,116,101,100, 83,116,111,114, 97,103,101, 34,
@@ -95,7 +96,7 @@ final class FilePathDecodableTest: XCTestCase {
   
   func testInvalidExample() {
     // Another misformed example from Johannes that violates FilePath's
-    // invariants
+    // invariants by virtue of not being normalized.
     let input: [UInt8] = [
       123, 34, 95,115,116,111,114, 97,103,101, 34, 58,123, 34,110,117,108,108,
        84,101,114,109,105,110, 97,116,101,100, 83,116,111,114, 97,103,101, 34,
@@ -113,6 +114,7 @@ final class FilePathDecodableTest: XCTestCase {
   }
   
   func testEmptyString() {
+    // FilePath with an empty (and hence not null-terminated) SystemString.
     let input: [UInt8] = [
       123, 34, 95,115,116,111,114, 97,103,101, 34, 58,123, 34,110,117,108,108,
        84,101,114,109,105,110, 97,116,101,100, 83,116,111,114, 97,103,101, 34,
