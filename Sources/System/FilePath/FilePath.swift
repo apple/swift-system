@@ -59,6 +59,15 @@ public struct FilePath: Sendable {
   }
 }
 
+/*
+ extension FilePath: Hashable, Codable {
+ 
+ 
+ precondition(_hasRoot == (self.root != nil))
+ }
+ }
+ */
+
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FilePath {
   /// The length of the file path, excluding the null terminator.
@@ -66,4 +75,17 @@ extension FilePath {
 }
 
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
-extension FilePath: Hashable, Codable {}
+extension FilePath: Hashable, Codable {
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    self._storage = try container.decode(SystemString.self, forKey: ._storage)
+    guard _invariantsSatisfied() else {
+      throw DecodingError.dataCorruptedError(
+        forKey: ._storage,
+        in: container,
+        debugDescription:
+          "Encoding does not satisfy the invariants of FilePath"
+      )
+    }
+  }
+}

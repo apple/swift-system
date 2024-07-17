@@ -375,13 +375,18 @@ extension FilePath {
 // MARK: - Invariants
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension FilePath {
-  internal func _invariantCheck() {
-    #if DEBUG
+  internal func _invariantsSatisfied() -> Bool {
     var normal = self
     normal._normalizeSeparators()
-    precondition(self == normal)
-    precondition(!self._storage._hasTrailingSeparator())
-    precondition(_hasRoot == (self.root != nil))
+    guard self == normal else { return false }
+    guard !self._storage._hasTrailingSeparator() else { return false }
+    guard _hasRoot == (self.root != nil) else { return false }
+    return true
+  }
+  
+  internal func _invariantCheck() {
+    #if DEBUG
+    precondition(_invariantsSatisfied())
     #endif // DEBUG
   }
 }
