@@ -97,6 +97,7 @@ extension SystemString {
 
 extension SystemString {
   fileprivate func _invariantsSatisfied() -> Bool {
+    guard !nullTerminatedStorage.isEmpty else { return false }
     guard nullTerminatedStorage.last! == .null else { return false }
     guard nullTerminatedStorage.firstIndex(of: .null) == length else {
       return false

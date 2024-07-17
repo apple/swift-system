@@ -111,4 +111,17 @@ final class FilePathDecodableTest: XCTestCase {
       from: Data(input)
     ))
   }
+  
+  func testEmptyString() {
+    let input: [UInt8] = [
+      123, 34, 95,115,116,111,114, 97,103,101, 34, 58,123, 34,110,117,108,108,
+       84,101,114,109,105,110, 97,116,101,100, 83,116,111,114, 97,103,101, 34,
+       58, 91, 93,125,125
+    ]
+    
+    XCTAssertThrowsError(try JSONDecoder().decode(
+      FilePath.self,
+      from: Data(input)
+    ))
+  }
 }
