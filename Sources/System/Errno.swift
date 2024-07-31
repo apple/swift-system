@@ -20,13 +20,10 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @_alwaysEmitIntoClient
   public init(rawValue: CInt) { self.rawValue = rawValue }
 
-  @_alwaysEmitIntoClient
-  private init(_ raw: CInt) { self.init(rawValue: raw) }
-
 #if SYSTEM_PACKAGE_DARWIN
   /// Error. Not used.
   @_alwaysEmitIntoClient
-  public static var notUsed: Errno { Errno(_ERRNO_NOT_USED) }
+  public static var notUsed: Errno { .init(rawValue: _ERRNO_NOT_USED) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "notUsed")
@@ -41,7 +38,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EPERM`.
   @_alwaysEmitIntoClient
-  public static var notPermitted: Errno { Errno(_EPERM) }
+  public static var notPermitted: Errno { .init(rawValue: _EPERM) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "notPermitted")
@@ -54,7 +51,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENOENT`.
   @_alwaysEmitIntoClient
-  public static var noSuchFileOrDirectory: Errno { Errno(_ENOENT) }
+  public static var noSuchFileOrDirectory: Errno { .init(rawValue: _ENOENT) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "noSuchFileOrDirectory")
@@ -66,7 +63,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ESRCH`.
   @_alwaysEmitIntoClient
-  public static var noSuchProcess: Errno { Errno(_ESRCH) }
+  public static var noSuchProcess: Errno { .init(rawValue: _ESRCH) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "noSuchProcess")
@@ -81,7 +78,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EINTR`.
   @_alwaysEmitIntoClient
-  public static var interrupted: Errno { Errno(_EINTR) }
+  public static var interrupted: Errno { .init(rawValue: _EINTR) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "interrupted")
@@ -96,7 +93,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EIO`.
   @_alwaysEmitIntoClient
-  public static var ioError: Errno { Errno(_EIO) }
+  public static var ioError: Errno { .init(rawValue: _EIO) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "ioError")
@@ -111,7 +108,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENXIO`.
   @_alwaysEmitIntoClient
-  public static var noSuchAddressOrDevice: Errno { Errno(_ENXIO) }
+  public static var noSuchAddressOrDevice: Errno { .init(rawValue: _ENXIO) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "noSuchAddressOrDevice")
@@ -125,7 +122,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `E2BIG`.
   @_alwaysEmitIntoClient
-  public static var argListTooLong: Errno { Errno(_E2BIG) }
+  public static var argListTooLong: Errno { .init(rawValue: _E2BIG) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "argListTooLong")
@@ -139,7 +136,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENOEXEC`.
   @_alwaysEmitIntoClient
-  public static var execFormatError: Errno { Errno(_ENOEXEC) }
+  public static var execFormatError: Errno { .init(rawValue: _ENOEXEC) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "execFormatError")
@@ -154,7 +151,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EBADF`.
   @_alwaysEmitIntoClient
-  public static var badFileDescriptor: Errno { Errno(_EBADF) }
+  public static var badFileDescriptor: Errno { .init(rawValue: _EBADF) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "badFileDescriptor")
@@ -168,7 +165,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ECHILD`.
   @_alwaysEmitIntoClient
-  public static var noChildProcess: Errno { Errno(_ECHILD) }
+  public static var noChildProcess: Errno { .init(rawValue: _ECHILD) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "noChildProcess")
@@ -181,7 +178,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EDEADLK`.
   @_alwaysEmitIntoClient
-  public static var deadlock: Errno { Errno(_EDEADLK) }
+  public static var deadlock: Errno { .init(rawValue: _EDEADLK) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "deadlock")
@@ -198,7 +195,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENOMEM`.
   @_alwaysEmitIntoClient
-  public static var noMemory: Errno { Errno(_ENOMEM) }
+  public static var noMemory: Errno { .init(rawValue: _ENOMEM) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "noMemory")
@@ -211,7 +208,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EACCES`.
   @_alwaysEmitIntoClient
-  public static var permissionDenied: Errno { Errno(_EACCES) }
+  public static var permissionDenied: Errno { .init(rawValue: _EACCES) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "permissionDenied")
@@ -223,7 +220,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EFAULT`.
   @_alwaysEmitIntoClient
-  public static var badAddress: Errno { Errno(_EFAULT) }
+  public static var badAddress: Errno { .init(rawValue: _EFAULT) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "badAddress")
@@ -236,7 +233,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENOTBLK`.
   @_alwaysEmitIntoClient
-  public static var notBlockDevice: Errno { Errno(_ENOTBLK) }
+  public static var notBlockDevice: Errno { .init(rawValue: _ENOTBLK) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "notBlockDevice")
@@ -250,7 +247,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EBUSY`.
   @_alwaysEmitIntoClient
-  public static var resourceBusy: Errno { Errno(_EBUSY) }
+  public static var resourceBusy: Errno { .init(rawValue: _EBUSY) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "resourceBusy")
@@ -263,7 +260,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EEXIST`.
   @_alwaysEmitIntoClient
-  public static var fileExists: Errno { Errno(_EEXIST) }
+  public static var fileExists: Errno { .init(rawValue: _EEXIST) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "fileExists")
@@ -275,7 +272,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EXDEV`.
   @_alwaysEmitIntoClient
-  public static var improperLink: Errno { Errno(_EXDEV) }
+  public static var improperLink: Errno { .init(rawValue: _EXDEV) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "improperLink")
@@ -288,7 +285,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENODEV`.
   @_alwaysEmitIntoClient
-  public static var operationNotSupportedByDevice: Errno { Errno(_ENODEV) }
+  public static var operationNotSupportedByDevice: Errno { .init(rawValue: _ENODEV) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "operationNotSupportedByDevice")
@@ -302,7 +299,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENOTDIR`.
   @_alwaysEmitIntoClient
-  public static var notDirectory: Errno { Errno(_ENOTDIR) }
+  public static var notDirectory: Errno { .init(rawValue: _ENOTDIR) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "notDirectory")
@@ -315,7 +312,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EISDIR`.
   @_alwaysEmitIntoClient
-  public static var isDirectory: Errno { Errno(_EISDIR) }
+  public static var isDirectory: Errno { .init(rawValue: _EISDIR) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "isDirectory")
@@ -328,7 +325,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EINVAL`.
   @_alwaysEmitIntoClient
-  public static var invalidArgument: Errno { Errno(_EINVAL) }
+  public static var invalidArgument: Errno { .init(rawValue: _EINVAL) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "invalidArgument")
@@ -343,7 +340,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENFILE`.
   @_alwaysEmitIntoClient
-  public static var tooManyOpenFilesInSystem: Errno { Errno(_ENFILE) }
+  public static var tooManyOpenFilesInSystem: Errno { .init(rawValue: _ENFILE) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "tooManyOpenFilesInSystem")
@@ -356,7 +353,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EMFILE`.
   @_alwaysEmitIntoClient
-  public static var tooManyOpenFiles: Errno { Errno(_EMFILE) }
+  public static var tooManyOpenFiles: Errno { .init(rawValue: _EMFILE) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "tooManyOpenFiles")
@@ -371,7 +368,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENOTTY`.
   @_alwaysEmitIntoClient
-  public static var inappropriateIOCTLForDevice: Errno { Errno(_ENOTTY) }
+  public static var inappropriateIOCTLForDevice: Errno { .init(rawValue: _ENOTTY) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "inappropriateIOCTLForDevice")
@@ -386,7 +383,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ETXTBSY`.
   @_alwaysEmitIntoClient
-  public static var textFileBusy: Errno { Errno(_ETXTBSY) }
+  public static var textFileBusy: Errno { .init(rawValue: _ETXTBSY) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "textFileBusy")
@@ -401,7 +398,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EFBIG`.
   @_alwaysEmitIntoClient
-  public static var fileTooLarge: Errno { Errno(_EFBIG) }
+  public static var fileTooLarge: Errno { .init(rawValue: _EFBIG) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "fileTooLarge")
@@ -418,7 +415,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENOSPC`.
   @_alwaysEmitIntoClient
-  public static var noSpace: Errno { Errno(_ENOSPC) }
+  public static var noSpace: Errno { .init(rawValue: _ENOSPC) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "noSpace")
@@ -430,7 +427,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ESPIPE`.
   @_alwaysEmitIntoClient
-  public static var illegalSeek: Errno { Errno(_ESPIPE) }
+  public static var illegalSeek: Errno { .init(rawValue: _ESPIPE) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "illegalSeek")
@@ -443,7 +440,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EROFS`.
   @_alwaysEmitIntoClient
-  public static var readOnlyFileSystem: Errno { Errno(_EROFS) }
+  public static var readOnlyFileSystem: Errno { .init(rawValue: _EROFS) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "readOnlyFileSystem")
@@ -456,7 +453,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EMLINK`.
   @_alwaysEmitIntoClient
-  public static var tooManyLinks: Errno { Errno(_EMLINK) }
+  public static var tooManyLinks: Errno { .init(rawValue: _EMLINK) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "tooManyLinks")
@@ -469,7 +466,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EPIPE`.
   @_alwaysEmitIntoClient
-  public static var brokenPipe: Errno { Errno(_EPIPE) }
+  public static var brokenPipe: Errno { .init(rawValue: _EPIPE) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "brokenPipe")
@@ -482,7 +479,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EDOM`.
   @_alwaysEmitIntoClient
-  public static var outOfDomain: Errno { Errno(_EDOM) }
+  public static var outOfDomain: Errno { .init(rawValue: _EDOM) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "outOfDomain")
@@ -497,7 +494,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ERANGE`.
   @_alwaysEmitIntoClient
-  public static var outOfRange: Errno { Errno(_ERANGE) }
+  public static var outOfRange: Errno { .init(rawValue: _ERANGE) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "outOfRange")
@@ -511,7 +508,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EAGAIN`.
   @_alwaysEmitIntoClient
-  public static var resourceTemporarilyUnavailable: Errno { Errno(_EAGAIN) }
+  public static var resourceTemporarilyUnavailable: Errno { .init(rawValue: _EAGAIN) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "resourceTemporarilyUnavailable")
@@ -526,7 +523,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EINPROGRESS`.
   @_alwaysEmitIntoClient
-  public static var nowInProgress: Errno { Errno(_EINPROGRESS) }
+  public static var nowInProgress: Errno { .init(rawValue: _EINPROGRESS) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "nowInProgress")
@@ -539,7 +536,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EALREADY`.
   @_alwaysEmitIntoClient
-  public static var alreadyInProcess: Errno { Errno(_EALREADY) }
+  public static var alreadyInProcess: Errno { .init(rawValue: _EALREADY) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "alreadyInProcess")
@@ -549,7 +546,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENOTSOCK`.
   @_alwaysEmitIntoClient
-  public static var notSocket: Errno { Errno(_ENOTSOCK) }
+  public static var notSocket: Errno { .init(rawValue: _ENOTSOCK) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "notSocket")
@@ -561,7 +558,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EDESTADDRREQ`.
   @_alwaysEmitIntoClient
-  public static var addressRequired: Errno { Errno(_EDESTADDRREQ) }
+  public static var addressRequired: Errno { .init(rawValue: _EDESTADDRREQ) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "addressRequired")
@@ -574,7 +571,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EMSGSIZE`.
   @_alwaysEmitIntoClient
-  public static var messageTooLong: Errno { Errno(_EMSGSIZE) }
+  public static var messageTooLong: Errno { .init(rawValue: _EMSGSIZE) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "messageTooLong")
@@ -589,7 +586,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EPROTOTYPE`.
   @_alwaysEmitIntoClient
-  public static var protocolWrongTypeForSocket: Errno { Errno(_EPROTOTYPE) }
+  public static var protocolWrongTypeForSocket: Errno { .init(rawValue: _EPROTOTYPE) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "protocolWrongTypeForSocket")
@@ -602,7 +599,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENOPROTOOPT`.
   @_alwaysEmitIntoClient
-  public static var protocolNotAvailable: Errno { Errno(_ENOPROTOOPT) }
+  public static var protocolNotAvailable: Errno { .init(rawValue: _ENOPROTOOPT) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "protocolNotAvailable")
@@ -615,7 +612,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EPROTONOSUPPORT`.
   @_alwaysEmitIntoClient
-  public static var protocolNotSupported: Errno { Errno(_EPROTONOSUPPORT) }
+  public static var protocolNotSupported: Errno { .init(rawValue: _EPROTONOSUPPORT) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "protocolNotSupported")
@@ -628,7 +625,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ESOCKTNOSUPPORT`.
   @_alwaysEmitIntoClient
-  public static var socketTypeNotSupported: Errno { Errno(_ESOCKTNOSUPPORT) }
+  public static var socketTypeNotSupported: Errno { .init(rawValue: _ESOCKTNOSUPPORT) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "socketTypeNotSupported")
@@ -641,7 +638,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENOTSUP`.
   @_alwaysEmitIntoClient
-  public static var notSupported: Errno { Errno(_ENOTSUP) }
+  public static var notSupported: Errno { .init(rawValue: _ENOTSUP) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "notSupported")
@@ -654,7 +651,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EPFNOSUPPORT`.
   @_alwaysEmitIntoClient
-  public static var protocolFamilyNotSupported: Errno { Errno(_EPFNOSUPPORT) }
+  public static var protocolFamilyNotSupported: Errno { .init(rawValue: _EPFNOSUPPORT) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "protocolFamilyNotSupported")
@@ -668,7 +665,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EAFNOSUPPORT`.
   @_alwaysEmitIntoClient
-  public static var addressFamilyNotSupported: Errno { Errno(_EAFNOSUPPORT) }
+  public static var addressFamilyNotSupported: Errno { .init(rawValue: _EAFNOSUPPORT) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "addressFamilyNotSupported")
@@ -680,7 +677,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EADDRINUSE`.
   @_alwaysEmitIntoClient
-  public static var addressInUse: Errno { Errno(_EADDRINUSE) }
+  public static var addressInUse: Errno { .init(rawValue: _EADDRINUSE) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "addressInUse")
@@ -693,7 +690,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EADDRNOTAVAIL`.
   @_alwaysEmitIntoClient
-  public static var addressNotAvailable: Errno { Errno(_EADDRNOTAVAIL) }
+  public static var addressNotAvailable: Errno { .init(rawValue: _EADDRNOTAVAIL) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "addressNotAvailable")
@@ -705,7 +702,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENETDOWN`.
   @_alwaysEmitIntoClient
-  public static var networkDown: Errno { Errno(_ENETDOWN) }
+  public static var networkDown: Errno { .init(rawValue: _ENETDOWN) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "networkDown")
@@ -717,7 +714,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENETUNREACH`.
   @_alwaysEmitIntoClient
-  public static var networkUnreachable: Errno { Errno(_ENETUNREACH) }
+  public static var networkUnreachable: Errno { .init(rawValue: _ENETUNREACH) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "networkUnreachable")
@@ -729,7 +726,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENETRESET`.
   @_alwaysEmitIntoClient
-  public static var networkReset: Errno { Errno(_ENETRESET) }
+  public static var networkReset: Errno { .init(rawValue: _ENETRESET) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "networkReset")
@@ -741,7 +738,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ECONNABORTED`.
   @_alwaysEmitIntoClient
-  public static var connectionAbort: Errno { Errno(_ECONNABORTED) }
+  public static var connectionAbort: Errno { .init(rawValue: _ECONNABORTED) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "connectionAbort")
@@ -755,7 +752,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ECONNRESET`.
   @_alwaysEmitIntoClient
-  public static var connectionReset: Errno { Errno(_ECONNRESET) }
+  public static var connectionReset: Errno { .init(rawValue: _ECONNRESET) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "connectionReset")
@@ -769,7 +766,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENOBUFS`.
   @_alwaysEmitIntoClient
-  public static var noBufferSpace: Errno { Errno(_ENOBUFS) }
+  public static var noBufferSpace: Errno { .init(rawValue: _ENOBUFS) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "noBufferSpace")
@@ -784,7 +781,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EISCONN`.
   @_alwaysEmitIntoClient
-  public static var socketIsConnected: Errno { Errno(_EISCONN) }
+  public static var socketIsConnected: Errno { .init(rawValue: _EISCONN) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "socketIsConnected")
@@ -799,7 +796,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENOTCONN`.
   @_alwaysEmitIntoClient
-  public static var socketNotConnected: Errno { Errno(_ENOTCONN) }
+  public static var socketNotConnected: Errno { .init(rawValue: _ENOTCONN) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "socketNotConnected")
@@ -813,7 +810,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ESHUTDOWN`.
   @_alwaysEmitIntoClient
-  public static var socketShutdown: Errno { Errno(_ESHUTDOWN) }
+  public static var socketShutdown: Errno { .init(rawValue: _ESHUTDOWN) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "socketShutdown")
@@ -828,7 +825,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ETIMEDOUT`.
   @_alwaysEmitIntoClient
-  public static var timedOut: Errno { Errno(_ETIMEDOUT) }
+  public static var timedOut: Errno { .init(rawValue: _ETIMEDOUT) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "timedOut")
@@ -843,7 +840,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ECONNREFUSED`.
   @_alwaysEmitIntoClient
-  public static var connectionRefused: Errno { Errno(_ECONNREFUSED) }
+  public static var connectionRefused: Errno { .init(rawValue: _ECONNREFUSED) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "connectionRefused")
@@ -855,7 +852,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ELOOP`.
   @_alwaysEmitIntoClient
-  public static var tooManySymbolicLinkLevels: Errno { Errno(_ELOOP) }
+  public static var tooManySymbolicLinkLevels: Errno { .init(rawValue: _ELOOP) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "tooManySymbolicLinkLevels")
@@ -868,7 +865,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENAMETOOLONG`.
   @_alwaysEmitIntoClient
-  public static var fileNameTooLong: Errno { Errno(_ENAMETOOLONG) }
+  public static var fileNameTooLong: Errno { .init(rawValue: _ENAMETOOLONG) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "fileNameTooLong")
@@ -880,7 +877,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EHOSTDOWN`.
   @_alwaysEmitIntoClient
-  public static var hostIsDown: Errno { Errno(_EHOSTDOWN) }
+  public static var hostIsDown: Errno { .init(rawValue: _EHOSTDOWN) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "hostIsDown")
@@ -892,7 +889,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EHOSTUNREACH`.
   @_alwaysEmitIntoClient
-  public static var noRouteToHost: Errno { Errno(_EHOSTUNREACH) }
+  public static var noRouteToHost: Errno { .init(rawValue: _EHOSTUNREACH) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "noRouteToHost")
@@ -905,7 +902,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENOTEMPTY`.
   @_alwaysEmitIntoClient
-  public static var directoryNotEmpty: Errno { Errno(_ENOTEMPTY) }
+  public static var directoryNotEmpty: Errno { .init(rawValue: _ENOTEMPTY) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "directoryNotEmpty")
@@ -916,7 +913,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EPROCLIM`.
   @_alwaysEmitIntoClient
-  public static var tooManyProcesses: Errno { Errno(_EPROCLIM) }
+  public static var tooManyProcesses: Errno { .init(rawValue: _EPROCLIM) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "tooManyProcesses")
@@ -929,7 +926,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EUSERS`.
   @_alwaysEmitIntoClient
-  public static var tooManyUsers: Errno { Errno(_EUSERS) }
+  public static var tooManyUsers: Errno { .init(rawValue: _EUSERS) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "tooManyUsers")
@@ -946,7 +943,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EDQUOT`.
   @_alwaysEmitIntoClient
-  public static var diskQuotaExceeded: Errno { Errno(_EDQUOT) }
+  public static var diskQuotaExceeded: Errno { .init(rawValue: _EDQUOT) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "diskQuotaExceeded")
@@ -961,7 +958,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ESTALE`.
   @_alwaysEmitIntoClient
-  public static var staleNFSFileHandle: Errno { Errno(_ESTALE) }
+  public static var staleNFSFileHandle: Errno { .init(rawValue: _ESTALE) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "staleNFSFileHandle")
@@ -976,7 +973,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EBADRPC`.
   @_alwaysEmitIntoClient
-  public static var rpcUnsuccessful: Errno { Errno(_EBADRPC) }
+  public static var rpcUnsuccessful: Errno { .init(rawValue: _EBADRPC) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "rpcUnsuccessful")
@@ -989,7 +986,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ERPCMISMATCH`.
   @_alwaysEmitIntoClient
-  public static var rpcVersionMismatch: Errno { Errno(_ERPCMISMATCH) }
+  public static var rpcVersionMismatch: Errno { .init(rawValue: _ERPCMISMATCH) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "rpcVersionMismatch")
@@ -1001,7 +998,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EPROGUNAVAIL`.
   @_alwaysEmitIntoClient
-  public static var rpcProgramUnavailable: Errno { Errno(_EPROGUNAVAIL) }
+  public static var rpcProgramUnavailable: Errno { .init(rawValue: _EPROGUNAVAIL) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "rpcProgramUnavailable")
@@ -1014,7 +1011,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EPROGMISMATCH`.
   @_alwaysEmitIntoClient
-  public static var rpcProgramVersionMismatch: Errno { Errno(_EPROGMISMATCH) }
+  public static var rpcProgramVersionMismatch: Errno { .init(rawValue: _EPROGMISMATCH) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "rpcProgramVersionMismatch")
@@ -1027,7 +1024,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EPROCUNAVAIL`.
   @_alwaysEmitIntoClient
-  public static var rpcProcedureUnavailable: Errno { Errno(_EPROCUNAVAIL) }
+  public static var rpcProcedureUnavailable: Errno { .init(rawValue: _EPROCUNAVAIL) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "rpcProcedureUnavailable")
@@ -1041,7 +1038,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENOLCK`.
   @_alwaysEmitIntoClient
-  public static var noLocks: Errno { Errno(_ENOLCK) }
+  public static var noLocks: Errno { .init(rawValue: _ENOLCK) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "noLocks")
@@ -1053,7 +1050,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENOSYS`.
   @_alwaysEmitIntoClient
-  public static var noFunction: Errno { Errno(_ENOSYS) }
+  public static var noFunction: Errno { .init(rawValue: _ENOSYS) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "noFunction")
@@ -1068,7 +1065,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EFTYPE`.
   @_alwaysEmitIntoClient
-  public static var badFileTypeOrFormat: Errno { Errno(_EFTYPE) }
+  public static var badFileTypeOrFormat: Errno { .init(rawValue: _EFTYPE) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "badFileTypeOrFormat")
@@ -1082,7 +1079,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EAUTH`.
   @_alwaysEmitIntoClient
-  public static var authenticationError: Errno { Errno(_EAUTH) }
+  public static var authenticationError: Errno { .init(rawValue: _EAUTH) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "authenticationError")
@@ -1095,7 +1092,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENEEDAUTH`.
   @_alwaysEmitIntoClient
-  public static var needAuthenticator: Errno { Errno(_ENEEDAUTH) }
+  public static var needAuthenticator: Errno { .init(rawValue: _ENEEDAUTH) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "needAuthenticator")
@@ -1107,7 +1104,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EPWROFF`.
   @_alwaysEmitIntoClient
-  public static var devicePowerIsOff: Errno { Errno(_EPWROFF) }
+  public static var devicePowerIsOff: Errno { .init(rawValue: _EPWROFF) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "devicePowerIsOff")
@@ -1120,7 +1117,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EDEVERR`.
   @_alwaysEmitIntoClient
-  public static var deviceError: Errno { Errno(_EDEVERR) }
+  public static var deviceError: Errno { .init(rawValue: _EDEVERR) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "deviceError")
@@ -1135,7 +1132,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EOVERFLOW`.
   @_alwaysEmitIntoClient
-  public static var overflow: Errno { Errno(_EOVERFLOW) }
+  public static var overflow: Errno { .init(rawValue: _EOVERFLOW) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "overflow")
@@ -1149,7 +1146,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EBADEXEC`.
   @_alwaysEmitIntoClient
-  public static var badExecutable: Errno { Errno(_EBADEXEC) }
+  public static var badExecutable: Errno { .init(rawValue: _EBADEXEC) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "badExecutable")
@@ -1161,7 +1158,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EBADARCH`.
   @_alwaysEmitIntoClient
-  public static var badCPUType: Errno { Errno(_EBADARCH) }
+  public static var badCPUType: Errno { .init(rawValue: _EBADARCH) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "badCPUType")
@@ -1174,7 +1171,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ESHLIBVERS`.
   @_alwaysEmitIntoClient
-  public static var sharedLibraryVersionMismatch: Errno { Errno(_ESHLIBVERS) }
+  public static var sharedLibraryVersionMismatch: Errno { .init(rawValue: _ESHLIBVERS) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "sharedLibraryVersionMismatch")
@@ -1186,7 +1183,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EBADMACHO`.
   @_alwaysEmitIntoClient
-  public static var malformedMachO: Errno { Errno(_EBADMACHO) }
+  public static var malformedMachO: Errno { .init(rawValue: _EBADMACHO) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "malformedMachO")
@@ -1199,7 +1196,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ECANCELED`.
   @_alwaysEmitIntoClient
-  public static var canceled: Errno { Errno(_ECANCELED) }
+  public static var canceled: Errno { .init(rawValue: _ECANCELED) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "canceled")
@@ -1212,7 +1209,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EIDRM`.
   @_alwaysEmitIntoClient
-  public static var identifierRemoved: Errno { Errno(_EIDRM) }
+  public static var identifierRemoved: Errno { .init(rawValue: _EIDRM) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "identifierRemoved")
@@ -1225,7 +1222,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENOMSG`.
   @_alwaysEmitIntoClient
-  public static var noMessage: Errno { Errno(_ENOMSG) }
+  public static var noMessage: Errno { .init(rawValue: _ENOMSG) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "noMessage")
@@ -1240,7 +1237,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EILSEQ`.
   @_alwaysEmitIntoClient
-  public static var illegalByteSequence: Errno { Errno(_EILSEQ) }
+  public static var illegalByteSequence: Errno { .init(rawValue: _EILSEQ) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "illegalByteSequence")
@@ -1253,7 +1250,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENOATTR`.
   @_alwaysEmitIntoClient
-  public static var attributeNotFound: Errno { Errno(_ENOATTR) }
+  public static var attributeNotFound: Errno { .init(rawValue: _ENOATTR) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "attributeNotFound")
@@ -1268,7 +1265,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EBADMSG`.
   @_alwaysEmitIntoClient
-  public static var badMessage: Errno { Errno(_EBADMSG) }
+  public static var badMessage: Errno { .init(rawValue: _EBADMSG) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "badMessage")
@@ -1281,7 +1278,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EMULTIHOP`.
   @_alwaysEmitIntoClient
-  public static var multiHop: Errno { Errno(_EMULTIHOP) }
+  public static var multiHop: Errno { .init(rawValue: _EMULTIHOP) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "multiHop")
@@ -1293,7 +1290,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENODATA`.
   @_alwaysEmitIntoClient
-  public static var noData: Errno { Errno(_ENODATA) }
+  public static var noData: Errno { .init(rawValue: _ENODATA) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "noData")
@@ -1305,7 +1302,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENOLINK`.
   @_alwaysEmitIntoClient
-  public static var noLink: Errno { Errno(_ENOLINK) }
+  public static var noLink: Errno { .init(rawValue: _ENOLINK) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "noLink")
@@ -1317,7 +1314,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENOSR`.
   @_alwaysEmitIntoClient
-  public static var noStreamResources: Errno { Errno(_ENOSR) }
+  public static var noStreamResources: Errno { .init(rawValue: _ENOSR) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "noStreamResources")
@@ -1329,7 +1326,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ENOSTR`.
   @_alwaysEmitIntoClient
-  public static var notStream: Errno { Errno(_ENOSTR) }
+  public static var notStream: Errno { .init(rawValue: _ENOSTR) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "notStream")
@@ -1344,7 +1341,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EPROTO`.
   @_alwaysEmitIntoClient
-  public static var protocolError: Errno { Errno(_EPROTO) }
+  public static var protocolError: Errno { .init(rawValue: _EPROTO) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "protocolError")
@@ -1357,7 +1354,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `ETIME`.
   @_alwaysEmitIntoClient
-  public static var timeout: Errno { Errno(_ETIME) }
+  public static var timeout: Errno { .init(rawValue: _ETIME) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "timeout")
@@ -1372,7 +1369,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   ///
   /// The corresponding C error is `EOPNOTSUPP`.
   @_alwaysEmitIntoClient
-  public static var notSupportedOnSocket: Errno { Errno(_EOPNOTSUPP) }
+  public static var notSupportedOnSocket: Errno { .init(rawValue: _EOPNOTSUPP) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "notSupportedOnSocket")
@@ -1387,7 +1384,7 @@ extension Errno {
   ///
   /// The corresponding C error is `EWOULDBLOCK`.
   @_alwaysEmitIntoClient
-  public static var wouldBlock: Errno { Errno(_EWOULDBLOCK) }
+  public static var wouldBlock: Errno { .init(rawValue: _EWOULDBLOCK) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "wouldBlock")
@@ -1397,7 +1394,7 @@ extension Errno {
   ///
   /// The corresponding C error is `ETOOMANYREFS`.
   @_alwaysEmitIntoClient
-  public static var tooManyReferences: Errno { Errno(_ETOOMANYREFS) }
+  public static var tooManyReferences: Errno { .init(rawValue: _ETOOMANYREFS) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "tooManyReferences")
@@ -1407,7 +1404,7 @@ extension Errno {
   ///
   /// The corresponding C error is `EREMOTE`.
   @_alwaysEmitIntoClient
-  public static var tooManyRemoteLevels: Errno { Errno(_EREMOTE) }
+  public static var tooManyRemoteLevels: Errno { .init(rawValue: _EREMOTE) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "tooManyRemoteLevels")
@@ -1418,7 +1415,7 @@ extension Errno {
   ///
   /// The corresponding C error is `ENOPOLICY`.
   @_alwaysEmitIntoClient
-  public static var noSuchPolicy: Errno { Errno(_ENOPOLICY) }
+  public static var noSuchPolicy: Errno { .init(rawValue: _ENOPOLICY) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "noSuchPolicy")
@@ -1430,7 +1427,7 @@ extension Errno {
   ///
   /// The corresponding C error is `ENOTRECOVERABLE`.
   @_alwaysEmitIntoClient
-  public static var notRecoverable: Errno { Errno(_ENOTRECOVERABLE) }
+  public static var notRecoverable: Errno { .init(rawValue: _ENOTRECOVERABLE) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "notRecoverable")
@@ -1440,7 +1437,7 @@ extension Errno {
   ///
   /// The corresponding C error is `EOWNERDEAD`.
   @_alwaysEmitIntoClient
-  public static var previousOwnerDied: Errno { Errno(_EOWNERDEAD) }
+  public static var previousOwnerDied: Errno { .init(rawValue: _EOWNERDEAD) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "previousOwnerDied")
@@ -1452,7 +1449,7 @@ extension Errno {
   ///
   /// The corresponding C error is `EQFULL`.
   @_alwaysEmitIntoClient
-  public static var outputQueueFull: Errno { Errno(_EQFULL) }
+  public static var outputQueueFull: Errno { .init(rawValue: _EQFULL) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "outputQueueFull")
@@ -1466,7 +1463,7 @@ extension Errno {
   ///
   /// The corresponding C error is `ELAST`.
   @_alwaysEmitIntoClient
-  public static var lastErrnoValue: Errno { Errno(_ELAST) }
+  public static var lastErrnoValue: Errno { .init(rawValue: _ELAST) }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "lastErrnoValue")
