@@ -98,9 +98,6 @@ extension FileDescriptor {
     @_alwaysEmitIntoClient
     public init(rawValue: CInt) { self.rawValue = rawValue }
 
-    @_alwaysEmitIntoClient
-    private init(_ raw: CInt) { self.init(rawValue: raw) }
-
 #if !os(Windows)
     /// Indicates that opening the file doesn't
     /// wait for the file or device to become available.
@@ -117,7 +114,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_NONBLOCK`.
     @_alwaysEmitIntoClient
-    public static var nonBlocking: OpenOptions { OpenOptions(_O_NONBLOCK) }
+    public static var nonBlocking: OpenOptions { .init(rawValue: _O_NONBLOCK) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "nonBlocking")
@@ -133,7 +130,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_APPEND`.
     @_alwaysEmitIntoClient
-    public static var append: OpenOptions { OpenOptions(_O_APPEND) }
+    public static var append: OpenOptions { .init(rawValue: _O_APPEND) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "append")
@@ -143,7 +140,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_CREAT`.
     @_alwaysEmitIntoClient
-    public static var create: OpenOptions { OpenOptions(_O_CREAT) }
+    public static var create: OpenOptions { .init(rawValue: _O_CREAT) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "create")
@@ -157,7 +154,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_TRUNC`.
     @_alwaysEmitIntoClient
-    public static var truncate: OpenOptions { OpenOptions(_O_TRUNC) }
+    public static var truncate: OpenOptions { .init(rawValue: _O_TRUNC) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "truncate")
@@ -179,7 +176,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_EXCL`.
     @_alwaysEmitIntoClient
-    public static var exclusiveCreate: OpenOptions { OpenOptions(_O_EXCL) }
+    public static var exclusiveCreate: OpenOptions { .init(rawValue: _O_EXCL) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "exclusiveCreate")
@@ -197,7 +194,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_SHLOCK`.
     @_alwaysEmitIntoClient
-    public static var sharedLock: OpenOptions { OpenOptions(_O_SHLOCK) }
+    public static var sharedLock: OpenOptions { .init(rawValue: _O_SHLOCK) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "sharedLock")
@@ -214,7 +211,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_EXLOCK`.
     @_alwaysEmitIntoClient
-    public static var exclusiveLock: OpenOptions { OpenOptions(_O_EXLOCK) }
+    public static var exclusiveLock: OpenOptions { .init(rawValue: _O_EXLOCK) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "exclusiveLock")
@@ -232,7 +229,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_NOFOLLOW`.
     @_alwaysEmitIntoClient
-    public static var noFollow: OpenOptions { OpenOptions(_O_NOFOLLOW) }
+    public static var noFollow: OpenOptions { .init(rawValue: _O_NOFOLLOW) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "noFollow")
@@ -246,7 +243,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_DIRECTORY`.
     @_alwaysEmitIntoClient
-    public static var directory: OpenOptions { OpenOptions(_O_DIRECTORY) }
+    public static var directory: OpenOptions { .init(rawValue: _O_DIRECTORY) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "directory")
@@ -265,7 +262,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_SYMLINK`.
     @_alwaysEmitIntoClient
-    public static var symlink: OpenOptions { OpenOptions(_O_SYMLINK) }
+    public static var symlink: OpenOptions { .init(rawValue: _O_SYMLINK) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "symlink")
@@ -281,7 +278,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_EVTONLY`.
     @_alwaysEmitIntoClient
-    public static var eventOnly: OpenOptions { OpenOptions(_O_EVTONLY) }
+    public static var eventOnly: OpenOptions { .init(rawValue: _O_EVTONLY) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "eventOnly")
@@ -303,7 +300,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_CLOEXEC`.
     @_alwaysEmitIntoClient
-    public static var closeOnExec: OpenOptions { OpenOptions(_O_CLOEXEC) }
+    public static var closeOnExec: OpenOptions { .init(rawValue: _O_CLOEXEC) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "closeOnExec")
