@@ -27,104 +27,101 @@ public struct FilePermissions: OptionSet, Sendable, Hashable, Codable {
   @_alwaysEmitIntoClient
   public init(rawValue: CModeT) { self.rawValue = rawValue }
 
-  @_alwaysEmitIntoClient
-  private init(_ raw: CModeT) { self.init(rawValue: raw) }
-
   /// Indicates that other users have read-only permission.
   @_alwaysEmitIntoClient
-  public static var otherRead: FilePermissions { FilePermissions(0o4) }
+  public static var otherRead: FilePermissions { .init(rawValue: 0o4) }
 
   /// Indicates that other users have write-only permission.
   @_alwaysEmitIntoClient
-  public static var otherWrite: FilePermissions { FilePermissions(0o2) }
+  public static var otherWrite: FilePermissions { .init(rawValue: 0o2) }
 
   /// Indicates that other users have execute-only permission.
   @_alwaysEmitIntoClient
-  public static var otherExecute: FilePermissions { FilePermissions(0o1) }
+  public static var otherExecute: FilePermissions { .init(rawValue: 0o1) }
 
   /// Indicates that other users have read-write permission.
   @_alwaysEmitIntoClient
-  public static var otherReadWrite: FilePermissions { FilePermissions(0o6) }
+  public static var otherReadWrite: FilePermissions { .init(rawValue: 0o6) }
 
   /// Indicates that other users have read-execute permission.
   @_alwaysEmitIntoClient
-  public static var otherReadExecute: FilePermissions { FilePermissions(0o5) }
+  public static var otherReadExecute: FilePermissions { .init(rawValue: 0o5) }
 
   /// Indicates that other users have write-execute permission.
   @_alwaysEmitIntoClient
-  public static var otherWriteExecute: FilePermissions { FilePermissions(0o3) }
+  public static var otherWriteExecute: FilePermissions { .init(rawValue: 0o3) }
 
   /// Indicates that other users have read, write, and execute permission.
   @_alwaysEmitIntoClient
-  public static var otherReadWriteExecute: FilePermissions { FilePermissions(0o7) }
+  public static var otherReadWriteExecute: FilePermissions { .init(rawValue: 0o7) }
 
   /// Indicates that the group has read-only permission.
   @_alwaysEmitIntoClient
-  public static var groupRead: FilePermissions { FilePermissions(0o40) }
+  public static var groupRead: FilePermissions { .init(rawValue: 0o40) }
 
   /// Indicates that the group has write-only permission.
   @_alwaysEmitIntoClient
-  public static var groupWrite: FilePermissions { FilePermissions(0o20) }
+  public static var groupWrite: FilePermissions { .init(rawValue: 0o20) }
 
   /// Indicates that the group has execute-only permission.
   @_alwaysEmitIntoClient
-  public static var groupExecute: FilePermissions { FilePermissions(0o10) }
+  public static var groupExecute: FilePermissions { .init(rawValue: 0o10) }
 
   /// Indicates that the group has read-write permission.
   @_alwaysEmitIntoClient
-  public static var groupReadWrite: FilePermissions { FilePermissions(0o60) }
+  public static var groupReadWrite: FilePermissions { .init(rawValue: 0o60) }
 
   /// Indicates that the group has read-execute permission.
   @_alwaysEmitIntoClient
-  public static var groupReadExecute: FilePermissions { FilePermissions(0o50) }
+  public static var groupReadExecute: FilePermissions { .init(rawValue: 0o50) }
 
   /// Indicates that the group has write-execute permission.
   @_alwaysEmitIntoClient
-  public static var groupWriteExecute: FilePermissions { FilePermissions(0o30) }
+  public static var groupWriteExecute: FilePermissions { .init(rawValue: 0o30) }
 
   /// Indicates that the group has read, write, and execute permission.
   @_alwaysEmitIntoClient
-  public static var groupReadWriteExecute: FilePermissions { FilePermissions(0o70) }
+  public static var groupReadWriteExecute: FilePermissions { .init(rawValue: 0o70) }
 
   /// Indicates that the owner has read-only permission.
   @_alwaysEmitIntoClient
-  public static var ownerRead: FilePermissions { FilePermissions(0o400) }
+  public static var ownerRead: FilePermissions { .init(rawValue: 0o400) }
 
   /// Indicates that the owner has write-only permission.
   @_alwaysEmitIntoClient
-  public static var ownerWrite: FilePermissions { FilePermissions(0o200) }
+  public static var ownerWrite: FilePermissions { .init(rawValue: 0o200) }
 
   /// Indicates that the owner has execute-only permission.
   @_alwaysEmitIntoClient
-  public static var ownerExecute: FilePermissions { FilePermissions(0o100) }
+  public static var ownerExecute: FilePermissions { .init(rawValue: 0o100) }
 
   /// Indicates that the owner has read-write permission.
   @_alwaysEmitIntoClient
-  public static var ownerReadWrite: FilePermissions { FilePermissions(0o600) }
+  public static var ownerReadWrite: FilePermissions { .init(rawValue: 0o600) }
 
   /// Indicates that the owner has read-execute permission.
   @_alwaysEmitIntoClient
-  public static var ownerReadExecute: FilePermissions { FilePermissions(0o500) }
+  public static var ownerReadExecute: FilePermissions { .init(rawValue: 0o500) }
 
   /// Indicates that the owner has write-execute permission.
   @_alwaysEmitIntoClient
-  public static var ownerWriteExecute: FilePermissions { FilePermissions(0o300) }
+  public static var ownerWriteExecute: FilePermissions { .init(rawValue: 0o300) }
 
   /// Indicates that the owner has read, write, and execute permission.
   @_alwaysEmitIntoClient
-  public static var ownerReadWriteExecute: FilePermissions { FilePermissions(0o700) }
+  public static var ownerReadWriteExecute: FilePermissions { .init(rawValue: 0o700) }
 
   /// Indicates that the file is executed as the owner.
   ///
   /// For more information, see the `setuid(2)` man page.
   @_alwaysEmitIntoClient
-  public static var setUserID: FilePermissions { FilePermissions(0o4000) }
+  public static var setUserID: FilePermissions { .init(rawValue: 0o4000) }
 
   /// Indicates that the file is executed as the group.
   ///
   /// For more information, see the `setgid(2)` man page.
   @_alwaysEmitIntoClient
-  public static var setGroupID: FilePermissions { FilePermissions(0o2000) }
+  public static var setGroupID: FilePermissions { .init(rawValue: 0o2000) }
 
   /// Indicates that executable's text segment
   /// should be kept in swap space even after it exits.
@@ -132,7 +129,7 @@ public struct FilePermissions: OptionSet, Sendable, Hashable, Codable {
   /// For more information, see the `chmod(2)` man page's
   /// discussion of `S_ISVTX` (the sticky bit).
   @_alwaysEmitIntoClient
-  public static var saveText: FilePermissions { FilePermissions(0o1000) }
+  public static var saveText: FilePermissions { .init(rawValue: 0o1000) }
 }
 
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
