@@ -96,10 +96,18 @@ extension SystemString {
 }
 
 extension SystemString {
+  fileprivate func _invariantsSatisfied() -> Bool {
+    guard !nullTerminatedStorage.isEmpty else { return false }
+    guard nullTerminatedStorage.last! == .null else { return false }
+    guard nullTerminatedStorage.firstIndex(of: .null) == length else {
+      return false
+    }
+    return true
+  }
+  
   fileprivate func _invariantCheck() {
     #if DEBUG
-    precondition(nullTerminatedStorage.last! == .null)
-    precondition(nullTerminatedStorage.firstIndex(of: .null) == length)
+    precondition(_invariantsSatisfied())
     #endif // DEBUG
   }
 }
@@ -165,7 +173,27 @@ extension SystemString: RangeReplaceableCollection {
   }
 }
 
-extension SystemString: Hashable, Codable {}
+extension SystemString: Hashable, Codable {
+  // Encoder is synthesized; it probably should have been explicit and used
+  // a single-value container, but making that change now is somewhat risky.
+  
+  // Decoder is written explicitly to ensure that we validate invariants on
+  // untrusted input.
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    self.nullTerminatedStorage = try container.decode(
+      Storage.self, forKey: .nullTerminatedStorage
+    )
+    guard _invariantsSatisfied() else {
+      throw DecodingError.dataCorruptedError(
+        forKey: .nullTerminatedStorage,
+        in: container,
+        debugDescription:
+          "Encoding does not satisfy the invariants of SystemString"
+      )
+    }
+  }
+}
 
 extension SystemString {
 
