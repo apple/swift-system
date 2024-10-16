@@ -260,7 +260,6 @@ internal func rmdir(
   return 0;
 }
 
-@usableFromInline
 internal func _mapWindowsErrorToErrno(_ errorCode: DWORD) -> CInt {
   switch Int32(errorCode) {
   case ERROR_SUCCESS:
@@ -397,7 +396,6 @@ fileprivate func getTokenInformation<T>(
   return nil
 }
 
-@usableFromInline
 internal enum _FileOrDirectory {
   case file
   case directory
@@ -406,7 +404,6 @@ internal enum _FileOrDirectory {
 /// Build a SECURITY_DESCRIPTOR from UNIX-style "mode" bits.  This only
 /// takes account of the rwx and sticky bits; there's really nothing that
 /// we can do about setuid/setgid.
-@usableFromInline
 internal func _createSecurityDescriptor(from mode: CInterop.Mode,
                                         for fileOrDirectory: _FileOrDirectory)
   -> PSECURITY_DESCRIPTOR? {
