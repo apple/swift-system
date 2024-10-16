@@ -13,9 +13,9 @@ import PackageDescription
 
 let DarwinPlatforms: [Platform]
 #if swift(<5.9)
-DarwinPlatforms = [.macOS, .iOS, .watchOS, .tvOS]
+DarwinPlatforms = [.macOS, .macCatalyst, .iOS, .watchOS, .tvOS]
 #else
-DarwinPlatforms = [.macOS, .iOS, .watchOS, .tvOS, .visionOS]
+DarwinPlatforms = [.macOS, .macCatalyst, .iOS, .watchOS, .tvOS, .visionOS]
 #endif
 
 let package = Package(
