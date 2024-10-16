@@ -19,7 +19,7 @@ let cSettings: [CSetting] = [
 let swiftSettings: [SwiftSetting] = [
   .define(
     "SYSTEM_PACKAGE_DARWIN",
-    .when(platforms: [.macOS, .iOS, .watchOS, .tvOS, .visionOS])),
+    .when(platforms: [.macOS, .macCatalyst, .iOS, .watchOS, .tvOS, .visionOS])),
   .define("SYSTEM_PACKAGE"),
   .define("ENABLE_MOCKING", .when(configuration: .debug)),
 ]
