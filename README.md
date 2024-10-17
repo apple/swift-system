@@ -55,7 +55,7 @@ let package = Package(
 
 ## Source Stability
 
-The Swift System package supports three types of operating systems: Darwin-based, POSIX-like, and Windows. The source-stability status of the package differs according to the platform:
+At this time, the Swift System package supports three types of operating systems: Darwin-based, POSIX-like, and Windows. The source-stability status of the package differs according to the platform:
 
 | Platform type     | Source Stability |
 | ----------------- | --------------- |
