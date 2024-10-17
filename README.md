@@ -32,7 +32,7 @@ To use the `SystemPackage` library in a SwiftPM project,
 add the following line to the dependencies in your `Package.swift` file:
 
 ```swift
-.package(url: "https://github.com/apple/swift-system", from: "1.3.0"),
+.package(url: "https://github.com/apple/swift-system", from: "1.4.0"),
 ```
 
 Finally, include `"SystemPackage"` as a dependency for your executable target:
@@ -41,7 +41,7 @@ Finally, include `"SystemPackage"` as a dependency for your executable target:
 let package = Package(
     // name, platforms, products, etc.
     dependencies: [
-        .package(url: "https://github.com/apple/swift-system", from: "1.3.0"),
+        .package(url: "https://github.com/apple/swift-system", from: "1.4.0"),
         // other dependencies
     ],
     targets: [
@@ -55,15 +55,15 @@ let package = Package(
 
 ## Source Stability
 
-The Swift System package supports three types of operating systems: Darwin, POSIX, and Windows. The source-stability status of the package differs according to the platform:
+The Swift System package supports three types of operating systems: Darwin-based, POSIX-like, and Windows. The source-stability status of the package differs according to the platform:
 
-| Platform type     | Stability |
+| Platform type     | Source Stability |
 | ----------------- | --------------- |
-| Darwin | Source stable |
-| POSIX  | Source stable |
-| Windows | Source unstable |
+| Darwin (macOS, iOS, etc.) | Stable |
+| POSIX (Linux, WASI, etc.) | Stable |
+| Windows | Unstable |
 
-The package version numbers follow [Semantic Versioning][semver] -- source breaking changes to public API can only land in a new major version. However, platforms for which support has not reached source stability can have source-breaking changes in a new minor version.
+The package version numbers follow [Semantic Versioning][semver] -- source breaking changes to source-stable public API can only land in a new major version. However, platforms for which support has not reached source stability may see source-breaking changes in a new minor version.
 
 [semver]: https://semver.org
 
