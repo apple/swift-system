@@ -56,8 +56,10 @@ public enum Mach {
       self._name = name
 
       if RightType.self == ReceiveRight.self {
-        precondition(name != 0xFFFFFFFF /* MACH_PORT_DEAD */,
-                     "Receive rights cannot be dead names")
+        precondition(
+          _name != (0xFFFFFFFF as mach_port_name_t) /* MACH_PORT_DEAD */,
+          "Receive rights cannot be dead names"
+        )
 
         let secret = mach_port_context_t(arc4random())
         _machPrecondition(mach_port_guard(mach_task_self_, name, secret, 0))
@@ -87,8 +89,10 @@ public enum Mach {
 
     deinit {
       if RightType.self == ReceiveRight.self {
-        precondition(_name != 0xFFFFFFFF /* MACH_PORT_DEAD */,
-                     "Receive rights cannot be dead names")
+        precondition(
+          _name != (0xFFFFFFFF as mach_port_name_t) /* MACH_PORT_DEAD */,
+          "Receive rights cannot be dead names"
+        )
         _machPrecondition(
           mach_port_destruct(mach_task_self_, _name, 0, _context)
         )
