@@ -10,9 +10,9 @@
 import XCTest
 
 #if SYSTEM_PACKAGE
-import SystemPackage
+@testable import SystemPackage
 #else
-import System
+@testable import System
 #endif
 
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
@@ -87,7 +87,11 @@ final class FileOperationsTest: XCTestCase {
   }
 
   func testWriteFromEmptyBuffer() throws {
+    #if os(Windows)
+    let fd = try FileDescriptor.open(FilePath("NUL"), .writeOnly)
+    #else
     let fd = try FileDescriptor.open(FilePath("/dev/null"), .writeOnly)
+    #endif
     let written1 = try fd.write(toAbsoluteOffset: 0, .init(start: nil, count: 0))
     XCTAssertEqual(written1, 0)
 
@@ -98,23 +102,54 @@ final class FileOperationsTest: XCTestCase {
     XCTAssertEqual(written2, 0)
   }
 
-  func testReadToEmptyBuffer() throws {
-    let fd = try FileDescriptor.open(FilePath("/dev/random"), .readOnly)
-    let read1 = try fd.read(fromAbsoluteOffset: 0, into: .init(start: nil, count: 0))
-    XCTAssertEqual(read1, 0)
+  #if os(Windows)
+  // Generate a file containing random bytes; this should not be used
+  // for cryptography, it's just for testing.
+  func generateRandomData(at path: FilePath, count: Int) throws {
+    let fd = try FileDescriptor.open(path, .readWrite,
+                                     options: [.create, .truncate])
+    defer {
+      try! fd.close()
+    }
+    let data = [UInt8](
+      sequence(first: 0,
+               next: {
+                 _ in UInt8.random(in: UInt8.min...UInt8.max)
+               }).dropFirst().prefix(count)
+    )
 
-    let pointer = UnsafeMutableRawPointer.allocate(byteCount: 8, alignment: 8)
-    defer { pointer.deallocate() }
-    let empty = UnsafeMutableRawBufferPointer(start: pointer, count: 0)
-    let read2 = try fd.read(fromAbsoluteOffset: 0, into: empty)
-    XCTAssertEqual(read2, 0)
+    try data.withUnsafeBytes {
+      _ = try fd.write($0)
+    }
+  }
+  #endif
+
+  func testReadToEmptyBuffer() throws {
+    try withTemporaryFilePath(basename: "testReadToEmptyBuffer") { path in
+      #if os(Windows)
+      // Windows doesn't have an equivalent to /dev/random, so generate
+      // some random bytes and write them to a file for the next step.
+      let randomPath = path.appending("random.txt")
+      try generateRandomData(at: randomPath, count: 16)
+      let fd = try FileDescriptor.open(randomPath, .readOnly)
+      #else // !os(Windows)
+      let fd = try FileDescriptor.open(FilePath("/dev/random"), .readOnly)
+      #endif
+      let read1 = try fd.read(fromAbsoluteOffset: 0, into: .init(start: nil, count: 0))
+      XCTAssertEqual(read1, 0)
+
+      let pointer = UnsafeMutableRawPointer.allocate(byteCount: 8, alignment: 8)
+      defer { pointer.deallocate() }
+      let empty = UnsafeMutableRawBufferPointer(start: pointer, count: 0)
+      let read2 = try fd.read(fromAbsoluteOffset: 0, into: empty)
+      XCTAssertEqual(read2, 0)
+    }
   }
 
   func testHelpers() {
     // TODO: Test writeAll, writeAll(toAbsoluteOffset), closeAfter
   }
-  
-#if !os(Windows)
+
   func testAdHocPipe() throws {
     // Ad-hoc test testing `Pipe` functionality.
     // We cannot test `Pipe` using `MockTestCase` because it calls `pipe` with a pointer to an array local to the `Pipe`, the address of which we do not know prior to invoking `Pipe`.
@@ -133,33 +168,34 @@ final class FileOperationsTest: XCTestCase {
       }
     }
   }
-#endif
 
   func testAdHocOpen() {
     // Ad-hoc test touching a file system.
     do {
       // TODO: Test this against a virtual in-memory file system
-      let fd = try FileDescriptor.open("/tmp/b.txt", .readWrite, options: [.create, .truncate], permissions: .ownerReadWrite)
-      try fd.closeAfter {
-        try fd.writeAll("abc".utf8)
-        var def = "def"
-        try def.withUTF8 {
-          _ = try fd.write(UnsafeRawBufferPointer($0))
-        }
-        try fd.seek(offset: 1, from: .start)
+      try withTemporaryFilePath(basename: "testAdhocOpen") { path in
+        let fd = try FileDescriptor.open(path.appending("b.txt"), .readWrite, options: [.create, .truncate], permissions: .ownerReadWrite)
+        try fd.closeAfter {
+          try fd.writeAll("abc".utf8)
+          var def = "def"
+          try def.withUTF8 {
+            _ = try fd.write(UnsafeRawBufferPointer($0))
+          }
+          try fd.seek(offset: 1, from: .start)
 
-        let readLen = 3
-        let readBytes = try Array<UInt8>(unsafeUninitializedCapacity: readLen) { (buf, count) in
-          count = try fd.read(into: UnsafeMutableRawBufferPointer(buf))
-        }
-        let preadBytes = try Array<UInt8>(unsafeUninitializedCapacity: readLen) { (buf, count) in
-          count = try fd.read(fromAbsoluteOffset: 1, into: UnsafeMutableRawBufferPointer(buf))
-        }
+          let readLen = 3
+          let readBytes = try Array<UInt8>(unsafeUninitializedCapacity: readLen) { (buf, count) in
+            count = try fd.read(into: UnsafeMutableRawBufferPointer(buf))
+          }
+          let preadBytes = try Array<UInt8>(unsafeUninitializedCapacity: readLen) { (buf, count) in
+            count = try fd.read(fromAbsoluteOffset: 1, into: UnsafeMutableRawBufferPointer(buf))
+          }
 
-        XCTAssertEqual(readBytes.first!, "b".utf8.first!)
-        XCTAssertEqual(readBytes, preadBytes)
+          XCTAssertEqual(readBytes.first!, "b".utf8.first!)
+          XCTAssertEqual(readBytes, preadBytes)
 
-        // TODO: seek
+          // TODO: seek
+        }
       }
     } catch let err as Errno {
       print("caught \(err))")
@@ -185,48 +221,48 @@ final class FileOperationsTest: XCTestCase {
 
   }
 
-#if !os(Windows)
   func testResizeFile() throws {
-    let fd = try FileDescriptor.open("/tmp/\(UUID().uuidString).txt", .readWrite, options: [.create, .truncate], permissions: .ownerReadWrite)
-    try fd.closeAfter {
-      // File should be empty initially.
-      XCTAssertEqual(try fd.fileSize(), 0)
-      // Write 3 bytes.
-      try fd.writeAll("abc".utf8)
-      // File should now be 3 bytes.
-      XCTAssertEqual(try fd.fileSize(), 3)
-      // Resize to 6 bytes.
-      try fd.resize(to: 6)
-      // File should now be 6 bytes.
-      XCTAssertEqual(try fd.fileSize(), 6)
-      // Read in the 6 bytes.
-      let readBytes = try Array<UInt8>(unsafeUninitializedCapacity: 6) { (buf, count) in
-        try fd.seek(offset: 0, from: .start)
-        // Should have read all 6 bytes.
-        count = try fd.read(into: UnsafeMutableRawBufferPointer(buf))
-        XCTAssertEqual(count, 6)
+    try withTemporaryFilePath(basename: "testResizeFile") { path in 
+      let fd = try FileDescriptor.open(path.appending("\(UUID().uuidString).txt"), .readWrite, options: [.create, .truncate], permissions: .ownerReadWrite)
+      try fd.closeAfter {
+        // File should be empty initially.
+        XCTAssertEqual(try fd.fileSize(), 0)
+        // Write 3 bytes.
+        try fd.writeAll("abc".utf8)
+        // File should now be 3 bytes.
+        XCTAssertEqual(try fd.fileSize(), 3)
+        // Resize to 6 bytes.
+        try fd.resize(to: 6)
+        // File should now be 6 bytes.
+        XCTAssertEqual(try fd.fileSize(), 6)
+        // Read in the 6 bytes.
+        let readBytes = try Array<UInt8>(unsafeUninitializedCapacity: 6) { (buf, count) in
+          try fd.seek(offset: 0, from: .start)
+          // Should have read all 6 bytes.
+          count = try fd.read(into: UnsafeMutableRawBufferPointer(buf))
+          XCTAssertEqual(count, 6)
+        }
+        // First 3 bytes should be unaffected by resize.
+        XCTAssertEqual(Array(readBytes[..<3]), Array("abc".utf8))
+        // Extension should be padded with zeros.
+        XCTAssertEqual(Array(readBytes[3...]), Array(repeating: 0, count: 3))
+        // File should still be 6 bytes.
+        XCTAssertEqual(try fd.fileSize(), 6)
+        // Resize to 2 bytes.
+        try fd.resize(to: 2)
+        // File should now be 2 bytes.
+        XCTAssertEqual(try fd.fileSize(), 2)
+        // Read in file with a buffer big enough for 6 bytes.
+        let readBytesAfterTruncation = try Array<UInt8>(unsafeUninitializedCapacity: 6) { (buf, count) in
+          try fd.seek(offset: 0, from: .start)
+          count = try fd.read(into: UnsafeMutableRawBufferPointer(buf))
+          // Should only have read 2 bytes.
+          XCTAssertEqual(count, 2)
+        }
+        // Written content was trunctated.
+        XCTAssertEqual(readBytesAfterTruncation, Array("ab".utf8))
       }
-      // First 3 bytes should be unaffected by resize.
-      XCTAssertEqual(Array(readBytes[..<3]), Array("abc".utf8))
-      // Extension should be padded with zeros.
-      XCTAssertEqual(Array(readBytes[3...]), Array(repeating: 0, count: 3))
-      // File should still be 6 bytes.
-      XCTAssertEqual(try fd.fileSize(), 6)
-      // Resize to 2 bytes.
-      try fd.resize(to: 2)
-      // File should now be 2 bytes.
-      XCTAssertEqual(try fd.fileSize(), 2)
-      // Read in file with a buffer big enough for 6 bytes.
-      let readBytesAfterTruncation = try Array<UInt8>(unsafeUninitializedCapacity: 6) { (buf, count) in
-        try fd.seek(offset: 0, from: .start)
-        count = try fd.read(into: UnsafeMutableRawBufferPointer(buf))
-        // Should only have read 2 bytes.
-        XCTAssertEqual(count, 2)
-      }
-      // Written content was trunctated.
-      XCTAssertEqual(readBytesAfterTruncation, Array("ab".utf8))
     }
   }
-#endif
 }
 

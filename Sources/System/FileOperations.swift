@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2024 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -135,8 +135,6 @@ extension FileDescriptor {
       if let permissions = permissions {
         return system_open(path, oFlag, permissions.rawValue)
       }
-      precondition(!options.contains(.create),
-        "Create must be given permissions")
       return system_open(path, oFlag)
     }
     return descOrError.map { FileDescriptor(rawValue: $0) }
@@ -369,6 +367,7 @@ extension FileDescriptor {
   }
 }
 
+#if !os(WASI)
 @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FileDescriptor {
   /// Duplicates this file descriptor and return the newly created copy.
@@ -433,8 +432,9 @@ extension FileDescriptor {
     fatalError("Not implemented")
   }
 }
+#endif
 
-#if !os(Windows)
+#if !os(WASI)
 @available(/*System 1.1.0: macOS 12.3, iOS 15.4, watchOS 8.5, tvOS 15.4*/iOS 8, *)
 extension FileDescriptor {
   /// Creates a unidirectional data channel, which can be used for interprocess communication.
@@ -463,7 +463,6 @@ extension FileDescriptor {
 }
 #endif
 
-#if !os(Windows)
 @available(/*System 1.2.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
 extension FileDescriptor {
   /// Truncates or extends the file referenced by this file descriptor.
@@ -509,4 +508,44 @@ extension FileDescriptor {
     }
   }
 }
-#endif
+
+extension FilePermissions {
+  /// The file creation permission mask (aka "umask").
+  ///
+  /// Permissions set in this mask will be cleared by functions that create
+  /// files or directories.  Note that this mask is process-wide, and that
+  /// *getting* it is not thread safe.
+  internal static var creationMask: FilePermissions {
+    get {
+      let oldMask = _umask(0o22)
+      _ = _umask(oldMask)
+      return FilePermissions(rawValue: oldMask)
+    }
+    set {
+      _ = _umask(newValue.rawValue)
+    }
+  }
+
+  /// Change the file creation permission mask, run some code, then
+  /// restore it to its original value.
+  ///
+  /// - Parameters:
+  ///   - permissions: The new permission mask.
+  ///
+  /// This is more efficient than reading `creationMask` and restoring it
+  /// afterwards, because of the way reading the creation mask works.
+  internal static func withCreationMask<R>(
+    _ permissions: FilePermissions,
+    body: () throws -> R
+  ) rethrows -> R {
+    let oldMask = _umask(permissions.rawValue)
+    defer {
+      _ = _umask(oldMask)
+    }
+    return try body()
+  }
+
+  internal static func _umask(_ mode: CModeT) -> CModeT {
+    return system_umask(mode)
+  }
+}

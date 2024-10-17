@@ -89,6 +89,11 @@ extension SystemString {
       // `_prenormalizeWindowsRoots` and resume.
       readIdx = _prenormalizeWindowsRoots()
       writeIdx = readIdx
+
+      // Skip redundant separators
+      while readIdx < endIndex && isSeparator(self[readIdx]) {
+          self.formIndex(after: &readIdx)
+      }
     } else {
       assert(genericSeparator == platformSeparator)
     }
@@ -330,10 +335,13 @@ extension FilePath {
 // Whether we are providing Windows paths
 @inline(__always)
 internal var _windowsPaths: Bool {
+  if let forceWindowsPaths = forceWindowsPaths {
+    return forceWindowsPaths
+  }
   #if os(Windows)
   return true
   #else
-  return forceWindowsPaths
+  return false
   #endif
 }
 
