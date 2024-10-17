@@ -32,7 +32,7 @@ To use the `SystemPackage` library in a SwiftPM project,
 add the following line to the dependencies in your `Package.swift` file:
 
 ```swift
-.package(url: "https://github.com/apple/swift-system", from: "1.3.0"),
+.package(url: "https://github.com/apple/swift-system", from: "1.4.0"),
 ```
 
 Finally, include `"SystemPackage"` as a dependency for your executable target:
@@ -41,7 +41,7 @@ Finally, include `"SystemPackage"` as a dependency for your executable target:
 let package = Package(
     // name, platforms, products, etc.
     dependencies: [
-        .package(url: "https://github.com/apple/swift-system", from: "1.3.0"),
+        .package(url: "https://github.com/apple/swift-system", from: "1.4.0"),
         // other dependencies
     ],
     targets: [
@@ -55,7 +55,15 @@ let package = Package(
 
 ## Source Stability
 
-The Swift System package is source stable. The version numbers follow [Semantic Versioning][semver] -- source breaking changes to public API can only land in a new major version.
+At this time, the Swift System package supports three types of operating systems: Darwin-based, POSIX-like, and Windows. The source-stability status of the package differs according to the platform:
+
+| Platform type     | Source Stability |
+| ----------------- | --------------- |
+| Darwin (macOS, iOS, etc.) | Stable |
+| POSIX (Linux, WASI, etc.) | Stable |
+| Windows | Unstable |
+
+The package version numbers follow [Semantic Versioning][semver] -- source breaking changes to source-stable public API can only land in a new major version. However, platforms for which support has not reached source stability may see source-breaking changes in a new minor version.
 
 [semver]: https://semver.org
 
@@ -79,7 +87,7 @@ The following table maps existing package releases to their minimum required Swi
 | Package version         | Swift version   | Xcode release |
 | ----------------------- | --------------- | ------------- |
 | swift-system 1.3.x | >= Swift 5.8  | >= Xcode 14.3 |
-| swift-system 1.4.x (unreleased) | >= Swift 5.9  | >= Xcode 15.0 |
+| swift-system 1.4.x | >= Swift 5.9  | >= Xcode 15.0 |
 
 We'd like this package to quickly embrace Swift language and toolchain improvements that are relevant to its mandate. Accordingly, from time to time, new versions of this package require clients to upgrade to a more recent Swift toolchain release. (This allows the package to make use of new language/stdlib features, build on compiler bug fixes, and adopt new package manager functionality as soon as they are available.) Patch (i.e., bugfix) releases will not increase the required toolchain version, but any minor (i.e., new feature) release may do so.
 
