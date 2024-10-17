@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2021 - 2024 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -226,7 +226,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "badAddress")
   public static var EFAULT: Errno { badAddress }
 
-#if !os(Windows)
+#if !os(Windows) && !os(WASI)
   /// Not a block device.
   ///
   /// You attempted a block device operation on a nonblock device or file.
@@ -618,6 +618,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "protocolNotSupported")
   public static var EPROTONOSUPPORT: Errno { protocolNotSupported }
 
+#if !os(WASI)
   /// Socket type not supported.
   ///
   /// Support for the socket type hasn't been configured into the system
@@ -630,6 +631,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "socketTypeNotSupported")
   public static var ESOCKTNOSUPPORT: Errno { socketTypeNotSupported }
+#endif
 
   /// Not supported.
   ///
@@ -644,6 +646,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "notSupported")
   public static var ENOTSUP: Errno { notSupported }
 
+#if !os(WASI)
   /// Protocol family not supported.
   ///
   /// The protocol family hasn't been configured into the system
@@ -656,6 +659,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "protocolFamilyNotSupported")
   public static var EPFNOSUPPORT: Errno { protocolFamilyNotSupported }
+#endif
 
   /// The address family isn't supported by the protocol family.
   ///
@@ -802,6 +806,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "socketNotConnected")
   public static var ENOTCONN: Errno { socketNotConnected }
 
+#if !os(WASI)
   /// Can't send after socket shutdown.
   ///
   /// A request to send data wasn't permitted
@@ -815,6 +820,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "socketShutdown")
   public static var ESHUTDOWN: Errno { socketShutdown }
+#endif
 
   /// Operation timed out.
   ///
@@ -871,6 +877,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "fileNameTooLong")
   public static var ENAMETOOLONG: Errno { fileNameTooLong }
 
+#if !os(WASI)
   /// The host is down.
   ///
   /// A socket operation failed because the destination host was down.
@@ -882,6 +889,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "hostIsDown")
   public static var EHOSTDOWN: Errno { hostIsDown }
+#endif
 
   /// No route to host.
   ///
@@ -920,6 +928,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   public static var EPROCLIM: Errno { tooManyProcesses }
 #endif
 
+#if !os(WASI)
   /// Too many users.
   ///
   /// The quota system ran out of table entries.
@@ -931,6 +940,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "tooManyUsers")
   public static var EUSERS: Errno { tooManyUsers }
+#endif
 
   /// Disk quota exceeded.
   ///
@@ -1284,6 +1294,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "multiHop")
   public static var EMULTIHOP: Errno { multiHop }
 
+#if !os(WASI)
   /// No message available.
   ///
   /// No message was available to be received by the requested operation.
@@ -1295,6 +1306,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "noData")
   public static var ENODATA: Errno { noData }
+#endif
 
   /// Reserved.
   ///
@@ -1308,6 +1320,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "noLink")
   public static var ENOLINK: Errno { noLink }
 
+#if !os(WASI)
   /// Reserved.
   ///
   /// This error is reserved for future use.
@@ -1332,6 +1345,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "notStream")
   public static var ENOSTR: Errno { notStream }
 #endif
+#endif
 
   /// Protocol error.
   ///
@@ -1347,7 +1361,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "protocolError")
   public static var EPROTO: Errno { protocolError }
 
-#if !os(OpenBSD)
+#if !os(OpenBSD) && !os(WASI)
   /// Reserved.
   ///
   /// This error is reserved for future use.
@@ -1379,7 +1393,6 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
 // Constants defined in header but not man page
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 extension Errno {
-
   /// Operation would block.
   ///
   /// The corresponding C error is `EWOULDBLOCK`.
@@ -1390,6 +1403,7 @@ extension Errno {
   @available(*, unavailable, renamed: "wouldBlock")
   public static var EWOULDBLOCK: Errno { wouldBlock }
 
+#if !os(WASI)
   /// Too many references: can't splice.
   ///
   /// The corresponding C error is `ETOOMANYREFS`.
@@ -1409,6 +1423,7 @@ extension Errno {
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "tooManyRemoteLevels")
   public static var EREMOTE: Errno { tooManyRemoteLevels }
+#endif
 
 #if SYSTEM_PACKAGE_DARWIN
   /// No such policy registered.

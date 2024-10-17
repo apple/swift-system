@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 - 2021 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2024 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -23,6 +23,11 @@ import Glibc
 #elseif canImport(Musl)
 @_implementationOnly import CSystem
 import Musl
+#elseif canImport(WASILibc)
+import WASILibc
+#elseif canImport(Android)
+@_implementationOnly import CSystem
+import Android
 #else
 #error("Unsupported Platform")
 #endif
@@ -57,6 +62,16 @@ internal var system_errno: CInt {
 internal var system_errno: CInt {
   get { Musl.errno }
   set { Musl.errno = newValue }
+}
+#elseif canImport(WASILibc)
+internal var system_errno: CInt {
+  get { WASILibc.errno }
+  set { WASILibc.errno = newValue }
+}
+#elseif canImport(Android)
+internal var system_errno: CInt {
+  get { Android.errno }
+  set { Android.errno = newValue }
 }
 #endif
 
@@ -149,6 +164,24 @@ extension String {
 // TLS
 #if os(Windows)
 internal typealias _PlatformTLSKey = DWORD
+#elseif os(WASI) && (swift(<6.1) || !_runtime(_multithreaded))
+// Mock TLS storage for single-threaded WASI
+internal final class _PlatformTLSKey {
+    fileprivate init() {}
+}
+private final class TLSStorage: @unchecked Sendable {
+    var storage = [ObjectIdentifier: UnsafeMutableRawPointer]()
+}
+private let sharedTLSStorage = TLSStorage()
+
+func pthread_setspecific(_ key: _PlatformTLSKey, _ p: UnsafeMutableRawPointer?) -> Int {
+    sharedTLSStorage.storage[ObjectIdentifier(key)] = p
+    return 0
+}
+
+func pthread_getspecific(_ key: _PlatformTLSKey) -> UnsafeMutableRawPointer? {
+    sharedTLSStorage.storage[ObjectIdentifier(key)]
+}
 #else
 internal typealias _PlatformTLSKey = pthread_key_t
 #endif
@@ -160,6 +193,8 @@ internal func makeTLSKey() -> _PlatformTLSKey {
     fatalError("Unable to create key")
   }
   return raw
+  #elseif os(WASI) && (swift(<6.1) || !_runtime(_multithreaded))
+  return _PlatformTLSKey()
   #else
   var raw = pthread_key_t()
   guard 0 == pthread_key_create(&raw, nil) else {

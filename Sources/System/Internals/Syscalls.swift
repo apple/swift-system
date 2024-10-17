@@ -17,6 +17,8 @@ import Musl
 import WASILibc
 #elseif os(Windows)
 import ucrt
+#elseif canImport(Android)
+import Android
 #else
 #error("Unsupported Platform")
 #endif
@@ -189,7 +191,7 @@ internal func system_confstr(
 internal let SYSTEM_AT_REMOVE_DIR = AT_REMOVEDIR
 internal let SYSTEM_DT_DIR = DT_DIR
 internal typealias system_dirent = dirent
-#if os(Linux)
+#if os(Linux) || os(Android)
 internal typealias system_DIRPtr = OpaquePointer
 #else
 internal typealias system_DIRPtr = UnsafeMutablePointer<DIR>

@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 - 2021 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2024 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -21,6 +21,11 @@ import Glibc
 #elseif canImport(Musl)
 import CSystem
 import Musl
+#elseif canImport(WASILibc)
+import CSystem
+import WASILibc
+#elseif canImport(Android)
+import Android
 #else
 #error("Unsupported Platform")
 #endif
@@ -73,7 +78,7 @@ internal var _EACCES: CInt { EACCES }
 @_alwaysEmitIntoClient
 internal var _EFAULT: CInt { EFAULT }
 
-#if !os(Windows)
+#if !os(Windows) && !os(WASI)
 @_alwaysEmitIntoClient
 internal var _ENOTBLK: CInt { ENOTBLK }
 #endif
@@ -141,7 +146,13 @@ internal var _ERANGE: CInt { ERANGE }
 internal var _EAGAIN: CInt { EAGAIN }
 
 @_alwaysEmitIntoClient
-internal var _EWOULDBLOCK: CInt { EWOULDBLOCK }
+internal var _EWOULDBLOCK: CInt {
+#if os(WASI)
+  _getConst_EWOULDBLOCK()
+#else
+  EWOULDBLOCK
+#endif
+}
 
 @_alwaysEmitIntoClient
 internal var _EINPROGRESS: CInt { EINPROGRESS }
@@ -167,6 +178,7 @@ internal var _ENOPROTOOPT: CInt { ENOPROTOOPT }
 @_alwaysEmitIntoClient
 internal var _EPROTONOSUPPORT: CInt { EPROTONOSUPPORT }
 
+#if !os(WASI)
 @_alwaysEmitIntoClient
 internal var _ESOCKTNOSUPPORT: CInt {
 #if os(Windows)
@@ -175,6 +187,7 @@ internal var _ESOCKTNOSUPPORT: CInt {
   return ESOCKTNOSUPPORT
 #endif
 }
+#endif
 
 @_alwaysEmitIntoClient
 internal var _ENOTSUP: CInt {
@@ -185,6 +198,7 @@ internal var _ENOTSUP: CInt {
 #endif
 }
 
+#if !os(WASI)
 @_alwaysEmitIntoClient
 internal var _EPFNOSUPPORT: CInt {
 #if os(Windows)
@@ -193,6 +207,7 @@ internal var _EPFNOSUPPORT: CInt {
   return EPFNOSUPPORT
 #endif
 }
+#endif
 
 @_alwaysEmitIntoClient
 internal var _EAFNOSUPPORT: CInt { EAFNOSUPPORT }
@@ -227,6 +242,7 @@ internal var _EISCONN: CInt { EISCONN }
 @_alwaysEmitIntoClient
 internal var _ENOTCONN: CInt { ENOTCONN }
 
+#if !os(WASI)
 @_alwaysEmitIntoClient
 internal var _ESHUTDOWN: CInt {
 #if os(Windows)
@@ -244,6 +260,7 @@ internal var _ETOOMANYREFS: CInt {
   return ETOOMANYREFS
 #endif
 }
+#endif
 
 @_alwaysEmitIntoClient
 internal var _ETIMEDOUT: CInt { ETIMEDOUT }
@@ -257,6 +274,7 @@ internal var _ELOOP: CInt { ELOOP }
 @_alwaysEmitIntoClient
 internal var _ENAMETOOLONG: CInt { ENAMETOOLONG }
 
+#if !os(WASI)
 @_alwaysEmitIntoClient
 internal var _EHOSTDOWN: CInt {
 #if os(Windows)
@@ -265,6 +283,7 @@ internal var _EHOSTDOWN: CInt {
   return EHOSTDOWN
 #endif
 }
+#endif
 
 @_alwaysEmitIntoClient
 internal var _EHOSTUNREACH: CInt { EHOSTUNREACH }
@@ -277,6 +296,7 @@ internal var _ENOTEMPTY: CInt { ENOTEMPTY }
 internal var _EPROCLIM: CInt { EPROCLIM }
 #endif
 
+#if !os(WASI)
 @_alwaysEmitIntoClient
 internal var _EUSERS: CInt {
 #if os(Windows)
@@ -285,6 +305,7 @@ internal var _EUSERS: CInt {
   return EUSERS
 #endif
 }
+#endif
 
 @_alwaysEmitIntoClient
 internal var _EDQUOT: CInt {
@@ -304,6 +325,7 @@ internal var _ESTALE: CInt {
 #endif
 }
 
+#if !os(WASI)
 @_alwaysEmitIntoClient
 internal var _EREMOTE: CInt {
 #if os(Windows)
@@ -312,6 +334,7 @@ internal var _EREMOTE: CInt {
   return EREMOTE
 #endif
 }
+#endif
 
 #if SYSTEM_PACKAGE_DARWIN
 @_alwaysEmitIntoClient
@@ -399,30 +422,41 @@ internal var _EBADMSG: CInt { EBADMSG }
 @_alwaysEmitIntoClient
 internal var _EMULTIHOP: CInt { EMULTIHOP }
 
+#if !os(WASI)
 @_alwaysEmitIntoClient
 internal var _ENODATA: CInt { ENODATA }
+#endif
 
 @_alwaysEmitIntoClient
 internal var _ENOLINK: CInt { ENOLINK }
 
+#if !os(WASI)
 @_alwaysEmitIntoClient
 internal var _ENOSR: CInt { ENOSR }
 
 @_alwaysEmitIntoClient
 internal var _ENOSTR: CInt { ENOSTR }
 #endif 
+#endif
 
 @_alwaysEmitIntoClient
 internal var _EPROTO: CInt { EPROTO }
 
-#if !os(OpenBSD)
+#if !os(OpenBSD) && !os(WASI)
 @_alwaysEmitIntoClient
 internal var _ETIME: CInt { ETIME }
 #endif
 #endif
 
+
 @_alwaysEmitIntoClient
-internal var _EOPNOTSUPP: CInt { EOPNOTSUPP }
+internal var _EOPNOTSUPP: CInt {
+#if os(WASI)
+  _getConst_EOPNOTSUPP()
+#else
+  EOPNOTSUPP
+#endif
+}
 
 #if SYSTEM_PACKAGE_DARWIN
 @_alwaysEmitIntoClient
@@ -462,15 +496,33 @@ internal var _O_ACCMODE: CInt { 0x03|O_SEARCH }
 #else
 // TODO: API?
 @_alwaysEmitIntoClient
-internal var _O_ACCMODE: CInt { O_ACCMODE }
+internal var _O_ACCMODE: CInt {
+#if os(WASI)
+  _getConst_O_ACCMODE()
+#else
+  O_ACCMODE
+#endif
+}
 #endif
 
 @_alwaysEmitIntoClient
-internal var _O_NONBLOCK: CInt { O_NONBLOCK }
+internal var _O_NONBLOCK: CInt {
+#if os(WASI)
+  _getConst_O_NONBLOCK()
+#else
+  O_NONBLOCK
+#endif
+}
 #endif
 
 @_alwaysEmitIntoClient
-internal var _O_APPEND: CInt { O_APPEND }
+internal var _O_APPEND: CInt {
+#if os(WASI)
+  _getConst_O_APPEND()
+#else
+  O_APPEND
+#endif
+}
 
 #if SYSTEM_PACKAGE_DARWIN
 @_alwaysEmitIntoClient
@@ -481,22 +533,42 @@ internal var _O_EXLOCK: CInt { O_EXLOCK }
 #endif
 
 #if !os(Windows)
+#if !os(WASI)
 // TODO: API?
 @_alwaysEmitIntoClient
 internal var _O_ASYNC: CInt { O_ASYNC }
+#endif
 
 @_alwaysEmitIntoClient
 internal var _O_NOFOLLOW: CInt { O_NOFOLLOW }
 #endif
 
 @_alwaysEmitIntoClient
-internal var _O_CREAT: CInt { O_CREAT }
+internal var _O_CREAT: CInt {
+#if os(WASI)
+  _getConst_O_CREAT()
+#else
+  O_CREAT
+#endif
+}
 
 @_alwaysEmitIntoClient
-internal var _O_TRUNC: CInt { O_TRUNC }
+internal var _O_TRUNC: CInt {
+#if os(WASI)
+  _getConst_O_TRUNC()
+#else
+  O_TRUNC
+#endif
+}
 
 @_alwaysEmitIntoClient
-internal var _O_EXCL: CInt { O_EXCL }
+internal var _O_EXCL: CInt {
+#if os(WASI)
+  _getConst_O_EXCL()
+#else
+  O_EXCL
+#endif
+}
 
 #if SYSTEM_PACKAGE_DARWIN
 @_alwaysEmitIntoClient
@@ -509,7 +581,13 @@ internal var _O_EVTONLY: CInt { O_EVTONLY }
 internal var _O_NOCTTY: CInt { O_NOCTTY }
 
 @_alwaysEmitIntoClient
-internal var _O_DIRECTORY: CInt { O_DIRECTORY }
+internal var _O_DIRECTORY: CInt {
+#if os(WASI)
+  _getConst_O_DIRECTORY()
+#else
+  O_DIRECTORY
+#endif
+}
 #endif
 
 #if SYSTEM_PACKAGE_DARWIN
