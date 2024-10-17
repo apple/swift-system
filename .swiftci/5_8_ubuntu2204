@@ -1,5 +1,0 @@
-LinuxSwiftPackageJob {
-    swift_version_tag = "5.8-jammy"
-    repo = "swift-system"
-    branch = "release/1.4.0"
-}
