@@ -515,7 +515,6 @@ extension FilePermissions {
   /// Permissions set in this mask will be cleared by functions that create
   /// files or directories.  Note that this mask is process-wide, and that
   /// *getting* it is not thread safe.
-  @_alwaysEmitIntoClient
   internal static var creationMask: FilePermissions {
     get {
       let oldMask = _umask(0o22)
@@ -535,7 +534,6 @@ extension FilePermissions {
   ///
   /// This is more efficient than reading `creationMask` and restoring it
   /// afterwards, because of the way reading the creation mask works.
-  @_alwaysEmitIntoClient
   internal static func withCreationMask<R>(
     _ permissions: FilePermissions,
     body: () throws -> R
@@ -547,7 +545,6 @@ extension FilePermissions {
     return try body()
   }
 
-  @usableFromInline
   internal static func _umask(_ mode: CModeT) -> CModeT {
     return system_umask(mode)
   }
