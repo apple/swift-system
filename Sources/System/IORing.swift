@@ -79,7 +79,7 @@ internal class ResourceManager<T>: @unchecked Sendable {
     }
 }
 
-public class IOResource<T> {
+public struct IOResource<T>: ~Copyable {
     typealias Resource = T
     @usableFromInline let resource: T
     @usableFromInline let index: Int
