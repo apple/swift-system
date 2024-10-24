@@ -1,7 +1,7 @@
 @_implementationOnly import CSystem
 import struct CSystem.io_uring_sqe
 
-@_implementationOnly import Atomics
+@_implementationOnly import Synchronization
 import Glibc // needed for mmap
 
 // XXX: this *really* shouldn't be here. oh well.
@@ -12,9 +12,9 @@ extension UnsafeMutableRawPointer {
 }
 
 // all pointers in this struct reference kernel-visible memory
-@usableFromInline struct SQRing {
-    let kernelHead: UnsafeAtomic<UInt32>
-    let kernelTail: UnsafeAtomic<UInt32>
+@usableFromInline struct SQRing: ~Copyable {
+    let kernelHead: UnsafePointer<Atomic<UInt32>>
+    let kernelTail: UnsafePointer<Atomic<UInt32>>
     var userTail: UInt32
 
     // from liburing: the kernel should never change these
@@ -25,7 +25,7 @@ extension UnsafeMutableRawPointer {
     // ring flags bitfield
     // currently used by the kernel only in SQPOLL mode to indicate
     // when the polling thread needs to be woken up
-    let flags: UnsafeAtomic<UInt32>
+    let flags: UnsafePointer<Atomic<UInt32>>
     
     // ring array
     // maps indexes between the actual ring and the submissionQueueEntries list,
@@ -34,9 +34,9 @@ extension UnsafeMutableRawPointer {
     let array: UnsafeMutableBufferPointer<UInt32>
 }
 
-struct CQRing {
-    let kernelHead: UnsafeAtomic<UInt32>
-    let kernelTail: UnsafeAtomic<UInt32>
+struct CQRing: ~Copyable {
+    let kernelHead: UnsafePointer<Atomic<UInt32>>
+    let kernelTail: UnsafePointer<Atomic<UInt32>>
 
     // TODO: determine if this is actually used
     var userHead: UInt32
@@ -124,7 +124,7 @@ extension IORingBuffer {
 
 // XXX: This should be a non-copyable type (?)
 // demo only runs on Swift 5.8.1
-public final class IORing: @unchecked Sendable {
+public struct IORing: @unchecked Sendable, ~Copyable {
     let ringFlags: UInt32
     let ringDescriptor: Int32
 
@@ -187,20 +187,20 @@ public final class IORing: @unchecked Sendable {
         }
 
         submissionRing = SQRing(
-            kernelHead: UnsafeAtomic<UInt32>(
-                at: ringPtr.advanced(by: params.sq_off.head)
-                .assumingMemoryBound(to: UInt32.AtomicRepresentation.self)
+            kernelHead: UnsafePointer<Atomic<UInt32>>(
+                ringPtr.advanced(by: params.sq_off.head)
+                .assumingMemoryBound(to: Atomic<UInt32>.self)
             ),
-            kernelTail: UnsafeAtomic<UInt32>(
-                at: ringPtr.advanced(by: params.sq_off.tail)
-                .assumingMemoryBound(to: UInt32.AtomicRepresentation.self)
+            kernelTail: UnsafePointer<Atomic<UInt32>>(
+                ringPtr.advanced(by: params.sq_off.tail)
+                .assumingMemoryBound(to: Atomic<UInt32>.self)
             ),
             userTail: 0, // no requests yet
             ringMask: ringPtr.advanced(by: params.sq_off.ring_mask)
                 .assumingMemoryBound(to: UInt32.self).pointee,
-            flags: UnsafeAtomic<UInt32>(
-                at: ringPtr.advanced(by: params.sq_off.flags)
-                .assumingMemoryBound(to: UInt32.AtomicRepresentation.self)
+            flags: UnsafePointer<Atomic<UInt32>>(
+                ringPtr.advanced(by: params.sq_off.flags)
+                .assumingMemoryBound(to: Atomic<UInt32>.self)
             ),
             array: UnsafeMutableBufferPointer(
                 start: ringPtr.advanced(by: params.sq_off.array)
@@ -237,13 +237,13 @@ public final class IORing: @unchecked Sendable {
         )
 
         completionRing = CQRing(
-            kernelHead: UnsafeAtomic<UInt32>(
-                at: ringPtr.advanced(by: params.cq_off.head)
-                .assumingMemoryBound(to: UInt32.AtomicRepresentation.self)
+            kernelHead: UnsafePointer<Atomic<UInt32>>(
+                ringPtr.advanced(by: params.cq_off.head)
+                .assumingMemoryBound(to: Atomic<UInt32>.self)
             ),
-            kernelTail: UnsafeAtomic<UInt32>(
-                at: ringPtr.advanced(by: params.cq_off.tail)
-                .assumingMemoryBound(to: UInt32.AtomicRepresentation.self)
+            kernelTail: UnsafePointer<Atomic<UInt32>>(
+                ringPtr.advanced(by: params.cq_off.tail)
+                .assumingMemoryBound(to: Atomic<UInt32>.self)
             ),
             userHead: 0, // no completions yet
             ringMask: ringPtr.advanced(by: params.cq_off.ring_mask)
@@ -299,20 +299,20 @@ public final class IORing: @unchecked Sendable {
     }
 
     func _tryConsumeCompletion() -> IOCompletion? {
-        let tail = completionRing.kernelTail.load(ordering: .acquiring)
-        let head = completionRing.kernelHead.load(ordering: .relaxed)
+        let tail = completionRing.kernelTail.pointee.load(ordering: .acquiring)
+        let head = completionRing.kernelHead.pointee.load(ordering: .relaxed)
         
         if tail != head {
             // 32 byte copy - oh well
             let res = completionRing.cqes[Int(head & completionRing.ringMask)]
-            completionRing.kernelHead.store(head + 1, ordering: .relaxed)
+            completionRing.kernelHead.pointee.store(head + 1, ordering: .relaxed)
             return IOCompletion(rawValue: res)
         }
 
         return nil
     }
 
-    public func registerFiles(count: UInt32) {
+    public mutating func registerFiles(count: UInt32) {
         guard self.registeredFiles == nil else { fatalError() }
         let fileBuf = UnsafeMutableBufferPointer<UInt32>.allocate(capacity: Int(count))
         fileBuf.initialize(repeating: UInt32.max)
@@ -334,7 +334,7 @@ public final class IORing: @unchecked Sendable {
         return self.registeredFiles?.getResource()
     }
 
-    public func registerBuffers(bufSize: UInt32, count: UInt32) {
+    public mutating func registerBuffers(bufSize: UInt32, count: UInt32) {
         let iovecs = UnsafeMutableBufferPointer<iovec>.allocate(capacity: Int(count))
         let intBufSize = Int(bufSize)
         for i in 0..<iovecs.count {
@@ -393,30 +393,30 @@ public final class IORing: @unchecked Sendable {
     }
 
     internal func _flushQueue() -> UInt32 {
-        self.submissionRing.kernelTail.store(
+        self.submissionRing.kernelTail.pointee.store(
             self.submissionRing.userTail, ordering: .relaxed
         )
         return self.submissionRing.userTail - 
-            self.submissionRing.kernelHead.load(ordering: .relaxed)
+            self.submissionRing.kernelHead.pointee.load(ordering: .relaxed)
     }
 
 
     @inlinable @inline(__always)
-    public func writeRequest(_ request: __owned IORequest) -> Bool {
+    public mutating func writeRequest(_ request: __owned IORequest) -> Bool {
         self.submissionMutex.lock()
         defer { self.submissionMutex.unlock() }
         return _writeRequest(request.makeRawRequest())
     }
 
     @inlinable @inline(__always)
-    internal func _writeRequest(_ request: __owned RawIORequest) -> Bool {
+    internal mutating func _writeRequest(_ request: __owned RawIORequest) -> Bool {
         let entry = _blockingGetSubmissionEntry()
         entry.pointee = request.rawValue
         return true
     }
 
     @inlinable @inline(__always)
-    internal func _blockingGetSubmissionEntry() -> UnsafeMutablePointer<io_uring_sqe> {
+    internal mutating func _blockingGetSubmissionEntry() -> UnsafeMutablePointer<io_uring_sqe> {
         while true {
             if let entry = _getSubmissionEntry() {
                 return entry
@@ -427,11 +427,11 @@ public final class IORing: @unchecked Sendable {
     }
 
     @usableFromInline @inline(__always)
-    internal func _getSubmissionEntry() -> UnsafeMutablePointer<io_uring_sqe>? {
+    internal mutating func _getSubmissionEntry() -> UnsafeMutablePointer<io_uring_sqe>? {
         let next = self.submissionRing.userTail + 1
 
         // FEAT: smp load when SQPOLL in use (not in MVP)
-        let kernelHead = self.submissionRing.kernelHead.load(ordering: .relaxed)
+        let kernelHead = self.submissionRing.kernelHead.pointee.load(ordering: .relaxed)
 
         // FEAT: 128-bit event support (not in MVP)
     	if (next - kernelHead <= self.submissionRing.array.count) {
