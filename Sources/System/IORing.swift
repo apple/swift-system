@@ -1,8 +1,8 @@
 @_implementationOnly import CSystem
-import struct CSystem.io_uring_sqe
+import Glibc  // needed for mmap
+import Synchronization
 
-@_implementationOnly import Synchronization
-import Glibc // needed for mmap
+import struct CSystem.io_uring_sqe
 
 // XXX: this *really* shouldn't be here. oh well.
 extension UnsafeMutableRawPointer {
@@ -26,7 +26,7 @@ extension UnsafeMutableRawPointer {
     // currently used by the kernel only in SQPOLL mode to indicate
     // when the polling thread needs to be woken up
     let flags: UnsafePointer<Atomic<UInt32>>
-    
+
     // ring array
     // maps indexes between the actual ring and the submissionQueueEntries list,
     // allowing the latter to be used as a kind of freelist with enough work?
@@ -48,34 +48,40 @@ struct CQRing: ~Copyable {
 
 internal class ResourceManager<T>: @unchecked Sendable {
     typealias Resource = T
-    let resourceList: UnsafeMutableBufferPointer<T>
-    var freeList: [Int]
-    let mutex: Mutex
+
+    struct Resources {
+        let resourceList: UnsafeMutableBufferPointer<T>
+        var freeList: [Int]
+    }
+
+    let mutex: Mutex<Resources>
 
     init(_ res: UnsafeMutableBufferPointer<T>) {
-        self.resourceList = res
-        self.freeList = [Int](resourceList.indices)
-        self.mutex = Mutex()
+        mutex = Mutex(
+            Resources(
+                resourceList: res,
+                freeList: [Int](res.indices)
+            ))
     }
 
     func getResource() -> IOResource<T>? {
-        self.mutex.lock()
-        defer { self.mutex.unlock() }
-        if let index = freeList.popLast() {
-            return IOResource(
-                rescource: resourceList[index],
-                index: index,
-                manager: self
-            )
-        } else {
-            return nil
+        mutex.withLock { resources in
+            if let index = resources.freeList.popLast() {
+                return IOResource(
+                    resource: resources.resourceList[index],
+                    index: index,
+                    manager: self
+                )
+            } else {
+                return nil
+            }
         }
     }
 
     func releaseResource(index: Int) {
-        self.mutex.lock()
-        defer { self.mutex.unlock() }
-        self.freeList.append(index)
+        mutex.withLock { resources in
+            resources.freeList.append(index)
+        }
     }
 }
 
@@ -86,11 +92,11 @@ public struct IOResource<T>: ~Copyable {
     let manager: ResourceManager<T>
 
     internal init(
-        rescource: T,
+        resource: T,
         index: Int,
         manager: ResourceManager<T>
     ) {
-        self.resource = rescource
+        self.resource = resource
         self.index = index
         self.manager = manager
     }
@@ -114,13 +120,89 @@ extension IORingFileSlot {
 }
 extension IORingBuffer {
     public var unsafeBuffer: UnsafeMutableRawBufferPointer {
-        get {
-            return .init(start: resource.iov_base, count: resource.iov_len)
+        return .init(start: resource.iov_base, count: resource.iov_len)
+    }
+}
+
+@inlinable @inline(__always)
+internal func _writeRequest(_ request: __owned RawIORequest, ring: inout SQRing, submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>)
+    -> Bool
+{
+    let entry = _blockingGetSubmissionEntry(ring: &ring, submissionQueueEntries: submissionQueueEntries)
+    entry.pointee = request.rawValue
+    return true
+}
+
+@inlinable @inline(__always)
+internal func _blockingGetSubmissionEntry(ring: inout SQRing, submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>) -> UnsafeMutablePointer<
+    io_uring_sqe
+> {
+    while true {
+        if let entry = _getSubmissionEntry(ring: &ring, submissionQueueEntries: submissionQueueEntries) {
+            return entry
+        }
+        // TODO: actually block here instead of spinning
+    }
+
+}
+
+internal func _submitRequests(ring: inout SQRing, ringDescriptor: Int32) {
+    let flushedEvents = _flushQueue(ring: &ring)
+
+    // Ring always needs enter right now;
+    // TODO: support SQPOLL here
+    while true {
+        let ret = io_uring_enter(ringDescriptor, flushedEvents, 0, 0, nil)
+        // error handling:
+        //     EAGAIN / EINTR (try again),
+        //     EBADF / EBADFD / EOPNOTSUPP / ENXIO
+        //     (failure in ring lifetime management, fatal),
+        //     EINVAL (bad constant flag?, fatal),
+        //     EFAULT (bad address for argument from library, fatal)
+        if ret == -EAGAIN || ret == -EINTR {
+            continue
+        } else if ret < 0 {
+            fatalError(
+                "fatal error in submitting requests: " + Errno(rawValue: -ret).debugDescription
+            )
+        } else {
+            break
         }
     }
 }
 
+internal func _flushQueue(ring: inout SQRing) -> UInt32 {
+    ring.kernelTail.pointee.store(
+        ring.userTail, ordering: .relaxed
+    )
+    return ring.userTail - ring.kernelHead.pointee.load(ordering: .relaxed)
+}
 
+@usableFromInline @inline(__always)
+internal func _getSubmissionEntry(ring: inout SQRing, submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>) -> UnsafeMutablePointer<
+    io_uring_sqe
+>? {
+    let next = ring.userTail + 1
+
+    // FEAT: smp load when SQPOLL in use (not in MVP)
+    let kernelHead = ring.kernelHead.pointee.load(ordering: .relaxed)
+
+    // FEAT: 128-bit event support (not in MVP)
+    if next - kernelHead <= ring.array.count {
+        // let sqe =  &sq->sqes[(sq->sqe_tail & sq->ring_mask) << shift];
+        let sqeIndex = Int(
+            ring.userTail & ring.ringMask
+        )
+
+        let sqe = submissionQueueEntries
+            .baseAddress.unsafelyUnwrapped
+            .advanced(by: sqeIndex)
+
+        ring.userTail = next
+        return sqe
+    }
+    return nil
+}
 
 // XXX: This should be a non-copyable type (?)
 // demo only runs on Swift 5.8.1
@@ -128,15 +210,13 @@ public struct IORing: @unchecked Sendable, ~Copyable {
     let ringFlags: UInt32
     let ringDescriptor: Int32
 
-    @usableFromInline var submissionRing: SQRing
-    @usableFromInline var submissionMutex: Mutex
+    @usableFromInline let submissionMutex: Mutex<SQRing>
     // FEAT: set this eventually
     let submissionPolling: Bool = false
 
-    var completionRing: CQRing
-    var completionMutex: Mutex
+    let completionMutex: Mutex<CQRing>
 
-    let submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>
+    @usableFromInline let submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>
 
     // kept around for unmap / cleanup
     let ringSize: Int
@@ -149,28 +229,31 @@ public struct IORing: @unchecked Sendable, ~Copyable {
         var params = io_uring_params()
 
         ringDescriptor = withUnsafeMutablePointer(to: &params) {
-            return io_uring_setup(queueDepth, $0);
+            return io_uring_setup(queueDepth, $0)
         }
 
-        if (params.features & IORING_FEAT_SINGLE_MMAP == 0
-            || params.features & IORING_FEAT_NODROP == 0) {
+        if params.features & IORING_FEAT_SINGLE_MMAP == 0
+            || params.features & IORING_FEAT_NODROP == 0
+        {
             close(ringDescriptor)
             // TODO: error handling
             throw IORingError.missingRequiredFeatures
         }
-        
-        if (ringDescriptor < 0) {
+
+        if ringDescriptor < 0 {
             // TODO: error handling
         }
 
-        let submitRingSize = params.sq_off.array
+        let submitRingSize =
+            params.sq_off.array
             + params.sq_entries * UInt32(MemoryLayout<UInt32>.size)
-        
-        let completionRingSize = params.cq_off.cqes
+
+        let completionRingSize =
+            params.cq_off.cqes
             + params.cq_entries * UInt32(MemoryLayout<io_uring_cqe>.size)
 
         ringSize = Int(max(submitRingSize, completionRingSize))
-        
+
         ringPtr = mmap(
             /* addr: */ nil,
             /* len: */ ringSize,
@@ -178,35 +261,36 @@ public struct IORing: @unchecked Sendable, ~Copyable {
             /* flags: */ MAP_SHARED | MAP_POPULATE,
             /* fd: */ ringDescriptor,
             /* offset: */ __off_t(IORING_OFF_SQ_RING)
-        );
+        )
 
-        if (ringPtr == MAP_FAILED) {
-            perror("mmap");
+        if ringPtr == MAP_FAILED {
+            perror("mmap")
             // TODO: error handling
             fatalError("mmap failed in ring setup")
         }
 
-        submissionRing = SQRing(
+        let submissionRing = SQRing(
             kernelHead: UnsafePointer<Atomic<UInt32>>(
                 ringPtr.advanced(by: params.sq_off.head)
-                .assumingMemoryBound(to: Atomic<UInt32>.self)
+                    .assumingMemoryBound(to: Atomic<UInt32>.self)
             ),
             kernelTail: UnsafePointer<Atomic<UInt32>>(
                 ringPtr.advanced(by: params.sq_off.tail)
-                .assumingMemoryBound(to: Atomic<UInt32>.self)
+                    .assumingMemoryBound(to: Atomic<UInt32>.self)
             ),
-            userTail: 0, // no requests yet
+            userTail: 0,  // no requests yet
             ringMask: ringPtr.advanced(by: params.sq_off.ring_mask)
                 .assumingMemoryBound(to: UInt32.self).pointee,
             flags: UnsafePointer<Atomic<UInt32>>(
                 ringPtr.advanced(by: params.sq_off.flags)
-                .assumingMemoryBound(to: Atomic<UInt32>.self)
+                    .assumingMemoryBound(to: Atomic<UInt32>.self)
             ),
             array: UnsafeMutableBufferPointer(
                 start: ringPtr.advanced(by: params.sq_off.array)
                     .assumingMemoryBound(to: UInt32.self),
-                count: Int(ringPtr.advanced(by: params.sq_off.ring_entries)
-                .assumingMemoryBound(to: UInt32.self).pointee)
+                count: Int(
+                    ringPtr.advanced(by: params.sq_off.ring_entries)
+                        .assumingMemoryBound(to: UInt32.self).pointee)
             )
         )
 
@@ -223,10 +307,10 @@ public struct IORing: @unchecked Sendable, ~Copyable {
             /* flags: */ MAP_SHARED | MAP_POPULATE,
             /* fd: */ ringDescriptor,
             /* offset: */ __off_t(IORING_OFF_SQES)
-        );
+        )
 
-        if (sqes == MAP_FAILED) {
-            perror("mmap");
+        if sqes == MAP_FAILED {
+            perror("mmap")
             // TODO: error handling
             fatalError("sqe mmap failed in ring setup")
         }
@@ -236,76 +320,77 @@ public struct IORing: @unchecked Sendable, ~Copyable {
             count: Int(params.sq_entries)
         )
 
-        completionRing = CQRing(
+        let completionRing = CQRing(
             kernelHead: UnsafePointer<Atomic<UInt32>>(
                 ringPtr.advanced(by: params.cq_off.head)
-                .assumingMemoryBound(to: Atomic<UInt32>.self)
+                    .assumingMemoryBound(to: Atomic<UInt32>.self)
             ),
             kernelTail: UnsafePointer<Atomic<UInt32>>(
                 ringPtr.advanced(by: params.cq_off.tail)
-                .assumingMemoryBound(to: Atomic<UInt32>.self)
+                    .assumingMemoryBound(to: Atomic<UInt32>.self)
             ),
-            userHead: 0, // no completions yet
+            userHead: 0,  // no completions yet
             ringMask: ringPtr.advanced(by: params.cq_off.ring_mask)
                 .assumingMemoryBound(to: UInt32.self).pointee,
             cqes: UnsafeBufferPointer(
                 start: ringPtr.advanced(by: params.cq_off.cqes)
                     .assumingMemoryBound(to: io_uring_cqe.self),
-                count: Int(ringPtr.advanced(by: params.cq_off.ring_entries)
-                    .assumingMemoryBound(to: UInt32.self).pointee)
+                count: Int(
+                    ringPtr.advanced(by: params.cq_off.ring_entries)
+                        .assumingMemoryBound(to: UInt32.self).pointee)
             )
         )
 
-        self.submissionMutex = Mutex()
-        self.completionMutex = Mutex()
+        self.submissionMutex = Mutex(submissionRing)
+        self.completionMutex = Mutex(completionRing)
 
         self.ringFlags = params.flags
     }
 
     public func blockingConsumeCompletion() -> IOCompletion {
-        self.completionMutex.lock()
-        defer { self.completionMutex.unlock() }
-        
-        if let completion = _tryConsumeCompletion() {
-            return completion
-        } else {
-            while true {
-                let res = io_uring_enter(ringDescriptor, 0, 1, IORING_ENTER_GETEVENTS, nil)
-                // error handling:
-                //     EAGAIN / EINTR (try again),
-                //     EBADF / EBADFD / EOPNOTSUPP / ENXIO
-                //     (failure in ring lifetime management, fatal),
-                //     EINVAL (bad constant flag?, fatal),
-                //     EFAULT (bad address for argument from library, fatal)
-                //     EBUSY (not enough space for events; implies events filled
-                //            by kernel between kernelTail load and now)
-                if res >= 0 || res == -EBUSY {
-                    break
-                } else if res == -EAGAIN || res == -EINTR {
-                    continue
+        completionMutex.withLock { ring in
+            if let completion = _tryConsumeCompletion(ring: &ring) {
+                return completion
+            } else {
+                while true {
+                    let res = io_uring_enter(ringDescriptor, 0, 1, IORING_ENTER_GETEVENTS, nil)
+                    // error handling:
+                    //     EAGAIN / EINTR (try again),
+                    //     EBADF / EBADFD / EOPNOTSUPP / ENXIO
+                    //     (failure in ring lifetime management, fatal),
+                    //     EINVAL (bad constant flag?, fatal),
+                    //     EFAULT (bad address for argument from library, fatal)
+                    //     EBUSY (not enough space for events; implies events filled
+                    //            by kernel between kernelTail load and now)
+                    if res >= 0 || res == -EBUSY {
+                        break
+                    } else if res == -EAGAIN || res == -EINTR {
+                        continue
+                    }
+                    fatalError(
+                        "fatal error in receiving requests: "
+                            + Errno(rawValue: -res).debugDescription
+                    )
                 }
-                fatalError("fatal error in receiving requests: " +
-                    Errno(rawValue: -res).debugDescription
-                )
+                return _tryConsumeCompletion(ring: &ring).unsafelyUnwrapped
             }
-            return _tryConsumeCompletion().unsafelyUnwrapped
         }
     }
 
     public func tryConsumeCompletion() -> IOCompletion? {
-        self.completionMutex.lock()
-        defer { self.completionMutex.unlock() }
-        return _tryConsumeCompletion()
+        completionMutex.withLock { ring in
+            return _tryConsumeCompletion(ring: &ring)
+        }
     }
 
-    func _tryConsumeCompletion() -> IOCompletion? {
-        let tail = completionRing.kernelTail.pointee.load(ordering: .acquiring)
-        let head = completionRing.kernelHead.pointee.load(ordering: .relaxed)
-        
+    func _tryConsumeCompletion(ring: inout CQRing) -> IOCompletion? {
+        let tail = ring.kernelTail.pointee.load(ordering: .acquiring)
+        let head = ring.kernelHead.pointee.load(ordering: .relaxed)
+
         if tail != head {
             // 32 byte copy - oh well
-            let res = completionRing.cqes[Int(head & completionRing.ringMask)]
-            completionRing.kernelHead.pointee.store(head + 1, ordering: .relaxed)
+            let res = ring.cqes[Int(head & ring.ringMask)]
+            ring.kernelHead.pointee.store(head + 1, ordering: .relaxed)
             return IOCompletion(rawValue: res)
         }
 
@@ -340,7 +425,8 @@ public struct IORing: @unchecked Sendable, ~Copyable {
         for i in 0..<iovecs.count {
             // TODO: mmap instead of allocate here, because there are
             // certain restrictions about buffer memory behavior
-            let buf = UnsafeMutableRawBufferPointer.allocate(byteCount: intBufSize, alignment: 16384)
+            let buf = UnsafeMutableRawBufferPointer.allocate(
+                byteCount: intBufSize, alignment: 16384)
             iovecs[i] = iovec(iov_base: buf.baseAddress!, iov_len: buf.count)
         }
         io_uring_register(
@@ -362,101 +448,25 @@ public struct IORing: @unchecked Sendable, ~Copyable {
     }
 
     public func submitRequests() {
-        self.submissionMutex.lock()
-        defer { self.submissionMutex.unlock() }
-        self._submitRequests()
-    }
-
-    internal func _submitRequests() {
-        let flushedEvents = _flushQueue()
-        
-        // Ring always needs enter right now;
-        // TODO: support SQPOLL here
-        while true {
-            let ret = io_uring_enter(ringDescriptor, flushedEvents, 0, 0, nil)
-            // error handling:
-            //     EAGAIN / EINTR (try again),
-            //     EBADF / EBADFD / EOPNOTSUPP / ENXIO
-            //     (failure in ring lifetime management, fatal),
-            //     EINVAL (bad constant flag?, fatal),
-            //     EFAULT (bad address for argument from library, fatal)
-            if ret == -EAGAIN || ret == -EINTR {
-                continue
-            } else if ret < 0 {
-                fatalError("fatal error in submitting requests: " +
-                    Errno(rawValue: -ret).debugDescription
-                )
-            } else {
-                break
-            }
+        submissionMutex.withLock { ring in
+            _submitRequests(ring: &ring, ringDescriptor: ringDescriptor)
         }
     }
-
-    internal func _flushQueue() -> UInt32 {
-        self.submissionRing.kernelTail.pointee.store(
-            self.submissionRing.userTail, ordering: .relaxed
-        )
-        return self.submissionRing.userTail - 
-            self.submissionRing.kernelHead.pointee.load(ordering: .relaxed)
-    }
-
 
     @inlinable @inline(__always)
     public mutating func writeRequest(_ request: __owned IORequest) -> Bool {
-        self.submissionMutex.lock()
-        defer { self.submissionMutex.unlock() }
-        return _writeRequest(request.makeRawRequest())
-    }
-
-    @inlinable @inline(__always)
-    internal mutating func _writeRequest(_ request: __owned RawIORequest) -> Bool {
-        let entry = _blockingGetSubmissionEntry()
-        entry.pointee = request.rawValue
-        return true
-    }
-
-    @inlinable @inline(__always)
-    internal mutating func _blockingGetSubmissionEntry() -> UnsafeMutablePointer<io_uring_sqe> {
-        while true {
-            if let entry = _getSubmissionEntry() {
-                return entry
-            }
-            // TODO: actually block here instead of spinning
+        let raw = request.makeRawRequest()
+        return submissionMutex.withLock { ring in
+            return _writeRequest(raw, ring: &ring, submissionQueueEntries: submissionQueueEntries)
         }
-
-    }
-
-    @usableFromInline @inline(__always)
-    internal mutating func _getSubmissionEntry() -> UnsafeMutablePointer<io_uring_sqe>? {
-        let next = self.submissionRing.userTail + 1
-
-        // FEAT: smp load when SQPOLL in use (not in MVP)
-        let kernelHead = self.submissionRing.kernelHead.pointee.load(ordering: .relaxed)
-
-        // FEAT: 128-bit event support (not in MVP)
-    	if (next - kernelHead <= self.submissionRing.array.count) {
-		    // let sqe =  &sq->sqes[(sq->sqe_tail & sq->ring_mask) << shift];
-            let sqeIndex = Int(
-                self.submissionRing.userTail & self.submissionRing.ringMask
-            )
-		    
-            let sqe = self.submissionQueueEntries
-                .baseAddress.unsafelyUnwrapped
-                .advanced(by: sqeIndex)
-            
-            self.submissionRing.userTail = next;
-		    return sqe
-	    }
-        return nil
     }
 
     deinit {
-        munmap(ringPtr, ringSize);
+        munmap(ringPtr, ringSize)
         munmap(
             UnsafeMutableRawPointer(submissionQueueEntries.baseAddress!),
             submissionQueueEntries.count * MemoryLayout<io_uring_sqe>.size
         )
         close(ringDescriptor)
     }
-};
-
+}

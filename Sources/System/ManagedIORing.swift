@@ -5,15 +5,16 @@ final public class ManagedIORing: @unchecked Sendable {
         self.internalRing = try IORing(queueDepth: queueDepth)
         self.internalRing.registerBuffers(bufSize: 655336, count: 4)
         self.internalRing.registerFiles(count: 32)
-        self.startWaiter()        
+        self.startWaiter()
     }
 
     private func startWaiter() {
         Task.detached {
-            while (!Task.isCancelled) {
+            while !Task.isCancelled {
                 let cqe = self.internalRing.blockingConsumeCompletion()
 
-                let cont = unsafeBitCast(cqe.userData, to: UnsafeContinuation<IOCompletion, Never>.self)
+                let cont = unsafeBitCast(
+                    cqe.userData, to: UnsafeContinuation<IOCompletion, Never>.self)
                 cont.resume(returning: cqe)
             }
         }
@@ -21,14 +22,18 @@ final public class ManagedIORing: @unchecked Sendable {
 
     @_unsafeInheritExecutor
     public func submitAndWait(_ request: __owned IORequest) async -> IOCompletion {
-        self.internalRing.submissionMutex.lock()
+        var consumeOnceWorkaround: IORequest? = request
         return await withUnsafeContinuation { cont in
-            let entry = internalRing._blockingGetSubmissionEntry()
-            entry.pointee = request.makeRawRequest().rawValue
-            entry.pointee.user_data = unsafeBitCast(cont, to: UInt64.self)
-            self.internalRing._submitRequests()
-            self.internalRing.submissionMutex.unlock()
+            return internalRing.submissionMutex.withLock { ring in
+                let request = consumeOnceWorkaround.take()!
+                let entry = _blockingGetSubmissionEntry(
+                    ring: &ring, submissionQueueEntries: internalRing.submissionQueueEntries)
+                entry.pointee = request.makeRawRequest().rawValue
+                entry.pointee.user_data = unsafeBitCast(cont, to: UInt64.self)
+                _submitRequests(ring: &ring, ringDescriptor: internalRing.ringDescriptor)
+            }
         }
+
     }
 
     internal func getFileSlot() -> IORingFileSlot? {

@@ -23,7 +23,7 @@ final class AsyncFileDescriptorTests: XCTestCase {
             .readOnly,
             onRing: ring
         )
-        await try file.close()
+        try await file.close()
     }
 
     func testDevNullEmpty() async throws {
