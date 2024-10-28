@@ -2,7 +2,7 @@
 @_implementationOnly import CSystem
 import struct CSystem.io_uring_sqe
     
-public struct RawIORequest {
+public struct RawIORequest: ~Copyable {
     @usableFromInline var rawValue: io_uring_sqe 
 
     public init() {

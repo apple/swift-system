@@ -6,7 +6,7 @@ import XCTest
 import System
 #endif
 
-func requestBytes(_ request: RawIORequest) -> [UInt8] {
+func requestBytes(_ request: consuming RawIORequest) -> [UInt8] {
     return withUnsafePointer(to: request) {
         let requestBuf = UnsafeBufferPointer(start: $0, count: 1)
         let rawBytes = UnsafeRawBufferPointer(requestBuf)
@@ -40,7 +40,7 @@ final class IORequestTests: XCTestCase {
             .readOnly,
             options: [],
             permissions: nil,
-            intoSlot: fileSlot
+            intoSlot: fileSlot.borrow()
         )
 
         let expectedRequest: [UInt8] = {

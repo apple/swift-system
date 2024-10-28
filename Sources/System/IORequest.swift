@@ -1,7 +1,7 @@
 import struct CSystem.io_uring_sqe
 
 public enum IORequest: ~Copyable {
-    case nop // nothing here
+    case nop  // nothing here
     case openat(
         atDirectory: FileDescriptor,
         path: UnsafePointer<CChar>,
@@ -12,20 +12,25 @@ public enum IORequest: ~Copyable {
     )
     case read(
         file: File,
-        buffer: Buffer,
+        buffer: IORingBuffer,
+        offset: UInt64 = 0
+    )
+    case readUnregistered(
+        file: File,
+        buffer: UnsafeMutableRawBufferPointer,
         offset: UInt64 = 0
     )
     case write(
         file: File,
-        buffer: Buffer,
+        buffer: IORingBuffer,
+        offset: UInt64 = 0
+    )
+    case writeUnregistered(
+        file: File,
+        buffer: UnsafeMutableRawBufferPointer,
         offset: UInt64 = 0
     )
     case close(File)
-
-    public enum Buffer: ~Copyable {
-        case registered(IORingBuffer)
-        case unregistered(UnsafeMutableRawBufferPointer)
-    }
 
     public enum File: ~Copyable {
         case registered(IORingFileSlot)
@@ -90,30 +95,21 @@ extension IORequest {
                 request.rawValue.file_index = UInt32(fileSlot.index + 1)
             }
         case .write(let file, let buffer, let offset):
-            switch consume buffer {
-            case .registered(let buffer):
-                request.operation = .writeFixed
-                return makeRawRequest_readWrite_registered(
-                    file: file, buffer: buffer, offset: offset, request: request)
-
-            case .unregistered(let buffer):
-                request.operation = .write
-                return makeRawRequest_readWrite_unregistered(
-                    file: file, buffer: buffer, offset: offset, request: request)
-            }
+            request.operation = .writeFixed
+            return makeRawRequest_readWrite_registered(
+                file: file, buffer: buffer, offset: offset, request: request)
+        case .writeUnregistered(let file, let buffer, let offset):
+            request.operation = .write
+            return makeRawRequest_readWrite_unregistered(
+                file: file, buffer: buffer, offset: offset, request: request)
         case .read(let file, let buffer, let offset):
-
-            switch consume buffer {
-            case .registered(let buffer):
-                request.operation = .readFixed
-                return makeRawRequest_readWrite_registered(
-                    file: file, buffer: buffer, offset: offset, request: request)
-
-            case .unregistered(let buffer):
-                request.operation = .read
-                return makeRawRequest_readWrite_unregistered(
-                    file: file, buffer: buffer, offset: offset, request: request)
-            }
+            request.operation = .readFixed
+            return makeRawRequest_readWrite_registered(
+                file: file, buffer: buffer, offset: offset, request: request)
+        case .readUnregistered(let file, let buffer, let offset):
+            request.operation = .read
+            return makeRawRequest_readWrite_unregistered(
+                file: file, buffer: buffer, offset: offset, request: request)
         case .close(let file):
             request.operation = .close
             switch file {

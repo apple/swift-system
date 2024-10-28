@@ -37,11 +37,11 @@ final public class ManagedIORing: @unchecked Sendable {
     }
 
     internal func getFileSlot() -> IORingFileSlot? {
-        self.internalRing.getFile()
+        internalRing.getFile()
     }
 
     internal func getBuffer() -> IORingBuffer? {
-        self.internalRing.getBuffer()
+        internalRing.getBuffer()
     }
 
 }

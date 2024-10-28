@@ -33,7 +33,7 @@ final class AsyncFileDescriptorTests: XCTestCase {
             .readOnly,
             onRing: ring
         )
-        for try await _ in file {
+        for try await _ in file.toBytes() {
             XCTFail("/dev/null should be empty")
         }
     }

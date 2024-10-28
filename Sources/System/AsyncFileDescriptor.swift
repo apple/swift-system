@@ -1,13 +1,12 @@
 @_implementationOnly import CSystem
 
-
-public final class AsyncFileDescriptor {    
+public struct AsyncFileDescriptor: ~Copyable {
     @usableFromInline var open: Bool = true
     @usableFromInline let fileSlot: IORingFileSlot
     @usableFromInline let ring: ManagedIORing
-    
+
     public static func openat(
-        atDirectory: FileDescriptor = FileDescriptor(rawValue: -100), 
+        atDirectory: FileDescriptor = FileDescriptor(rawValue: -100),
         path: FilePath,
         _ mode: FileDescriptor.AccessMode,
         options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
@@ -19,35 +18,37 @@ public final class AsyncFileDescriptor {
             throw IORingError.missingRequiredFeatures
         }
         let cstr = path.withCString {
-            return $0 // bad
+            return $0  // bad
         }
-        let res = await ring.submitAndWait(.openat(
-            atDirectory: atDirectory, 
-            path: cstr,
-            mode,
-            options: options,
-            permissions: permissions,
-            intoSlot: fileSlot
-        ))
+        let res = await ring.submitAndWait(
+            .openat(
+                atDirectory: atDirectory,
+                path: cstr,
+                mode,
+                options: options,
+                permissions: permissions,
+                intoSlot: fileSlot.borrow()
+            ))
         if res.result < 0 {
             throw Errno(rawValue: -res.result)
         }
-        
+
         return AsyncFileDescriptor(
             fileSlot, ring: ring
         )
     }
 
-    internal init(_ fileSlot: IORingFileSlot, ring: ManagedIORing) {
-        self.fileSlot = fileSlot
+    internal init(_ fileSlot: consuming IORingFileSlot, ring: ManagedIORing) {
+        self.fileSlot = consume fileSlot
         self.ring = ring
     }
 
     @inlinable @inline(__always) @_unsafeInheritExecutor
-    public func close() async throws {
-        let res = await ring.submitAndWait(.close(
-            .registered(self.fileSlot)
-        ))
+    public consuming func close() async throws {
+        let res = await ring.submitAndWait(
+            .close(
+                .registered(self.fileSlot)
+            ))
         if res.result < 0 {
             throw Errno(rawValue: -res.result)
         }
@@ -56,14 +57,16 @@ public final class AsyncFileDescriptor {
 
     @inlinable @inline(__always) @_unsafeInheritExecutor
     public func read(
-        into buffer: IORequest.Buffer,
+        into buffer: inout UnsafeMutableRawBufferPointer,
         atAbsoluteOffset offset: UInt64 = UInt64.max
     ) async throws -> UInt32 {
-        let res = await ring.submitAndWait(.read(
-            file: .registered(self.fileSlot),
-            buffer: buffer,
-            offset: offset
-        ))
+        let file = fileSlot.borrow()
+        let res = await ring.submitAndWait(
+            .readUnregistered(
+                file: .registered(file),
+                buffer: buffer,
+                offset: offset
+            ))
         if res.result < 0 {
             throw Errno(rawValue: -res.result)
         } else {
@@ -71,23 +74,54 @@ public final class AsyncFileDescriptor {
         }
     }
 
-    deinit {
-        if (self.open) {
-            // TODO: close or error? TBD
+    @inlinable @inline(__always) @_unsafeInheritExecutor
+    public func read(
+        into buffer: borrowing IORingBuffer, //TODO: should be inout?
+        atAbsoluteOffset offset: UInt64 = UInt64.max
+    ) async throws -> UInt32 {
+        let res = await ring.submitAndWait(
+            .read(
+                file: .registered(self.fileSlot.borrow()),
+                buffer: buffer.borrow(),
+                offset: offset
+            ))
+        if res.result < 0 {
+            throw Errno(rawValue: -res.result)
+        } else {
+            return UInt32(bitPattern: res.result)
         }
     }
+
+    //TODO: temporary workaround until AsyncSequence supports ~Copyable
+    public consuming func toBytes() -> AsyncFileDescriptorSequence {
+        AsyncFileDescriptorSequence(self)
+    }
+
+    //TODO: can we do the linear types thing and error if they don't consume it manually?
+  //  deinit {
+  //      if self.open {
+            // TODO: close or error? TBD
+  //      }
+  //  }
 }
 
-extension AsyncFileDescriptor: AsyncSequence {
+public class AsyncFileDescriptorSequence: AsyncSequence {
+    var descriptor: AsyncFileDescriptor?
+
     public func makeAsyncIterator() -> FileIterator {
-        return .init(self)
+        return .init(descriptor.take()!)
+    }
+
+    internal init(_ descriptor: consuming AsyncFileDescriptor) {
+        self.descriptor = consume descriptor
     }
 
     public typealias AsyncIterator = FileIterator
     public typealias Element = UInt8
 }
 
-public struct FileIterator: AsyncIteratorProtocol {
+//TODO: only a class due to ~Copyable limitations
+public class FileIterator: AsyncIteratorProtocol {
     @usableFromInline let file: AsyncFileDescriptor
     @usableFromInline var buffer: IORingBuffer
     @usableFromInline var done: Bool
@@ -95,28 +129,27 @@ public struct FileIterator: AsyncIteratorProtocol {
     @usableFromInline internal var currentByte: UnsafeRawPointer?
     @usableFromInline internal var lastByte: UnsafeRawPointer?
 
-    init(_ file: AsyncFileDescriptor) {
-        self.file = file
+    init(_ file: consuming AsyncFileDescriptor) {
         self.buffer = file.ring.getBuffer()!
+        self.file = file
         self.done = false
     }
 
     @inlinable @inline(__always)
-    public mutating func nextBuffer() async throws {
-        let buffer = self.buffer
-
-        let bytesRead = try await file.read(into: .registered(buffer))
+    public func nextBuffer() async throws {
+        let bytesRead = Int(try await file.read(into: buffer))
         if _fastPath(bytesRead != 0) {
-            let bufPointer = buffer.unsafeBuffer.baseAddress.unsafelyUnwrapped
+            let unsafeBuffer = buffer.unsafeBuffer
+            let bufPointer = unsafeBuffer.baseAddress.unsafelyUnwrapped
             self.currentByte = UnsafeRawPointer(bufPointer)
-            self.lastByte = UnsafeRawPointer(bufPointer.advanced(by: Int(bytesRead)))
+            self.lastByte = UnsafeRawPointer(bufPointer.advanced(by: bytesRead))
         } else {
-            self.done = true
+            done = true
         }
     }
 
     @inlinable @inline(__always) @_unsafeInheritExecutor
-    public mutating func next() async throws -> UInt8? {
+    public func next() async throws -> UInt8? {
         if _fastPath(currentByte != lastByte) {
             // SAFETY: both pointers should be non-nil if they're not equal
             let byte = currentByte.unsafelyUnwrapped.load(as: UInt8.self)

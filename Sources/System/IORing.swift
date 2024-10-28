@@ -51,7 +51,7 @@ internal class ResourceManager<T>: @unchecked Sendable {
 
     struct Resources {
         let resourceList: UnsafeMutableBufferPointer<T>
-        var freeList: [Int]
+        var freeList: [Int] //TODO: bitvector?
     }
 
     let mutex: Mutex<Resources>
@@ -90,23 +90,33 @@ public struct IOResource<T>: ~Copyable {
     @usableFromInline let resource: T
     @usableFromInline let index: Int
     let manager: ResourceManager<T>
+    let isBorrow: Bool //TODO: this is a workaround for lifetime issues and should be removed
 
     internal init(
         resource: T,
         index: Int,
-        manager: ResourceManager<T>
+        manager: ResourceManager<T>,
+        isBorrow: Bool = false
     ) {
         self.resource = resource
         self.index = index
         self.manager = manager
+        self.isBorrow = isBorrow
     }
 
     func withResource() {
 
     }
 
+    //TODO: this is a workaround for lifetime issues and should be removed
+    @usableFromInline func borrow() -> IOResource<T> {
+        IOResource(resource: resource, index: index, manager: manager, isBorrow: true)
+    }
+
     deinit {
-        self.manager.releaseResource(index: self.index)
+        if !isBorrow {
+            manager.releaseResource(index: self.index)
+        }
     }
 }
 
@@ -204,8 +214,6 @@ internal func _getSubmissionEntry(ring: inout SQRing, submissionQueueEntries: Un
     return nil
 }
 
-// XXX: This should be a non-copyable type (?)
-// demo only runs on Swift 5.8.1
 public struct IORing: @unchecked Sendable, ~Copyable {
     let ringFlags: UInt32
     let ringDescriptor: Int32
@@ -455,9 +463,9 @@ public struct IORing: @unchecked Sendable, ~Copyable {
 
     @inlinable @inline(__always)
     public mutating func writeRequest(_ request: __owned IORequest) -> Bool {
-        let raw = request.makeRawRequest()
+        var raw: RawIORequest? = request.makeRawRequest()
         return submissionMutex.withLock { ring in
-            return _writeRequest(raw, ring: &ring, submissionQueueEntries: submissionQueueEntries)
+            return _writeRequest(raw.take()!, ring: &ring, submissionQueueEntries: submissionQueueEntries)
         }
     }
 

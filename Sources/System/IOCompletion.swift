@@ -1,5 +1,6 @@
 @_implementationOnly import CSystem
 
+//TODO: should be ~Copyable, but requires UnsafeContinuation add ~Copyable support
 public struct IOCompletion {
     let rawValue: io_uring_cqe
 }
