@@ -43,8 +43,8 @@ public struct AsyncFileDescriptor: ~Copyable {
         self.ring = ring
     }
 
-    @inlinable @inline(__always) @_unsafeInheritExecutor
-    public consuming func close() async throws {
+    @inlinable @inline(__always)
+    public consuming func close(isolation actor: isolated (any Actor)? = #isolation) async throws {
         let res = await ring.submitAndWait(
             .close(
                 .registered(self.fileSlot)
@@ -55,10 +55,11 @@ public struct AsyncFileDescriptor: ~Copyable {
         self.open = false
     }
 
-    @inlinable @inline(__always) @_unsafeInheritExecutor
+    @inlinable @inline(__always)
     public func read(
         into buffer: inout UnsafeMutableRawBufferPointer,
-        atAbsoluteOffset offset: UInt64 = UInt64.max
+        atAbsoluteOffset offset: UInt64 = UInt64.max,
+        isolation actor: isolated (any Actor)? = #isolation
     ) async throws -> UInt32 {
         let file = fileSlot.borrow()
         let res = await ring.submitAndWait(
@@ -74,10 +75,11 @@ public struct AsyncFileDescriptor: ~Copyable {
         }
     }
 
-    @inlinable @inline(__always) @_unsafeInheritExecutor
+    @inlinable @inline(__always)
     public func read(
         into buffer: borrowing IORingBuffer, //TODO: should be inout?
-        atAbsoluteOffset offset: UInt64 = UInt64.max
+        atAbsoluteOffset offset: UInt64 = UInt64.max,
+        isolation actor: isolated (any Actor)? = #isolation
     ) async throws -> UInt32 {
         let res = await ring.submitAndWait(
             .read(
@@ -148,7 +150,7 @@ public class FileIterator: AsyncIteratorProtocol {
         }
     }
 
-    @inlinable @inline(__always) @_unsafeInheritExecutor
+    @inlinable @inline(__always)
     public func next() async throws -> UInt8? {
         if _fastPath(currentByte != lastByte) {
             // SAFETY: both pointers should be non-nil if they're not equal

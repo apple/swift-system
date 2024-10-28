@@ -20,8 +20,7 @@ final public class ManagedIORing: @unchecked Sendable {
         }
     }
 
-    @_unsafeInheritExecutor
-    public func submitAndWait(_ request: __owned IORequest) async -> IOCompletion {
+    public func submitAndWait(_ request: __owned IORequest, isolation actor: isolated (any Actor)? = #isolation) async -> IOCompletion {
         var consumeOnceWorkaround: IORequest? = request
         return await withUnsafeContinuation { cont in
             return internalRing.submissionMutex.withLock { ring in
