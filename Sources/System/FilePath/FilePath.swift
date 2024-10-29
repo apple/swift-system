@@ -66,10 +66,13 @@ extension FilePath {
 }
 
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
-extension FilePath: Hashable, Codable {
+extension FilePath: Hashable {}
+
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+extension FilePath: Codable {
   // Encoder is synthesized; it probably should have been explicit and used
   // a single-value container, but making that change now is somewhat risky.
-  
+
   // Decoder is written explicitly to ensure that we validate invariants on
   // untrusted input.
   public init(from decoder: any Decoder) throws {
