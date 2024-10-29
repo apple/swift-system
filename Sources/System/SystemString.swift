@@ -1,14 +1,15 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2024 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
 */
 
 // A platform-native character representation, currently used for file paths
-internal struct SystemChar: RawRepresentable, Comparable, Hashable, Codable {
+internal struct SystemChar:
+  RawRepresentable, Sendable, Comparable, Hashable, Codable {
   internal typealias RawValue = CInterop.PlatformChar
 
   internal var rawValue: RawValue
@@ -61,7 +62,7 @@ extension SystemChar {
 // A platform-native string representation, currently for file paths
 //
 // Always null-terminated.
-internal struct SystemString {
+internal struct SystemString: Sendable {
   internal typealias Storage = [SystemChar]
   internal var nullTerminatedStorage: Storage
 }
@@ -95,10 +96,18 @@ extension SystemString {
 }
 
 extension SystemString {
+  fileprivate func _invariantsSatisfied() -> Bool {
+    guard !nullTerminatedStorage.isEmpty else { return false }
+    guard nullTerminatedStorage.last! == .null else { return false }
+    guard nullTerminatedStorage.firstIndex(of: .null) == length else {
+      return false
+    }
+    return true
+  }
+  
   fileprivate func _invariantCheck() {
     #if DEBUG
-    precondition(nullTerminatedStorage.last! == .null)
-    precondition(nullTerminatedStorage.firstIndex(of: .null) == length)
+    precondition(_invariantsSatisfied())
     #endif // DEBUG
   }
 }
@@ -141,44 +150,67 @@ extension SystemString: RangeReplaceableCollection {
     nullTerminatedStorage.reserveCapacity(1 + n)
   }
 
-  // TODO: Below include null terminator, is this desired?
-
   internal func withContiguousStorageIfAvailable<R>(
     _ body: (UnsafeBufferPointer<SystemChar>) throws -> R
   ) rethrows -> R? {
-    try nullTerminatedStorage.withContiguousStorageIfAvailable(body)
+    // Do not include the null terminator, it is outside the Collection
+    try nullTerminatedStorage.withContiguousStorageIfAvailable {
+      try body(.init(start: $0.baseAddress, count: $0.count-1))
+    }
   }
 
   internal mutating func withContiguousMutableStorageIfAvailable<R>(
     _ body: (inout UnsafeMutableBufferPointer<SystemChar>) throws -> R
   ) rethrows -> R? {
     defer { _invariantCheck() }
-    return try nullTerminatedStorage.withContiguousMutableStorageIfAvailable(body)
+    // Do not include the null terminator, it is outside the Collection
+    return try nullTerminatedStorage.withContiguousMutableStorageIfAvailable {
+      var buffer = UnsafeMutableBufferPointer<SystemChar>(
+        start: $0.baseAddress, count: $0.count-1
+      )
+      return try body(&buffer)
+    }
   }
 }
 
-extension SystemString: Hashable, Codable {}
+extension SystemString: Hashable, Codable {
+  // Encoder is synthesized; it probably should have been explicit and used
+  // a single-value container, but making that change now is somewhat risky.
+  
+  // Decoder is written explicitly to ensure that we validate invariants on
+  // untrusted input.
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    self.nullTerminatedStorage = try container.decode(
+      Storage.self, forKey: .nullTerminatedStorage
+    )
+    guard _invariantsSatisfied() else {
+      throw DecodingError.dataCorruptedError(
+        forKey: .nullTerminatedStorage,
+        in: container,
+        debugDescription:
+          "Encoding does not satisfy the invariants of SystemString"
+      )
+    }
+  }
+}
 
 extension SystemString {
-  // TODO: Below include null terminator, is this desired?
 
-  internal func withSystemChars<T>(
+  internal func withNullTerminatedSystemChars<T>(
     _ f: (UnsafeBufferPointer<SystemChar>) throws -> T
   ) rethrows -> T {
-    try withContiguousStorageIfAvailable(f)!
+    try nullTerminatedStorage.withUnsafeBufferPointer(f)
   }
 
+  // withCodeUnits does not include the null terminator
   internal func withCodeUnits<T>(
     _ f: (UnsafeBufferPointer<CInterop.PlatformUnicodeEncoding.CodeUnit>) throws -> T
   ) rethrows -> T {
-    try withSystemChars { chars in
-      let length = chars.count * MemoryLayout<SystemChar>.stride
-      let count = length / MemoryLayout<CInterop.PlatformUnicodeEncoding.CodeUnit>.stride
-      return try chars.baseAddress!.withMemoryRebound(
-        to: CInterop.PlatformUnicodeEncoding.CodeUnit.self,
-        capacity: count
-      ) { pointer in
-        try f(UnsafeBufferPointer(start: pointer, count: count))
+    try withNullTerminatedSystemChars {
+      try $0.withMemoryRebound(to: CInterop.PlatformUnicodeEncoding.CodeUnit.self) {
+        assert($0.last == .zero)
+        return try f(.init(start: $0.baseAddress, count: $0.count&-1))
       }
     }
   }
@@ -194,7 +226,9 @@ extension Slice where Base == SystemString {
   }
 
   internal var string: String {
-    withCodeUnits { String(decoding: $0, as: CInterop.PlatformUnicodeEncoding.self) }
+    withCodeUnits {
+      String(decoding: $0, as: CInterop.PlatformUnicodeEncoding.self)
+    }
   }
 
   internal func withPlatformString<T>(
@@ -236,7 +270,11 @@ extension SystemString: ExpressibleByStringLiteral {
 }
 
 extension SystemString: CustomStringConvertible, CustomDebugStringConvertible {
-  internal var string: String { String(decoding: self) }
+  internal var string: String {
+    self.withCodeUnits {
+      String(decoding: $0, as: CInterop.PlatformUnicodeEncoding.self)
+    }
+  }
 
   internal var description: String { string }
   internal var debugDescription: String { description.debugDescription }
@@ -275,7 +313,7 @@ extension SystemString {
   internal func withPlatformString<T>(
     _ f: (UnsafePointer<CInterop.PlatformChar>) throws -> T
   ) rethrows -> T {
-    try withSystemChars { chars in
+    try withNullTerminatedSystemChars { chars in
       let length = chars.count * MemoryLayout<SystemChar>.stride
       return try chars.baseAddress!.withMemoryRebound(
         to: CInterop.PlatformChar.self,
@@ -287,11 +325,6 @@ extension SystemString {
     }
   }
 }
-
-#if compiler(>=5.5) && canImport(_Concurrency)
-extension SystemChar: Sendable {}
-extension SystemString: Sendable {}
-#endif
 
 // TODO: SystemString should use a COW-interchangable storage form rather
 // than array, so you could "borrow" the storage from a non-bridged String

@@ -38,7 +38,7 @@
 /// are file-system–specific and have additional considerations
 /// like case insensitivity, Unicode normalization, and symbolic links.
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
-public struct FilePath {
+public struct FilePath: Sendable {
   // TODO(docs): Section on all the new syntactic operations, lexical normalization, decomposition,
   // components, etc.
   internal var _storage: SystemString
@@ -66,9 +66,22 @@ extension FilePath {
 }
 
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
-extension FilePath: Hashable, Codable {}
-
-#if compiler(>=5.5) && canImport(_Concurrency)
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
-extension FilePath: Sendable {}
-#endif
+extension FilePath: Hashable, Codable {
+  // Encoder is synthesized; it probably should have been explicit and used
+  // a single-value container, but making that change now is somewhat risky.
+  
+  // Decoder is written explicitly to ensure that we validate invariants on
+  // untrusted input.
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    self._storage = try container.decode(SystemString.self, forKey: ._storage)
+    guard _invariantsSatisfied() else {
+      throw DecodingError.dataCorruptedError(
+        forKey: ._storage,
+        in: container,
+        debugDescription:
+          "Encoding does not satisfy the invariants of FilePath"
+      )
+    }
+  }
+}

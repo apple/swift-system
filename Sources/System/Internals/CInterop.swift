@@ -1,13 +1,13 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 - 2021 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2024 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
 */
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif os(Windows)
 import CSystem
@@ -18,6 +18,11 @@ import Glibc
 #elseif canImport(Musl)
 @_implementationOnly import CSystem
 import Musl
+#elseif canImport(WASILibc)
+import WASILibc
+#elseif canImport(Bionic)
+@_implementationOnly import CSystem
+import Bionic
 #else
 #error("Unsupported Platform")
 #endif

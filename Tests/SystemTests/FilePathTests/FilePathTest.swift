@@ -34,6 +34,16 @@ final class FilePathTest: XCTestCase {
     let filePath: FilePath
     let string: String
     let validString: Bool
+
+    init(filePath: FilePath, string: String, validString: Bool) {
+        self.filePath = filePath
+        #if os(Windows)
+        self.string = string.replacingOccurrences(of: "/", with: "\\")
+        #else
+        self.string = string
+        #endif
+        self.validString = validString
+    }
   }
 
 #if os(Windows)

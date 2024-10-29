@@ -45,7 +45,8 @@ extension FileDescriptor {
 extension FileDescriptor {
   /// The desired read and write access for a newly opened file.
   @frozen
-  public struct AccessMode: RawRepresentable, Hashable, Codable {
+  @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+  public struct AccessMode: RawRepresentable, Sendable, Hashable, Codable {
     /// The raw C access mode.
     @_alwaysEmitIntoClient
     public var rawValue: CInt
@@ -87,7 +88,8 @@ extension FileDescriptor {
 
   /// Options that specify behavior for a newly-opened file.
   @frozen
-  public struct OpenOptions: OptionSet, Hashable, Codable {
+  @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+  public struct OpenOptions: OptionSet, Sendable, Hashable, Codable {
     /// The raw C options.
     @_alwaysEmitIntoClient
     public var rawValue: CInt
@@ -95,9 +97,6 @@ extension FileDescriptor {
     /// Create a strongly-typed options value from raw C options.
     @_alwaysEmitIntoClient
     public init(rawValue: CInt) { self.rawValue = rawValue }
-
-    @_alwaysEmitIntoClient
-    private init(_ raw: CInt) { self.init(rawValue: raw) }
 
 #if !os(Windows)
     /// Indicates that opening the file doesn't
@@ -115,7 +114,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_NONBLOCK`.
     @_alwaysEmitIntoClient
-    public static var nonBlocking: OpenOptions { OpenOptions(_O_NONBLOCK) }
+    public static var nonBlocking: OpenOptions { .init(rawValue: _O_NONBLOCK) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "nonBlocking")
@@ -131,7 +130,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_APPEND`.
     @_alwaysEmitIntoClient
-    public static var append: OpenOptions { OpenOptions(_O_APPEND) }
+    public static var append: OpenOptions { .init(rawValue: _O_APPEND) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "append")
@@ -141,7 +140,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_CREAT`.
     @_alwaysEmitIntoClient
-    public static var create: OpenOptions { OpenOptions(_O_CREAT) }
+    public static var create: OpenOptions { .init(rawValue: _O_CREAT) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "create")
@@ -155,7 +154,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_TRUNC`.
     @_alwaysEmitIntoClient
-    public static var truncate: OpenOptions { OpenOptions(_O_TRUNC) }
+    public static var truncate: OpenOptions { .init(rawValue: _O_TRUNC) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "truncate")
@@ -177,13 +176,13 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_EXCL`.
     @_alwaysEmitIntoClient
-    public static var exclusiveCreate: OpenOptions { OpenOptions(_O_EXCL) }
+    public static var exclusiveCreate: OpenOptions { .init(rawValue: _O_EXCL) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "exclusiveCreate")
     public static var O_EXCL: OpenOptions { exclusiveCreate }
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     /// Indicates that opening the file
     /// atomically obtains a shared lock on the file.
     ///
@@ -195,7 +194,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_SHLOCK`.
     @_alwaysEmitIntoClient
-    public static var sharedLock: OpenOptions { OpenOptions(_O_SHLOCK) }
+    public static var sharedLock: OpenOptions { .init(rawValue: _O_SHLOCK) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "sharedLock")
@@ -212,7 +211,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_EXLOCK`.
     @_alwaysEmitIntoClient
-    public static var exclusiveLock: OpenOptions { OpenOptions(_O_EXLOCK) }
+    public static var exclusiveLock: OpenOptions { .init(rawValue: _O_EXLOCK) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "exclusiveLock")
@@ -230,7 +229,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_NOFOLLOW`.
     @_alwaysEmitIntoClient
-    public static var noFollow: OpenOptions { OpenOptions(_O_NOFOLLOW) }
+    public static var noFollow: OpenOptions { .init(rawValue: _O_NOFOLLOW) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "noFollow")
@@ -244,14 +243,14 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_DIRECTORY`.
     @_alwaysEmitIntoClient
-    public static var directory: OpenOptions { OpenOptions(_O_DIRECTORY) }
+    public static var directory: OpenOptions { .init(rawValue: _O_DIRECTORY) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "directory")
     public static var O_DIRECTORY: OpenOptions { directory }
 #endif
 
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     /// Indicates that opening the file
     /// opens symbolic links instead of following them.
     ///
@@ -263,7 +262,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_SYMLINK`.
     @_alwaysEmitIntoClient
-    public static var symlink: OpenOptions { OpenOptions(_O_SYMLINK) }
+    public static var symlink: OpenOptions { .init(rawValue: _O_SYMLINK) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "symlink")
@@ -279,7 +278,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_EVTONLY`.
     @_alwaysEmitIntoClient
-    public static var eventOnly: OpenOptions { OpenOptions(_O_EVTONLY) }
+    public static var eventOnly: OpenOptions { .init(rawValue: _O_EVTONLY) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "eventOnly")
@@ -301,7 +300,7 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_CLOEXEC`.
     @_alwaysEmitIntoClient
-    public static var closeOnExec: OpenOptions { OpenOptions(_O_CLOEXEC) }
+    public static var closeOnExec: OpenOptions { .init(rawValue: _O_CLOEXEC) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "closeOnExec")
@@ -311,7 +310,8 @@ extension FileDescriptor {
 
   /// Options for specifying what a file descriptor's offset is relative to.
   @frozen
-  public struct SeekOrigin: RawRepresentable, Hashable, Codable {
+  @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+  public struct SeekOrigin: RawRepresentable, Sendable, Hashable, Codable {
     /// The raw C value.
     @_alwaysEmitIntoClient
     public var rawValue: CInt
@@ -354,7 +354,7 @@ extension FileDescriptor {
 
 // TODO: These are available on some versions of Linux with appropriate
 // macro defines.
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     /// Indicates that the offset should be set
     /// to the next hole after the specified number of bytes.
     ///
@@ -416,7 +416,7 @@ extension FileDescriptor.SeekOrigin
     case .start: return "start"
     case .current: return "current"
     case .end: return "end"
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     case .nextHole: return "nextHole"
     case .nextData: return "nextData"
 #endif
@@ -435,7 +435,7 @@ extension FileDescriptor.OpenOptions
   /// A textual representation of the open options.
   @inline(never)
   public var description: String {
-#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+#if SYSTEM_PACKAGE_DARWIN
     let descriptions: [(Element, StaticString)] = [
       (.nonBlocking, ".nonBlocking"),
       (.append, ".append"),
@@ -475,18 +475,7 @@ extension FileDescriptor.OpenOptions
   public var debugDescription: String { self.description }
 }
 
-#if compiler(>=5.5) && canImport(_Concurrency)
 // The decision on whether to make FileDescriptor Sendable or not
 // is currently being discussed in https://github.com/apple/swift-system/pull/112
 //@available(*, unavailable, message: "File descriptors are not completely thread-safe.")
 //extension FileDescriptor: Sendable {}
-
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
-extension FileDescriptor.AccessMode: Sendable {}
-
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
-extension FileDescriptor.OpenOptions: Sendable {}
-
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
-extension FileDescriptor.SeekOrigin: Sendable {}
-#endif

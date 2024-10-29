@@ -22,13 +22,15 @@ try fd.closeAfter {
 }
 ```
 
+[API documentation](https://swiftpackageindex.com/apple/swift-system/main/documentation/SystemPackage)
+
 ## Adding `SystemPackage` as a Dependency
 
 To use the `SystemPackage` library in a SwiftPM project,
 add the following line to the dependencies in your `Package.swift` file:
 
 ```swift
-.package(url: "https://github.com/apple/swift-system", from: "1.0.0"),
+.package(url: "https://github.com/apple/swift-system", from: "1.3.0"),
 ```
 
 Finally, include `"SystemPackage"` as a dependency for your executable target:
@@ -37,7 +39,7 @@ Finally, include `"SystemPackage"` as a dependency for your executable target:
 let package = Package(
     // name, platforms, products, etc.
     dependencies: [
-        .package(url: "https://github.com/apple/swift-system", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-system", from: "1.3.0"),
         // other dependencies
     ],
     targets: [

@@ -7,12 +7,14 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-#if false && swift(>=5.8) && $MoveOnly && (os(macOS) || os(iOS) || os(watchOS) || os(tvOS))
+#if swift(>=5.9) && SYSTEM_PACKAGE_DARWIN
 
 import Darwin.Mach
 
+@available(/*System 1.3.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
 public protocol MachPortRight {}
 
+@available(/*System 1.3.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
 @inlinable
 internal func _machPrecondition(
   file: StaticString = #file,
@@ -27,6 +29,7 @@ internal func _machPrecondition(
 @available(/*System 1.3.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
 @frozen
 public enum Mach {
+  @available(/*System 1.3.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
   public struct Port<RightType: MachPortRight>: ~Copyable {
     @usableFromInline
     internal var _name: mach_port_name_t
@@ -48,11 +51,15 @@ public enum Mach {
     ///
     /// This initializer makes a syscall to guard the right.
     public init(name: mach_port_name_t) {
-      precondition(name != mach_port_name_t(MACH_PORT_NULL), "Mach.Port cannot be initialized with MACH_PORT_NULL")
+      precondition(name != mach_port_name_t(MACH_PORT_NULL),
+                   "Mach.Port cannot be initialized with MACH_PORT_NULL")
       self._name = name
 
       if RightType.self == ReceiveRight.self {
-        precondition(name != 0xFFFFFFFF /* MACH_PORT_DEAD */, "Receive rights cannot be dead names")
+        precondition(
+          _name != (0xFFFFFFFF as mach_port_name_t) /* MACH_PORT_DEAD */,
+          "Receive rights cannot be dead names"
+        )
 
         let secret = mach_port_context_t(arc4random())
         _machPrecondition(mach_port_guard(mach_task_self_, name, secret, 0))
@@ -81,17 +88,20 @@ public enum Mach {
     }
 
     deinit {
-      if _name == 0xFFFFFFFF /* MACH_PORT_DEAD */ {
-        precondition(RightType.self != ReceiveRight.self, "Receive rights cannot be dead names")
-        _machPrecondition(mach_port_mod_refs(mach_task_self_, _name, MACH_PORT_RIGHT_DEAD_NAME, -1))
+      if RightType.self == ReceiveRight.self {
+        precondition(
+          _name != (0xFFFFFFFF as mach_port_name_t) /* MACH_PORT_DEAD */,
+          "Receive rights cannot be dead names"
+        )
+        _machPrecondition(
+          mach_port_destruct(mach_task_self_, _name, 0, _context)
+        )
       } else {
-        if RightType.self == ReceiveRight.self {
-          _machPrecondition(mach_port_destruct(mach_task_self_, _name, -1, _context))
-        } else if RightType.self == SendRight.self {
-          _machPrecondition(mach_port_mod_refs(mach_task_self_, _name, MACH_PORT_RIGHT_SEND, -1))
-        } else if RightType.self == SendOnceRight.self {
-          _machPrecondition(mach_port_mod_refs(mach_task_self_, _name, MACH_PORT_RIGHT_SEND_ONCE, -1))
-        }
+        assert(
+          RightType.self == SendRight.self ||
+          RightType.self == SendOnceRight.self
+        )
+        _machPrecondition(mach_port_deallocate(mach_task_self_, _name))
       }
     }
   }
@@ -123,6 +133,7 @@ public enum Mach {
   public struct SendOnceRight: MachPortRight {}
 }
 
+@available(/*System 1.3.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
 extension Mach.Port where RightType == Mach.ReceiveRight {
   /// Transfer ownership of an existing, unmanaged, but already guarded,
   /// Mach port right into a Mach.Port by name.
@@ -135,6 +146,8 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
   /// The underlying port right will be automatically deallocated when
   /// the Mach.Port object is destroyed.
   public init(name: mach_port_name_t, context: mach_port_context_t) {
+    precondition(name != mach_port_name_t(MACH_PORT_NULL),
+                 "Mach.Port cannot be initialized with MACH_PORT_NULL")
     self._name = name
     self._context = context
   }
@@ -145,11 +158,12 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
   /// This initializer will abort if the right could not be created.
   /// Callers may assert that a valid right is always returned.
   @inlinable
+  @available(/*System 1.3.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
   public init() {
     var storage: mach_port_name_t = mach_port_name_t(MACH_PORT_NULL)
-    withUnsafeMutablePointer(to: &storage) { storage in
-      _machPrecondition(mach_port_allocate(mach_task_self_, MACH_PORT_RIGHT_RECEIVE, storage))
-    }
+    _machPrecondition(
+      mach_port_allocate(mach_task_self_, MACH_PORT_RIGHT_RECEIVE, &storage)
+    )
 
     // name-only init will guard ReceiveRights
     self.init(name: storage)
@@ -167,9 +181,12 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
   /// After this function completes, the Mach.Port is destroyed and no longer
   /// usable.
   @inlinable
-  public __consuming func relinquish(
+  @available(/*System 1.3.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
+  public consuming func relinquish(
   ) -> (name: mach_port_name_t, context: mach_port_context_t) {
-    return (name: _name, context: _context)
+    let destructured = (name: _name, context: _context)
+    discard self
+    return destructured
   }
 
   /// Remove guard and transfer ownership of the underlying port right to
@@ -187,9 +204,11 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
   /// Mach.ReceiveRights. Use relinquish() to avoid the syscall and extract
   /// the context value along with the port name.
   @inlinable
-  public __consuming func unguardAndRelinquish() -> mach_port_name_t {
-    _machPrecondition(mach_port_unguard(mach_task_self_, _name, _context))
-    return _name
+  @available(/*System 1.3.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
+  public consuming func unguardAndRelinquish() -> mach_port_name_t {
+    let (name, context) = self.relinquish()
+    _machPrecondition(mach_port_unguard(mach_task_self_, name, context))
+    return name
   }
 
   /// Borrow access to the port name in a block that can perform
@@ -202,6 +221,7 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
   /// The body block may optionally return something, which will then be
   /// returned to the caller of withBorrowedName.
   @inlinable
+  @available(/*System 1.3.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
   public func withBorrowedName<ReturnType>(
     body: (mach_port_name_t, mach_port_context_t) -> ReturnType
   ) -> ReturnType {
@@ -215,22 +235,21 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
   /// This function will abort if the right could not be created.
   /// Callers may assert that a valid right is always returned.
   @inlinable
+  @available(/*System 1.3.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
   public func makeSendOnceRight() -> Mach.Port<Mach.SendOnceRight> {
     // send once rights do not coalesce
     var newRight: mach_port_name_t = mach_port_name_t(MACH_PORT_NULL)
     var newRightType: mach_port_type_t = MACH_PORT_TYPE_NONE
 
-    withUnsafeMutablePointer(to: &newRight) { newRight in
-      withUnsafeMutablePointer(to: &newRightType) { newRightType in
-        _machPrecondition(
-          mach_port_extract_right(mach_task_self_,
-                                  _name,
-                                  mach_msg_type_name_t(MACH_MSG_TYPE_MAKE_SEND_ONCE),
-                                  newRight,
-                                  newRightType)
-        )
-      }
-    }
+    _machPrecondition(
+      mach_port_extract_right(
+        mach_task_self_,
+        _name,
+        mach_msg_type_name_t(MACH_MSG_TYPE_MAKE_SEND_ONCE),
+        &newRight,
+        &newRightType
+      )
+    )
 
     // The value of newRight is validated by the Mach.Port initializer
     precondition(newRightType == MACH_MSG_TYPE_MOVE_SEND_ONCE)
@@ -245,11 +264,16 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
   /// This function will abort if the right could not be created.
   /// Callers may assert that a valid right is always returned.
   @inlinable
+  @available(/*System 1.3.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
   public func makeSendRight() -> Mach.Port<Mach.SendRight> {
     let how = MACH_MSG_TYPE_MAKE_SEND
 
     // name is the same because send and recv rights are coalesced
-    _machPrecondition(mach_port_insert_right(mach_task_self_, _name, _name, mach_msg_type_name_t(how)))
+    _machPrecondition(
+      mach_port_insert_right(
+        mach_task_self_, _name, _name, mach_msg_type_name_t(how)
+      )
+    )
 
     return Mach.Port(name: _name)
   }
@@ -258,14 +282,24 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
   ///
   /// Each get/set of this property makes a syscall.
   @inlinable
+  @available(/*System 1.3.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
   public var makeSendCount: mach_port_mscount_t {
     get {
       var status: mach_port_status = mach_port_status()
-      var size: mach_msg_type_number_t = mach_msg_type_number_t(MemoryLayout<mach_port_status>.size / MemoryLayout<natural_t>.size)
-      withUnsafeMutablePointer(to: &size) { size in
-        withUnsafeMutablePointer(to: &status) { status in
-          let info = UnsafeMutableRawPointer(status).bindMemory(to: integer_t.self, capacity: 1)
-          _machPrecondition(mach_port_get_attributes(mach_task_self_, _name, MACH_PORT_RECEIVE_STATUS, info, size))
+      var size = mach_msg_type_number_t(
+        MemoryLayout<mach_port_status>.size / MemoryLayout<natural_t>.size
+      )
+
+      withUnsafeMutablePointer(to: &status) {
+        [ _name = self._name ] in
+        let status = UnsafeMutableBufferPointer(start: $0, count: 1)
+        status.withMemoryRebound(to: integer_t.self) {
+          let info = $0.baseAddress
+          _machPrecondition(
+            mach_port_get_attributes(
+              mach_task_self_, _name, MACH_PORT_RECEIVE_STATUS, info, &size
+            )
+          )
         }
       }
       return status.mps_mscount
@@ -277,6 +311,7 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
   }
 }
 
+@available(/*System 1.3.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
 extension Mach.Port where RightType == Mach.SendRight {
   /// Transfer ownership of the underlying port right to the caller.
   ///
@@ -288,8 +323,10 @@ extension Mach.Port where RightType == Mach.SendRight {
   /// After this function completes, the Mach.Port is destroyed and no longer
   /// usable.
   @inlinable
-  public __consuming func relinquish() -> mach_port_name_t {
-    return _name
+  public consuming func relinquish() -> mach_port_name_t {
+    let name = _name
+    discard self
+    return name
   }
 
   /// Create another send right from a given send right.
@@ -300,12 +337,15 @@ extension Mach.Port where RightType == Mach.SendRight {
   /// receiving side has been deallocated, then copySendRight() will throw
   /// a Mach.PortRightError.deadName error.
   @inlinable
+  @available(/*System 1.3.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
   public func copySendRight() throws -> Mach.Port<Mach.SendRight> {
     let how = MACH_MSG_TYPE_COPY_SEND
 
     // name is the same because send rights are coalesced
-    let kr = mach_port_insert_right(mach_task_self_, _name, _name, mach_msg_type_name_t(how))
-    if kr == KERN_INVALID_CAPABILITY {
+    let kr = mach_port_insert_right(
+      mach_task_self_, _name, _name, mach_msg_type_name_t(how)
+    )
+    if kr == KERN_INVALID_NAME || kr == KERN_INVALID_CAPABILITY {
       throw Mach.PortRightError.deadName
     }
     _machPrecondition(kr)
@@ -314,7 +354,7 @@ extension Mach.Port where RightType == Mach.SendRight {
   }
 }
 
-
+@available(/*System 1.3.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
 extension Mach.Port where RightType == Mach.SendOnceRight {
   /// Transfer ownership of the underlying port right to the caller.
   ///
@@ -326,8 +366,11 @@ extension Mach.Port where RightType == Mach.SendOnceRight {
   /// After this function completes, the Mach.Port is destroyed and no longer
   /// usable.
   @inlinable
-  public __consuming func relinquish() -> mach_port_name_t {
-    return _name
+  @available(/*System 1.3.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
+  public consuming func relinquish() -> mach_port_name_t {
+    let name = _name
+    discard self
+    return name
   }
 }
 
