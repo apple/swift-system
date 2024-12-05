@@ -46,7 +46,7 @@ struct CQRing: ~Copyable {
     let cqes: UnsafeBufferPointer<io_uring_cqe>
 }
 
-internal class ResourceManager<T>: @unchecked Sendable {
+internal final class ResourceManager<T>: @unchecked Sendable {
     typealias Resource = T
 
     struct Resources {
@@ -85,38 +85,28 @@ internal class ResourceManager<T>: @unchecked Sendable {
     }
 }
 
-public struct IOResource<T>: ~Copyable {
+public class IOResource<T> {
     typealias Resource = T
     @usableFromInline let resource: T
     @usableFromInline let index: Int
     let manager: ResourceManager<T>
-    let isBorrow: Bool //TODO: this is a workaround for lifetime issues and should be removed
 
     internal init(
         resource: T,
         index: Int,
-        manager: ResourceManager<T>,
-        isBorrow: Bool = false
+        manager: ResourceManager<T>
     ) {
         self.resource = resource
         self.index = index
         self.manager = manager
-        self.isBorrow = isBorrow
     }
 
     func withResource() {
 
     }
 
-    //TODO: this is a workaround for lifetime issues and should be removed
-    @usableFromInline func borrow() -> IOResource<T> {
-        IOResource(resource: resource, index: index, manager: manager, isBorrow: true)
-    }
-
     deinit {
-        if !isBorrow {
-            manager.releaseResource(index: self.index)
-        }
+        manager.releaseResource(index: self.index)
     }
 }
 

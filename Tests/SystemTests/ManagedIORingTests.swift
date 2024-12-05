@@ -8,12 +8,12 @@ import System
 
 final class ManagedIORingTests: XCTestCase {
     func testInit() throws {
-        let ring = try ManagedIORing(queueDepth: 32)
+        _ = try ManagedIORing(queueDepth: 32)
     }
 
     func testNop() async throws {
         let ring = try ManagedIORing(queueDepth: 32)
-        let completion = await ring.submitAndWait(.nop)
+        let completion = await ring.submitAndWait(IORequest())
         XCTAssertEqual(completion.result, 0)
     }
 }

@@ -19,7 +19,7 @@ func requestBytes(_ request: consuming RawIORequest) -> [UInt8] {
 // which are known to work correctly.
 final class IORequestTests: XCTestCase {
     func testNop() {
-        let req = IORequest.nop.makeRawRequest()
+        let req = IORequest().makeRawRequest()
         let sourceBytes = requestBytes(req)
         // convenient property of nop: it's all zeros!
         // for some unknown reason, liburing sets the fd field to -1.
@@ -34,13 +34,13 @@ final class IORequestTests: XCTestCase {
 
         let pathPtr = UnsafePointer<CChar>(bitPattern: 0x414141410badf00d)!
         let fileSlot = resmgr.getResource()!
-        let req = IORequest.openat(
-            atDirectory: FileDescriptor(rawValue: -100),
-            path: pathPtr,
-            .readOnly,
+        let req = IORequest(
+            opening: pathPtr,
+            in: FileDescriptor(rawValue: -100),
+            into: fileSlot,
+            mode: .readOnly,
             options: [],
-            permissions: nil,
-            intoSlot: fileSlot.borrow()
+            permissions: nil
         )
 
         let expectedRequest: [UInt8] = {

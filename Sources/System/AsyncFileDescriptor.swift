@@ -5,29 +5,30 @@ public struct AsyncFileDescriptor: ~Copyable {
     @usableFromInline let fileSlot: IORingFileSlot
     @usableFromInline let ring: ManagedIORing
 
-    public static func openat(
-        atDirectory: FileDescriptor = FileDescriptor(rawValue: -100),
+    public static func open(
         path: FilePath,
-        _ mode: FileDescriptor.AccessMode,
+        in directory: FileDescriptor = FileDescriptor(rawValue: -100),
+        on ring: ManagedIORing,
+        mode: FileDescriptor.AccessMode,
         options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
-        permissions: FilePermissions? = nil,
-        onRing ring: ManagedIORing
+        permissions: FilePermissions? = nil
     ) async throws -> AsyncFileDescriptor {
         // todo; real error type
         guard let fileSlot = ring.getFileSlot() else {
             throw IORingError.missingRequiredFeatures
         }
+        //TODO: need an async-friendly withCString
         let cstr = path.withCString {
             return $0  // bad
         }
         let res = await ring.submitAndWait(
-            .openat(
-                atDirectory: atDirectory,
-                path: cstr,
-                mode,
-                options: options,
-                permissions: permissions,
-                intoSlot: fileSlot.borrow()
+            IORequest(
+                opening: cstr, 
+                in: directory, 
+                into: fileSlot, 
+                mode: mode, 
+                options: options, 
+                permissions: permissions
             ))
         if res.result < 0 {
             throw Errno(rawValue: -res.result)
@@ -45,10 +46,7 @@ public struct AsyncFileDescriptor: ~Copyable {
 
     @inlinable @inline(__always)
     public consuming func close(isolation actor: isolated (any Actor)? = #isolation) async throws {
-        let res = await ring.submitAndWait(
-            .close(
-                .registered(self.fileSlot)
-            ))
+        let res = await ring.submitAndWait(IORequest(closing: fileSlot))
         if res.result < 0 {
             throw Errno(rawValue: -res.result)
         }
@@ -61,12 +59,11 @@ public struct AsyncFileDescriptor: ~Copyable {
         atAbsoluteOffset offset: UInt64 = UInt64.max,
         isolation actor: isolated (any Actor)? = #isolation
     ) async throws -> UInt32 {
-        let file = fileSlot.borrow()
         let res = await ring.submitAndWait(
-            .readUnregistered(
-                file: .registered(file),
-                buffer: buffer,
-                offset: offset
+            IORequest(
+                reading: fileSlot, 
+                into: buffer, 
+                at: offset
             ))
         if res.result < 0 {
             throw Errno(rawValue: -res.result)
@@ -77,15 +74,15 @@ public struct AsyncFileDescriptor: ~Copyable {
 
     @inlinable @inline(__always)
     public func read(
-        into buffer: borrowing IORingBuffer, //TODO: should be inout?
+        into buffer: IORingBuffer, //TODO: should be inout?
         atAbsoluteOffset offset: UInt64 = UInt64.max,
         isolation actor: isolated (any Actor)? = #isolation
     ) async throws -> UInt32 {
         let res = await ring.submitAndWait(
-            .read(
-                file: .registered(self.fileSlot.borrow()),
-                buffer: buffer.borrow(),
-                offset: offset
+            IORequest(
+                reading: fileSlot,
+                into: buffer,
+                at: offset
             ))
         if res.result < 0 {
             throw Errno(rawValue: -res.result)
@@ -100,11 +97,12 @@ public struct AsyncFileDescriptor: ~Copyable {
     }
 
     //TODO: can we do the linear types thing and error if they don't consume it manually?
-  //  deinit {
-  //      if self.open {
-            // TODO: close or error? TBD
-  //      }
-  //  }
+    // deinit {
+    //     if self.open {
+    //         close()
+    //         // TODO: close or error? TBD
+    //     }
+    // }
 }
 
 public class AsyncFileDescriptorSequence: AsyncSequence {

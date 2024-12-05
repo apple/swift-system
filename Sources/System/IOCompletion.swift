@@ -21,7 +21,7 @@ extension IOCompletion {
 }
 
 extension IOCompletion {
-    public var userData: UInt64 {
+    public var userData: UInt64 { //TODO: naming?
         get {
             return rawValue.user_data
         }
