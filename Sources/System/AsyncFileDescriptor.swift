@@ -21,8 +21,7 @@ public struct AsyncFileDescriptor: ~Copyable {
         let cstr = path.withCString {
             return $0  // bad
         }
-        let res = await ring.submitAndWait(
-            IORequest(
+        let res = try await ring.submit(request: IORequest(
                 opening: cstr, 
                 in: directory, 
                 into: fileSlot, 
@@ -46,7 +45,7 @@ public struct AsyncFileDescriptor: ~Copyable {
 
     @inlinable @inline(__always)
     public consuming func close(isolation actor: isolated (any Actor)? = #isolation) async throws {
-        let res = await ring.submitAndWait(IORequest(closing: fileSlot))
+        let res = try await ring.submit(request: IORequest(closing: fileSlot))
         if res.result < 0 {
             throw Errno(rawValue: -res.result)
         }
@@ -59,8 +58,7 @@ public struct AsyncFileDescriptor: ~Copyable {
         atAbsoluteOffset offset: UInt64 = UInt64.max,
         isolation actor: isolated (any Actor)? = #isolation
     ) async throws -> UInt32 {
-        let res = await ring.submitAndWait(
-            IORequest(
+        let res = try await ring.submit(request: IORequest(
                 reading: fileSlot, 
                 into: buffer, 
                 at: offset
@@ -78,8 +76,7 @@ public struct AsyncFileDescriptor: ~Copyable {
         atAbsoluteOffset offset: UInt64 = UInt64.max,
         isolation actor: isolated (any Actor)? = #isolation
     ) async throws -> UInt32 {
-        let res = await ring.submitAndWait(
-            IORequest(
+        let res = try await ring.submit(request: IORequest(
                 reading: fileSlot,
                 into: buffer,
                 at: offset

@@ -138,7 +138,10 @@ internal func _blockingGetSubmissionEntry(ring: inout SQRing, submissionQueueEnt
     io_uring_sqe
 > {
     while true {
-        if let entry = _getSubmissionEntry(ring: &ring, submissionQueueEntries: submissionQueueEntries) {
+        if let entry = _getSubmissionEntry(
+            ring: &ring, 
+            submissionQueueEntries: submissionQueueEntries
+        ) {
             return entry
         }
         // TODO: actually block here instead of spinning
@@ -146,13 +149,18 @@ internal func _blockingGetSubmissionEntry(ring: inout SQRing, submissionQueueEnt
 
 }
 
-internal func _submitRequests(ring: inout SQRing, ringDescriptor: Int32) {
-    let flushedEvents = _flushQueue(ring: &ring)
-
-    // Ring always needs enter right now;
+//TODO: omitting signal mask for now
+//Tell the kernel that we've submitted requests and/or are waiting for completions
+internal func _enter(
+    ringDescriptor: Int32, 
+    numEvents: UInt32,
+    minCompletions: UInt32,
+    flags: UInt32
+) throws -> Int32 {
+  // Ring always needs enter right now;
     // TODO: support SQPOLL here
     while true {
-        let ret = io_uring_enter(ringDescriptor, flushedEvents, 0, 0, nil)
+        let ret = io_uring_enter(ringDescriptor, numEvents, minCompletions, flags, nil)
         // error handling:
         //     EAGAIN / EINTR (try again),
         //     EBADF / EBADFD / EOPNOTSUPP / ENXIO
@@ -160,32 +168,47 @@ internal func _submitRequests(ring: inout SQRing, ringDescriptor: Int32) {
         //     EINVAL (bad constant flag?, fatal),
         //     EFAULT (bad address for argument from library, fatal)
         if ret == -EAGAIN || ret == -EINTR {
+            //TODO: should we wait a bit on AGAIN?
             continue
         } else if ret < 0 {
             fatalError(
                 "fatal error in submitting requests: " + Errno(rawValue: -ret).debugDescription
             )
         } else {
-            break
+            return ret
         }
     }
 }
 
+internal func _submitRequests(ring: inout SQRing, ringDescriptor: Int32) throws {
+    let flushedEvents = _flushQueue(ring: &ring)
+    _ = try _enter(ringDescriptor: ringDescriptor, numEvents: flushedEvents, minCompletions: 0, flags: 0)
+}
+
+internal func _getUnconsumedSubmissionCount(ring: inout SQRing) -> UInt32 {
+    return ring.userTail - ring.kernelHead.pointee.load(ordering: .acquiring)
+}
+
+internal func _getUnconsumedCompletionCount(ring: inout CQRing) -> UInt32 {
+    return ring.kernelTail.pointee.load(ordering: .acquiring) - ring.kernelHead.pointee.load(ordering: .acquiring)
+}
+
+//TODO: pretty sure this is supposed to do more than it does
 internal func _flushQueue(ring: inout SQRing) -> UInt32 {
     ring.kernelTail.pointee.store(
-        ring.userTail, ordering: .relaxed
+        ring.userTail, ordering: .releasing
     )
-    return ring.userTail - ring.kernelHead.pointee.load(ordering: .relaxed)
+    return _getUnconsumedSubmissionCount(ring: &ring)
 }
 
 @usableFromInline @inline(__always)
 internal func _getSubmissionEntry(ring: inout SQRing, submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>) -> UnsafeMutablePointer<
     io_uring_sqe
 >? {
-    let next = ring.userTail + 1
+    let next = ring.userTail &+ 1 //this is expected to wrap
 
     // FEAT: smp load when SQPOLL in use (not in MVP)
-    let kernelHead = ring.kernelHead.pointee.load(ordering: .relaxed)
+    let kernelHead = ring.kernelHead.pointee.load(ordering: .acquiring)
 
     // FEAT: 128-bit event support (not in MVP)
     if next - kernelHead <= ring.array.count {
@@ -383,16 +406,43 @@ public struct IORing: @unchecked Sendable, ~Copyable {
 
     func _tryConsumeCompletion(ring: inout CQRing) -> IOCompletion? {
         let tail = ring.kernelTail.pointee.load(ordering: .acquiring)
-        let head = ring.kernelHead.pointee.load(ordering: .relaxed)
+        let head = ring.kernelHead.pointee.load(ordering: .acquiring)
 
         if tail != head {
             // 32 byte copy - oh well
             let res = ring.cqes[Int(head & ring.ringMask)]
-            ring.kernelHead.pointee.store(head + 1, ordering: .relaxed)
+            ring.kernelHead.pointee.store(head &+ 1, ordering: .releasing)
             return IOCompletion(rawValue: res)
         }
 
         return nil
+    }
+
+    internal func handleRegistrationResult(_ result: Int32) throws {
+        //TODO: error handling
+    }
+
+    public mutating func registerEventFD(ring: inout IORing, _ descriptor: FileDescriptor) throws {
+        var rawfd = descriptor.rawValue
+        let result = withUnsafePointer(to: &rawfd) { fdptr in
+            return io_uring_register(
+                ring.ringDescriptor, 
+                IORING_REGISTER_EVENTFD,
+                UnsafeMutableRawPointer(mutating: fdptr), 
+                1
+            )
+        }
+        try handleRegistrationResult(result)
+    }
+
+    public mutating func unregisterEventFD(ring: inout IORing) throws {
+        let result = io_uring_register(
+            ring.ringDescriptor, 
+            IORING_UNREGISTER_EVENTFD,
+            nil, 
+            0
+        )
+        try handleRegistrationResult(result)
     }
 
     public mutating func registerFiles(count: UInt32) {
@@ -445,9 +495,9 @@ public struct IORing: @unchecked Sendable, ~Copyable {
         fatalError("failed to unregister buffers: TODO")
     }
 
-    public func submitRequests() {
-        submissionMutex.withLock { ring in
-            _submitRequests(ring: &ring, ringDescriptor: ringDescriptor)
+    public func submitRequests() throws {
+        try submissionMutex.withLock { ring in
+            try _submitRequests(ring: &ring, ringDescriptor: ringDescriptor)
         }
     }
 

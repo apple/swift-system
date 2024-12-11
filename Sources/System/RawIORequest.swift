@@ -24,6 +24,8 @@ extension RawIORequest {
         case sendMessage = 9
         case receiveMessage = 10
         // ...
+        case link_timeout = 15
+        // ...
         case openAt = 18
         case close = 19
         case filesUpdate = 20
@@ -103,7 +105,7 @@ extension RawIORequest {
         // poll32_events
         // sync_range_flags
         // msg_flags
-        // timeout_flags
+        case timeoutFlags(TimeOutFlags)
         // accept_flags
         // cancel_flags
         case openFlags(FileDescriptor.OpenOptions)
@@ -132,12 +134,48 @@ extension RawIORequest {
         // append to end of the file
         public static let append = ReadWriteFlags(rawValue: 1 << 4)
     }
+
+    public struct TimeOutFlags: OptionSet, Hashable, Codable {
+        public var rawValue: UInt32
+
+        public init(rawValue: UInt32) {
+            self.rawValue = rawValue
+        }
+
+        public static let relativeTime: RawIORequest.TimeOutFlags = TimeOutFlags(rawValue: 0)
+        public static let absoluteTime: RawIORequest.TimeOutFlags = TimeOutFlags(rawValue: 1 << 0)
+    }
 }
 
 extension RawIORequest {
     static func nop() -> RawIORequest {
-        var req = RawIORequest()
+        var req: RawIORequest = RawIORequest()
         req.operation = .nop
         return req
+    }
+
+    //TODO: typed errors
+    static func withTimeoutRequest<R>(
+        linkedTo opEntry: UnsafeMutablePointer<io_uring_sqe>,
+        in timeoutEntry: UnsafeMutablePointer<io_uring_sqe>,
+        duration: Duration, 
+        flags: TimeOutFlags, 
+        work: () throws -> R) rethrows -> R {
+
+        opEntry.pointee.flags |= Flags.linkRequest.rawValue
+        opEntry.pointee.off = 1
+        var ts = __kernel_timespec(
+            tv_sec: duration.components.seconds, 
+            tv_nsec: duration.components.attoseconds / 1_000_000_000 
+        )
+        return try withUnsafePointer(to: &ts) { tsPtr in
+            var req: RawIORequest = RawIORequest()
+            req.operation = .link_timeout
+            req.rawValue.timeout_flags = flags.rawValue
+            req.rawValue.len = 1
+            req.rawValue.addr = UInt64(UInt(bitPattern: tsPtr))
+            timeoutEntry.pointee = req.rawValue
+            return try work()
+        }
     }
 }
