@@ -17,7 +17,7 @@ final class ManagedIORingTests: XCTestCase {
         XCTAssertEqual(completion.result, 0)
     }
 
-    func testTimeout() async throws {
+    func testSubmitTimeout() async throws {
         let ring = try ManagedIORing(queueDepth: 32)
         var pipes: (Int32, Int32) = (0, 0)
         withUnsafeMutableBytes(of: &pipes) { ptr in

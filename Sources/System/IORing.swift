@@ -368,13 +368,26 @@ public struct IORing: @unchecked Sendable, ~Copyable {
         self.ringFlags = params.flags
     }
 
-    public func blockingConsumeCompletion() -> IOCompletion {
+    private func _blockingConsumeCompletionGuts(
+        extraArgs: UnsafeMutablePointer<io_uring_getevents_arg>? = nil
+    ) throws(IORingError) -> IOCompletion {
         completionMutex.withLock { ring in
             if let completion = _tryConsumeCompletion(ring: &ring) {
                 return completion
             } else {
                 while true {
-                    let res = io_uring_enter(ringDescriptor, 0, 1, IORING_ENTER_GETEVENTS, nil)
+                    var sz = 0
+                    if extraArgs != nil {
+                        sz = MemoryLayout<io_uring_getevents_arg>.size 
+                    }
+                    let res = io_uring_enter2(
+                        ringDescriptor, 
+                        0, 
+                        1, 
+                        IORING_ENTER_GETEVENTS, 
+                        extraArgs,
+                        sz
+                    )
                     // error handling:
                     //     EAGAIN / EINTR (try again),
                     //     EBADF / EBADFD / EOPNOTSUPP / ENXIO
@@ -395,6 +408,26 @@ public struct IORing: @unchecked Sendable, ~Copyable {
                 }
                 return _tryConsumeCompletion(ring: &ring).unsafelyUnwrapped
             }
+        }
+    }
+
+    public func blockingConsumeCompletion(timeout: Duration? = nil) throws -> IOCompletion {
+        if let timeout {
+            var ts = __kernel_timespec(
+                tv_sec: timeout.components.seconds, 
+                tv_nsec: timeout.components.attoseconds / 1_000_000_000 
+            )
+            return try withUnsafePointer(to: &ts) { tsPtr in
+                var args = io_uring_getevents_arg(
+                    sigmask: 0, 
+                    sigmask_sz: 0, 
+                    pad: 0, 
+                    ts: UInt64(UInt(bitPattern: tsPtr))
+                )
+                return try _blockingConsumeCompletionGuts(extraArgs: &args)
+            }
+        } else {
+            return try _blockingConsumeCompletionGuts()
         }
     }
 
