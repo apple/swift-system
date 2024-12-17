@@ -17,7 +17,7 @@ internal func _getTemporaryDirectory() throws -> FilePath {
                                            capacity: Int(MAX_PATH) + 1) {
     buffer in
 
-    guard GetTempPath2W(DWORD(buffer.count), buffer.baseAddress) != 0 else {
+    guard GetTempPathW(DWORD(buffer.count), buffer.baseAddress) != 0 else {
       throw Errno(windowsError: GetLastError())
     }
 
