@@ -166,13 +166,15 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(EMULTIHOP == Errno.multiHop.rawValue)
     XCTAssert(ENOLINK == Errno.noLink.rawValue)
     XCTAssert(EPROTO == Errno.protocolError.rawValue)
-#if !os(FreeBSD)
+#endif
+
+#if !os(Windows) && !os(FreeBSD)
     XCTAssert(ENODATA == Errno.noData.rawValue)
     XCTAssert(ENOSR == Errno.noStreamResources.rawValue)
     XCTAssert(ENOSTR == Errno.notStream.rawValue)
     XCTAssert(ETIME == Errno.timeout.rawValue)
 #endif
-#endif
+
     XCTAssert(EOPNOTSUPP == Errno.notSupportedOnSocket.rawValue)
 
     // From headers but not man page
