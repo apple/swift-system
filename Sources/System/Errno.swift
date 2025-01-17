@@ -1361,7 +1361,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "protocolError")
   public static var EPROTO: Errno { protocolError }
 
-#if !os(FreeBSD) && !os(OpenBSD) && !os(WASI)
+#if !os(OpenBSD) && !os(WASI) && !os(FreeBSD)
   /// Reserved.
   ///
   /// This error is reserved for future use.
