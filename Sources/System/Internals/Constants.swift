@@ -422,7 +422,7 @@ internal var _EBADMSG: CInt { EBADMSG }
 @_alwaysEmitIntoClient
 internal var _EMULTIHOP: CInt { EMULTIHOP }
 
-#if !os(WASI)
+#if !os(WASI) && !os(FreeBSD)
 @_alwaysEmitIntoClient
 internal var _ENODATA: CInt { ENODATA }
 #endif
@@ -430,7 +430,7 @@ internal var _ENODATA: CInt { ENODATA }
 @_alwaysEmitIntoClient
 internal var _ENOLINK: CInt { ENOLINK }
 
-#if !os(WASI)
+#if !os(WASI) && !os(FreeBSD)
 @_alwaysEmitIntoClient
 internal var _ENOSR: CInt { ENOSR }
 
@@ -442,7 +442,7 @@ internal var _ENOSTR: CInt { ENOSTR }
 @_alwaysEmitIntoClient
 internal var _EPROTO: CInt { EPROTO }
 
-#if !os(OpenBSD) && !os(WASI)
+#if !os(OpenBSD) && !os(WASI) && !os(FreeBSD)
 @_alwaysEmitIntoClient
 internal var _ETIME: CInt { ETIME }
 #endif

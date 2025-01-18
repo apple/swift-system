@@ -1294,7 +1294,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "multiHop")
   public static var EMULTIHOP: Errno { multiHop }
 
-#if !os(WASI)
+#if !os(WASI) && !os(FreeBSD)
   /// No message available.
   ///
   /// No message was available to be received by the requested operation.
@@ -1320,7 +1320,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "noLink")
   public static var ENOLINK: Errno { noLink }
 
-#if !os(WASI)
+#if !os(WASI) && !os(FreeBSD)
   /// Reserved.
   ///
   /// This error is reserved for future use.
@@ -1361,7 +1361,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "protocolError")
   public static var EPROTO: Errno { protocolError }
 
-#if !os(OpenBSD) && !os(WASI)
+#if !os(OpenBSD) && !os(WASI) && !os(FreeBSD)
   /// Reserved.
   ///
   /// This error is reserved for future use.
