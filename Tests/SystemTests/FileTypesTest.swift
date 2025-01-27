@@ -42,18 +42,25 @@ final class FileDescriptorTest: XCTestCase {
 #endif
 
     // BSD only
-#if SYSTEM_PACKAGE_DARWIN
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
     XCTAssertEqual(O_SHLOCK, FileDescriptor.OpenOptions.sharedLock.rawValue)
     XCTAssertEqual(O_EXLOCK, FileDescriptor.OpenOptions.exclusiveLock.rawValue)
+#endif
+
+#if SYSTEM_PACKAGE_DARWIN
     XCTAssertEqual(O_SYMLINK, FileDescriptor.OpenOptions.symlink.rawValue)
     XCTAssertEqual(O_EVTONLY, FileDescriptor.OpenOptions.eventOnly.rawValue)
+#endif
+
+#if os(FreeBSD)
+    XCTAssertEqual(O_SYNC, FileDescriptor.OpenOptions.sync.rawValue)
 #endif
 
     XCTAssertEqual(SEEK_SET, FileDescriptor.SeekOrigin.start.rawValue)
     XCTAssertEqual(SEEK_CUR, FileDescriptor.SeekOrigin.current.rawValue)
     XCTAssertEqual(SEEK_END, FileDescriptor.SeekOrigin.end.rawValue)
 
-#if SYSTEM_PACKAGE_DARWIN
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
     XCTAssertEqual(SEEK_HOLE, FileDescriptor.SeekOrigin.nextHole.rawValue)
     XCTAssertEqual(SEEK_DATA, FileDescriptor.SeekOrigin.nextData.rawValue)
 #endif

@@ -359,7 +359,7 @@ internal var _ENOLCK: CInt { ENOLCK }
 @_alwaysEmitIntoClient
 internal var _ENOSYS: CInt { ENOSYS }
 
-#if SYSTEM_PACKAGE_DARWIN
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
 @_alwaysEmitIntoClient
 internal var _EFTYPE: CInt { EFTYPE }
 
@@ -368,7 +368,9 @@ internal var _EAUTH: CInt { EAUTH }
 
 @_alwaysEmitIntoClient
 internal var _ENEEDAUTH: CInt { ENEEDAUTH }
+#endif
 
+#if SYSTEM_PACKAGE_DARWIN
 @_alwaysEmitIntoClient
 internal var _EPWROFF: CInt { EPWROFF }
 
@@ -409,7 +411,7 @@ internal var _ENOMSG: CInt { ENOMSG }
 @_alwaysEmitIntoClient
 internal var _EILSEQ: CInt { EILSEQ }
 
-#if SYSTEM_PACKAGE_DARWIN
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
 @_alwaysEmitIntoClient
 internal var _ENOATTR: CInt { ENOATTR }
 #endif
@@ -471,10 +473,23 @@ internal var _ENOTRECOVERABLE: CInt { ENOTRECOVERABLE }
 internal var _EOWNERDEAD: CInt { EOWNERDEAD }
 #endif
 
+#if os(FreeBSD)
+@_alwaysEmitIntoClient
+internal var _ENOTCAPABLE: CInt { ENOTCAPABLE }
+
+@_alwaysEmitIntoClient
+internal var _ECAPMODE: CInt { ECAPMODE }
+
+@_alwaysEmitIntoClient
+internal var _EINTEGRITY: CInt { EINTEGRITY }
+#endif
+
 #if SYSTEM_PACKAGE_DARWIN
 @_alwaysEmitIntoClient
 internal var _EQFULL: CInt { EQFULL }
+#endif
 
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
 @_alwaysEmitIntoClient
 internal var _ELAST: CInt { ELAST }
 #endif
@@ -524,7 +539,7 @@ internal var _O_APPEND: CInt {
 #endif
 }
 
-#if SYSTEM_PACKAGE_DARWIN
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
 @_alwaysEmitIntoClient
 internal var _O_SHLOCK: CInt { O_SHLOCK }
 
@@ -541,6 +556,14 @@ internal var _O_ASYNC: CInt { O_ASYNC }
 
 @_alwaysEmitIntoClient
 internal var _O_NOFOLLOW: CInt { O_NOFOLLOW }
+#endif
+
+#if os(FreeBSD)
+@_alwaysEmitIntoClient
+internal var _O_FSYNC: CInt { O_FSYNC }
+
+@_alwaysEmitIntoClient
+internal var _O_SYNC: CInt { O_SYNC }
 #endif
 
 @_alwaysEmitIntoClient
@@ -609,7 +632,7 @@ internal var _SEEK_CUR: CInt { SEEK_CUR }
 @_alwaysEmitIntoClient
 internal var _SEEK_END: CInt { SEEK_END }
 
-#if SYSTEM_PACKAGE_DARWIN
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
 @_alwaysEmitIntoClient
 internal var _SEEK_HOLE: CInt { SEEK_HOLE }
 
