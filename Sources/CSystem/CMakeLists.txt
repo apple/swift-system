@@ -9,8 +9,8 @@ See https://swift.org/LICENSE.txt for license information
 
 add_library(CSystem INTERFACE)
 target_include_directories(CSystem INTERFACE
-  include)
-
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+  $<INSTALL_INTERFACE:include/CSystem>)
 
 install(FILES
   include/CSystemLinux.h
