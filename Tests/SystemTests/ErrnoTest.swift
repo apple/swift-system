@@ -131,10 +131,13 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(ENOLCK == Errno.noLocks.rawValue)
     XCTAssert(ENOSYS == Errno.noFunction.rawValue)
 
-#if SYSTEM_PACKAGE_DARWIN
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
     XCTAssert(EFTYPE == Errno.badFileTypeOrFormat.rawValue)
     XCTAssert(EAUTH == Errno.authenticationError.rawValue)
     XCTAssert(ENEEDAUTH == Errno.needAuthenticator.rawValue)
+#endif
+
+#if SYSTEM_PACKAGE_DARWIN
     XCTAssert(EPWROFF == Errno.devicePowerIsOff.rawValue)
     XCTAssert(EDEVERR == Errno.deviceError.rawValue)
 #endif
@@ -194,6 +197,12 @@ final class ErrnoTest: XCTestCase {
 #if !os(Windows)
     XCTAssert(ENOTRECOVERABLE == Errno.notRecoverable.rawValue)
     XCTAssert(EOWNERDEAD == Errno.previousOwnerDied.rawValue)
+#endif
+
+#if os(FreeBSD)
+    XCTAssert(ENOTCAPABLE == Errno.notCapable.rawValue)
+    XCTAssert(ECAPMODE == Errno.capabilityMode.rawValue)
+    XCTAssert(EINTEGRITY == Errno.integrityCheckFailed.rawValue)
 #endif
 
 #if SYSTEM_PACKAGE_DARWIN
