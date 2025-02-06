@@ -51,7 +51,7 @@ internal final class ResourceManager<T>: @unchecked Sendable {
 
     struct Resources {
         let resourceList: UnsafeMutableBufferPointer<T>
-        var freeList: [Int] //TODO: bitvector?
+        var freeList: [Int]  //TODO: bitvector?
     }
 
     let mutex: Mutex<Resources>
@@ -125,21 +125,27 @@ extension IORingBuffer {
 }
 
 @inlinable @inline(__always)
-internal func _writeRequest(_ request: __owned RawIORequest, ring: inout SQRing, submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>)
+internal func _writeRequest(
+    _ request: __owned RawIORequest, ring: inout SQRing,
+    submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>
+)
     -> Bool
 {
-    let entry = _blockingGetSubmissionEntry(ring: &ring, submissionQueueEntries: submissionQueueEntries)
+    let entry = _blockingGetSubmissionEntry(
+        ring: &ring, submissionQueueEntries: submissionQueueEntries)
     entry.pointee = request.rawValue
     return true
 }
 
 @inlinable @inline(__always)
-internal func _blockingGetSubmissionEntry(ring: inout SQRing, submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>) -> UnsafeMutablePointer<
+internal func _blockingGetSubmissionEntry(
+    ring: inout SQRing, submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>
+) -> UnsafeMutablePointer<
     io_uring_sqe
 > {
     while true {
         if let entry = _getSubmissionEntry(
-            ring: &ring, 
+            ring: &ring,
             submissionQueueEntries: submissionQueueEntries
         ) {
             return entry
@@ -152,12 +158,12 @@ internal func _blockingGetSubmissionEntry(ring: inout SQRing, submissionQueueEnt
 //TODO: omitting signal mask for now
 //Tell the kernel that we've submitted requests and/or are waiting for completions
 internal func _enter(
-    ringDescriptor: Int32, 
+    ringDescriptor: Int32,
     numEvents: UInt32,
     minCompletions: UInt32,
     flags: UInt32
 ) throws -> Int32 {
-  // Ring always needs enter right now;
+    // Ring always needs enter right now;
     // TODO: support SQPOLL here
     while true {
         let ret = io_uring_enter(ringDescriptor, numEvents, minCompletions, flags, nil)
@@ -180,32 +186,36 @@ internal func _enter(
     }
 }
 
-internal func _submitRequests(ring: inout SQRing, ringDescriptor: Int32) throws {
-    let flushedEvents = _flushQueue(ring: &ring)
-    _ = try _enter(ringDescriptor: ringDescriptor, numEvents: flushedEvents, minCompletions: 0, flags: 0)
+internal func _submitRequests(ring: borrowing SQRing, ringDescriptor: Int32) throws {
+    let flushedEvents = _flushQueue(ring: ring)
+    _ = try _enter(
+        ringDescriptor: ringDescriptor, numEvents: flushedEvents, minCompletions: 0, flags: 0)
 }
 
-internal func _getUnconsumedSubmissionCount(ring: inout SQRing) -> UInt32 {
+internal func _getUnconsumedSubmissionCount(ring: borrowing SQRing) -> UInt32 {
     return ring.userTail - ring.kernelHead.pointee.load(ordering: .acquiring)
 }
 
-internal func _getUnconsumedCompletionCount(ring: inout CQRing) -> UInt32 {
-    return ring.kernelTail.pointee.load(ordering: .acquiring) - ring.kernelHead.pointee.load(ordering: .acquiring)
+internal func _getUnconsumedCompletionCount(ring: borrowing CQRing) -> UInt32 {
+    return ring.kernelTail.pointee.load(ordering: .acquiring)
+        - ring.kernelHead.pointee.load(ordering: .acquiring)
 }
 
 //TODO: pretty sure this is supposed to do more than it does
-internal func _flushQueue(ring: inout SQRing) -> UInt32 {
+internal func _flushQueue(ring: borrowing SQRing) -> UInt32 {
     ring.kernelTail.pointee.store(
         ring.userTail, ordering: .releasing
     )
-    return _getUnconsumedSubmissionCount(ring: &ring)
+    return _getUnconsumedSubmissionCount(ring: ring)
 }
 
 @usableFromInline @inline(__always)
-internal func _getSubmissionEntry(ring: inout SQRing, submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>) -> UnsafeMutablePointer<
+internal func _getSubmissionEntry(
+    ring: inout SQRing, submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>
+) -> UnsafeMutablePointer<
     io_uring_sqe
 >? {
-    let next = ring.userTail &+ 1 //this is expected to wrap
+    let next = ring.userTail &+ 1  //this is expected to wrap
 
     // FEAT: smp load when SQPOLL in use (not in MVP)
     let kernelHead = ring.kernelHead.pointee.load(ordering: .acquiring)
@@ -227,15 +237,15 @@ internal func _getSubmissionEntry(ring: inout SQRing, submissionQueueEntries: Un
     return nil
 }
 
-public struct IORing: @unchecked Sendable, ~Copyable {
+public struct IORing: ~Copyable {
     let ringFlags: UInt32
     let ringDescriptor: Int32
 
-    @usableFromInline let submissionMutex: Mutex<SQRing>
+    @usableFromInline var submissionRing: SQRing
     // FEAT: set this eventually
     let submissionPolling: Bool = false
 
-    let completionMutex: Mutex<CQRing>
+    let completionRing: CQRing
 
     @usableFromInline let submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>
 
@@ -362,82 +372,136 @@ public struct IORing: @unchecked Sendable, ~Copyable {
             )
         )
 
-        self.submissionMutex = Mutex(submissionRing)
-        self.completionMutex = Mutex(completionRing)
+        self.submissionRing = submissionRing
+        self.completionRing = completionRing
 
         self.ringFlags = params.flags
     }
 
     private func _blockingConsumeCompletionGuts(
-        extraArgs: UnsafeMutablePointer<io_uring_getevents_arg>? = nil
-    ) throws(IORingError) -> IOCompletion {
-        completionMutex.withLock { ring in
-            if let completion = _tryConsumeCompletion(ring: &ring) {
-                return completion
-            } else {
-                while true {
-                    var sz = 0
-                    if extraArgs != nil {
-                        sz = MemoryLayout<io_uring_getevents_arg>.size 
-                    }
-                    let res = io_uring_enter2(
-                        ringDescriptor, 
-                        0, 
-                        1, 
-                        IORING_ENTER_GETEVENTS, 
-                        extraArgs,
-                        sz
-                    )
-                    // error handling:
-                    //     EAGAIN / EINTR (try again),
-                    //     EBADF / EBADFD / EOPNOTSUPP / ENXIO
-                    //     (failure in ring lifetime management, fatal),
-                    //     EINVAL (bad constant flag?, fatal),
-                    //     EFAULT (bad address for argument from library, fatal)
-                    //     EBUSY (not enough space for events; implies events filled
-                    //            by kernel between kernelTail load and now)
-                    if res >= 0 || res == -EBUSY {
-                        break
-                    } else if res == -EAGAIN || res == -EINTR {
-                        continue
-                    }
-                    fatalError(
-                        "fatal error in receiving requests: "
-                            + Errno(rawValue: -res).debugDescription
-                    )
+        minimumCount: UInt32,
+        extraArgs: UnsafeMutablePointer<io_uring_getevents_arg>? = nil,
+        consumer: (IOCompletion?, IORingError?, Bool) throws -> Void
+    ) rethrows {
+        var count = 0
+        while let completion = _tryConsumeCompletion(ring: completionRing) {
+            count += 1
+            try consumer(completion, nil, false)
+        }
+
+        if count < minimumCount {
+            while count < minimumCount {
+                var sz = 0
+                if extraArgs != nil {
+                    sz = MemoryLayout<io_uring_getevents_arg>.size
                 }
-                return _tryConsumeCompletion(ring: &ring).unsafelyUnwrapped
+                let res = io_uring_enter2(
+                    ringDescriptor,
+                    0,
+                    minimumCount,
+                    IORING_ENTER_GETEVENTS,
+                    extraArgs,
+                    sz
+                )
+                // error handling:
+                //     EAGAIN / EINTR (try again),
+                //     EBADF / EBADFD / EOPNOTSUPP / ENXIO
+                //     (failure in ring lifetime management, fatal),
+                //     EINVAL (bad constant flag?, fatal),
+                //     EFAULT (bad address for argument from library, fatal)
+                //     EBUSY (not enough space for events; implies events filled
+                //            by kernel between kernelTail load and now)
+                if res >= 0 || res == -EBUSY {
+                    break
+                } else if res == -EAGAIN || res == -EINTR {
+                    continue
+                }
+                fatalError(
+                    "fatal error in receiving requests: "
+                        + Errno(rawValue: -res).debugDescription
+                )
+                while let completion = _tryConsumeCompletion(ring: completionRing) {
+                    try consumer(completion, nil, false)
+                }
             }
+            try consumer(nil, nil, true)
         }
     }
 
-    public func blockingConsumeCompletion(timeout: Duration? = nil) throws -> IOCompletion {
+    internal func _blockingConsumeOneCompletion(
+        extraArgs: UnsafeMutablePointer<io_uring_getevents_arg>? = nil
+    ) throws -> IOCompletion {
+        var result: IOCompletion? = nil
+        try _blockingConsumeCompletionGuts(minimumCount: 1, extraArgs: extraArgs) {
+            (completion, error, done) in
+            if let error {
+                throw error
+            }
+            if let completion {
+                result = completion
+            }
+        }
+        return result.unsafelyUnwrapped
+    }
+
+    public func blockingConsumeCompletion(
+        timeout: Duration? = nil
+    ) throws -> IOCompletion {
         if let timeout {
             var ts = __kernel_timespec(
-                tv_sec: timeout.components.seconds, 
-                tv_nsec: timeout.components.attoseconds / 1_000_000_000 
+                tv_sec: timeout.components.seconds,
+                tv_nsec: timeout.components.attoseconds / 1_000_000_000
             )
             return try withUnsafePointer(to: &ts) { tsPtr in
                 var args = io_uring_getevents_arg(
-                    sigmask: 0, 
-                    sigmask_sz: 0, 
-                    pad: 0, 
+                    sigmask: 0,
+                    sigmask_sz: 0,
+                    pad: 0,
                     ts: UInt64(UInt(bitPattern: tsPtr))
                 )
-                return try _blockingConsumeCompletionGuts(extraArgs: &args)
+                return try _blockingConsumeOneCompletion(extraArgs: &args)
             }
         } else {
-            return try _blockingConsumeCompletionGuts()
+            return try _blockingConsumeOneCompletion()
         }
     }
+
+    public func blockingConsumeCompletions(
+        minimumCount: UInt32 = 1,
+        timeout: Duration? = nil,
+        consumer: (IOCompletion?, IORingError?, Bool) throws -> Void
+    ) throws {
+        var x = Glibc.stat()
+        let y = x.st_size
+        if let timeout {
+            var ts = __kernel_timespec(
+                tv_sec: timeout.components.seconds,
+                tv_nsec: timeout.components.attoseconds / 1_000_000_000
+            )
+            return try withUnsafePointer(to: &ts) { tsPtr in
+                var args = io_uring_getevents_arg(
+                    sigmask: 0,
+                    sigmask_sz: 0,
+                    pad: 0,
+                    ts: UInt64(UInt(bitPattern: tsPtr))
+                )
+                try _blockingConsumeCompletionGuts(
+                    minimumCount: minimumCount, extraArgs: &args, consumer: consumer)
+            }
+        } else {
+            try _blockingConsumeCompletionGuts(minimumCount: minimumCount, consumer: consumer)
+        }
+    }
+
+    // public func peekNextCompletion() -> IOCompletion {
+
+    // }
 
     public func tryConsumeCompletion() -> IOCompletion? {
-        completionMutex.withLock { ring in
-            return _tryConsumeCompletion(ring: &ring)
-        }
+        return _tryConsumeCompletion(ring: completionRing)
     }
 
-    func _tryConsumeCompletion(ring: inout CQRing) -> IOCompletion? {
+    func _tryConsumeCompletion(ring: borrowing CQRing) -> IOCompletion? {
         let tail = ring.kernelTail.pointee.load(ordering: .acquiring)
         let head = ring.kernelHead.pointee.load(ordering: .acquiring)
 
@@ -459,9 +523,9 @@ public struct IORing: @unchecked Sendable, ~Copyable {
         var rawfd = descriptor.rawValue
         let result = withUnsafePointer(to: &rawfd) { fdptr in
             return io_uring_register(
-                ring.ringDescriptor, 
+                ring.ringDescriptor,
                 IORING_REGISTER_EVENTFD,
-                UnsafeMutableRawPointer(mutating: fdptr), 
+                UnsafeMutableRawPointer(mutating: fdptr),
                 1
             )
         }
@@ -470,9 +534,9 @@ public struct IORing: @unchecked Sendable, ~Copyable {
 
     public mutating func unregisterEventFD(ring: inout IORing) throws {
         let result = io_uring_register(
-            ring.ringDescriptor, 
+            ring.ringDescriptor,
             IORING_UNREGISTER_EVENTFD,
-            nil, 
+            nil,
             0
         )
         try handleRegistrationResult(result)
@@ -529,17 +593,14 @@ public struct IORing: @unchecked Sendable, ~Copyable {
     }
 
     public func submitRequests() throws {
-        try submissionMutex.withLock { ring in
-            try _submitRequests(ring: &ring, ringDescriptor: ringDescriptor)
-        }
+        try _submitRequests(ring: submissionRing, ringDescriptor: ringDescriptor)
     }
 
     @inlinable @inline(__always)
     public mutating func writeRequest(_ request: __owned IORequest) -> Bool {
         var raw: RawIORequest? = request.makeRawRequest()
-        return submissionMutex.withLock { ring in
-            return _writeRequest(raw.take()!, ring: &ring, submissionQueueEntries: submissionQueueEntries)
-        }
+        return _writeRequest(
+            raw.take()!, ring: &submissionRing, submissionQueueEntries: submissionQueueEntries)
     }
 
     deinit {

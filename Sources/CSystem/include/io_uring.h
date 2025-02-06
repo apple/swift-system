@@ -45,11 +45,17 @@ int io_uring_setup(unsigned int entries, struct io_uring_params *p)
 	return syscall(__NR_io_uring_setup, entries, p);
 }
 
+int io_uring_enter2(int fd, unsigned int to_submit, unsigned int min_complete,
+		   unsigned int flags, void *args, size_t sz)
+{
+	return syscall(__NR_io_uring_enter, fd, to_submit, min_complete,
+			flags, args, _NSIG / 8);
+}
+
 int io_uring_enter(int fd, unsigned int to_submit, unsigned int min_complete,
 		   unsigned int flags, sigset_t *sig)
 {
-	return syscall(__NR_io_uring_enter, fd, to_submit, min_complete,
-			flags, sig, _NSIG / 8);
+	return io_uring_enter2(fd, to_submit, min_complete, flags, sig, _NSIG / 8);
 }
 
 #endif
