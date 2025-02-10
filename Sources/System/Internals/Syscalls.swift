@@ -191,7 +191,7 @@ internal func system_confstr(
 internal let SYSTEM_AT_REMOVE_DIR = AT_REMOVEDIR
 internal let SYSTEM_DT_DIR = DT_DIR
 internal typealias system_dirent = dirent
-#if os(Linux) || os(Android) || os(FreeBSD)
+#if os(Linux) || os(Android) || os(FreeBSD) || os(OpenBSD)
 internal typealias system_DIRPtr = OpaquePointer
 #else
 internal typealias system_DIRPtr = UnsafeMutablePointer<DIR>
