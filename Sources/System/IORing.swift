@@ -496,7 +496,7 @@ public struct IORing: ~Copyable {
         try handleRegistrationResult(result)
     }
 
-    public mutating func registerFileSlots(count: Int) {
+    public mutating func registerFileSlots(count: Int) -> some RandomAccessCollection<IORingFileSlot> {
         precondition(_registeredFiles == nil)
         precondition(count < UInt32.max)
          let files = [UInt32](repeating: UInt32.max, count: count)
@@ -512,6 +512,7 @@ public struct IORing: ~Copyable {
 
         // TODO: error handling
         _registeredFiles = files
+        return registeredFileSlots
     }
 
     public func unregisterFiles() {
@@ -522,9 +523,10 @@ public struct IORing: ~Copyable {
         RegisteredResources(resources: _registeredFiles ?? [])
     }
 
-    public mutating func registerBuffers(_ buffers: UnsafeMutableRawBufferPointer...) {
+    public mutating func registerBuffers(_ buffers: UnsafeMutableRawBufferPointer...) -> some RandomAccessCollection<IORingBuffer> {
         precondition(buffers.count < UInt32.max)
         precondition(_registeredBuffers == nil)
+        //TODO: check if io_uring has preconditions it needs for the buffers (e.g. alignment)
         let iovecs = buffers.map { $0.to_iovec() }
         let regResult = iovecs.withUnsafeBufferPointer { bPtr in
             io_uring_register(
@@ -537,6 +539,7 @@ public struct IORing: ~Copyable {
 
         // TODO: error handling
         _registeredBuffers = iovecs
+        return registeredBuffers
     }
 
     struct RegisteredResources<T>: RandomAccessCollection {
