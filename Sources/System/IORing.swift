@@ -2,7 +2,7 @@
 import Glibc  // needed for mmap
 import Synchronization
 
-import struct CSystem.io_uring_sqe
+@_implementationOnly import struct CSystem.io_uring_sqe
 
 // XXX: this *really* shouldn't be here. oh well.
 extension UnsafeMutableRawPointer {
@@ -124,7 +124,7 @@ extension IORingBuffer {
     }
 }
 
-@inlinable @inline(__always)
+@inline(__always)
 internal func _writeRequest(
     _ request: __owned RawIORequest, ring: inout SQRing,
     submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>
@@ -137,7 +137,7 @@ internal func _writeRequest(
     return true
 }
 
-@inlinable @inline(__always)
+@inline(__always)
 internal func _blockingGetSubmissionEntry(
     ring: inout SQRing, submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>
 ) -> UnsafeMutablePointer<
@@ -209,7 +209,7 @@ internal func _flushQueue(ring: borrowing SQRing) -> UInt32 {
     return _getUnconsumedSubmissionCount(ring: ring)
 }
 
-@usableFromInline @inline(__always)
+@inline(__always)
 internal func _getSubmissionEntry(
     ring: inout SQRing, submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>
 ) -> UnsafeMutablePointer<
@@ -247,7 +247,7 @@ public struct IORing: ~Copyable {
 
     let completionRing: CQRing
 
-    @usableFromInline let submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>
+    let submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>
 
     // kept around for unmap / cleanup
     let ringSize: Int
@@ -594,7 +594,7 @@ public struct IORing: ~Copyable {
         try _submitRequests(ring: submissionRing, ringDescriptor: ringDescriptor)
     }
 
-    @inlinable @inline(__always)
+    @inline(__always)
     public mutating func writeRequest(_ request: __owned IORequest) -> Bool {
         var raw: RawIORequest? = request.makeRawRequest()
         return _writeRequest(

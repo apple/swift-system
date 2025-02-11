@@ -1,9 +1,9 @@
 // TODO: investigate @usableFromInline / @_implementationOnly dichotomy
 @_implementationOnly import CSystem
-import struct CSystem.io_uring_sqe
+@_implementationOnly import struct CSystem.io_uring_sqe
     
 public struct RawIORequest: ~Copyable {
-    @usableFromInline var rawValue: io_uring_sqe 
+    var rawValue: io_uring_sqe 
 
     public init() {
         self.rawValue = io_uring_sqe()
