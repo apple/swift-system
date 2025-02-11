@@ -11,6 +11,12 @@ extension UnsafeMutableRawPointer {
     }
 }
 
+extension UnsafeMutableRawBufferPointer {
+    func to_iovec() -> iovec {
+        iovec(iov_base: baseAddress, iov_len: count)
+    }
+}
+
 // all pointers in this struct reference kernel-visible memory
 @usableFromInline struct SQRing: ~Copyable {
     let kernelHead: UnsafePointer<Atomic<UInt32>>
@@ -46,67 +52,17 @@ struct CQRing: ~Copyable {
     let cqes: UnsafeBufferPointer<io_uring_cqe>
 }
 
-internal final class ResourceManager<T>: @unchecked Sendable {
-    typealias Resource = T
-
-    struct Resources {
-        let resourceList: UnsafeMutableBufferPointer<T>
-        var freeList: [Int]  //TODO: bitvector?
-    }
-
-    let mutex: Mutex<Resources>
-
-    init(_ res: UnsafeMutableBufferPointer<T>) {
-        mutex = Mutex(
-            Resources(
-                resourceList: res,
-                freeList: [Int](res.indices)
-            ))
-    }
-
-    func getResource() -> IOResource<T>? {
-        mutex.withLock { resources in
-            if let index = resources.freeList.popLast() {
-                return IOResource(
-                    resource: resources.resourceList[index],
-                    index: index,
-                    manager: self
-                )
-            } else {
-                return nil
-            }
-        }
-    }
-
-    func releaseResource(index: Int) {
-        mutex.withLock { resources in
-            resources.freeList.append(index)
-        }
-    }
-}
-
-public class IOResource<T> {
+public struct IOResource<T> {
     typealias Resource = T
     @usableFromInline let resource: T
     @usableFromInline let index: Int
-    let manager: ResourceManager<T>
 
     internal init(
         resource: T,
-        index: Int,
-        manager: ResourceManager<T>
+        index: Int
     ) {
         self.resource = resource
         self.index = index
-        self.manager = manager
-    }
-
-    func withResource() {
-
-    }
-
-    deinit {
-        manager.releaseResource(index: self.index)
     }
 }
 
@@ -253,8 +209,8 @@ public struct IORing: ~Copyable {
     let ringSize: Int
     let ringPtr: UnsafeMutableRawPointer
 
-    var registeredFiles: ResourceManager<UInt32>?
-    var registeredBuffers: ResourceManager<iovec>?
+    var _registeredFiles: [UInt32]?
+    var _registeredBuffers: [iovec]?
 
     public init(queueDepth: UInt32) throws {
         var params = io_uring_params()
@@ -517,11 +473,11 @@ public struct IORing: ~Copyable {
         //TODO: error handling
     }
 
-    public mutating func registerEventFD(ring: inout IORing, _ descriptor: FileDescriptor) throws {
+    public mutating func registerEventFD(_ descriptor: FileDescriptor) throws {
         var rawfd = descriptor.rawValue
         let result = withUnsafePointer(to: &rawfd) { fdptr in
             return io_uring_register(
-                ring.ringDescriptor,
+                ringDescriptor,
                 IORING_REGISTER_EVENTFD,
                 UnsafeMutableRawPointer(mutating: fdptr),
                 1
@@ -530,9 +486,9 @@ public struct IORing: ~Copyable {
         try handleRegistrationResult(result)
     }
 
-    public mutating func unregisterEventFD(ring: inout IORing) throws {
+    public mutating func unregisterEventFD() throws {
         let result = io_uring_register(
-            ring.ringDescriptor,
+            ringDescriptor,
             IORING_UNREGISTER_EVENTFD,
             nil,
             0
@@ -540,50 +496,64 @@ public struct IORing: ~Copyable {
         try handleRegistrationResult(result)
     }
 
-    public mutating func registerFiles(count: UInt32) {
-        guard self.registeredFiles == nil else { fatalError() }
-        let fileBuf = UnsafeMutableBufferPointer<UInt32>.allocate(capacity: Int(count))
-        fileBuf.initialize(repeating: UInt32.max)
-        io_uring_register(
-            self.ringDescriptor,
-            IORING_REGISTER_FILES,
-            fileBuf.baseAddress!,
-            count
-        )
+    public mutating func registerFileSlots(count: Int) {
+        precondition(_registeredFiles == nil)
+        precondition(count < UInt32.max)
+         let files = [UInt32](repeating: UInt32.max, count: count)
+
+        let regResult = files.withUnsafeBufferPointer { bPtr in
+            io_uring_register(
+                self.ringDescriptor,
+                IORING_REGISTER_FILES,
+                UnsafeMutableRawPointer(mutating:bPtr.baseAddress!),
+                UInt32(truncatingIfNeeded: count)
+            )
+        }
+
         // TODO: error handling
-        self.registeredFiles = ResourceManager(fileBuf)
+        _registeredFiles = files
     }
 
     public func unregisterFiles() {
         fatalError("failed to unregister files")
     }
 
-    public func getFile() -> IORingFileSlot? {
-        return self.registeredFiles?.getResource()
+    public var registeredFileSlots: some RandomAccessCollection<IORingFileSlot> {
+        RegisteredResources(resources: _registeredFiles ?? [])
     }
 
-    public mutating func registerBuffers(bufSize: UInt32, count: UInt32) {
-        let iovecs = UnsafeMutableBufferPointer<iovec>.allocate(capacity: Int(count))
-        let intBufSize = Int(bufSize)
-        for i in 0..<iovecs.count {
-            // TODO: mmap instead of allocate here, because there are
-            // certain restrictions about buffer memory behavior
-            let buf = UnsafeMutableRawBufferPointer.allocate(
-                byteCount: intBufSize, alignment: 16384)
-            iovecs[i] = iovec(iov_base: buf.baseAddress!, iov_len: buf.count)
+    public mutating func registerBuffers(_ buffers: UnsafeMutableRawBufferPointer...) {
+        precondition(buffers.count < UInt32.max)
+        precondition(_registeredBuffers == nil)
+        let iovecs = buffers.map { $0.to_iovec() }
+        let regResult = iovecs.withUnsafeBufferPointer { bPtr in
+            io_uring_register(
+                self.ringDescriptor,
+                IORING_REGISTER_BUFFERS,
+                UnsafeMutableRawPointer(mutating: bPtr.baseAddress!),
+                UInt32(truncatingIfNeeded: buffers.count)
+            )
         }
-        io_uring_register(
-            self.ringDescriptor,
-            IORING_REGISTER_BUFFERS,
-            iovecs.baseAddress!,
-            count
-        )
+
         // TODO: error handling
-        self.registeredBuffers = ResourceManager(iovecs)
+        _registeredBuffers = iovecs
     }
 
-    public func getBuffer() -> IORingBuffer? {
-        return self.registeredBuffers?.getResource()
+    struct RegisteredResources<T>: RandomAccessCollection {
+        let resources: [T]
+
+        var startIndex: Int { 0 }
+        var endIndex: Int { resources.endIndex }
+        init(resources: [T]) {
+            self.resources = resources
+        }
+        subscript(position: Int) -> IOResource<T> {
+            IOResource(resource: resources[position], index: position)
+        }
+    }
+
+    public var registeredBuffers: some RandomAccessCollection<IORingBuffer> {
+        RegisteredResources(resources: _registeredBuffers ?? [])
     }
 
     public func unregisterBuffers() {

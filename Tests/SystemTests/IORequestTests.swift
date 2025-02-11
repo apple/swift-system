@@ -28,12 +28,8 @@ final class IORequestTests: XCTestCase {
     }
 
     func testOpenatFixedFile() throws {
-        // TODO: come up with a better way of getting a FileSlot.
-        let buf = UnsafeMutableBufferPointer<UInt32>.allocate(capacity: 2)
-        let resmgr = ResourceManager.init(buf)
-
         let pathPtr = UnsafePointer<CChar>(bitPattern: 0x414141410badf00d)!
-        let fileSlot = resmgr.getResource()!
+        let fileSlot: IORingFileSlot = IORingFileSlot(resource: UInt32.max, index: 0)
         let req = IORequest(
             opening: pathPtr,
             in: FileDescriptor(rawValue: -100),
