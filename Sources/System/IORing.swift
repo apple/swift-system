@@ -471,8 +471,6 @@ public struct IORing: ~Copyable {
         timeout: Duration? = nil,
         consumer: (IOCompletion?, IORingError?, Bool) throws -> Void
     ) throws {
-        var x = Glibc.stat()
-        let y = x.st_size
         if let timeout {
             var ts = __kernel_timespec(
                 tv_sec: timeout.components.seconds,

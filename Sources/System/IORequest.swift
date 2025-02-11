@@ -1,4 +1,4 @@
-import struct CSystem.io_uring_sqe
+@_implementationOnly import struct CSystem.io_uring_sqe
 
 @usableFromInline
 internal enum IORequestCore: ~Copyable {
@@ -62,7 +62,7 @@ internal enum IORequestCore: ~Copyable {
     case closeSlot(IORingFileSlot)
 }
 
-@inlinable @inline(__always)
+@inline(__always)
 internal func makeRawRequest_readWrite_registered(
     file: FileDescriptor,
     buffer: IORingBuffer,
@@ -76,7 +76,7 @@ internal func makeRawRequest_readWrite_registered(
     return request
 }
 
-@inlinable @inline(__always)
+@inline(__always)
 internal func makeRawRequest_readWrite_registered_slot(
     file: IORingFileSlot,
     buffer: IORingBuffer,
@@ -104,7 +104,7 @@ internal func makeRawRequest_readWrite_unregistered(
     return request
 }
 
-@inlinable @inline(__always)
+@inline(__always)
 internal func makeRawRequest_readWrite_unregistered_slot(
     file: IORingFileSlot,
     buffer: UnsafeMutableRawBufferPointer,
@@ -251,7 +251,7 @@ extension IORequest {
         fatalError("Implement me")
     }
 
-    @inlinable @inline(__always)
+    @inline(__always)
     public consuming func makeRawRequest() -> RawIORequest {
         var request = RawIORequest()
         switch extractCore() {
