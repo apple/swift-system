@@ -567,11 +567,26 @@ public struct IORing: ~Copyable {
         try _submitRequests(ring: submissionRing, ringDescriptor: ringDescriptor)
     }
 
-    @inline(__always)
-    public mutating func writeRequest(_ request: __owned IORequest) -> Bool {
+    public mutating func prepare(request: __owned IORequest) -> Bool {
         var raw: RawIORequest? = request.makeRawRequest()
         return _writeRequest(
             raw.take()!, ring: &submissionRing, submissionQueueEntries: submissionQueueEntries)
+    }
+
+    //@inlinable //TODO: make sure the array allocation gets optimized out...
+    public mutating func prepare(linkedRequests: IORequest...) {
+        guard linkedRequests.count > 0 else {
+            return
+        }
+        let last = linkedRequests.last!
+        for req in linkedRequests.dropLast() {
+            var raw = req.makeRawRequest()
+            raw.linkToNextRequest()
+            _writeRequest(
+                raw, ring: &submissionRing, submissionQueueEntries: submissionQueueEntries)
+        }
+        _writeRequest(
+            last.makeRawRequest(), ring: &submissionRing, submissionQueueEntries: submissionQueueEntries)
     }
 
     deinit {

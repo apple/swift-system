@@ -2,6 +2,7 @@
 @_implementationOnly import CSystem
 @_implementationOnly import struct CSystem.io_uring_sqe
     
+//TODO: make this internal
 public struct RawIORequest: ~Copyable {
     var rawValue: io_uring_sqe 
 
@@ -11,7 +12,7 @@ public struct RawIORequest: ~Copyable {
 }
 
 extension RawIORequest {
-    public enum Operation: UInt8 {
+    enum Operation: UInt8 {
         case nop = 0
         case readv = 1
         case writev = 2
@@ -53,7 +54,7 @@ extension RawIORequest {
         public static let skipSuccess = Flags(rawValue: 1 << 6)
     }
 
-    public var operation: Operation {
+    var operation: Operation {
         get { Operation(rawValue: rawValue.opcode)! }
         set { rawValue.opcode = newValue.rawValue }
     }
@@ -61,6 +62,10 @@ extension RawIORequest {
     public var flags: Flags {
         get { Flags(rawValue: rawValue.flags) }
         set { rawValue.flags = newValue.rawValue }
+    }
+
+    public mutating func linkToNextRequest() {
+        flags = Flags(rawValue: flags.rawValue | Flags.linkRequest.rawValue)
     }
 
     public var fileDescriptor: FileDescriptor {

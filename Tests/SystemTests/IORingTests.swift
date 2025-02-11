@@ -13,7 +13,7 @@ final class IORingTests: XCTestCase {
 
     func testNop() throws {
         var ring = try IORing(queueDepth: 32)
-        ring.writeRequest(IORequest())
+        ring.prepare(request: IORequest())
         try ring.submitRequests()
         let completion = try ring.blockingConsumeCompletion()
         XCTAssertEqual(completion.result, 0)

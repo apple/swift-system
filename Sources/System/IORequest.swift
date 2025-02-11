@@ -1,7 +1,7 @@
 @_implementationOnly import struct CSystem.io_uring_sqe
 
 @usableFromInline
-internal enum IORequestCore: ~Copyable {
+internal enum IORequestCore {
     case nop  // nothing here
     case openat(
         atDirectory: FileDescriptor,
@@ -118,7 +118,7 @@ internal func makeRawRequest_readWrite_unregistered_slot(
     return request
 }
 
-public struct IORequest : ~Copyable {
+public struct IORequest {
     @usableFromInline var core: IORequestCore
 
     @inlinable internal consuming func extractCore() -> IORequestCore {
