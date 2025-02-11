@@ -127,127 +127,111 @@ public struct IORequest {
 }
 
 extension IORequest {
-    public init() { //TODO: why do we have nop?
-        core = .nop
+    public static func nop() -> IORequest {
+        IORequest(core: .nop)
     }
 
-    public init(
-        reading file: IORingFileSlot,
+    public static func reading(_ file: IORingFileSlot,
         into buffer: IORingBuffer,
         at offset: UInt64 = 0
-    ) {
-        core = .readSlot(file: file, buffer: buffer, offset: offset)
+    ) -> IORequest {
+        IORequest(core: .readSlot(file: file, buffer: buffer, offset: offset))
     }
 
-    public init(
-        reading file: FileDescriptor,
+    public static func reading(_ file: FileDescriptor,
         into buffer: IORingBuffer,
         at offset: UInt64 = 0
-    ) {
-        core = .read(file: file, buffer: buffer, offset: offset)
+    ) -> IORequest {
+        IORequest(core: .read(file: file, buffer: buffer, offset: offset))
     }
 
-    public init(
-        reading file: IORingFileSlot,
+    public static func reading(_ file: IORingFileSlot,
         into buffer: UnsafeMutableRawBufferPointer,
         at offset: UInt64 = 0
-    ) {
-        core = .readUnregisteredSlot(file: file, buffer: buffer, offset: offset)
+    ) -> IORequest {
+        IORequest(core: .readUnregisteredSlot(file: file, buffer: buffer, offset: offset))
     }
 
-    public init(
-        reading file: FileDescriptor,
+    public static func reading(_ file: FileDescriptor,
         into buffer: UnsafeMutableRawBufferPointer,
         at offset: UInt64 = 0
-    ) {
-        core = .readUnregistered(file: file, buffer: buffer, offset: offset)
+    ) -> IORequest {
+        IORequest(core: .readUnregistered(file: file, buffer: buffer, offset: offset))
     }
 
-    public init(
-        writing buffer: IORingBuffer,
+    public static func writing(_ buffer: IORingBuffer,
         into file: IORingFileSlot,
         at offset: UInt64 = 0
-    ) {
-        core = .writeSlot(file: file, buffer: buffer, offset: offset)
+    ) -> IORequest {
+        IORequest(core: .writeSlot(file: file, buffer: buffer, offset: offset))
     }
 
-    public init(
-        writing buffer: IORingBuffer,
+    public static func writing(_ buffer: IORingBuffer,
         into file: FileDescriptor,
         at offset: UInt64 = 0
-    ) {
-        core = .write(file: file, buffer: buffer, offset: offset)
+    ) -> IORequest {
+        IORequest(core: .write(file: file, buffer: buffer, offset: offset))
     }
 
-    public init(
-        writing buffer: UnsafeMutableRawBufferPointer,
+    public static func writing(_ buffer: UnsafeMutableRawBufferPointer,
         into file: IORingFileSlot,
         at offset: UInt64 = 0
-    ) {
-        core = .writeUnregisteredSlot(file: file, buffer: buffer, offset: offset)
+    ) -> IORequest {
+        IORequest(core: .writeUnregisteredSlot(file: file, buffer: buffer, offset: offset))
     }
 
-    public init(
-        writing buffer: UnsafeMutableRawBufferPointer,
+    public static func writing(_ buffer: UnsafeMutableRawBufferPointer,
         into file: FileDescriptor,
         at offset: UInt64 = 0
-    ) {
-        core = .writeUnregistered(file: file, buffer: buffer, offset: offset)
+    ) -> IORequest {
+        IORequest(core: .writeUnregistered(file: file, buffer: buffer, offset: offset))
     }
 
-    public init(
-        closing file: FileDescriptor
-    ) {
-        core = .close(file)
+    public static func closing(_ file: FileDescriptor) -> IORequest {
+        IORequest(core: .close(file))
     }
 
-    public init(
-        closing file: IORingFileSlot
-    ) {
-        core = .closeSlot(file)
+    public static func closing(_ file: IORingFileSlot) -> IORequest {
+        IORequest(core: .closeSlot(file))
     }
 
 
-    public init(
-        opening path: UnsafePointer<CChar>,
+    public static func opening(_ path: UnsafePointer<CChar>,
         in directory: FileDescriptor,
         into slot: IORingFileSlot,
         mode: FileDescriptor.AccessMode,
         options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
         permissions: FilePermissions? = nil
-    ) {
-        core = .openatSlot(atDirectory: directory, path: path, mode, options: options, permissions: permissions, intoSlot: slot)
+    ) -> IORequest {
+        IORequest(core :.openatSlot(atDirectory: directory, path: path, mode, options: options, permissions: permissions, intoSlot: slot))
     }
 
-    public init(
-        opening path: UnsafePointer<CChar>,
+    public static func opening(_ path: UnsafePointer<CChar>,
         in directory: FileDescriptor,
         mode: FileDescriptor.AccessMode,
         options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
         permissions: FilePermissions? = nil
-    ) {
-        core = .openat(atDirectory: directory, path: path, mode, options: options, permissions: permissions)
+    ) -> IORequest {
+        IORequest(core:  .openat(atDirectory: directory, path: path, mode, options: options, permissions: permissions))
     }
 
 
-    public init(
-        opening path: FilePath,
+    public static func opening(_ path: FilePath,
         in directory: FileDescriptor,
         into slot: IORingFileSlot,
         mode: FileDescriptor.AccessMode,
         options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
         permissions: FilePermissions? = nil
-    ) {
+    ) -> IORequest {
         fatalError("Implement me")
     }
 
-    public init(
-        opening path: FilePath,
+    public static func opening(_ path: FilePath,
         in directory: FileDescriptor,
         mode: FileDescriptor.AccessMode,
         options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
         permissions: FilePermissions? = nil
-    ) {
+    ) -> IORequest {
         fatalError("Implement me")
     }
 
