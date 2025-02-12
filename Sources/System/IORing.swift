@@ -553,7 +553,7 @@ public struct IORing: ~Copyable {
         public subscript(position: Int) -> IOResource<T> {
             IOResource(resource: resources[position], index: position)
         }
-        public subscript(position: Int16) -> IOResource<T> {
+        public subscript(position: UInt16) -> IOResource<T> {
             IOResource(resource: resources[Int(position)], index: Int(position))
         }
     }
