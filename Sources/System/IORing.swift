@@ -563,7 +563,7 @@ public struct IORing: ~Copyable {
         fatalError("failed to unregister buffers: TODO")
     }
 
-    public func submitRequests() throws {
+    public func submitPreparedRequests() throws {
         try _submitRequests(ring: submissionRing, ringDescriptor: ringDescriptor)
     }
 
@@ -573,8 +573,7 @@ public struct IORing: ~Copyable {
             raw.take()!, ring: &submissionRing, submissionQueueEntries: submissionQueueEntries)
     }
 
-    //@inlinable //TODO: make sure the array allocation gets optimized out...
-    public mutating func prepare(linkedRequests: IORequest...) {
+    mutating func prepare(linkedRequests: some BidirectionalCollection<IORequest>) {
         guard linkedRequests.count > 0 else {
             return
         }
@@ -587,6 +586,16 @@ public struct IORing: ~Copyable {
         }
         _writeRequest(
             last.makeRawRequest(), ring: &submissionRing, submissionQueueEntries: submissionQueueEntries)
+    }
+
+    //@inlinable //TODO: make sure the array allocation gets optimized out...
+    public mutating func prepare(linkedRequests: IORequest...) {
+        prepare(linkedRequests: linkedRequests)
+    }
+
+    public mutating func submit(linkedRequests: IORequest...) throws {
+        prepare(linkedRequests: linkedRequests)
+        try submitPreparedRequests()
     }
 
     deinit {
