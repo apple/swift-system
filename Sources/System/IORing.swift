@@ -53,7 +53,7 @@ struct CQRing: ~Copyable {
 }
 
 public struct IOResource<T> {
-    typealias Resource = T
+    public typealias Resource = T
     @usableFromInline let resource: T
     @usableFromInline let index: Int
 
@@ -496,7 +496,7 @@ public struct IORing: ~Copyable {
         try handleRegistrationResult(result)
     }
 
-    public mutating func registerFileSlots(count: Int) -> some RandomAccessCollection<IORingFileSlot> {
+    public mutating func registerFileSlots(count: Int) -> RegisteredResources<IORingFileSlot.Resource> {
         precondition(_registeredFiles == nil)
         precondition(count < UInt32.max)
          let files = [UInt32](repeating: UInt32.max, count: count)
@@ -519,11 +519,11 @@ public struct IORing: ~Copyable {
         fatalError("failed to unregister files")
     }
 
-    public var registeredFileSlots: some RandomAccessCollection<IORingFileSlot> {
+    public var registeredFileSlots: RegisteredResources<IORingFileSlot.Resource> {
         RegisteredResources(resources: _registeredFiles ?? [])
     }
 
-    public mutating func registerBuffers(_ buffers: UnsafeMutableRawBufferPointer...) -> some RandomAccessCollection<IORingBuffer> {
+    public mutating func registerBuffers(_ buffers: UnsafeMutableRawBufferPointer...) -> RegisteredResources<IORingBuffer.Resource> {
         precondition(buffers.count < UInt32.max)
         precondition(_registeredBuffers == nil)
         //TODO: check if io_uring has preconditions it needs for the buffers (e.g. alignment)
@@ -542,20 +542,23 @@ public struct IORing: ~Copyable {
         return registeredBuffers
     }
 
-    struct RegisteredResources<T>: RandomAccessCollection {
+    public struct RegisteredResources<T>: RandomAccessCollection {
         let resources: [T]
 
-        var startIndex: Int { 0 }
-        var endIndex: Int { resources.endIndex }
+        public var startIndex: Int { 0 }
+        public var endIndex: Int { resources.endIndex }
         init(resources: [T]) {
             self.resources = resources
         }
-        subscript(position: Int) -> IOResource<T> {
+        public subscript(position: Int) -> IOResource<T> {
             IOResource(resource: resources[position], index: position)
+        }
+        public subscript(position: Int16) -> IOResource<T> {
+            IOResource(resource: resources[Int(position)], index: Int(position))
         }
     }
 
-    public var registeredBuffers: some RandomAccessCollection<IORingBuffer> {
+    public var registeredBuffers: RegisteredResources<IORingBuffer.Resource> {
         RegisteredResources(resources: _registeredBuffers ?? [])
     }
 
