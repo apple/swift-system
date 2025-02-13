@@ -21,5 +21,6 @@
 #include <pthread.h>
 #include <sched.h>
 #include <unistd.h>
+#include "io_uring.h"
 #endif
 
