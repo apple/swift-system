@@ -496,16 +496,18 @@ public struct IORing: ~Copyable {
         try handleRegistrationResult(result)
     }
 
-    public mutating func registerFileSlots(count: Int) -> RegisteredResources<IORingFileSlot.Resource> {
+    public mutating func registerFileSlots(count: Int) -> RegisteredResources<
+        IORingFileSlot.Resource
+    > {
         precondition(_registeredFiles == nil)
         precondition(count < UInt32.max)
-         let files = [UInt32](repeating: UInt32.max, count: count)
+        let files = [UInt32](repeating: UInt32.max, count: count)
 
         let regResult = files.withUnsafeBufferPointer { bPtr in
             io_uring_register(
                 self.ringDescriptor,
                 IORING_REGISTER_FILES,
-                UnsafeMutableRawPointer(mutating:bPtr.baseAddress!),
+                UnsafeMutableRawPointer(mutating: bPtr.baseAddress!),
                 UInt32(truncatingIfNeeded: count)
             )
         }
@@ -523,7 +525,9 @@ public struct IORing: ~Copyable {
         RegisteredResources(resources: _registeredFiles ?? [])
     }
 
-    public mutating func registerBuffers(_ buffers: UnsafeMutableRawBufferPointer...) -> RegisteredResources<IORingBuffer.Resource> {
+    public mutating func registerBuffers(_ buffers: some Collection<UnsafeMutableRawBufferPointer>)
+        -> RegisteredResources<IORingBuffer.Resource>
+    {
         precondition(buffers.count < UInt32.max)
         precondition(_registeredBuffers == nil)
         //TODO: check if io_uring has preconditions it needs for the buffers (e.g. alignment)
@@ -540,6 +544,12 @@ public struct IORing: ~Copyable {
         // TODO: error handling
         _registeredBuffers = iovecs
         return registeredBuffers
+    }
+
+    public mutating func registerBuffers(_ buffers: UnsafeMutableRawBufferPointer...)
+        -> RegisteredResources<IORingBuffer.Resource>
+    {
+        registerBuffers(buffers)
     }
 
     public struct RegisteredResources<T>: RandomAccessCollection {
@@ -588,7 +598,8 @@ public struct IORing: ~Copyable {
                 raw, ring: &submissionRing, submissionQueueEntries: submissionQueueEntries)
         }
         _writeRequest(
-            last.makeRawRequest(), ring: &submissionRing, submissionQueueEntries: submissionQueueEntries)
+            last.makeRawRequest(), ring: &submissionRing,
+            submissionQueueEntries: submissionQueueEntries)
     }
 
     //@inlinable //TODO: make sure the array allocation gets optimized out...
