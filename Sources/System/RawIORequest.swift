@@ -36,6 +36,7 @@ extension RawIORequest {
         // ...
         case openAt2 = 28
         // ...
+        case unlinkAt = 36
     }
 
     public struct Flags: OptionSet, Hashable, Codable {

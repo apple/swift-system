@@ -60,6 +60,10 @@ internal enum IORequestCore {
     )
     case close(FileDescriptor)
     case closeSlot(IORingFileSlot)
+    case unlinkAt(   
+        atDirectory: FileDescriptor,
+        path: UnsafePointer<CChar>
+    )
 }
 
 @inline(__always)
@@ -235,6 +239,12 @@ extension IORequest {
         fatalError("Implement me")
     }
 
+    public static func unlinking(_ path: UnsafePointer<CChar>,
+        in directory: FileDescriptor
+    ) -> IORequest {
+        IORequest(core: .unlinkAt(atDirectory: directory, path: path))
+    }
+
     @inline(__always)
     public consuming func makeRawRequest() -> RawIORequest {
         var request = RawIORequest()
@@ -293,6 +303,10 @@ extension IORequest {
         case .closeSlot(let file):
             request.operation = .close
             request.rawValue.file_index = UInt32(file.index + 1)
+        case .unlinkAt(let atDirectory, let path):
+            request.operation = .unlinkAt
+            request.fileDescriptor = atDirectory
+            request.rawValue.addr = UInt64(UInt(bitPattern: path))
         }
         return request
     }
