@@ -214,7 +214,6 @@ public struct IORing: ~Copyable {
 
     public init(queueDepth: UInt32) throws {
         var params = io_uring_params()
-        params.flags = IORING_SETUP_SINGLE_ISSUER  //TODO make this configurable
 
         ringDescriptor = withUnsafeMutablePointer(to: &params) {
             return io_uring_setup(queueDepth, $0)
