@@ -11,6 +11,8 @@ cmake_minimum_required(VERSION 3.16.0)
 project(SwiftSystem
   LANGUAGES C Swift)
 
+include(GNUInstallDirs)
+
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)

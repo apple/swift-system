@@ -187,7 +187,7 @@ internal func pwrite(
 internal func pipe(
   _ fds: UnsafeMutablePointer<Int32>, bytesReserved: UInt32 = 4096
 ) -> CInt {
-  return _pipe(fds, bytesReserved, _O_BINARY | _O_NOINHERIT);
+  return _pipe(fds, bytesReserved, _O_BINARY | _O_NOINHERIT);
 }
 
 @inline(__always)

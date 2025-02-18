@@ -1067,7 +1067,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   public static var ENOSYS: Errno { noFunction }
 
 // BSD
-#if SYSTEM_PACKAGE_DARWIN
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
   /// Inappropriate file type or format.
   ///
   /// The file was the wrong type for the operation,
@@ -1082,7 +1082,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   public static var EFTYPE: Errno { badFileTypeOrFormat }
 #endif
 
-#if SYSTEM_PACKAGE_DARWIN
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
   /// Authentication error.
   ///
   /// The authentication ticket used to mount an NFS file system was invalid.
@@ -1253,7 +1253,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "illegalByteSequence")
   public static var EILSEQ: Errno { illegalByteSequence }
 
-#if SYSTEM_PACKAGE_DARWIN
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
   /// Attribute not found.
   ///
   /// The specified extended attribute doesn't exist.
@@ -1294,7 +1294,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "multiHop")
   public static var EMULTIHOP: Errno { multiHop }
 
-#if !os(WASI)
+#if !os(WASI) && !os(FreeBSD)
   /// No message available.
   ///
   /// No message was available to be received by the requested operation.
@@ -1320,7 +1320,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "noLink")
   public static var ENOLINK: Errno { noLink }
 
-#if !os(WASI)
+#if !os(WASI) && !os(FreeBSD)
   /// Reserved.
   ///
   /// This error is reserved for future use.
@@ -1361,7 +1361,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "protocolError")
   public static var EPROTO: Errno { protocolError }
 
-#if !os(OpenBSD) && !os(WASI)
+#if !os(OpenBSD) && !os(WASI) && !os(FreeBSD)
   /// Reserved.
   ///
   /// This error is reserved for future use.
@@ -1459,6 +1459,38 @@ extension Errno {
   public static var EOWNERDEAD: Errno { previousOwnerDied }
 #endif
 
+#if os(FreeBSD)
+  /// Capabilities insufficient.
+  ///
+  /// The corresponding C error is `ENOTCAPABLE`.
+  @_alwaysEmitIntoClient
+  public static var notCapable: Errno { .init(rawValue: _ENOTCAPABLE) }
+
+  @_alwaysEmitIntoClient
+  @available(*, unavailable, renamed: "notCapable")
+  public static var ENOTCAPABLE: Errno { notCapable }
+
+  /// Not permitted in capability mode.
+  ///
+  /// The corresponding C error is `ECAPMODE`.
+  @_alwaysEmitIntoClient
+  public static var capabilityMode: Errno { .init(rawValue: _ECAPMODE) }
+
+  @_alwaysEmitIntoClient
+  @available(*, unavailable, renamed: "capabilityMode")
+  public static var ECAPMODE: Errno { capabilityMode }
+
+  /// Integrity check failed.
+  ///
+  /// The corresponding C error is `EINTEGRITY`.
+  @_alwaysEmitIntoClient
+  public static var integrityCheckFailed: Errno { .init(rawValue: _EINTEGRITY) }
+
+  @_alwaysEmitIntoClient
+  @available(*, unavailable, renamed: "integrityCheckFailed")
+  public static var EINTEGRITY: Errno { integrityCheckFailed }
+#endif
+
 #if SYSTEM_PACKAGE_DARWIN
   /// Interface output queue is full.
   ///
@@ -1469,7 +1501,9 @@ extension Errno {
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "outputQueueFull")
   public static var EQFULL: Errno { outputQueueFull }
+#endif
 
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
   /// The largest valid error.
   ///
   /// This value is the largest valid value

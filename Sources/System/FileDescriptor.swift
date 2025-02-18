@@ -182,7 +182,7 @@ extension FileDescriptor {
     @available(*, unavailable, renamed: "exclusiveCreate")
     public static var O_EXCL: OpenOptions { exclusiveCreate }
 
-#if SYSTEM_PACKAGE_DARWIN
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
     /// Indicates that opening the file
     /// atomically obtains a shared lock on the file.
     ///
@@ -248,6 +248,22 @@ extension FileDescriptor {
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "directory")
     public static var O_DIRECTORY: OpenOptions { directory }
+#endif
+
+#if os(FreeBSD)
+    /// Indicates that each write operation is synchronous.
+    ///
+    /// If this option is specified,
+    /// each time you write to the file,
+    /// the new data is written immediately and synchronously to the disk.
+    ///
+    /// The corresponding C constant is `O_SYNC`.
+    @_alwaysEmitIntoClient
+    public static var sync: OpenOptions { .init(rawValue: _O_SYNC) }
+
+    @_alwaysEmitIntoClient
+    @available(*, unavailable, renamed: "sync")
+    public static var O_SYNC: OpenOptions { sync }
 #endif
 
 #if SYSTEM_PACKAGE_DARWIN
@@ -354,7 +370,7 @@ extension FileDescriptor {
 
 // TODO: These are available on some versions of Linux with appropriate
 // macro defines.
-#if SYSTEM_PACKAGE_DARWIN
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
     /// Indicates that the offset should be set
     /// to the next hole after the specified number of bytes.
     ///
@@ -455,6 +471,19 @@ extension FileDescriptor.OpenOptions
       (.create, ".create"),
       (.truncate, ".truncate"),
       (.exclusiveCreate, ".exclusiveCreate"),
+    ]
+#elseif os(FreeBSD)
+    let descriptions: [(Element, StaticString)] = [
+      (.nonBlocking, ".nonBlocking"),
+      (.append, ".append"),
+      (.create, ".create"),
+      (.truncate, ".truncate"),
+      (.exclusiveCreate, ".exclusiveCreate"),
+      (.sharedLock, ".sharedLock"),
+      (.exclusiveLock, ".exclusiveLock"),
+      (.sync, ".sync"),
+      (.noFollow, ".noFollow"),
+      (.closeOnExec, ".closeOnExec")
     ]
 #else
     let descriptions: [(Element, StaticString)] = [
