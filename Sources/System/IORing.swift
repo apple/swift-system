@@ -376,9 +376,9 @@ public struct IORing: ~Copyable {
                     "fatal error in receiving requests: "
                         + Errno(rawValue: -res).debugDescription
                 )
-                while let completion = _tryConsumeCompletion(ring: completionRing) {
-                    try consumer(completion, nil, false)
-                }
+            }
+            while let completion = _tryConsumeCompletion(ring: completionRing) {
+                try consumer(completion, nil, false)
             }
             try consumer(nil, nil, true)
         }
