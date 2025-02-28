@@ -336,6 +336,7 @@ public struct IORing: ~Copyable {
 
     private func _blockingConsumeCompletionGuts(
         minimumCount: UInt32,
+        maximumCount: UInt32,
         extraArgs: UnsafeMutablePointer<io_uring_getevents_arg>? = nil,
         consumer: (IOCompletion?, IORingError?, Bool) throws -> Void
     ) rethrows {
@@ -343,6 +344,10 @@ public struct IORing: ~Copyable {
         while let completion = _tryConsumeCompletion(ring: completionRing) {
             count += 1
             try consumer(completion, nil, false)
+            if count == maximumCount {
+                try consumer(nil, nil, true)
+                return
+            }
         }
 
         if count < minimumCount {
@@ -377,8 +382,13 @@ public struct IORing: ~Copyable {
                         + Errno(rawValue: -res).debugDescription
                 )
             }
+            var count = 0
             while let completion = _tryConsumeCompletion(ring: completionRing) {
+                count += 1
                 try consumer(completion, nil, false)
+                if count == maximumCount {
+                    break
+                }
             }
             try consumer(nil, nil, true)
         }
@@ -388,7 +398,7 @@ public struct IORing: ~Copyable {
         extraArgs: UnsafeMutablePointer<io_uring_getevents_arg>? = nil
     ) throws -> IOCompletion {
         var result: IOCompletion? = nil
-        try _blockingConsumeCompletionGuts(minimumCount: 1, extraArgs: extraArgs) {
+        try _blockingConsumeCompletionGuts(minimumCount: 1, maximumCount: 1, extraArgs: extraArgs) {
             (completion, error, done) in
             if let error {
                 throw error
@@ -440,10 +450,10 @@ public struct IORing: ~Copyable {
                     ts: UInt64(UInt(bitPattern: tsPtr))
                 )
                 try _blockingConsumeCompletionGuts(
-                    minimumCount: minimumCount, extraArgs: &args, consumer: consumer)
+                    minimumCount: minimumCount, maximumCount: UInt32.max, extraArgs: &args, consumer: consumer)
             }
         } else {
-            try _blockingConsumeCompletionGuts(minimumCount: minimumCount, consumer: consumer)
+            try _blockingConsumeCompletionGuts(minimumCount: minimumCount, maximumCount: UInt32.max, consumer: consumer)
         }
     }
 
