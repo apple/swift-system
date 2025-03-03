@@ -450,10 +450,12 @@ public struct IORing: ~Copyable {
                     ts: UInt64(UInt(bitPattern: tsPtr))
                 )
                 try _blockingConsumeCompletionGuts(
-                    minimumCount: minimumCount, maximumCount: UInt32.max, extraArgs: &args, consumer: consumer)
+                    minimumCount: minimumCount, maximumCount: UInt32.max, extraArgs: &args,
+                    consumer: consumer)
             }
         } else {
-            try _blockingConsumeCompletionGuts(minimumCount: minimumCount, maximumCount: UInt32.max, consumer: consumer)
+            try _blockingConsumeCompletionGuts(
+                minimumCount: minimumCount, maximumCount: UInt32.max, consumer: consumer)
         }
     }
 
@@ -588,6 +590,20 @@ public struct IORing: ~Copyable {
 
     public func submitPreparedRequests() throws {
         try _submitRequests(ring: submissionRing, ringDescriptor: ringDescriptor)
+    }
+
+    public func submitPreparedRequestsAndConsumeCompletions(
+        minimumCount: UInt32 = 1,
+        timeout: Duration? = nil,
+        consumer: (IOCompletion?, IORingError?, Bool) throws -> Void
+    ) throws {
+        //TODO: optimize this to one uring_enter
+        try submitPreparedRequests()
+        try blockingConsumeCompletions(
+            minimumCount: minimumCount, 
+            timeout: timeout, 
+            consumer: consumer
+        )
     }
 
     public mutating func prepare(request: __owned IORequest) -> Bool {
