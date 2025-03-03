@@ -95,6 +95,7 @@ internal func makeRawRequest_readWrite_registered(
     request.buffer = buffer.unsafeBuffer
     request.rawValue.buf_index = UInt16(exactly: buffer.index)!
     request.offset = offset
+    request.rawValue.user_data = userData
     return request
 }
 
@@ -111,10 +112,11 @@ internal func makeRawRequest_readWrite_registered_slot(
     request.buffer = buffer.unsafeBuffer
     request.rawValue.buf_index = UInt16(exactly: buffer.index)!
     request.offset = offset
+    request.rawValue.user_data = userData
     return request
 }
 
-@inlinable @inline(__always)
+@inline(__always)
 internal func makeRawRequest_readWrite_unregistered(
     file: FileDescriptor,
     buffer: UnsafeMutableRawBufferPointer,
@@ -125,6 +127,7 @@ internal func makeRawRequest_readWrite_unregistered(
     request.fileDescriptor = file
     request.buffer = buffer
     request.offset = offset
+    request.rawValue.user_data = userData
     return request
 }
 
@@ -140,6 +143,7 @@ internal func makeRawRequest_readWrite_unregistered_slot(
     request.flags = .fixedFile
     request.buffer = buffer
     request.offset = offset
+    request.rawValue.user_data = userData
     return request
 }
 
