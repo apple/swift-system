@@ -30,7 +30,7 @@ final class IORequestTests: XCTestCase {
     func testOpenatFixedFile() throws {
         let pathPtr = UnsafePointer<CChar>(bitPattern: 0x414141410badf00d)!
         let fileSlot: IORingFileSlot = IORingFileSlot(resource: UInt32.max, index: 0)
-        let req = IORequest.opening(pathPtr,
+        let req = IORequest.opening(FilePath(platformString: pathPtr),
             in: FileDescriptor(rawValue: -100),
             into: fileSlot,
             mode: .readOnly,

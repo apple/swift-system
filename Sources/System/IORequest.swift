@@ -5,14 +5,14 @@ internal enum IORequestCore {
     case nop  // nothing here
     case openat(
         atDirectory: FileDescriptor,
-        path: UnsafePointer<CChar>,
+        path: FilePath,
         FileDescriptor.AccessMode,
         options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
         permissions: FilePermissions? = nil
     )
     case openatSlot(
         atDirectory: FileDescriptor,
-        path: UnsafePointer<CChar>,
+        path: FilePath,
         FileDescriptor.AccessMode,
         options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
         permissions: FilePermissions? = nil,
@@ -60,9 +60,9 @@ internal enum IORequestCore {
     )
     case close(FileDescriptor)
     case closeSlot(IORingFileSlot)
-    case unlinkAt(   
+    case unlinkAt(
         atDirectory: FileDescriptor,
-        path: UnsafePointer<CChar>
+        path: FilePath
     )
 }
 
@@ -135,56 +135,64 @@ extension IORequest {
         IORequest(core: .nop)
     }
 
-    public static func reading(_ file: IORingFileSlot,
+    public static func reading(
+        _ file: IORingFileSlot,
         into buffer: IORingBuffer,
         at offset: UInt64 = 0
     ) -> IORequest {
         IORequest(core: .readSlot(file: file, buffer: buffer, offset: offset))
     }
 
-    public static func reading(_ file: FileDescriptor,
+    public static func reading(
+        _ file: FileDescriptor,
         into buffer: IORingBuffer,
         at offset: UInt64 = 0
     ) -> IORequest {
         IORequest(core: .read(file: file, buffer: buffer, offset: offset))
     }
 
-    public static func reading(_ file: IORingFileSlot,
+    public static func reading(
+        _ file: IORingFileSlot,
         into buffer: UnsafeMutableRawBufferPointer,
         at offset: UInt64 = 0
     ) -> IORequest {
         IORequest(core: .readUnregisteredSlot(file: file, buffer: buffer, offset: offset))
     }
 
-    public static func reading(_ file: FileDescriptor,
+    public static func reading(
+        _ file: FileDescriptor,
         into buffer: UnsafeMutableRawBufferPointer,
         at offset: UInt64 = 0
     ) -> IORequest {
         IORequest(core: .readUnregistered(file: file, buffer: buffer, offset: offset))
     }
 
-    public static func writing(_ buffer: IORingBuffer,
+    public static func writing(
+        _ buffer: IORingBuffer,
         into file: IORingFileSlot,
         at offset: UInt64 = 0
     ) -> IORequest {
         IORequest(core: .writeSlot(file: file, buffer: buffer, offset: offset))
     }
 
-    public static func writing(_ buffer: IORingBuffer,
+    public static func writing(
+        _ buffer: IORingBuffer,
         into file: FileDescriptor,
         at offset: UInt64 = 0
     ) -> IORequest {
         IORequest(core: .write(file: file, buffer: buffer, offset: offset))
     }
 
-    public static func writing(_ buffer: UnsafeMutableRawBufferPointer,
+    public static func writing(
+        _ buffer: UnsafeMutableRawBufferPointer,
         into file: IORingFileSlot,
         at offset: UInt64 = 0
     ) -> IORequest {
         IORequest(core: .writeUnregisteredSlot(file: file, buffer: buffer, offset: offset))
     }
 
-    public static func writing(_ buffer: UnsafeMutableRawBufferPointer,
+    public static func writing(
+        _ buffer: UnsafeMutableRawBufferPointer,
         into file: FileDescriptor,
         at offset: UInt64 = 0
     ) -> IORequest {
@@ -199,47 +207,35 @@ extension IORequest {
         IORequest(core: .closeSlot(file))
     }
 
-
-    public static func opening(_ path: UnsafePointer<CChar>,
+    public static func opening(
+        _ path: FilePath,
         in directory: FileDescriptor,
         into slot: IORingFileSlot,
         mode: FileDescriptor.AccessMode,
         options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
         permissions: FilePermissions? = nil
     ) -> IORequest {
-        IORequest(core :.openatSlot(atDirectory: directory, path: path, mode, options: options, permissions: permissions, intoSlot: slot))
+        IORequest(
+            core: .openatSlot(
+                atDirectory: directory, path: path, mode, options: options,
+                permissions: permissions, intoSlot: slot))
     }
 
-    public static func opening(_ path: UnsafePointer<CChar>,
+    public static func opening(
+        _ path: FilePath,
         in directory: FileDescriptor,
         mode: FileDescriptor.AccessMode,
         options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
         permissions: FilePermissions? = nil
     ) -> IORequest {
-        IORequest(core:  .openat(atDirectory: directory, path: path, mode, options: options, permissions: permissions))
+        IORequest(
+            core: .openat(
+                atDirectory: directory, path: path, mode, options: options, permissions: permissions
+            ))
     }
 
-
-    public static func opening(_ path: FilePath,
-        in directory: FileDescriptor,
-        into slot: IORingFileSlot,
-        mode: FileDescriptor.AccessMode,
-        options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
-        permissions: FilePermissions? = nil
-    ) -> IORequest {
-        fatalError("Implement me")
-    }
-
-    public static func opening(_ path: FilePath,
-        in directory: FileDescriptor,
-        mode: FileDescriptor.AccessMode,
-        options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
-        permissions: FilePermissions? = nil
-    ) -> IORequest {
-        fatalError("Implement me")
-    }
-
-    public static func unlinking(_ path: UnsafePointer<CChar>,
+    public static func unlinking(
+        _ path: FilePath,
         in directory: FileDescriptor
     ) -> IORequest {
         IORequest(core: .unlinkAt(atDirectory: directory, path: path))
@@ -251,20 +247,31 @@ extension IORequest {
         switch extractCore() {
         case .nop:
             request.operation = .nop
-        case .openatSlot(let atDirectory, let path, let mode, let options, let permissions, let fileSlot):
+        case .openatSlot(
+            let atDirectory, let path, let mode, let options, let permissions, let fileSlot):
             // TODO: use rawValue less
             request.operation = .openAt
             request.fileDescriptor = atDirectory
-            request.rawValue.addr = UInt64(UInt(bitPattern: path))
+            request.rawValue.addr = UInt64(
+                UInt(
+                    bitPattern: path.withPlatformString { ptr in
+                        ptr  //this is unsavory, but we keep it alive by storing path alongside it in the request
+                    }))
             request.rawValue.open_flags = UInt32(bitPattern: options.rawValue | mode.rawValue)
             request.rawValue.len = permissions?.rawValue ?? 0
             request.rawValue.file_index = UInt32(fileSlot.index + 1)
+            request.path = path
         case .openat(let atDirectory, let path, let mode, let options, let permissions):
             request.operation = .openAt
             request.fileDescriptor = atDirectory
-            request.rawValue.addr = UInt64(UInt(bitPattern: path))
+            request.rawValue.addr = UInt64(
+                UInt(
+                    bitPattern: path.withPlatformString { ptr in
+                        ptr  //this is unsavory, but we keep it alive by storing path alongside it in the request
+                    }))
             request.rawValue.open_flags = UInt32(bitPattern: options.rawValue | mode.rawValue)
             request.rawValue.len = permissions?.rawValue ?? 0
+            request.path = path
         case .write(let file, let buffer, let offset):
             request.operation = .writeFixed
             return makeRawRequest_readWrite_registered(
@@ -306,7 +313,13 @@ extension IORequest {
         case .unlinkAt(let atDirectory, let path):
             request.operation = .unlinkAt
             request.fileDescriptor = atDirectory
-            request.rawValue.addr = UInt64(UInt(bitPattern: path))
+            request.rawValue.addr = UInt64(
+                UInt(
+                    bitPattern: path.withPlatformString { ptr in
+                        ptr  //this is unsavory, but we keep it alive by storing path alongside it in the request
+                    })
+            )
+            request.path = path
         }
         return request
     }

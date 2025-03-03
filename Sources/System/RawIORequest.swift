@@ -4,7 +4,8 @@
     
 //TODO: make this internal
 public struct RawIORequest: ~Copyable {
-    var rawValue: io_uring_sqe 
+    var rawValue: io_uring_sqe
+    var path: FilePath? //buffer owner for the path pointer that the sqe may have
 
     public init() {
         self.rawValue = io_uring_sqe()
