@@ -23,19 +23,25 @@ extension IOCompletion {
 extension IOCompletion {
     public var userData: UInt64 { //TODO: naming?
         get {
-            return rawValue.user_data
+            rawValue.user_data
+        }
+    }
+
+    public var userPointer: UnsafeRawPointer? {
+        get {
+            UnsafeRawPointer(bitPattern: UInt(rawValue.user_data))
         }
     }
 
     public var result: Int32 {
         get {
-            return rawValue.res
+            rawValue.res
         }
     }
 
     public var flags: IOCompletion.Flags {
         get {
-            return Flags(rawValue: rawValue.flags & 0x0000FFFF)
+            Flags(rawValue: rawValue.flags & 0x0000FFFF)
         }
     }
 
