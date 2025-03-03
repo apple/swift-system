@@ -102,7 +102,6 @@ extension RawIORequest {
             // TODO: cleanup?
             rawValue.addr = UInt64(Int(bitPattern: newValue.baseAddress!))
             rawValue.len = UInt32(exactly: newValue.count)!
-            rawValue.user_data = rawValue.addr //TODO: this is kind of a hack, but I need to decide how best to get the buffer out on the other side
         }
     }
 
