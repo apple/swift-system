@@ -343,7 +343,11 @@ public struct IORing: ~Copyable {
         var count = 0
         while let completion = _tryConsumeCompletion(ring: completionRing) {
             count += 1
-            try consumer(completion, nil, false)
+            if completion.result < 0 {
+                try consumer(nil, IORingError(completionResult: completion.result), false)
+            } else {
+                try consumer(completion, nil, false)
+            }
             if count == maximumCount {
                 try consumer(nil, nil, true)
                 return
@@ -385,8 +389,12 @@ public struct IORing: ~Copyable {
             var count = 0
             while let completion = _tryConsumeCompletion(ring: completionRing) {
                 count += 1
+            if completion.result < 0 {
+                try consumer(nil, IORingError(completionResult: completion.result), false)
+            } else {
                 try consumer(completion, nil, false)
-                if count == maximumCount {
+            }
+            if count == maximumCount {
                     break
                 }
             }
