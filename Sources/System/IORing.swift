@@ -338,7 +338,7 @@ public struct IORing: ~Copyable {
         minimumCount: UInt32,
         maximumCount: UInt32,
         extraArgs: UnsafeMutablePointer<io_uring_getevents_arg>? = nil,
-        consumer: (IOCompletion?, IORingError?, Bool) throws -> Void
+        consumer: (consuming IOCompletion?, IORingError?, Bool) throws -> Void
     ) rethrows {
         var count = 0
         while let completion = _tryConsumeCompletion(ring: completionRing) {
@@ -407,15 +407,15 @@ public struct IORing: ~Copyable {
     ) throws -> IOCompletion {
         var result: IOCompletion? = nil
         try _blockingConsumeCompletionGuts(minimumCount: 1, maximumCount: 1, extraArgs: extraArgs) {
-            (completion, error, done) in
+            (completion: consuming IOCompletion?, error, done) in
             if let error {
                 throw error
             }
-            if let completion {
-                result = completion
+            if let completion  {
+                result = consume completion
             }
         }
-        return result.unsafelyUnwrapped
+        return result.take()!
     }
 
     public func blockingConsumeCompletion(
@@ -443,7 +443,7 @@ public struct IORing: ~Copyable {
     public func blockingConsumeCompletions(
         minimumCount: UInt32 = 1,
         timeout: Duration? = nil,
-        consumer: (IOCompletion?, IORingError?, Bool) throws -> Void
+        consumer: (consuming IOCompletion?, IORingError?, Bool) throws -> Void
     ) throws {
         if let timeout {
             var ts = __kernel_timespec(
@@ -603,7 +603,7 @@ public struct IORing: ~Copyable {
     public func submitPreparedRequestsAndConsumeCompletions(
         minimumCount: UInt32 = 1,
         timeout: Duration? = nil,
-        consumer: (IOCompletion?, IORingError?, Bool) throws -> Void
+        consumer: (consuming IOCompletion?, IORingError?, Bool) throws -> Void
     ) throws {
         //TODO: optimize this to one uring_enter
         try submitPreparedRequests()
