@@ -15,7 +15,7 @@
 Up until recently, the overwhelmingly dominant file IO syscalls on major Unix platforms have been synchronous, e.g. `read(2)`. This design is very simple and proved sufficient for many uses for decades, but is less than ideal for Swift's needs in a few major ways:
 
 1. Requiring an entire OS thread for each concurrent operation imposes significant memory overhead
-2. Requiring a separate syscall for each operation imposes significant CPU/time overhead to switch into and out of kernel mode repeatedly. This has been exacerbated in recent years by mitigations for the Spectre family of security exploits increasing the cost of syscalls.
+2. Requiring a separate syscall for each operation imposes significant CPU/time overhead to switch into and out of kernel mode repeatedly. This has been exacerbated in recent years by mitigations for the Meltdown family of security exploits increasing the cost of syscalls.
 3. Swift's N:M coroutine-on-thread-pool concurrency model assumes that threads will not be blocked. Each thread waiting for a syscall means a CPU core being left idle. In practice systems like NIO that deal in highly concurrent IO have had to work around this by providing their own thread pools.
 
 Non-file IO (network, pipes, etc…) has been in a somewhat better place with `epoll` and `kqueue` for asynchronously waiting for readability, but syscall overhead remains a significant issue for highly scalable systems.
@@ -24,6 +24,8 @@ With the introduction of `io_uring` in 2019, Linux now has the kernel level tool
 
 ## Proposed solution
 
+We propose a *low level, unopinionated* Swift interface for io_uring on Linux (see Future Directions for discussion of possible more abstract interfaces).
+
 `struct IORing: ~Copyable` provides facilities for
 
 * Registering and unregistering resources (files and buffers), an `io_uring` specific variation on Unix file descriptors that improves their efficiency
@@ -31,14 +33,14 @@ With the introduction of `io_uring` in 2019, Linux now has the kernel level tool
 * Enqueueing IO requests
 * Dequeueing IO completions
 
-`class IOResource<T>` represents, via its two typealiases `IORingFileSlot` and `IORingBuffer`, registered file descriptors and buffers. Ideally we'd express the lifetimes of these as being dependent on the lifetime of the ring, but so far that's proven intractable, so we use a reference type. We expect that the up-front overhead of this should be negligible for larger operations, and smaller or one-shot operations can use non-registered buffers and file descriptors.
+`struct IOResource<T>` represents, via its two typealiases `IORingFileSlot` and `IORingBuffer`, registered file descriptors and buffers.
 
 `struct IORequest: ~Copyable` represents an IO operation that can be enqueued for the kernel to execute. It supports a wide variety of operations matching traditional unix file and socket operations.
 
 IORequest operations are expressed as overloaded static methods on `IORequest`, e.g. `openat` is spelled
 
 ```swift
-    public static func opening(
+    public static func open(
         _ path: FilePath,
         in directory: FileDescriptor,
         into slot: IORingFileSlot,
@@ -48,7 +50,7 @@ IORequest operations are expressed as overloaded static methods on `IORequest`, 
         context: UInt64 = 0
     ) -> IORequest
 
-    public static func opening(
+    public static func open(
         _ path: FilePath,
         in directory: FileDescriptor,
         mode: FileDescriptor.AccessMode,
@@ -84,7 +86,7 @@ Unfortunately the underlying kernel API makes it relatively difficult to determi
 ## Detailed design 
 
 ```swift
-public class IOResource<T> { }
+public struct IOResource<T> { }
 public typealias IORingFileSlot = IOResource<UInt32>
 public typealias IORingBuffer = IOResource<iovec>
 
@@ -152,23 +154,27 @@ public struct IORing: ~Copyable {
     
 	public func tryConsumeCompletion() -> IOCompletion?
 	
-	public struct Features {
+	public struct Features: OptionSet {
+		let rawValue: UInt32
+		
+		public init(rawValue: UInt32)
+		
 		//IORING_FEAT_SINGLE_MMAP is handled internally
-		public var nonDroppingCompletions: Bool //IORING_FEAT_NODROP
-		public var stableSubmissions: Bool //IORING_FEAT_SUBMIT_STABLE
-		public var currentFilePosition: Bool //IORING_FEAT_RW_CUR_POS
-		public var assumingTaskCredentials: Bool //IORING_FEAT_CUR_PERSONALITY
-		public var fastPolling: Bool //IORING_FEAT_FAST_POLL
-		public var epoll32BitFlags: Bool //IORING_FEAT_POLL_32BITS
-		public var pollNonFixedFiles: Bool //IORING_FEAT_SQPOLL_NONFIXED
-		public var extendedArguments: Bool //IORING_FEAT_EXT_ARG
-		public var nativeWorkers: Bool //IORING_FEAT_NATIVE_WORKERS
-		public var resourceTags: Bool //IORING_FEAT_RSRC_TAGS
-		public var allowsSkippingSuccessfulCompletions: Bool //IORING_FEAT_CQE_SKIP
-		public var improvedLinkedFiles: Bool //IORING_FEAT_LINKED_FILE
-		public var registerRegisteredRings: Bool //IORING_FEAT_REG_REG_RING
-		public var minimumTimeout: Bool //IORING_FEAT_MIN_TIMEOUT
-		public var bundledSendReceive: Bool //IORING_FEAT_RECVSEND_BUNDLE
+		public static let nonDroppingCompletions: Bool //IORING_FEAT_NODROP
+		public static let stableSubmissions: Bool //IORING_FEAT_SUBMIT_STABLE
+		public static let currentFilePosition: Bool //IORING_FEAT_RW_CUR_POS
+		public static let assumingTaskCredentials: Bool //IORING_FEAT_CUR_PERSONALITY
+		public static let fastPolling: Bool //IORING_FEAT_FAST_POLL
+		public static let epoll32BitFlags: Bool //IORING_FEAT_POLL_32BITS
+		public static let pollNonFixedFiles: Bool //IORING_FEAT_SQPOLL_NONFIXED
+		public static let extendedArguments: Bool //IORING_FEAT_EXT_ARG
+		public static let nativeWorkers: Bool //IORING_FEAT_NATIVE_WORKERS
+		public static let resourceTags: Bool //IORING_FEAT_RSRC_TAGS
+		public static let allowsSkippingSuccessfulCompletions: Bool //IORING_FEAT_CQE_SKIP
+		public static let improvedLinkedFiles: Bool //IORING_FEAT_LINKED_FILE
+		public static let registerRegisteredRings: Bool //IORING_FEAT_REG_REG_RING
+		public static let minimumTimeout: Bool //IORING_FEAT_MIN_TIMEOUT
+		public static let bundledSendReceive: Bool //IORING_FEAT_RECVSEND_BUNDLE
 	}
 	public static var supportedFeatures: Features
 }
@@ -178,28 +184,28 @@ public struct IORequest: ~Copyable {
 	
 	// overloads for each combination of registered vs unregistered buffer/descriptor
 	// Read
-    public static func reading(
+    public static func read(
         _ file: IORingFileSlot,
         into buffer: IORingBuffer,
         at offset: UInt64 = 0,
         context: UInt64 = 0
     ) -> IORequest
 	
-    public static func reading(
+    public static func read(
         _ file: FileDescriptor,
         into buffer: IORingBuffer,
         at offset: UInt64 = 0,
         context: UInt64 = 0
     ) -> IORequest
     
-    public static func reading(
+    public static func read(
         _ file: IORingFileSlot,
         into buffer: UnsafeMutableRawBufferPointer,
         at offset: UInt64 = 0,
         context: UInt64 = 0
     ) -> IORequest
     
-    public static func reading(
+    public static func read(
         _ file: FileDescriptor,
         into buffer: UnsafeMutableRawBufferPointer,
         at offset: UInt64 = 0,
@@ -207,28 +213,28 @@ public struct IORequest: ~Copyable {
     ) -> IORequest
     
     // Write
-    public static func writing(
+    public static func write(
         _ buffer: IORingBuffer,
         into file: IORingFileSlot,
         at offset: UInt64 = 0,
         context: UInt64 = 0
     ) -> IORequest
     
-    public static func writing(
+    public static func write(
         _ buffer: IORingBuffer,
         into file: FileDescriptor,
         at offset: UInt64 = 0,
         context: UInt64 = 0
     ) -> IORequest 
     
-    public static func writing(
+    public static func write(
         _ buffer: UnsafeMutableRawBufferPointer,
         into file: IORingFileSlot,
         at offset: UInt64 = 0,
         context: UInt64 = 0
     ) -> IORequest
     
-    public static func writing(
+    public static func write(
         _ buffer: UnsafeMutableRawBufferPointer,
         into file: FileDescriptor,
         at offset: UInt64 = 0,
@@ -236,18 +242,18 @@ public struct IORequest: ~Copyable {
     ) -> IORequest
     
     // Close
-    public static func closing(
+    public static func close(
         _ file: FileDescriptor,
         context: UInt64 = 0
     ) -> IORequest 
     
-    public static func closing(
+    public static func close(
         _ file: IORingFileSlot,
         context: UInt64 = 0
     ) -> IORequest
     
     // Open At
-    public static func opening(
+    public static func open(
         _ path: FilePath,
         in directory: FileDescriptor,
         into slot: IORingFileSlot,
@@ -257,7 +263,7 @@ public struct IORequest: ~Copyable {
         context: UInt64 = 0
     ) -> IORequest
     
-    public static func opening(
+    public static func open(
         _ path: FilePath,
         in directory: FileDescriptor,
         mode: FileDescriptor.AccessMode,
@@ -266,10 +272,40 @@ public struct IORequest: ~Copyable {
         context: UInt64 = 0
     ) -> IORequest 
     
-    public static func unlinking(
+    public static func unlink(
         _ path: FilePath,
         in directory: FileDescriptor,
         context: UInt64 = 0
+    ) -> IORequest
+    
+    // Cancel
+    
+    public enum CancellationMatch {
+    	case all
+    	case first
+    }
+    
+    public static func cancel(
+    	_ matchAll: CancellationMatch,
+    	matchingContext: UInt64,
+    	context: UInt64
+    ) -> IORequest
+    
+    public static func cancel(
+    	_ matchAll: CancellationMatch,
+    	matchingFileDescriptor: FileDescriptor,
+    	context: UInt64
+    ) -> IORequest
+    
+    public static func cancel(
+    	_ matchAll: CancellationMatch,
+    	matchingRegisteredFileDescriptorAtIndex: Int,
+    	context: UInt64
+    ) -> IORequest
+    
+    public static func cancel(
+    	_ matchAll: CancellationMatch,
+    	context: UInt64
     ) -> IORequest
     
     // Other operations follow in the same pattern
@@ -322,14 +358,14 @@ let file = ring.registerFiles(count: 1)[0]
 var statInfo = Glibc.stat() // System doesn't have an abstraction for stat() right now
 // Build our requests to open the file and find out how big it is
 ring.prepare(linkedRequests:
-	.opening(path,
+	.open(path,
 		in: parentDirectory,
 		into: file,
 		mode: mode,
    		options: openOptions,
 		permissions: nil
 	),
-	.readingMetadataOf(file, 
+	.stat(file, 
 		into: &statInfo
 	)
 )
@@ -345,10 +381,10 @@ let buffer = UnsafeMutableRawBufferPointer.allocate(Int(statInfo.st_size))
 
 // Build our requests to read the file and close it
 ring.prepare(linkedRequests:
-	 .reading(file,
+	 .read(file,
 	 	into: buffer
 	 ),
-	 .closing(file)
+	 .close(file)
 )
 
 //batch submit 2 syscalls in 1!
@@ -368,7 +404,7 @@ processBuffer(buffer)
 
 //Make the read request with a context so we can get the buffer out of it in the completion handler
 …
-.reading(file, into: buffer, context: UInt64(buffer.baseAddress!))
+.read(file, into: buffer, context: UInt64(buffer.baseAddress!))
 …
 
 // Make an eventfd and register it with the ring
@@ -419,7 +455,7 @@ func submitLinkedRequestsAndWait<each Request>(
 * liburing has support for operations allocating their own buffers and returning them via the completion, we may want to support this
 * We may want to provide API for asynchronously waiting, rather than just exposing the eventfd to let people roll their own async waits. Doing this really well has *considerable* implications for the concurrency runtime though.
 * We should almost certainly expose API for more of the configuration options in `io_uring_setup`
-* The API for feature probing is functional but not especially nice. Finding a better way to present that concept would be desirable.
+* Stronger safety guarantees around cancellation and resource lifetimes (e.g. as described in https://without.boats/blog/io-uring/) would be very welcome, but require an API that is much more strongly opinionated about how io_uring is used. A future higher level abstraction focused on the goal of being "an async IO API for Swift" rather than "a Swifty interface to io_uring" seems like a good place for that.
 
 ## Alternatives considered
 
@@ -428,6 +464,7 @@ func submitLinkedRequestsAndWait<each Request>(
 * Using POSIX AIO instead of or as well as io_uring would greatly increase our ability to support older kernels and other Unix systems, but it has well-documented performance and usability issues that have prevented its adoption elsewhere, and apply just as much to Swift.
 * Earlier versions of this proposal had higher level "managed" abstractions over IORing. These have been removed due to lack of interest from clients, but could be added back later if needed.
 * I considered making any or all of `IORingError`, `IOCompletion`, and `IORequest` nested struct declarations inside `IORing`. The main reason I haven't done so is I was a little concerned about the ambiguity of having a type called `Error`. I'd be particularly interested in feedback on this choice.
+* IOResource<T> was originally a class in an attempt to manage the lifetime of the resource via language features. Changing to the current model of it being a copyable struct didn't make the lifetime management any less safe (the IORing still owns the actual resource), and reduces overhead. In the future it would be neat if we could express IOResources as being borrowed from the IORing so they can't be used after its lifetime.
 
 ## Acknowledgments
 
