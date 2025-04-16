@@ -437,14 +437,18 @@ public struct IORing: ~Copyable {
         extraArgs: UnsafeMutablePointer<io_uring_getevents_arg>? = nil
     ) throws(OperationError) -> IOCompletion {
         var result: IOCompletion? = nil
-        try _blockingConsumeCompletionGuts(minimumCount: 1, maximumCount: 1, extraArgs: extraArgs) {
-            (completion: consuming IOCompletion?, error, done) in
-            if let error {
-                throw error
+        do {
+            try _blockingConsumeCompletionGuts(minimumCount: 1, maximumCount: 1, extraArgs: extraArgs) {
+                (completion: consuming IOCompletion?, error, done) in
+                if let error {
+                    throw error
+                }
+                if let completion {
+                    result = consume completion
+                }
             }
-            if let completion {
-                result = consume completion
-            }
+        } catch (let e) {
+            throw e as! OperationError //TODO: why is this needed?
         }
         return result.take()!
     }
@@ -459,7 +463,7 @@ public struct IORing: ~Copyable {
             )
             var err: OperationError? = nil
             var result: IOCompletion? = nil
-            result = try withUnsafePointer(to: &ts) { tsPtr in
+            result = withUnsafePointer(to: &ts) { tsPtr in
                 var args = io_uring_getevents_arg(
                     sigmask: 0,
                     sigmask_sz: 0,
@@ -469,7 +473,7 @@ public struct IORing: ~Copyable {
                 do {
                     return try _blockingConsumeOneCompletion(extraArgs: &args)
                 } catch (let e) {
-                    err = e as! OperationError
+                    err = (e as! OperationError)
                     return nil
                 }
             }
@@ -505,7 +509,7 @@ public struct IORing: ~Copyable {
                         minimumCount: minimumCount, maximumCount: UInt32.max, extraArgs: &args,
                         consumer: consumer)
                 } catch (let e) {
-                    err = e as! Err //TODO: why is `e` coming in as `any Error`? That seems wrong
+                    err = (e as! Err) //TODO: why is `e` coming in as `any Error`? That seems wrong
                 }
             }
             if let err {
@@ -692,10 +696,10 @@ public struct IORing: ~Copyable {
         for req in linkedRequests.dropLast() {
             var raw = req.makeRawRequest()
             raw.linkToNextRequest()
-            _writeRequest(
+            _ = _writeRequest(
                 raw, ring: &submissionRing, submissionQueueEntries: submissionQueueEntries)
         }
-        _writeRequest(
+        _ = _writeRequest(
             last.makeRawRequest(), ring: &submissionRing,
             submissionQueueEntries: submissionQueueEntries)
     }
