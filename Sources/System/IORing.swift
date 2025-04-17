@@ -191,11 +191,113 @@ internal func _getSubmissionEntry(
     return nil
 }
 
-//TODO: make this not an enum. And maybe split it up? And move it into IORing
+private func setUpRing(
+    queueDepth: UInt32, flags: IORing.SetupFlags, submissionRing: inout SQRing
+) throws(IORing.SetupError) -> 
+    (params: io_uring_params, ringDescriptor: Int32, ringPtr: UnsafeMutableRawPointer, ringSize: Int, sqes: UnsafeMutableRawPointer) {
+    var params = io_uring_params()
+    params.flags = flags.rawValue
+
+    var err: Errno? = nil
+    let ringDescriptor = withUnsafeMutablePointer(to: &params) {
+        let result = io_uring_setup(queueDepth, $0)
+        if result < 0 {
+            err = Errno.current
+        }
+        return result
+    }
+
+    if let err {
+        throw IORing.SetupError(setupResult: err.rawValue) 
+    }
+
+    if params.features & IORING_FEAT_SINGLE_MMAP == 0
+        || params.features & IORING_FEAT_NODROP == 0
+    {
+        close(ringDescriptor)
+        // TODO: error handling
+        throw .missingRequiredFeatures
+    }
+
+    let submitRingSize =
+        params.sq_off.array
+        + params.sq_entries * UInt32(MemoryLayout<UInt32>.size)
+
+    let completionRingSize =
+        params.cq_off.cqes
+        + params.cq_entries * UInt32(MemoryLayout<io_uring_cqe>.size)
+
+    let ringSize = Int(max(submitRingSize, completionRingSize))
+
+    let ringPtr: UnsafeMutableRawPointer! = mmap(
+        /* addr: */ nil,
+        /* len: */ ringSize,
+        /* prot: */ PROT_READ | PROT_WRITE,
+        /* flags: */ MAP_SHARED | MAP_POPULATE,
+        /* fd: */ ringDescriptor,
+        /* offset: */ __off_t(IORING_OFF_SQ_RING)
+    )
+
+    if ringPtr == MAP_FAILED {
+        perror("mmap")
+        close(ringDescriptor)
+        throw .mapFailed
+    }
+
+    let submissionRing = SQRing(
+        kernelHead: UnsafePointer<Atomic<UInt32>>(
+            ringPtr.advanced(by: params.sq_off.head)
+                .assumingMemoryBound(to: Atomic<UInt32>.self)
+        ),
+        kernelTail: UnsafePointer<Atomic<UInt32>>(
+            ringPtr.advanced(by: params.sq_off.tail)
+                .assumingMemoryBound(to: Atomic<UInt32>.self)
+        ),
+        userTail: 0,  // no requests yet
+        ringMask: ringPtr.advanced(by: params.sq_off.ring_mask)
+            .assumingMemoryBound(to: UInt32.self).pointee,
+        flags: UnsafePointer<Atomic<UInt32>>(
+            ringPtr.advanced(by: params.sq_off.flags)
+                .assumingMemoryBound(to: Atomic<UInt32>.self)
+        ),
+        array: UnsafeMutableBufferPointer(
+            start: ringPtr.advanced(by: params.sq_off.array)
+                .assumingMemoryBound(to: UInt32.self),
+            count: Int(
+                ringPtr.advanced(by: params.sq_off.ring_entries)
+                    .assumingMemoryBound(to: UInt32.self).pointee)
+        )
+    )
+
+    // fill submission ring array with 1:1 map to underlying SQEs
+    for i in 0..<submissionRing.array.count {
+        submissionRing.array[i] = UInt32(i)
+    }
+
+    // map the submission queue
+    let sqes = mmap(
+        /* addr: */ nil,
+        /* len: */ Int(params.sq_entries) * MemoryLayout<io_uring_sqe>.size,
+        /* prot: */ PROT_READ | PROT_WRITE,
+        /* flags: */ MAP_SHARED | MAP_POPULATE,
+        /* fd: */ ringDescriptor,
+        /* offset: */ __off_t(IORING_OFF_SQES)
+    )
+
+    if sqes == MAP_FAILED {
+        perror("mmap")
+        munmap(ringPtr, ringSize)
+        close(ringDescriptor)
+        throw .mapFailed
+    }
+
+    return (params: params, ringDescriptor: ringDescriptor, ringPtr: ringPtr!, ringSize: ringSize, sqes: sqes!)
+}
 
 public struct IORing: ~Copyable {
 
     /// Errors in either submitting operations or receiving operation completions
+    @frozen
     public struct OperationError: Error, Hashable {
         private var errorCode: Int
         public static var operationCanceled: OperationError { .init(result: ECANCELED) }
@@ -205,6 +307,7 @@ public struct IORing: ~Copyable {
         }
     }
 
+    @frozen
     public struct SetupError: Error, Hashable {
         private var errorCode: Int
 
@@ -212,11 +315,14 @@ public struct IORing: ~Copyable {
             .init(setupResult: -1) /* TODO: numeric value */
         }
 
+        public static var mapFailed: SetupError { .init(setupResult: -2) }
+
         internal init(setupResult: Int32) {
             errorCode = Int(setupResult)  //TODO, flesh this out
         }
     }
 
+    @frozen
     public struct RegistrationError: Error, Hashable {
         private var errorCode: Int
 
@@ -228,7 +334,7 @@ public struct IORing: ~Copyable {
     let ringFlags: UInt32
     let ringDescriptor: Int32
 
-    @usableFromInline var submissionRing: SQRing
+    @usableFromInline var submissionRing: SQRing!
     // FEAT: set this eventually
     let submissionPolling: Bool = false
 
@@ -240,8 +346,10 @@ public struct IORing: ~Copyable {
     let ringSize: Int
     let ringPtr: UnsafeMutableRawPointer
 
-    var _registeredFiles: [UInt32]?
-    var _registeredBuffers: [iovec]?
+    var _registeredFiles: [UInt32] = []
+    var _registeredBuffers: [iovec] = []
+
+    var features = Features(rawValue: 0)
 
     @frozen
     public struct SetupFlags: OptionSet, RawRepresentable {
@@ -267,103 +375,22 @@ public struct IORing: ~Copyable {
         //TODO: should IORING_SETUP_NO_SQARRAY be the default? do we need to adapt anything to it?
     }
 
-    public init(queueDepth: UInt32, flags: SetupFlags = []) throws(SetupError) {
-        var params = io_uring_params()
-        params.flags = flags.rawValue
-
-        ringDescriptor = withUnsafeMutablePointer(to: &params) {
-            return io_uring_setup(queueDepth, $0)
-        }
-
-        if params.features & IORING_FEAT_SINGLE_MMAP == 0
-            || params.features & IORING_FEAT_NODROP == 0
-        {
-            close(ringDescriptor)
-            // TODO: error handling
-            throw .missingRequiredFeatures
-        }
-
-        if ringDescriptor < 0 {
-            // TODO: error handling
-        }
-
-        let submitRingSize =
-            params.sq_off.array
-            + params.sq_entries * UInt32(MemoryLayout<UInt32>.size)
-
-        let completionRingSize =
-            params.cq_off.cqes
-            + params.cq_entries * UInt32(MemoryLayout<io_uring_cqe>.size)
-
-        ringSize = Int(max(submitRingSize, completionRingSize))
-
-        ringPtr = mmap(
-            /* addr: */ nil,
-            /* len: */ ringSize,
-            /* prot: */ PROT_READ | PROT_WRITE,
-            /* flags: */ MAP_SHARED | MAP_POPULATE,
-            /* fd: */ ringDescriptor,
-            /* offset: */ __off_t(IORING_OFF_SQ_RING)
-        )
-
-        if ringPtr == MAP_FAILED {
-            perror("mmap")
-            // TODO: error handling
-            fatalError("mmap failed in ring setup")
-        }
-
-        let submissionRing = SQRing(
-            kernelHead: UnsafePointer<Atomic<UInt32>>(
-                ringPtr.advanced(by: params.sq_off.head)
-                    .assumingMemoryBound(to: Atomic<UInt32>.self)
-            ),
-            kernelTail: UnsafePointer<Atomic<UInt32>>(
-                ringPtr.advanced(by: params.sq_off.tail)
-                    .assumingMemoryBound(to: Atomic<UInt32>.self)
-            ),
-            userTail: 0,  // no requests yet
-            ringMask: ringPtr.advanced(by: params.sq_off.ring_mask)
-                .assumingMemoryBound(to: UInt32.self).pointee,
-            flags: UnsafePointer<Atomic<UInt32>>(
-                ringPtr.advanced(by: params.sq_off.flags)
-                    .assumingMemoryBound(to: Atomic<UInt32>.self)
-            ),
-            array: UnsafeMutableBufferPointer(
-                start: ringPtr.advanced(by: params.sq_off.array)
-                    .assumingMemoryBound(to: UInt32.self),
-                count: Int(
-                    ringPtr.advanced(by: params.sq_off.ring_entries)
-                        .assumingMemoryBound(to: UInt32.self).pointee)
-            )
-        )
-
-        // fill submission ring array with 1:1 map to underlying SQEs
-        for i in 0..<submissionRing.array.count {
-            submissionRing.array[i] = UInt32(i)
-        }
-
-        // map the submission queue
-        let sqes = mmap(
-            /* addr: */ nil,
-            /* len: */ Int(params.sq_entries) * MemoryLayout<io_uring_sqe>.size,
-            /* prot: */ PROT_READ | PROT_WRITE,
-            /* flags: */ MAP_SHARED | MAP_POPULATE,
-            /* fd: */ ringDescriptor,
-            /* offset: */ __off_t(IORING_OFF_SQES)
-        )
-
-        if sqes == MAP_FAILED {
-            perror("mmap")
-            // TODO: error handling
-            fatalError("sqe mmap failed in ring setup")
-        }
+    public init(queueDepth: UInt32, flags: SetupFlags) throws(SetupError) {
+        let (params, tmpRingDescriptor, tmpRingPtr, tmpRingSize, sqes) = try setUpRing(queueDepth: queueDepth, flags: flags, submissionRing: &submissionRing)
+        // All throws need to be before initializing ivars here to avoid 
+        // "error: conditional initialization or destruction of noncopyable types is not supported; 
+        // this variable must be consistently in an initialized or uninitialized state through every code path"
+        features = Features(rawValue: params.features)
+        ringDescriptor = tmpRingDescriptor
+        ringPtr = tmpRingPtr
+        ringSize = tmpRingSize
 
         submissionQueueEntries = UnsafeMutableBufferPointer(
-            start: sqes!.assumingMemoryBound(to: io_uring_sqe.self),
+            start: sqes.assumingMemoryBound(to: io_uring_sqe.self),
             count: Int(params.sq_entries)
         )
 
-        let completionRing = CQRing(
+        completionRing = CQRing(
             kernelHead: UnsafePointer<Atomic<UInt32>>(
                 ringPtr.advanced(by: params.cq_off.head)
                     .assumingMemoryBound(to: Atomic<UInt32>.self)
@@ -383,10 +410,6 @@ public struct IORing: ~Copyable {
                         .assumingMemoryBound(to: UInt32.self).pointee)
             )
         )
-
-        self.submissionRing = submissionRing
-        self.completionRing = completionRing
-
         self.ringFlags = params.flags
     }
 
@@ -599,7 +622,7 @@ public struct IORing: ~Copyable {
     public mutating func registerFileSlots(count: Int) throws(RegistrationError) -> RegisteredResources<
         IORingFileSlot.Resource
     > {
-        precondition(_registeredFiles == nil)
+        precondition(_registeredFiles.isEmpty)
         precondition(count < UInt32.max)
         let files = [UInt32](repeating: UInt32.max, count: count)
 
@@ -626,14 +649,14 @@ public struct IORing: ~Copyable {
     }
 
     public var registeredFileSlots: RegisteredResources<IORingFileSlot.Resource> {
-        RegisteredResources(resources: _registeredFiles ?? [])
+        RegisteredResources(resources: _registeredFiles)
     }
 
     public mutating func registerBuffers(_ buffers: some Collection<UnsafeMutableRawBufferPointer>) throws(RegistrationError)
         -> RegisteredResources<IORingBuffer.Resource>
     {
         precondition(buffers.count < UInt32.max)
-        precondition(_registeredBuffers == nil)
+        precondition(_registeredBuffers.isEmpty)
         //TODO: check if io_uring has preconditions it needs for the buffers (e.g. alignment)
         let iovecs = buffers.map { $0.to_iovec() }
         let regResult = iovecs.withUnsafeBufferPointer { bPtr in
@@ -678,7 +701,7 @@ public struct IORing: ~Copyable {
     }
 
     public var registeredBuffers: RegisteredResources<IORingBuffer.Resource> {
-        RegisteredResources(resources: _registeredBuffers ?? [])
+        RegisteredResources(resources: _registeredBuffers)
     }
 
     public func unregisterBuffers() {
@@ -740,7 +763,7 @@ public struct IORing: ~Copyable {
     }
 
     @frozen
-    public struct Features: OptionSet, RawRepresentable {
+    public struct Features: OptionSet, RawRepresentable, Hashable {
 		public let rawValue: UInt32
 		
 		@inlinable public init(rawValue: UInt32) {
@@ -764,8 +787,8 @@ public struct IORing: ~Copyable {
 		@inlinable public static var minimumTimeout: Features { .init(rawValue: UInt32(1) << 15) } //IORING_FEAT_MIN_TIMEOUT
 		@inlinable public static var bundledSendReceive: Features { .init(rawValue: UInt32(1) << 14) } //IORING_FEAT_RECVSEND_BUNDLE
 	}
-	public static var supportedFeatures: Features {
-        fatalError("Implement me")
+	public var supportedFeatures: Features {
+        return features
     }
 
     deinit {
