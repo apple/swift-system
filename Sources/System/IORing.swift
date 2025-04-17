@@ -243,8 +243,33 @@ public struct IORing: ~Copyable {
     var _registeredFiles: [UInt32]?
     var _registeredBuffers: [iovec]?
 
-    public init(queueDepth: UInt32) throws(SetupError) {
+    @frozen
+    public struct SetupFlags: OptionSet, RawRepresentable {
+        public var rawValue: UInt32
+
+        @inlinable public init(rawValue: UInt32) {
+            self.rawValue = rawValue
+        }
+        @inlinable public static var pollCompletions: SetupFlags { .init(rawValue: UInt32(1) << 0) } //IORING_SETUP_IOPOLL
+        @inlinable public static var pollSubmissions: SetupFlags { .init(rawValue: UInt32(1) << 1) } //IORING_SETUP_SQPOLL
+        //TODO: figure out how to expose IORING_SETUP_SQ_AFF, IORING_SETUP_CQSIZE, IORING_SETUP_ATTACH_WQ
+        @inlinable public static var clampMaxEntries: SetupFlags { .init(rawValue: UInt32(1) << 4) } //IORING_SETUP_CLAMP
+        @inlinable public static var startDisabled: SetupFlags { .init(rawValue: UInt32(1) << 6) } //IORING_SETUP_R_DISABLED
+        @inlinable public static var continueSubmittingOnError: SetupFlags { .init(rawValue: UInt32(1) << 7) } //IORING_SETUP_SUBMIT_ALL
+        //TODO: do we want to expose IORING_SETUP_COOP_TASKRUN and IORING_SETUP_TASKRUN_FLAG?
+        //public static var runTasksCooperatively: SetupFlags { .init(rawValue: UInt32(1) << 8) } //IORING_SETUP_COOP_TASKRUN
+        //TODO: can we even do different size sqe/cqe? It requires a kernel feature, but how do we convince swift to let the types be different sizes?
+        internal static var use128ByteSQEs: SetupFlags { .init(rawValue: UInt32(1) << 10) } //IORING_SETUP_SQE128
+        internal static var use32ByteCQEs: SetupFlags { .init(rawValue: UInt32(1) << 11) } //IORING_SETUP_CQE32
+        @inlinable public static var singleSubmissionThread: SetupFlags { .init(rawValue: UInt32(1) << 12) } //IORING_SETUP_SINGLE_ISSUER
+        @inlinable public static var deferRunningTasks: SetupFlags { .init(rawValue: UInt32(1) << 13) } //IORING_SETUP_DEFER_TASKRUN
+        //pretty sure we don't want to expose IORING_SETUP_NO_MMAP or IORING_SETUP_REGISTERED_FD_ONLY currently
+        //TODO: should IORING_SETUP_NO_SQARRAY be the default? do we need to adapt anything to it?
+    }
+
+    public init(queueDepth: UInt32, flags: SetupFlags = []) throws(SetupError) {
         var params = io_uring_params()
+        params.flags = flags.rawValue
 
         ringDescriptor = withUnsafeMutablePointer(to: &params) {
             return io_uring_setup(queueDepth, $0)
@@ -712,6 +737,35 @@ public struct IORing: ~Copyable {
     public mutating func submit(linkedRequests: IORequest...) throws(OperationError) {
         prepare(linkedRequests: linkedRequests)
         try submitPreparedRequests()
+    }
+
+    @frozen
+    public struct Features: OptionSet, RawRepresentable {
+		public let rawValue: UInt32
+		
+		@inlinable public init(rawValue: UInt32) {
+            self.rawValue = rawValue
+        }
+		
+		//IORING_FEAT_SINGLE_MMAP is handled internally
+		@inlinable public static var nonDroppingCompletions: Features { .init(rawValue: UInt32(1) << 1) } //IORING_FEAT_NODROP
+		@inlinable public static var stableSubmissions: Features { .init(rawValue: UInt32(1) << 2) } //IORING_FEAT_SUBMIT_STABLE
+		@inlinable public static var currentFilePosition: Features { .init(rawValue: UInt32(1) << 3) } //IORING_FEAT_RW_CUR_POS
+		@inlinable public static var assumingTaskCredentials: Features { .init(rawValue: UInt32(1) << 4) } //IORING_FEAT_CUR_PERSONALITY
+		@inlinable public static var fastPolling: Features { .init(rawValue: UInt32(1) << 5) } //IORING_FEAT_FAST_POLL
+		@inlinable public static var epoll32BitFlags: Features { .init(rawValue: UInt32(1) << 6) } //IORING_FEAT_POLL_32BITS
+		@inlinable public static var pollNonFixedFiles: Features { .init(rawValue: UInt32(1) << 7) } //IORING_FEAT_SQPOLL_NONFIXED
+		@inlinable public static var extendedArguments: Features { .init(rawValue: UInt32(1) << 8) } //IORING_FEAT_EXT_ARG
+		@inlinable public static var nativeWorkers: Features { .init(rawValue: UInt32(1) << 9) } //IORING_FEAT_NATIVE_WORKERS
+		@inlinable public static var resourceTags: Features { .init(rawValue: UInt32(1) << 10) } //IORING_FEAT_RSRC_TAGS
+		@inlinable public static var allowsSkippingSuccessfulCompletions: Features { .init(rawValue: UInt32(1) << 11) } //IORING_FEAT_CQE_SKIP
+		@inlinable public static var improvedLinkedFiles: Features { .init(rawValue: UInt32(1) << 12) } //IORING_FEAT_LINKED_FILE
+		@inlinable public static var registerRegisteredRings: Features { .init(rawValue: UInt32(1) << 13) } //IORING_FEAT_REG_REG_RING
+		@inlinable public static var minimumTimeout: Features { .init(rawValue: UInt32(1) << 15) } //IORING_FEAT_MIN_TIMEOUT
+		@inlinable public static var bundledSendReceive: Features { .init(rawValue: UInt32(1) << 14) } //IORING_FEAT_RECVSEND_BUNDLE
+	}
+	public static var supportedFeatures: Features {
+        fatalError("Implement me")
     }
 
     deinit {
