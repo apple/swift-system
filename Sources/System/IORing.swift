@@ -318,7 +318,7 @@ public struct IORing: ~Copyable {
     var features = Features(rawValue: 0)
 
     @frozen
-    public struct SetupFlags: OptionSet, RawRepresentable {
+    public struct SetupFlags: OptionSet, RawRepresentable, Hashable {
         public var rawValue: UInt32
 
         @inlinable public init(rawValue: UInt32) {

@@ -79,8 +79,6 @@ Since neither polling nor synchronously waiting is optimal in many cases, `IORin
 
 Unfortunately the underlying kernel API makes it relatively difficult to determine which `IORequest` led to a given `IOCompletion`, so it's expected that users will need to create this association themselves via the context parameter.
 
-`IORingError` represents failure of an operation.
-
 `IORing.Features` describes the supported features of the underlying kernel `IORing` implementation, which can be used to provide graceful reduction in functionality when running on older systems.
 
 ## Detailed design 
@@ -97,10 +95,22 @@ extension IORingBuffer {
 // IORing is intentionally not Sendable, to avoid internal locking overhead
 public struct IORing: ~Copyable {
 
-	public init(queueDepth: UInt32) throws(IORingError)
+	public init(queueDepth: UInt32, flags: IORing.SetupFlags) throws(Errno)
 	
-	public mutating func registerEventFD(_ descriptor: FileDescriptor) throws(IORingError)
-	public mutating func unregisterEventFD(_ descriptor: FileDescriptor) throws(IORingError)
+    public struct SetupFlags: OptionSet, RawRepresentable, Hashable {
+        public var rawValue: UInt32
+        public init(rawValue: UInt32)
+        public static var pollCompletions: SetupFlags //IORING_SETUP_IOPOLL
+        public static var pollSubmissions: SetupFlags //IORING_SETUP_SQPOLL
+        public static var clampMaxEntries: SetupFlags //IORING_SETUP_CLAMP
+        public static var startDisabled: SetupFlags //IORING_SETUP_R_DISABLED
+        public static var continueSubmittingOnError: SetupFlags //IORING_SETUP_SUBMIT_ALL
+        public static var singleSubmissionThread: SetupFlags //IORING_SETUP_SINGLE_ISSUER
+        public static var deferRunningTasks: SetupFlags //IORING_SETUP_DEFER_TASKRUN
+    }
+	
+	public mutating func registerEventFD(_ descriptor: FileDescriptor) throws(Errno)
+	public mutating func unregisterEventFD(_ descriptor: FileDescriptor) throws(Errno)
 	
 	// An IORing.RegisteredResources is a view into the buffers or files registered with the ring, if any
 	public struct RegisteredResources<T>: RandomAccessCollection {
@@ -108,7 +118,7 @@ public struct IORing: ~Copyable {
 		public subscript(position: UInt16) -> IOResource<T> // This is useful because io_uring likes to use UInt16s as indexes
 	}
 	
-	public mutating func registerFileSlots(count: Int) throws(IORingError) -> RegisteredResources<IORingFileSlot.Resource>
+	public mutating func registerFileSlots(count: Int) throws(Errno) -> RegisteredResources<IORingFileSlot.Resource>
 	
 	public func unregisterFiles()
 	
@@ -116,11 +126,11 @@ public struct IORing: ~Copyable {
 	
 	public mutating func registerBuffers(
 		_ buffers: some Collection<UnsafeMutableRawBufferPointer>
-	) throws(IORingError) -> RegisteredResources<IORingBuffer.Resource>
+	) throws(Errno) -> RegisteredResources<IORingBuffer.Resource>
 	
 	public mutating func registerBuffers(
 		_ buffers: UnsafeMutableRawBufferPointer...
-	) throws(IORingError) -> RegisteredResources<IORingBuffer.Resource>
+	) throws(Errno) -> RegisteredResources<IORingBuffer.Resource>
 	
 	public func unregisterBuffers()
 	
@@ -129,32 +139,32 @@ public struct IORing: ~Copyable {
 	public func prepare(requests: IORequest...)
 	public func prepare(linkedRequests: IORequest...)
 	
-	public func submitPreparedRequests(timeout: Duration? = nil) throws(IORingError)
-	public func submit(requests: IORequest..., timeout: Duration? = nil) throws(IORingError)
-	public func submit(linkedRequests: IORequest..., timeout: Duration? = nil) throws(IORingError)
+	public func submitPreparedRequests(timeout: Duration? = nil) throws(Errno)
+	public func submit(requests: IORequest..., timeout: Duration? = nil) throws(Errno)
+	public func submit(linkedRequests: IORequest..., timeout: Duration? = nil) throws(Errno)
 	
-	public func submitPreparedRequests() throws(IORingError)
-	public func submitPreparedRequestsAndWait(timeout: Duration? = nil) throws(IORingError)
+	public func submitPreparedRequests() throws(Errno)
+	public func submitPreparedRequestsAndWait(timeout: Duration? = nil) throws(Errno)
 	
 	public func submitPreparedRequestsAndConsumeCompletions(
         minimumCount: UInt32 = 1,
         timeout: Duration? = nil,
-        consumer: (consuming IOCompletion?, IORingError?, Bool) throws(E) -> Void
+        consumer: (consuming IOCompletion?, Errno?, Bool) throws(E) -> Void
    ) throws(E)
 	
 	public func blockingConsumeCompletion(
        timeout: Duration? = nil
-	) throws(IORingError) -> IOCompletion
+	) throws(Errno) -> IOCompletion
     
 	public func blockingConsumeCompletions<E>(
        minimumCount: UInt32 = 1,
        timeout: Duration? = nil,
-		consumer: (consuming IOCompletion?, IORingError?, Bool) throws(E) -> Void
+		consumer: (consuming IOCompletion?, Errno?, Bool) throws(E) -> Void
 	) throws(E)
     
 	public func tryConsumeCompletion() -> IOCompletion?
 	
-	public struct Features: OptionSet {
+	public struct Features: OptionSet, RawRepresentable, Hashable {
 		let rawValue: UInt32
 		
 		public init(rawValue: UInt32)
@@ -176,7 +186,7 @@ public struct IORing: ~Copyable {
 		public static let minimumTimeout: Bool //IORING_FEAT_MIN_TIMEOUT
 		public static let bundledSendReceive: Bool //IORING_FEAT_RECVSEND_BUNDLE
 	}
-	public static var supportedFeatures: Features
+	public var supportedFeatures: Features
 }
 
 public struct IORequest: ~Copyable {
@@ -329,18 +339,9 @@ public struct IOCompletion {
 	
 	public var result: Int32
 	
-	public var error: IORingError? // Convenience wrapper over `result`
+	public var error: Errno? // Convenience wrapper over `result`
 	
 	public var flags: Flags	
-}
-
-public struct IORingError: Error, Equatable {
-    static var missingRequiredFeatures: IORingError
-    static var operationCanceled: IORingError
-    static var timedOut: IORingError
-    static var resourceRegistrationFailed: IORingError
-    // Other error values to be filled out as the set of supported operations expands in the future
-    static var unknown: IORingError(errorCode: Int)
 }
 	
 ```
@@ -463,7 +464,7 @@ func submitLinkedRequestsAndWait<each Request>(
 * We could multiplex all IO onto a single actor as `AsyncBytes` currently does, but this has a number of downsides that make it entirely unsuitable to server usage. Most notably, it eliminates IO parallelism entirely.
 * Using POSIX AIO instead of or as well as io_uring would greatly increase our ability to support older kernels and other Unix systems, but it has well-documented performance and usability issues that have prevented its adoption elsewhere, and apply just as much to Swift.
 * Earlier versions of this proposal had higher level "managed" abstractions over IORing. These have been removed due to lack of interest from clients, but could be added back later if needed.
-* I considered making any or all of `IORingError`, `IOCompletion`, and `IORequest` nested struct declarations inside `IORing`. The main reason I haven't done so is I was a little concerned about the ambiguity of having a type called `Error`. I'd be particularly interested in feedback on this choice.
+* I considered having dedicated error types for IORing, but eventually decided throwing Errno was more consistent with other platform APIs
 * IOResource<T> was originally a class in an attempt to manage the lifetime of the resource via language features. Changing to the current model of it being a copyable struct didn't make the lifetime management any less safe (the IORing still owns the actual resource), and reduces overhead. In the future it would be neat if we could express IOResources as being borrowed from the IORing so they can't be used after its lifetime.
 
 ## Acknowledgments
