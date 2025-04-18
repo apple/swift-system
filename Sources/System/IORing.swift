@@ -118,7 +118,7 @@ internal func _enter(
     numEvents: UInt32,
     minCompletions: UInt32,
     flags: UInt32
-) throws(IORing.OperationError) -> Int32 {
+) throws(Errno) -> Int32 {
     // Ring always needs enter right now;
     // TODO: support SQPOLL here
     while true {
@@ -133,14 +133,14 @@ internal func _enter(
             //TODO: should we wait a bit on AGAIN?
             continue
         } else if ret < 0 {
-            throw(IORing.OperationError(result: -ret))
+            throw(Errno(rawValue: -ret))
         } else {
             return ret
         }
     }
 }
 
-internal func _submitRequests(ring: borrowing SQRing, ringDescriptor: Int32) throws(IORing.OperationError) {
+internal func _submitRequests(ring: borrowing SQRing, ringDescriptor: Int32) throws(Errno) {
     let flushedEvents = _flushQueue(ring: ring)
     _ = try _enter(
         ringDescriptor: ringDescriptor, numEvents: flushedEvents, minCompletions: 0, flags: 0)
@@ -193,7 +193,7 @@ internal func _getSubmissionEntry(
 
 private func setUpRing(
     queueDepth: UInt32, flags: IORing.SetupFlags, submissionRing: inout SQRing
-) throws(IORing.SetupError) -> 
+) throws(Errno) -> 
     (params: io_uring_params, ringDescriptor: Int32, ringPtr: UnsafeMutableRawPointer, ringSize: Int, sqes: UnsafeMutableRawPointer) {
     var params = io_uring_params()
     params.flags = flags.rawValue
@@ -208,7 +208,7 @@ private func setUpRing(
     }
 
     if let err {
-        throw IORing.SetupError(setupResult: err.rawValue) 
+        throw err
     }
 
     if params.features & IORING_FEAT_SINGLE_MMAP == 0
@@ -216,7 +216,7 @@ private func setUpRing(
     {
         close(ringDescriptor)
         // TODO: error handling
-        throw .missingRequiredFeatures
+        throw Errno.invalidArgument
     }
 
     let submitRingSize =
@@ -239,9 +239,10 @@ private func setUpRing(
     )
 
     if ringPtr == MAP_FAILED {
+        let errno = Errno.current
         perror("mmap")
         close(ringDescriptor)
-        throw .mapFailed
+        throw errno
     }
 
     let submissionRing = SQRing(
@@ -285,52 +286,17 @@ private func setUpRing(
     )
 
     if sqes == MAP_FAILED {
+        let errno = Errno.current
         perror("mmap")
         munmap(ringPtr, ringSize)
         close(ringDescriptor)
-        throw .mapFailed
+        throw errno
     }
 
     return (params: params, ringDescriptor: ringDescriptor, ringPtr: ringPtr!, ringSize: ringSize, sqes: sqes!)
 }
 
 public struct IORing: ~Copyable {
-
-    /// Errors in either submitting operations or receiving operation completions
-    @frozen
-    public struct OperationError: Error, Hashable {
-        private var errorCode: Int
-        public static var operationCanceled: OperationError { .init(result: ECANCELED) }
-
-        internal init(result: Int32) {
-            errorCode = Int(result)  //TODO, flesh this out
-        }
-    }
-
-    @frozen
-    public struct SetupError: Error, Hashable {
-        private var errorCode: Int
-
-        public static var missingRequiredFeatures: SetupError {
-            .init(setupResult: -1) /* TODO: numeric value */
-        }
-
-        public static var mapFailed: SetupError { .init(setupResult: -2) }
-
-        internal init(setupResult: Int32) {
-            errorCode = Int(setupResult)  //TODO, flesh this out
-        }
-    }
-
-    @frozen
-    public struct RegistrationError: Error, Hashable {
-        private var errorCode: Int
-
-        internal init(registrationResult: Int32) {
-            errorCode = Int(registrationResult)  //TODO, flesh this out
-        }
-    }
-
     let ringFlags: UInt32
     let ringDescriptor: Int32
 
@@ -346,8 +312,8 @@ public struct IORing: ~Copyable {
     let ringSize: Int
     let ringPtr: UnsafeMutableRawPointer
 
-    var _registeredFiles: [UInt32] = []
-    var _registeredBuffers: [iovec] = []
+    var _registeredFiles: [UInt32]
+    var _registeredBuffers: [iovec]
 
     var features = Features(rawValue: 0)
 
@@ -375,7 +341,7 @@ public struct IORing: ~Copyable {
         //TODO: should IORING_SETUP_NO_SQARRAY be the default? do we need to adapt anything to it?
     }
 
-    public init(queueDepth: UInt32, flags: SetupFlags) throws(SetupError) {
+    public init(queueDepth: UInt32, flags: SetupFlags) throws(Errno) {
         let (params, tmpRingDescriptor, tmpRingPtr, tmpRingSize, sqes) = try setUpRing(queueDepth: queueDepth, flags: flags, submissionRing: &submissionRing)
         // All throws need to be before initializing ivars here to avoid 
         // "error: conditional initialization or destruction of noncopyable types is not supported; 
@@ -384,6 +350,8 @@ public struct IORing: ~Copyable {
         ringDescriptor = tmpRingDescriptor
         ringPtr = tmpRingPtr
         ringSize = tmpRingSize
+        _registeredFiles = []
+        _registeredBuffers = []
 
         submissionQueueEntries = UnsafeMutableBufferPointer(
             start: sqes.assumingMemoryBound(to: io_uring_sqe.self),
@@ -417,13 +385,13 @@ public struct IORing: ~Copyable {
         minimumCount: UInt32,
         maximumCount: UInt32,
         extraArgs: UnsafeMutablePointer<io_uring_getevents_arg>? = nil,
-        consumer: (consuming IOCompletion?, OperationError?, Bool) throws(Err) -> Void
+        consumer: (consuming IOCompletion?, Errno?, Bool) throws(Err) -> Void
     ) throws(Err) {
         var count = 0
         while let completion = _tryConsumeCompletion(ring: completionRing) {
             count += 1
             if completion.result < 0 {
-                try consumer(nil, OperationError(result: completion.result), false)
+                try consumer(nil, Errno(rawValue: -completion.result), false)
             } else {
                 try consumer(completion, nil, false)
             }
@@ -469,7 +437,7 @@ public struct IORing: ~Copyable {
             while let completion = _tryConsumeCompletion(ring: completionRing) {
                 count += 1
                 if completion.result < 0 {
-                    try consumer(nil, OperationError(result: completion.result), false)
+                    try consumer(nil, Errno(rawValue: -completion.result), false)
                 } else {
                     try consumer(completion, nil, false)
                 }
@@ -483,52 +451,37 @@ public struct IORing: ~Copyable {
 
     internal func _blockingConsumeOneCompletion(
         extraArgs: UnsafeMutablePointer<io_uring_getevents_arg>? = nil
-    ) throws(OperationError) -> IOCompletion {
+    ) throws(Errno) -> IOCompletion {
         var result: IOCompletion? = nil
-        do {
-            try _blockingConsumeCompletionGuts(minimumCount: 1, maximumCount: 1, extraArgs: extraArgs) {
-                (completion: consuming IOCompletion?, error, done) in
-                if let error {
-                    throw error
-                }
-                if let completion {
-                    result = consume completion
-                }
+        try _blockingConsumeCompletionGuts(minimumCount: 1, maximumCount: 1, extraArgs: extraArgs) {
+            (completion: consuming IOCompletion?, error, done) throws(Errno) in
+            if let error {
+                throw error
             }
-        } catch (let e) {
-            throw e as! OperationError //TODO: why is this needed?
+            if let completion {
+                result = consume completion
+            }
         }
         return result.take()!
     }
 
     public func blockingConsumeCompletion(
         timeout: Duration? = nil
-    ) throws(OperationError) -> IOCompletion {
+    ) throws(Errno) -> IOCompletion {
         if let timeout {
             var ts = __kernel_timespec(
                 tv_sec: timeout.components.seconds,
                 tv_nsec: timeout.components.attoseconds / 1_000_000_000
             )
-            var err: OperationError? = nil
-            var result: IOCompletion? = nil
-            result = withUnsafePointer(to: &ts) { tsPtr in
+            return try withUnsafePointer(to: &ts) { (tsPtr) throws(Errno) -> IOCompletion in
                 var args = io_uring_getevents_arg(
                     sigmask: 0,
                     sigmask_sz: 0,
                     pad: 0,
                     ts: UInt64(UInt(bitPattern: tsPtr))
                 )
-                do {
-                    return try _blockingConsumeOneCompletion(extraArgs: &args)
-                } catch (let e) {
-                    err = (e as! OperationError)
-                    return nil
-                }
+                return try _blockingConsumeOneCompletion(extraArgs: &args)
             }
-            guard let result else {
-                throw(err!)
-            }
-            return result
         } else {
             return try _blockingConsumeOneCompletion()
         }
@@ -537,31 +490,23 @@ public struct IORing: ~Copyable {
     public func blockingConsumeCompletions<Err: Error>(
         minimumCount: UInt32 = 1,
         timeout: Duration? = nil,
-        consumer: (consuming IOCompletion?, OperationError?, Bool) throws(Err) -> Void
+        consumer: (consuming IOCompletion?, Errno?, Bool) throws(Err) -> Void
     ) throws(Err) {
         if let timeout {
             var ts = __kernel_timespec(
                 tv_sec: timeout.components.seconds,
                 tv_nsec: timeout.components.attoseconds / 1_000_000_000
             )
-            var err: Err? = nil
-            withUnsafePointer(to: &ts) { tsPtr in
+            try withUnsafePointer(to: &ts) { (tsPtr) throws(Err) in
                 var args = io_uring_getevents_arg(
                     sigmask: 0,
                     sigmask_sz: 0,
                     pad: 0,
                     ts: UInt64(UInt(bitPattern: tsPtr))
                 )
-                do {
-                    try _blockingConsumeCompletionGuts(
-                        minimumCount: minimumCount, maximumCount: UInt32.max, extraArgs: &args,
-                        consumer: consumer)
-                } catch (let e) {
-                    err = (e as! Err) //TODO: why is `e` coming in as `any Error`? That seems wrong
-                }
-            }
-            if let err {
-                throw(err)
+                try _blockingConsumeCompletionGuts(
+                    minimumCount: minimumCount, maximumCount: UInt32.max, extraArgs: &args,
+                    consumer: consumer)
             }
         } else {
             try _blockingConsumeCompletionGuts(
@@ -591,7 +536,7 @@ public struct IORing: ~Copyable {
         return nil
     }
 
-    public mutating func registerEventFD(_ descriptor: FileDescriptor) throws(RegistrationError) {
+    public mutating func registerEventFD(_ descriptor: FileDescriptor) throws(Errno) {
         var rawfd = descriptor.rawValue
         let result = withUnsafePointer(to: &rawfd) { fdptr in
             let result = io_uring_register(
@@ -600,14 +545,14 @@ public struct IORing: ~Copyable {
                 UnsafeMutableRawPointer(mutating: fdptr),
                 1
             )
-            return result >= 0 ? nil : Errno.current
+            return result >= 0 ? nil : Errno(rawValue: -result)
         }
         if let result {
-            throw(RegistrationError(registrationResult: result.rawValue))
+            throw result
         }
     }
 
-    public mutating func unregisterEventFD() throws(RegistrationError) {
+    public mutating func unregisterEventFD() throws(Errno) {
         let result = io_uring_register(
             ringDescriptor,
             IORING_UNREGISTER_EVENTFD,
@@ -615,11 +560,11 @@ public struct IORing: ~Copyable {
             0
         )
         if result < 0 {
-            throw(RegistrationError(registrationResult: result))
+            throw Errno(rawValue: -result)
         }
     }
 
-    public mutating func registerFileSlots(count: Int) throws(RegistrationError) -> RegisteredResources<
+    public mutating func registerFileSlots(count: Int) throws(Errno) -> RegisteredResources<
         IORingFileSlot.Resource
     > {
         precondition(_registeredFiles.isEmpty)
@@ -633,11 +578,11 @@ public struct IORing: ~Copyable {
                 UnsafeMutableRawPointer(mutating: bPtr.baseAddress!),
                 UInt32(truncatingIfNeeded: count)
             )
-            return result >= 0 ? nil : Errno.current
+            return result >= 0 ? nil : Errno(rawValue: -result)
         } 
-        
-        guard regResult == nil else {
-            throw RegistrationError(registrationResult: regResult!.rawValue)
+
+        if let regResult {
+            throw regResult
         }
 
         _registeredFiles = files
@@ -652,7 +597,7 @@ public struct IORing: ~Copyable {
         RegisteredResources(resources: _registeredFiles)
     }
 
-    public mutating func registerBuffers(_ buffers: some Collection<UnsafeMutableRawBufferPointer>) throws(RegistrationError)
+    public mutating func registerBuffers(_ buffers: some Collection<UnsafeMutableRawBufferPointer>) throws(Errno)
         -> RegisteredResources<IORingBuffer.Resource>
     {
         precondition(buffers.count < UInt32.max)
@@ -666,11 +611,11 @@ public struct IORing: ~Copyable {
                 UnsafeMutableRawPointer(mutating: bPtr.baseAddress!),
                 UInt32(truncatingIfNeeded: buffers.count)
             )
-            return result >= 0 ? nil : Errno.current
+            return result >= 0 ? nil : Errno(rawValue: -result)
         }
 
-        guard regResult == nil else {
-            throw RegistrationError(registrationResult: regResult!.rawValue)
+        if let regResult {
+            throw regResult
         }
 
         // TODO: error handling
@@ -678,7 +623,7 @@ public struct IORing: ~Copyable {
         return registeredBuffers
     }
 
-    public mutating func registerBuffers(_ buffers: UnsafeMutableRawBufferPointer...) throws(RegistrationError)
+    public mutating func registerBuffers(_ buffers: UnsafeMutableRawBufferPointer...) throws(Errno)
         -> RegisteredResources<IORingBuffer.Resource>
     {
         try registerBuffers(buffers)
@@ -708,14 +653,14 @@ public struct IORing: ~Copyable {
         fatalError("failed to unregister buffers: TODO")
     }
 
-    public func submitPreparedRequests() throws(OperationError) {
+    public func submitPreparedRequests() throws(Errno) {
         try _submitRequests(ring: submissionRing, ringDescriptor: ringDescriptor)
     }
 
     public func submitPreparedRequestsAndConsumeCompletions<Err: Error>(
         minimumCount: UInt32 = 1,
         timeout: Duration? = nil,
-        consumer: (consuming IOCompletion?, OperationError?, Bool) throws(Err) -> Void
+        consumer: (consuming IOCompletion?, Errno?, Bool) throws(Err) -> Void
     ) throws(Err) {
         //TODO: optimize this to one uring_enter
         do {
@@ -757,7 +702,7 @@ public struct IORing: ~Copyable {
         prepare(linkedRequests: linkedRequests)
     }
 
-    public mutating func submit(linkedRequests: IORequest...) throws(OperationError) {
+    public mutating func submit(linkedRequests: IORequest...) throws(Errno) {
         prepare(linkedRequests: linkedRequests)
         try submitPreparedRequests()
     }
