@@ -654,7 +654,12 @@ public struct IORing: ~Copyable {
     }
 
     public func submitPreparedRequests() throws(Errno) {
-        try _submitRequests(ring: submissionRing, ringDescriptor: ringDescriptor)
+        switch submissionRing {
+        case .some(let submissionRing):
+            try _submitRequests(ring: submissionRing, ringDescriptor: ringDescriptor)
+        case .none:
+            fatalError()
+        }
     }
 
     public func submitPreparedRequestsAndConsumeCompletions<Err: Error>(

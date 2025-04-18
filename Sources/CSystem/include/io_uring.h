@@ -34,25 +34,25 @@
 # endif
 #endif
 
-int io_uring_register(int fd, unsigned int opcode, void *arg,
+static inline int io_uring_register(int fd, unsigned int opcode, void *arg,
 		      unsigned int nr_args)
 {
 	return syscall(__NR_io_uring_register, fd, opcode, arg, nr_args);
 }
 
-int io_uring_setup(unsigned int entries, struct io_uring_params *p)
+static inline int io_uring_setup(unsigned int entries, struct io_uring_params *p)
 {
 	return syscall(__NR_io_uring_setup, entries, p);
 }
 
-int io_uring_enter2(int fd, unsigned int to_submit, unsigned int min_complete,
+static inline int io_uring_enter2(int fd, unsigned int to_submit, unsigned int min_complete,
 		   unsigned int flags, void *args, size_t sz)
 {
 	return syscall(__NR_io_uring_enter, fd, to_submit, min_complete,
 			flags, args, _NSIG / 8);
 }
 
-int io_uring_enter(int fd, unsigned int to_submit, unsigned int min_complete,
+static inline int io_uring_enter(int fd, unsigned int to_submit, unsigned int min_complete,
 		   unsigned int flags, sigset_t *sig)
 {
 	return io_uring_enter2(fd, to_submit, min_complete, flags, sig, _NSIG / 8);
