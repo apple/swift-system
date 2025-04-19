@@ -174,6 +174,9 @@ final class FileOperationsTestWindows: XCTestCase {
 
   /// Test that the umask works properly
   func testUmask() throws {
+    // See https://learn.microsoft.com/en-us/virtualization/windowscontainers/manage-containers/persistent-storage#permissions
+    try XCTSkipIf(NSUserName() == "ContainerAdministrator", "containers use a different permission model")
+    
     // Default mask should be 0o022
     XCTAssertEqual(FilePermissions.creationMask, [.groupWrite, .otherWrite])
 
@@ -205,6 +208,9 @@ final class FileOperationsTestWindows: XCTestCase {
 
   /// Test that setting permissions on a file works as expected
   func testPermissions() throws {
+    // See https://learn.microsoft.com/en-us/virtualization/windowscontainers/manage-containers/persistent-storage#permissions
+    try XCTSkipIf(NSUserName() == "ContainerAdministrator", "containers use a different permission model")
+
     try FilePermissions.withCreationMask([]) {
       try withTemporaryFilePath(basename: "testPermissions") { path in
         let tests = [
