@@ -553,9 +553,7 @@ public struct IORing: ~Copyable {
         }
     }
 
-    public mutating func registerFileSlots(count: Int) throws(Errno) -> RegisteredResources<
-        IORing.RegisteredFile.Resource
-    > {
+    public mutating func registerFileSlots(count: Int) throws(Errno) -> RegisteredResources<RegisteredFile.Resource> {
         precondition(_registeredFiles.isEmpty)
         precondition(count < UInt32.max)
         let files = [UInt32](repeating: UInt32.max, count: count)
