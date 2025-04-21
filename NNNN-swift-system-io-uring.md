@@ -108,7 +108,7 @@ public struct IORing: ~Copyable {
   public typealias RegisteredFile = RegisteredResource<UInt32>
   public typealias RegisteredBuffer = RegisteredResource<iovec> 
 	
-	// An IORing.RegisteredResources is a view into the buffers or files registered with the ring, if any
+	// A `RegisteredResources` is a view into the buffers or files registered with the ring, if any
 	public struct RegisteredResources<T>: RandomAccessCollection {
 		public subscript(position: Int) -> IOResource<T>
 		public subscript(position: UInt16) -> IOResource<T> // This is useful because io_uring likes to use UInt16s as indexes
@@ -355,7 +355,7 @@ ring.prepare(linkedRequests:
 		in: parentDirectory,
 		into: file,
 		mode: mode,
-   		options: openOptions,
+    options: openOptions,
 		permissions: nil
 	),
 	.stat(file, 
