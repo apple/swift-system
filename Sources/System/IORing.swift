@@ -52,20 +52,6 @@ struct CQRing: ~Copyable {
     let cqes: UnsafeBufferPointer<io_uring_cqe>
 }
 
-public struct IOResource<T> {
-    public typealias Resource = T
-    @usableFromInline let resource: T
-    @usableFromInline let index: Int
-
-    internal init(
-        resource: T,
-        index: Int
-    ) {
-        self.resource = resource
-        self.index = index
-    }
-}
-
 @inline(__always)
 internal func _writeRequest(
     _ request: __owned RawIORequest, ring: inout SQRing,
@@ -302,9 +288,23 @@ public struct IORing: ~Copyable {
     var _registeredBuffers: [iovec]
 
     var features = Features(rawValue: 0)
+    
+    public struct RegisteredResource<T> {
+        public typealias Resource = T
+        @usableFromInline let resource: T
+        @usableFromInline let index: Int
 
-    public typealias RegisteredFile = IOResource<UInt32>
-    public typealias RegisteredBuffer = IOResource<iovec>
+        internal init(
+            resource: T,
+            index: Int
+        ) {
+            self.resource = resource
+            self.index = index
+        }
+    }
+
+    public typealias RegisteredFile = RegisteredResource<UInt32>
+    public typealias RegisteredBuffer = RegisteredResource<iovec>
 
     @frozen
     public struct SetupFlags: OptionSet, RawRepresentable, Hashable {

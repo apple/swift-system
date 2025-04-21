@@ -33,7 +33,7 @@ We propose a *low level, unopinionated* Swift interface for io_uring on Linux (s
 * Enqueueing IO requests
 * Dequeueing IO completions
 
-`struct IOResource<T>` represents, via its two typealiases `IORingFileSlot` and `IORingBuffer`, registered file descriptors and buffers.
+`struct RegisteredResource<T>` represents, via its two typealiases `IORing.RegisteredFile` and `IORing.RegisteredBuffer`, registered file descriptors and buffers.
 
 `struct IORequest: ~Copyable` represents an IO operation that can be enqueued for the kernel to execute. It supports a wide variety of operations matching traditional unix file and socket operations.
 
@@ -43,7 +43,7 @@ IORequest operations are expressed as overloaded static methods on `IORequest`, 
     public static func open(
         _ path: FilePath,
         in directory: FileDescriptor,
-        into slot: IORingFileSlot,
+        into slot: IORing.RegisteredFile,
         mode: FileDescriptor.AccessMode,
         options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
         permissions: FilePermissions? = nil,
@@ -84,14 +84,6 @@ Unfortunately the underlying kernel API makes it relatively difficult to determi
 ## Detailed design 
 
 ```swift
-public struct IOResource<T> { }
-public typealias IORingFileSlot = IOResource<UInt32>
-public typealias IORingBuffer = IOResource<iovec>
-
-extension IORingBuffer {
-    public var unsafeBuffer: UnsafeMutableRawBufferPointer
-}
-
 // IORing is intentionally not Sendable, to avoid internal locking overhead
 public struct IORing: ~Copyable {
 
@@ -111,6 +103,10 @@ public struct IORing: ~Copyable {
 	
 	public mutating func registerEventFD(_ descriptor: FileDescriptor) throws(Errno)
 	public mutating func unregisterEventFD(_ descriptor: FileDescriptor) throws(Errno)
+ 
+  public struct RegisteredResource<T> { }
+  public typealias RegisteredFile = RegisteredResource<UInt32>
+  public typealias RegisteredBuffer = RegisteredResource<iovec> 
 	
 	// An IORing.RegisteredResources is a view into the buffers or files registered with the ring, if any
 	public struct RegisteredResources<T>: RandomAccessCollection {
@@ -118,23 +114,23 @@ public struct IORing: ~Copyable {
 		public subscript(position: UInt16) -> IOResource<T> // This is useful because io_uring likes to use UInt16s as indexes
 	}
 	
-	public mutating func registerFileSlots(count: Int) throws(Errno) -> RegisteredResources<IORingFileSlot.Resource>
+	public mutating func registerFileSlots(count: Int) throws(Errno) -> RegisteredResources<RegisteredFile.Resource>
 	
 	public func unregisterFiles()
 	
-	public var registeredFileSlots: RegisteredResources<IORingFileSlot.Resource>
+	public var registeredFileSlots: RegisteredResources<RegisteredFile.Resource>
 	
 	public mutating func registerBuffers(
 		_ buffers: some Collection<UnsafeMutableRawBufferPointer>
-	) throws(Errno) -> RegisteredResources<IORingBuffer.Resource>
+	) throws(Errno) -> RegisteredResources<RegisteredBuffer.Resource>
 	
 	public mutating func registerBuffers(
 		_ buffers: UnsafeMutableRawBufferPointer...
-	) throws(Errno) -> RegisteredResources<IORingBuffer.Resource>
+	) throws(Errno) -> RegisteredResources<RegisteredBuffer.Resource>
 	
 	public func unregisterBuffers()
 	
-	public var registeredBuffers: RegisteredResources<IORingBuffer.Resource>
+	public var registeredBuffers: RegisteredResources<RegisteredBuffer.Resource>
 	
 	public func prepare(requests: IORequest...)
 	public func prepare(linkedRequests: IORequest...)
@@ -189,27 +185,31 @@ public struct IORing: ~Copyable {
 	public var supportedFeatures: Features
 }
 
+extension IORing.RegisteredBuffer {
+    public var unsafeBuffer: UnsafeMutableRawBufferPointer
+}
+
 public struct IORequest: ~Copyable {
     public static func nop(context: UInt64 = 0) -> IORequest
 	
 	// overloads for each combination of registered vs unregistered buffer/descriptor
 	// Read
     public static func read(
-        _ file: IORingFileSlot,
-        into buffer: IORingBuffer,
+        _ file: IORing.RegisteredFile,
+        into buffer: IORing.RegisteredBuffer,
         at offset: UInt64 = 0,
         context: UInt64 = 0
     ) -> IORequest
 	
     public static func read(
         _ file: FileDescriptor,
-        into buffer: IORingBuffer,
+        into buffer: IORing.RegisteredBuffer,
         at offset: UInt64 = 0,
         context: UInt64 = 0
     ) -> IORequest
     
     public static func read(
-        _ file: IORingFileSlot,
+        _ file: IORing.RegisteredFile,
         into buffer: UnsafeMutableRawBufferPointer,
         at offset: UInt64 = 0,
         context: UInt64 = 0
@@ -224,14 +224,14 @@ public struct IORequest: ~Copyable {
     
     // Write
     public static func write(
-        _ buffer: IORingBuffer,
-        into file: IORingFileSlot,
+        _ buffer: IORing.RegisteredBuffer,
+        into file: IORing.RegisteredFile,
         at offset: UInt64 = 0,
         context: UInt64 = 0
     ) -> IORequest
     
     public static func write(
-        _ buffer: IORingBuffer,
+        _ buffer: IORing.RegisteredBuffer,
         into file: FileDescriptor,
         at offset: UInt64 = 0,
         context: UInt64 = 0
@@ -239,7 +239,7 @@ public struct IORequest: ~Copyable {
     
     public static func write(
         _ buffer: UnsafeMutableRawBufferPointer,
-        into file: IORingFileSlot,
+        into file: IORing.RegisteredFile,
         at offset: UInt64 = 0,
         context: UInt64 = 0
     ) -> IORequest
@@ -258,7 +258,7 @@ public struct IORequest: ~Copyable {
     ) -> IORequest 
     
     public static func close(
-        _ file: IORingFileSlot,
+        _ file: IORing.RegisteredFile,
         context: UInt64 = 0
     ) -> IORequest
     
@@ -266,7 +266,7 @@ public struct IORequest: ~Copyable {
     public static func open(
         _ path: FilePath,
         in directory: FileDescriptor,
-        into slot: IORingFileSlot,
+        into slot: IORing.RegisteredFile,
         mode: FileDescriptor.AccessMode,
         options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
         permissions: FilePermissions? = nil,
@@ -296,26 +296,18 @@ public struct IORequest: ~Copyable {
     }
     
     public static func cancel(
-    	_ matchAll: CancellationMatch,
-    	matchingContext: UInt64,
-    	context: UInt64
+      _ matchAll: CancellationMatch,
+      matchingContext: UInt64,
     ) -> IORequest
     
     public static func cancel(
-    	_ matchAll: CancellationMatch,
-    	matchingFileDescriptor: FileDescriptor,
-    	context: UInt64
+      _ matchAll: CancellationMatch,
+      matching: FileDescriptor,
     ) -> IORequest
     
     public static func cancel(
-    	_ matchAll: CancellationMatch,
-    	matchingRegisteredFileDescriptorAtIndex: Int,
-    	context: UInt64
-    ) -> IORequest
-    
-    public static func cancel(
-    	_ matchAll: CancellationMatch,
-    	context: UInt64
+      _ matchAll: CancellationMatch,
+      matching: IORing.RegisteredFile,
     ) -> IORequest
     
     // Other operations follow in the same pattern
