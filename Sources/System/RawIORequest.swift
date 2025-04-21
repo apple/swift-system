@@ -26,6 +26,7 @@ extension RawIORequest {
         case sendMessage = 9
         case receiveMessage = 10
         // ...
+        case asyncCancel = 14
         case link_timeout = 15
         // ...
         case openAt = 18
@@ -59,6 +60,16 @@ extension RawIORequest {
     var operation: Operation {
         get { Operation(rawValue: rawValue.opcode)! }
         set { rawValue.opcode = newValue.rawValue }
+    }
+
+    var cancel_flags: UInt32 {
+        get { rawValue.cancel_flags }
+        set { rawValue.cancel_flags = newValue }
+    }
+
+    var addr: UInt64 {
+        get { rawValue.addr }
+        set { rawValue.addr = newValue }
     }
 
     public var flags: Flags {

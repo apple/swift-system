@@ -81,6 +81,18 @@ internal enum IORequestCore {
         path: FilePath,
         context: UInt64 = 0
     )
+    case cancel(
+        flags: UInt32,
+        targetContext: UInt64
+    )
+    case cancelFD(
+        flags: UInt32,
+        targetFD: FileDescriptor
+    )
+    case cancelFDSlot(
+        flags: UInt32,
+        target: IORingFileSlot
+    )
 }
 
 @inline(__always)
@@ -160,7 +172,7 @@ extension IORequest {
         IORequest(core: .nop)
     }
 
-    public static func reading(
+    public static func read(
         _ file: IORingFileSlot,
         into buffer: IORingBuffer,
         at offset: UInt64 = 0,
@@ -169,7 +181,7 @@ extension IORequest {
         IORequest(core: .readSlot(file: file, buffer: buffer, offset: offset, context: context))
     }
 
-    public static func reading(
+    public static func read(
         _ file: FileDescriptor,
         into buffer: IORingBuffer,
         at offset: UInt64 = 0,
@@ -178,7 +190,7 @@ extension IORequest {
         IORequest(core: .read(file: file, buffer: buffer, offset: offset, context: context))
     }
 
-    public static func reading(
+    public static func read(
         _ file: IORingFileSlot,
         into buffer: UnsafeMutableRawBufferPointer,
         at offset: UInt64 = 0,
@@ -189,7 +201,7 @@ extension IORequest {
                 file: file, buffer: buffer, offset: offset, context: context))
     }
 
-    public static func reading(
+    public static func read(
         _ file: FileDescriptor,
         into buffer: UnsafeMutableRawBufferPointer,
         at offset: UInt64 = 0,
@@ -199,7 +211,7 @@ extension IORequest {
             core: .readUnregistered(file: file, buffer: buffer, offset: offset, context: context))
     }
 
-    public static func writing(
+    public static func write(
         _ buffer: IORingBuffer,
         into file: IORingFileSlot,
         at offset: UInt64 = 0,
@@ -208,7 +220,7 @@ extension IORequest {
         IORequest(core: .writeSlot(file: file, buffer: buffer, offset: offset, context: context))
     }
 
-    public static func writing(
+    public static func write(
         _ buffer: IORingBuffer,
         into file: FileDescriptor,
         at offset: UInt64 = 0,
@@ -217,7 +229,7 @@ extension IORequest {
         IORequest(core: .write(file: file, buffer: buffer, offset: offset, context: context))
     }
 
-    public static func writing(
+    public static func write(
         _ buffer: UnsafeMutableRawBufferPointer,
         into file: IORingFileSlot,
         at offset: UInt64 = 0,
@@ -228,7 +240,7 @@ extension IORequest {
                 file: file, buffer: buffer, offset: offset, context: context))
     }
 
-    public static func writing(
+    public static func write(
         _ buffer: UnsafeMutableRawBufferPointer,
         into file: FileDescriptor,
         at offset: UInt64 = 0,
@@ -239,21 +251,21 @@ extension IORequest {
         )
     }
 
-    public static func closing(
+    public static func close(
         _ file: FileDescriptor,
         context: UInt64 = 0
     ) -> IORequest {
         IORequest(core: .close(file, context: context))
     }
 
-    public static func closing(
+    public static func close(
         _ file: IORingFileSlot,
         context: UInt64 = 0
     ) -> IORequest {
         IORequest(core: .closeSlot(file, context: context))
     }
 
-    public static func opening(
+    public static func open(
         _ path: FilePath,
         in directory: FileDescriptor,
         into slot: IORingFileSlot,
@@ -268,7 +280,7 @@ extension IORequest {
                 permissions: permissions, intoSlot: slot, context: context))
     }
 
-    public static func opening(
+    public static func open(
         _ path: FilePath,
         in directory: FileDescriptor,
         mode: FileDescriptor.AccessMode,
@@ -283,13 +295,78 @@ extension IORequest {
             ))
     }
 
-    public static func unlinking(
+    public static func unlink(
         _ path: FilePath,
         in directory: FileDescriptor,
         context: UInt64 = 0
     ) -> IORequest {
         IORequest(core: .unlinkAt(atDirectory: directory, path: path, context: context))
     }
+
+    // Cancel
+
+    /*
+ * ASYNC_CANCEL flags.
+ *
+ * IORING_ASYNC_CANCEL_ALL	Cancel all requests that match the given key
+ * IORING_ASYNC_CANCEL_FD	Key off 'fd' for cancelation rather than the
+ *				request 'user_data'
+ * IORING_ASYNC_CANCEL_ANY	Match any request
+ * IORING_ASYNC_CANCEL_FD_FIXED	'fd' passed in is a fixed descriptor
+ * IORING_ASYNC_CANCEL_USERDATA	Match on user_data, default for no other key
+ * IORING_ASYNC_CANCEL_OP	Match request based on opcode
+ */ 
+    //TODO: why aren't these showing up from the header import?
+    private static var IORING_ASYNC_CANCEL_ALL: UInt32 { (1 as UInt32) << 0 }
+    private static var IORING_ASYNC_CANCEL_FD: UInt32 { (1 as UInt32) << 1 }
+    private static var IORING_ASYNC_CANCEL_ANY: UInt32 { (1 as UInt32) << 2 }
+    private static var IORING_ASYNC_CANCEL_FD_FIXED: UInt32 { (1 as UInt32) << 3 }
+    private static var IORING_ASYNC_CANCEL_USERDATA: UInt32 { (1 as UInt32) << 4 }
+    private static var IORING_ASYNC_CANCEL_OP: UInt32 { (1 as UInt32) << 5 }
+
+
+    public enum CancellationMatch {
+    	case all
+    	case first
+    }
+    
+    public static func cancel(
+    	_ matchAll: CancellationMatch,
+    	matchingContext: UInt64,
+    ) -> IORequest {
+        switch matchAll {
+            case .all:
+                IORequest(core: .cancel(flags: IORING_ASYNC_CANCEL_ALL | IORING_ASYNC_CANCEL_USERDATA, targetContext: matchingContext))
+            case .first:
+                IORequest(core: .cancel(flags: IORING_ASYNC_CANCEL_ANY | IORING_ASYNC_CANCEL_USERDATA, targetContext: matchingContext))
+        }
+    }
+    
+    public static func cancel(
+    	_ matchAll: CancellationMatch,
+    	matchingFileDescriptor: FileDescriptor,
+    ) -> IORequest {
+        switch matchAll {
+            case .all:
+                IORequest(core: .cancelFD(flags: IORING_ASYNC_CANCEL_ALL | IORING_ASYNC_CANCEL_FD, targetFD: matchingFileDescriptor))
+            case .first:
+                IORequest(core: .cancelFD(flags: IORING_ASYNC_CANCEL_ANY | IORING_ASYNC_CANCEL_FD, targetFD: matchingFileDescriptor))
+        }
+    }
+    
+    public static func cancel(
+    	_ matchAll: CancellationMatch,
+    	matchingFile: IORingFileSlot,
+    ) -> IORequest {
+        switch matchAll {
+            case .all:
+                IORequest(core: .cancelFDSlot(flags: IORING_ASYNC_CANCEL_ALL | IORING_ASYNC_CANCEL_FD_FIXED, target: matchingFile))
+            case .first:
+                IORequest(core: .cancelFDSlot(flags: IORING_ASYNC_CANCEL_ANY | IORING_ASYNC_CANCEL_FD_FIXED, target: matchingFile))
+        }
+    }
+
+    //TODO: add support for CANCEL_OP
 
     @inline(__always)
     public consuming func makeRawRequest() -> RawIORequest {
@@ -377,7 +454,20 @@ extension IORequest {
             )
             request.path = path
             request.rawValue.user_data = context
+        case .cancel(let flags, let targetContext):
+            request.operation = .asyncCancel
+            request.cancel_flags = flags
+            request.addr = targetContext
+        case .cancelFD(let flags, let targetFD):
+            request.operation = .asyncCancel
+            request.cancel_flags = flags
+            request.fileDescriptor = targetFD
+        case .cancelFDSlot(let flags, let target):
+            request.operation = .asyncCancel
+            request.cancel_flags = flags
+            request.rawValue.fd = Int32(target.index)
         }
+
         return request
     }
 }
