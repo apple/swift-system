@@ -624,11 +624,11 @@ public struct IORing: ~Copyable {
         init(resources: [T]) {
             self.resources = resources
         }
-        public subscript(position: Int) -> IOResource<T> {
-            IOResource(resource: resources[position], index: position)
+        public subscript(position: Int) -> RegisteredResource<T> {
+            RegisteredResource(resource: resources[position], index: position)
         }
-        public subscript(position: UInt16) -> IOResource<T> {
-            IOResource(resource: resources[Int(position)], index: Int(position))
+        public subscript(position: UInt16) -> RegisteredResource<T> {
+            RegisteredResource(resource: resources[Int(position)], index: Int(position))
         }
     }
 

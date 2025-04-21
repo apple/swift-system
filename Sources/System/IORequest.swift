@@ -348,9 +348,9 @@ extension IORequest {
     ) -> IORequest {
         switch matchAll {
             case .all:
-                IORequest(core: .cancelFD(flags: IORING_ASYNC_CANCEL_ALL | IORING_ASYNC_CANCEL_FD, targetFD: matchingFileDescriptor))
+                IORequest(core: .cancelFD(flags: IORING_ASYNC_CANCEL_ALL | IORING_ASYNC_CANCEL_FD, targetFD: matching))
             case .first:
-                IORequest(core: .cancelFD(flags: IORING_ASYNC_CANCEL_ANY | IORING_ASYNC_CANCEL_FD, targetFD: matchingFileDescriptor))
+                IORequest(core: .cancelFD(flags: IORING_ASYNC_CANCEL_ANY | IORING_ASYNC_CANCEL_FD, targetFD: matching))
         }
     }
     
@@ -360,9 +360,9 @@ extension IORequest {
     ) -> IORequest {
         switch matchAll {
             case .all:
-                IORequest(core: .cancelFDSlot(flags: IORING_ASYNC_CANCEL_ALL | IORING_ASYNC_CANCEL_FD_FIXED, target: matchingFile))
+                IORequest(core: .cancelFDSlot(flags: IORING_ASYNC_CANCEL_ALL | IORING_ASYNC_CANCEL_FD_FIXED, target: matching))
             case .first:
-                IORequest(core: .cancelFDSlot(flags: IORING_ASYNC_CANCEL_ANY | IORING_ASYNC_CANCEL_FD_FIXED, target: matchingFile))
+                IORequest(core: .cancelFDSlot(flags: IORING_ASYNC_CANCEL_ANY | IORING_ASYNC_CANCEL_FD_FIXED, target: matching))
         }
     }
 
