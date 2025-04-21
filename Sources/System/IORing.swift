@@ -66,20 +66,6 @@ public struct IOResource<T> {
     }
 }
 
-public typealias IORingFileSlot = IOResource<UInt32>
-public typealias IORingBuffer = IOResource<iovec>
-
-extension IORingFileSlot {
-    public var unsafeFileSlot: Int {
-        return index
-    }
-}
-extension IORingBuffer {
-    public var unsafeBuffer: UnsafeMutableRawBufferPointer {
-        return .init(start: resource.iov_base, count: resource.iov_len)
-    }
-}
-
 @inline(__always)
 internal func _writeRequest(
     _ request: __owned RawIORequest, ring: inout SQRing,
@@ -316,6 +302,9 @@ public struct IORing: ~Copyable {
     var _registeredBuffers: [iovec]
 
     var features = Features(rawValue: 0)
+
+    public typealias RegisteredFile = IOResource<UInt32>
+    public typealias RegisteredBuffer = IOResource<iovec>
 
     @frozen
     public struct SetupFlags: OptionSet, RawRepresentable, Hashable {
@@ -565,7 +554,7 @@ public struct IORing: ~Copyable {
     }
 
     public mutating func registerFileSlots(count: Int) throws(Errno) -> RegisteredResources<
-        IORingFileSlot.Resource
+        IORing.RegisteredFile.Resource
     > {
         precondition(_registeredFiles.isEmpty)
         precondition(count < UInt32.max)
@@ -593,12 +582,12 @@ public struct IORing: ~Copyable {
         fatalError("failed to unregister files")
     }
 
-    public var registeredFileSlots: RegisteredResources<IORingFileSlot.Resource> {
+    public var registeredFileSlots: RegisteredResources<RegisteredFile.Resource> {
         RegisteredResources(resources: _registeredFiles)
     }
 
     public mutating func registerBuffers(_ buffers: some Collection<UnsafeMutableRawBufferPointer>) throws(Errno)
-        -> RegisteredResources<IORingBuffer.Resource>
+        -> RegisteredResources<RegisteredBuffer.Resource>
     {
         precondition(buffers.count < UInt32.max)
         precondition(_registeredBuffers.isEmpty)
@@ -624,7 +613,7 @@ public struct IORing: ~Copyable {
     }
 
     public mutating func registerBuffers(_ buffers: UnsafeMutableRawBufferPointer...) throws(Errno)
-        -> RegisteredResources<IORingBuffer.Resource>
+        -> RegisteredResources<RegisteredBuffer.Resource>
     {
         try registerBuffers(buffers)
     }
@@ -645,7 +634,7 @@ public struct IORing: ~Copyable {
         }
     }
 
-    public var registeredBuffers: RegisteredResources<IORingBuffer.Resource> {
+    public var registeredBuffers: RegisteredResources<RegisteredBuffer.Resource> {
         RegisteredResources(resources: _registeredBuffers)
     }
 
@@ -748,5 +737,16 @@ public struct IORing: ~Copyable {
             submissionQueueEntries.count * MemoryLayout<io_uring_sqe>.size
         )
         close(ringDescriptor)
+    }
+}
+
+extension IORing.RegisteredFile {
+    public var unsafeFileSlot: Int {
+        return index
+    }
+}
+extension IORing.RegisteredBuffer {
+    public var unsafeBuffer: UnsafeMutableRawBufferPointer {
+        return .init(start: resource.iov_base, count: resource.iov_len)
     }
 }

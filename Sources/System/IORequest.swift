@@ -17,12 +17,12 @@ internal enum IORequestCore {
         FileDescriptor.AccessMode,
         options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
         permissions: FilePermissions? = nil,
-        intoSlot: IORingFileSlot,
+        intoSlot: IORing.RegisteredFile,
         context: UInt64 = 0
     )
     case read(
         file: FileDescriptor,
-        buffer: IORingBuffer,
+        buffer: IORing.RegisteredBuffer,
         offset: UInt64 = 0,
         context: UInt64 = 0
     )
@@ -33,20 +33,20 @@ internal enum IORequestCore {
         context: UInt64 = 0
     )
     case readSlot(
-        file: IORingFileSlot,
-        buffer: IORingBuffer,
+        file: IORing.RegisteredFile,
+        buffer: IORing.RegisteredBuffer,
         offset: UInt64 = 0,
         context: UInt64 = 0
     )
     case readUnregisteredSlot(
-        file: IORingFileSlot,
+        file: IORing.RegisteredFile,
         buffer: UnsafeMutableRawBufferPointer,
         offset: UInt64 = 0,
         context: UInt64 = 0
     )
     case write(
         file: FileDescriptor,
-        buffer: IORingBuffer,
+        buffer: IORing.RegisteredBuffer,
         offset: UInt64 = 0,
         context: UInt64 = 0
     )
@@ -57,13 +57,13 @@ internal enum IORequestCore {
         context: UInt64 = 0
     )
     case writeSlot(
-        file: IORingFileSlot,
-        buffer: IORingBuffer,
+        file: IORing.RegisteredFile,
+        buffer: IORing.RegisteredBuffer,
         offset: UInt64 = 0,
         context: UInt64 = 0
     )
     case writeUnregisteredSlot(
-        file: IORingFileSlot,
+        file: IORing.RegisteredFile,
         buffer: UnsafeMutableRawBufferPointer,
         offset: UInt64 = 0,
         context: UInt64 = 0
@@ -73,7 +73,7 @@ internal enum IORequestCore {
         context: UInt64 = 0
     )
     case closeSlot(
-        IORingFileSlot,
+        IORing.RegisteredFile,
         context: UInt64 = 0
     )
     case unlinkAt(
@@ -91,14 +91,14 @@ internal enum IORequestCore {
     )
     case cancelFDSlot(
         flags: UInt32,
-        target: IORingFileSlot
+        target: IORing.RegisteredFile
     )
 }
 
 @inline(__always)
 internal func makeRawRequest_readWrite_registered(
     file: FileDescriptor,
-    buffer: IORingBuffer,
+    buffer: IORing.RegisteredBuffer,
     offset: UInt64,
     context: UInt64 = 0,
     request: consuming RawIORequest
@@ -113,8 +113,8 @@ internal func makeRawRequest_readWrite_registered(
 
 @inline(__always)
 internal func makeRawRequest_readWrite_registered_slot(
-    file: IORingFileSlot,
-    buffer: IORingBuffer,
+    file: IORing.RegisteredFile,
+    buffer: IORing.RegisteredBuffer,
     offset: UInt64,
     context: UInt64 = 0,
     request: consuming RawIORequest
@@ -145,7 +145,7 @@ internal func makeRawRequest_readWrite_unregistered(
 
 @inline(__always)
 internal func makeRawRequest_readWrite_unregistered_slot(
-    file: IORingFileSlot,
+    file: IORing.RegisteredFile,
     buffer: UnsafeMutableRawBufferPointer,
     offset: UInt64,
     context: UInt64 = 0,
@@ -173,8 +173,8 @@ extension IORequest {
     }
 
     public static func read(
-        _ file: IORingFileSlot,
-        into buffer: IORingBuffer,
+        _ file: IORing.RegisteredFile,
+        into buffer: IORing.RegisteredBuffer,
         at offset: UInt64 = 0,
         context: UInt64 = 0
     ) -> IORequest {
@@ -183,7 +183,7 @@ extension IORequest {
 
     public static func read(
         _ file: FileDescriptor,
-        into buffer: IORingBuffer,
+        into buffer: IORing.RegisteredBuffer,
         at offset: UInt64 = 0,
         context: UInt64 = 0
     ) -> IORequest {
@@ -191,7 +191,7 @@ extension IORequest {
     }
 
     public static func read(
-        _ file: IORingFileSlot,
+        _ file: IORing.RegisteredFile,
         into buffer: UnsafeMutableRawBufferPointer,
         at offset: UInt64 = 0,
         context: UInt64 = 0
@@ -212,8 +212,8 @@ extension IORequest {
     }
 
     public static func write(
-        _ buffer: IORingBuffer,
-        into file: IORingFileSlot,
+        _ buffer: IORing.RegisteredBuffer,
+        into file: IORing.RegisteredFile,
         at offset: UInt64 = 0,
         context: UInt64 = 0
     ) -> IORequest {
@@ -221,7 +221,7 @@ extension IORequest {
     }
 
     public static func write(
-        _ buffer: IORingBuffer,
+        _ buffer: IORing.RegisteredBuffer,
         into file: FileDescriptor,
         at offset: UInt64 = 0,
         context: UInt64 = 0
@@ -231,7 +231,7 @@ extension IORequest {
 
     public static func write(
         _ buffer: UnsafeMutableRawBufferPointer,
-        into file: IORingFileSlot,
+        into file: IORing.RegisteredFile,
         at offset: UInt64 = 0,
         context: UInt64 = 0
     ) -> IORequest {
@@ -259,7 +259,7 @@ extension IORequest {
     }
 
     public static func close(
-        _ file: IORingFileSlot,
+        _ file: IORing.RegisteredFile,
         context: UInt64 = 0
     ) -> IORequest {
         IORequest(core: .closeSlot(file, context: context))
@@ -268,7 +268,7 @@ extension IORequest {
     public static func open(
         _ path: FilePath,
         in directory: FileDescriptor,
-        into slot: IORingFileSlot,
+        into slot: IORing.RegisteredFile,
         mode: FileDescriptor.AccessMode,
         options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
         permissions: FilePermissions? = nil,
@@ -356,7 +356,7 @@ extension IORequest {
     
     public static func cancel(
     	_ matchAll: CancellationMatch,
-    	matchingFile: IORingFileSlot,
+    	matchingFile: IORing.RegisteredFile,
     ) -> IORequest {
         switch matchAll {
             case .all:
