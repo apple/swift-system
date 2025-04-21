@@ -344,7 +344,7 @@ extension IORequest {
     
     public static func cancel(
     	_ matchAll: CancellationMatch,
-    	matchingFileDescriptor: FileDescriptor,
+    	matching: FileDescriptor,
     ) -> IORequest {
         switch matchAll {
             case .all:
@@ -356,7 +356,7 @@ extension IORequest {
     
     public static func cancel(
     	_ matchAll: CancellationMatch,
-    	matchingFile: IORing.RegisteredFile,
+    	matching: IORing.RegisteredFile,
     ) -> IORequest {
         switch matchAll {
             case .all:
