@@ -374,7 +374,7 @@ public struct IORing: ~Copyable {
         minimumCount: UInt32,
         maximumCount: UInt32,
         extraArgs: UnsafeMutablePointer<io_uring_getevents_arg>? = nil,
-        consumer: (consuming IOCompletion?, Errno?, Bool) throws(Err) -> Void
+        consumer: (consuming IORing.Completion?, Errno?, Bool) throws(Err) -> Void
     ) throws(Err) {
         var count = 0
         while let completion = _tryConsumeCompletion(ring: completionRing) {
@@ -440,10 +440,10 @@ public struct IORing: ~Copyable {
 
     internal func _blockingConsumeOneCompletion(
         extraArgs: UnsafeMutablePointer<io_uring_getevents_arg>? = nil
-    ) throws(Errno) -> IOCompletion {
-        var result: IOCompletion? = nil
+    ) throws(Errno) -> Completion {
+        var result: Completion? = nil
         try _blockingConsumeCompletionGuts(minimumCount: 1, maximumCount: 1, extraArgs: extraArgs) {
-            (completion: consuming IOCompletion?, error, done) throws(Errno) in
+            (completion: consuming Completion?, error, done) throws(Errno) in
             if let error {
                 throw error
             }
@@ -456,13 +456,13 @@ public struct IORing: ~Copyable {
 
     public func blockingConsumeCompletion(
         timeout: Duration? = nil
-    ) throws(Errno) -> IOCompletion {
+    ) throws(Errno) -> Completion {
         if let timeout {
             var ts = __kernel_timespec(
                 tv_sec: timeout.components.seconds,
                 tv_nsec: timeout.components.attoseconds / 1_000_000_000
             )
-            return try withUnsafePointer(to: &ts) { (tsPtr) throws(Errno) -> IOCompletion in
+            return try withUnsafePointer(to: &ts) { (tsPtr) throws(Errno) -> Completion in
                 var args = io_uring_getevents_arg(
                     sigmask: 0,
                     sigmask_sz: 0,
@@ -479,7 +479,7 @@ public struct IORing: ~Copyable {
     public func blockingConsumeCompletions<Err: Error>(
         minimumCount: UInt32 = 1,
         timeout: Duration? = nil,
-        consumer: (consuming IOCompletion?, Errno?, Bool) throws(Err) -> Void
+        consumer: (consuming Completion?, Errno?, Bool) throws(Err) -> Void
     ) throws(Err) {
         if let timeout {
             var ts = __kernel_timespec(
@@ -507,11 +507,11 @@ public struct IORing: ~Copyable {
 
     // }
 
-    public func tryConsumeCompletion() -> IOCompletion? {
+    public func tryConsumeCompletion() -> Completion? {
         return _tryConsumeCompletion(ring: completionRing)
     }
 
-    func _tryConsumeCompletion(ring: borrowing CQRing) -> IOCompletion? {
+    func _tryConsumeCompletion(ring: borrowing CQRing) -> Completion? {
         let tail = ring.kernelTail.pointee.load(ordering: .acquiring)
         let head = ring.kernelHead.pointee.load(ordering: .acquiring)
 
@@ -519,7 +519,7 @@ public struct IORing: ~Copyable {
             // 32 byte copy - oh well
             let res = ring.cqes[Int(head & ring.ringMask)]
             ring.kernelHead.pointee.store(head &+ 1, ordering: .releasing)
-            return IOCompletion(rawValue: res)
+            return Completion(rawValue: res)
         }
 
         return nil
@@ -652,7 +652,7 @@ public struct IORing: ~Copyable {
     public func submitPreparedRequestsAndConsumeCompletions<Err: Error>(
         minimumCount: UInt32 = 1,
         timeout: Duration? = nil,
-        consumer: (consuming IOCompletion?, Errno?, Bool) throws(Err) -> Void
+        consumer: (consuming Completion?, Errno?, Bool) throws(Err) -> Void
     ) throws(Err) {
         //TODO: optimize this to one uring_enter
         do {
@@ -667,13 +667,13 @@ public struct IORing: ~Copyable {
         )
     }
 
-    public mutating func prepare(request: __owned IORequest) -> Bool {
+    public mutating func prepare(request: __owned Request) -> Bool {
         var raw: RawIORequest? = request.makeRawRequest()
         return _writeRequest(
             raw.take()!, ring: &submissionRing, submissionQueueEntries: submissionQueueEntries)
     }
 
-    mutating func prepare(linkedRequests: some BidirectionalCollection<IORequest>) {
+    mutating func prepare(linkedRequests: some BidirectionalCollection<Request>) {
         guard linkedRequests.count > 0 else {
             return
         }
@@ -690,11 +690,11 @@ public struct IORing: ~Copyable {
     }
 
     //@inlinable //TODO: make sure the array allocation gets optimized out...
-    public mutating func prepare(linkedRequests: IORequest...) {
+    public mutating func prepare(linkedRequests: Request...) {
         prepare(linkedRequests: linkedRequests)
     }
 
-    public mutating func submit(linkedRequests: IORequest...) throws(Errno) {
+    public mutating func submit(linkedRequests: Request...) throws(Errno) {
         prepare(linkedRequests: linkedRequests)
         try submitPreparedRequests()
     }

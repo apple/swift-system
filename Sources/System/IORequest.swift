@@ -159,17 +159,21 @@ internal func makeRawRequest_readWrite_unregistered_slot(
     return request
 }
 
-public struct IORequest {
-    @usableFromInline var core: IORequestCore
+extension IORing {
+    public struct Request {
+        @usableFromInline var core: IORequestCore
 
-    @inlinable internal consuming func extractCore() -> IORequestCore {
-        return core
+        @inlinable internal consuming func extractCore() -> IORequestCore {
+            return core
+        }
     }
 }
 
-extension IORequest {
-    public static func nop(context: UInt64 = 0) -> IORequest {
-        IORequest(core: .nop)
+
+
+extension IORing.Request {
+    public static func nop(context: UInt64 = 0) -> IORing.Request {
+        .init(core: .nop)
     }
 
     public static func read(
@@ -177,8 +181,8 @@ extension IORequest {
         into buffer: IORing.RegisteredBuffer,
         at offset: UInt64 = 0,
         context: UInt64 = 0
-    ) -> IORequest {
-        IORequest(core: .readSlot(file: file, buffer: buffer, offset: offset, context: context))
+    ) -> IORing.Request {
+        .init(core: .readSlot(file: file, buffer: buffer, offset: offset, context: context))
     }
 
     public static func read(
@@ -186,8 +190,8 @@ extension IORequest {
         into buffer: IORing.RegisteredBuffer,
         at offset: UInt64 = 0,
         context: UInt64 = 0
-    ) -> IORequest {
-        IORequest(core: .read(file: file, buffer: buffer, offset: offset, context: context))
+    ) -> IORing.Request {
+        .init(core: .read(file: file, buffer: buffer, offset: offset, context: context))
     }
 
     public static func read(
@@ -195,10 +199,8 @@ extension IORequest {
         into buffer: UnsafeMutableRawBufferPointer,
         at offset: UInt64 = 0,
         context: UInt64 = 0
-    ) -> IORequest {
-        IORequest(
-            core: .readUnregisteredSlot(
-                file: file, buffer: buffer, offset: offset, context: context))
+    ) -> IORing.Request {
+        .init(core: .readUnregisteredSlot(file: file, buffer: buffer, offset: offset, context: context))
     }
 
     public static func read(
@@ -206,9 +208,8 @@ extension IORequest {
         into buffer: UnsafeMutableRawBufferPointer,
         at offset: UInt64 = 0,
         context: UInt64 = 0
-    ) -> IORequest {
-        IORequest(
-            core: .readUnregistered(file: file, buffer: buffer, offset: offset, context: context))
+    ) -> IORing.Request {
+        .init(core: .readUnregistered(file: file, buffer: buffer, offset: offset, context: context))
     }
 
     public static func write(
@@ -216,8 +217,8 @@ extension IORequest {
         into file: IORing.RegisteredFile,
         at offset: UInt64 = 0,
         context: UInt64 = 0
-    ) -> IORequest {
-        IORequest(core: .writeSlot(file: file, buffer: buffer, offset: offset, context: context))
+    ) -> IORing.Request {
+        .init(core: .writeSlot(file: file, buffer: buffer, offset: offset, context: context))
     }
 
     public static func write(
@@ -225,8 +226,8 @@ extension IORequest {
         into file: FileDescriptor,
         at offset: UInt64 = 0,
         context: UInt64 = 0
-    ) -> IORequest {
-        IORequest(core: .write(file: file, buffer: buffer, offset: offset, context: context))
+    ) -> IORing.Request {
+        .init(core: .write(file: file, buffer: buffer, offset: offset, context: context))
     }
 
     public static func write(
@@ -234,9 +235,8 @@ extension IORequest {
         into file: IORing.RegisteredFile,
         at offset: UInt64 = 0,
         context: UInt64 = 0
-    ) -> IORequest {
-        IORequest(
-            core: .writeUnregisteredSlot(
+    ) -> IORing.Request {
+        .init(core: .writeUnregisteredSlot(
                 file: file, buffer: buffer, offset: offset, context: context))
     }
 
@@ -245,8 +245,8 @@ extension IORequest {
         into file: FileDescriptor,
         at offset: UInt64 = 0,
         context: UInt64 = 0
-    ) -> IORequest {
-        IORequest(
+    ) -> IORing.Request {
+        .init(
             core: .writeUnregistered(file: file, buffer: buffer, offset: offset, context: context)
         )
     }
@@ -254,15 +254,15 @@ extension IORequest {
     public static func close(
         _ file: FileDescriptor,
         context: UInt64 = 0
-    ) -> IORequest {
-        IORequest(core: .close(file, context: context))
+    ) -> IORing.Request {
+        .init(core: .close(file, context: context))
     }
 
     public static func close(
         _ file: IORing.RegisteredFile,
         context: UInt64 = 0
-    ) -> IORequest {
-        IORequest(core: .closeSlot(file, context: context))
+    ) -> IORing.Request {
+        .init(core: .closeSlot(file, context: context))
     }
 
     public static func open(
@@ -273,8 +273,8 @@ extension IORequest {
         options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
         permissions: FilePermissions? = nil,
         context: UInt64 = 0
-    ) -> IORequest {
-        IORequest(
+    ) -> IORing.Request {
+        .init(
             core: .openatSlot(
                 atDirectory: directory, path: path, mode, options: options,
                 permissions: permissions, intoSlot: slot, context: context))
@@ -287,8 +287,8 @@ extension IORequest {
         options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
         permissions: FilePermissions? = nil,
         context: UInt64 = 0
-    ) -> IORequest {
-        IORequest(
+    ) -> IORing.Request {
+        .init(
             core: .openat(
                 atDirectory: directory, path: path, mode, options: options,
                 permissions: permissions, context: context
@@ -299,8 +299,8 @@ extension IORequest {
         _ path: FilePath,
         in directory: FileDescriptor,
         context: UInt64 = 0
-    ) -> IORequest {
-        IORequest(core: .unlinkAt(atDirectory: directory, path: path, context: context))
+    ) -> IORing.Request {
+        .init(core: .unlinkAt(atDirectory: directory, path: path, context: context))
     }
 
     // Cancel
@@ -333,36 +333,36 @@ extension IORequest {
     public static func cancel(
     	_ matchAll: CancellationMatch,
     	matchingContext: UInt64,
-    ) -> IORequest {
+    ) -> IORing.Request {
         switch matchAll {
             case .all:
-                IORequest(core: .cancel(flags: IORING_ASYNC_CANCEL_ALL | IORING_ASYNC_CANCEL_USERDATA, targetContext: matchingContext))
+                .init(core: .cancel(flags: IORING_ASYNC_CANCEL_ALL | IORING_ASYNC_CANCEL_USERDATA, targetContext: matchingContext))
             case .first:
-                IORequest(core: .cancel(flags: IORING_ASYNC_CANCEL_ANY | IORING_ASYNC_CANCEL_USERDATA, targetContext: matchingContext))
+                .init(core: .cancel(flags: IORING_ASYNC_CANCEL_ANY | IORING_ASYNC_CANCEL_USERDATA, targetContext: matchingContext))
         }
     }
     
     public static func cancel(
     	_ matchAll: CancellationMatch,
     	matching: FileDescriptor,
-    ) -> IORequest {
+    ) -> IORing.Request {
         switch matchAll {
             case .all:
-                IORequest(core: .cancelFD(flags: IORING_ASYNC_CANCEL_ALL | IORING_ASYNC_CANCEL_FD, targetFD: matching))
+                .init(core: .cancelFD(flags: IORING_ASYNC_CANCEL_ALL | IORING_ASYNC_CANCEL_FD, targetFD: matching))
             case .first:
-                IORequest(core: .cancelFD(flags: IORING_ASYNC_CANCEL_ANY | IORING_ASYNC_CANCEL_FD, targetFD: matching))
+                .init(core: .cancelFD(flags: IORING_ASYNC_CANCEL_ANY | IORING_ASYNC_CANCEL_FD, targetFD: matching))
         }
     }
     
     public static func cancel(
     	_ matchAll: CancellationMatch,
     	matching: IORing.RegisteredFile,
-    ) -> IORequest {
+    ) -> IORing.Request {
         switch matchAll {
             case .all:
-                IORequest(core: .cancelFDSlot(flags: IORING_ASYNC_CANCEL_ALL | IORING_ASYNC_CANCEL_FD_FIXED, target: matching))
+                .init(core: .cancelFDSlot(flags: IORING_ASYNC_CANCEL_ALL | IORING_ASYNC_CANCEL_FD_FIXED, target: matching))
             case .first:
-                IORequest(core: .cancelFDSlot(flags: IORING_ASYNC_CANCEL_ANY | IORING_ASYNC_CANCEL_FD_FIXED, target: matching))
+                .init(core: .cancelFDSlot(flags: IORING_ASYNC_CANCEL_ANY | IORING_ASYNC_CANCEL_FD_FIXED, target: matching))
         }
     }
 

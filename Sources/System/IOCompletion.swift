@@ -1,11 +1,13 @@
 @_implementationOnly import CSystem
 
-public struct IOCompletion: ~Copyable {
-    let rawValue: io_uring_cqe
+public extension IORing {
+    struct Completion: ~Copyable {
+        let rawValue: io_uring_cqe
+    }
 }
 
-extension IOCompletion {
-    public struct Flags: OptionSet, Hashable, Codable {
+public extension IORing.Completion {
+    struct Flags: OptionSet, Hashable, Codable {
         public let rawValue: UInt32
 
         public init(rawValue: UInt32) {
@@ -19,32 +21,32 @@ extension IOCompletion {
     }
 }
 
-extension IOCompletion {
-    public var context: UInt64 {
+public extension IORing.Completion {
+    var context: UInt64 {
         get {
             rawValue.user_data
         }
     }
 
-    public var userPointer: UnsafeRawPointer? {
+    var userPointer: UnsafeRawPointer? {
         get {
             UnsafeRawPointer(bitPattern: UInt(rawValue.user_data))
         }
     }
 
-    public var result: Int32 {
+    var result: Int32 {
         get {
             rawValue.res
         }
     }
 
-    public var flags: IOCompletion.Flags {
+    var flags: IORing.Completion.Flags {
         get {
             Flags(rawValue: rawValue.flags & 0x0000FFFF)
         }
     }
 
-    public var bufferIndex: UInt16? {
+    var bufferIndex: UInt16? {
         get {
             if self.flags.contains(.allocatedBuffer) {
                 return UInt16(rawValue.flags >> 16)
