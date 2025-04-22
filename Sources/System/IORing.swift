@@ -330,7 +330,7 @@ public struct IORing: ~Copyable {
         //TODO: should IORING_SETUP_NO_SQARRAY be the default? do we need to adapt anything to it?
     }
 
-    public init(queueDepth: UInt32, flags: SetupFlags) throws(Errno) {
+    public init(queueDepth: UInt32, flags: SetupFlags = []) throws(Errno) {
         let (params, tmpRingDescriptor, tmpRingPtr, tmpRingSize, sqes) = try setUpRing(queueDepth: queueDepth, flags: flags, submissionRing: &submissionRing)
         // All throws need to be before initializing ivars here to avoid 
         // "error: conditional initialization or destruction of noncopyable types is not supported; 
