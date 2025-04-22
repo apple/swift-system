@@ -28,16 +28,16 @@ We propose a *low level, unopinionated* Swift interface for io_uring on Linux (s
 
 `struct IORing: ~Copyable` provides facilities for
 
-* Registering and unregistering resources (files and buffers), an `io_uring` specific variation on Unix file descriptors that improves their efficiency
+* Registering and unregistering resources (files and buffers), an `io_uring` specific variation on Unix file IOdescriptors that improves their efficiency
 * Registering and unregistering eventfds, which allow asynchronous waiting for completions
 * Enqueueing IO requests
 * Dequeueing IO completions
 
-`struct RegisteredResource<T>` represents, via its two typealiases `IORing.RegisteredFile` and `IORing.RegisteredBuffer`, registered file descriptors and buffers.
+`struct IORing.RegisteredResource<T>` represents, via its two typealiases `IORing.RegisteredFile` and `IORing.RegisteredBuffer`, registered file descriptors and buffers.
 
-`struct IORequest: ~Copyable` represents an IO operation that can be enqueued for the kernel to execute. It supports a wide variety of operations matching traditional unix file and socket operations.
+`struct IORing.Request: ~Copyable` represents an IO operation that can be enqueued for the kernel to execute. It supports a wide variety of operations matching traditional unix file and socket operations.
 
-IORequest operations are expressed as overloaded static methods on `IORequest`, e.g. `openat` is spelled
+Request operations are expressed as overloaded static methods on `Request`, e.g. `openat` is spelled
 
 ```swift
     public static func open(
@@ -48,7 +48,7 @@ IORequest operations are expressed as overloaded static methods on `IORequest`, 
         options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
         permissions: FilePermissions? = nil,
         context: UInt64 = 0
-    ) -> IORequest
+    ) -> Request
 
     public static func open(
         _ path: FilePath,
@@ -57,12 +57,12 @@ IORequest operations are expressed as overloaded static methods on `IORequest`, 
         options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
         permissions: FilePermissions? = nil,
         context: UInt64 = 0
-    ) -> IORequest
+    ) -> Request
 ```
 
 which allows clients to decide whether they want to open the file into a slot on the ring, or have it return a file descriptor via a completion. Similarly, read operations have overloads for "use a buffer from the ring" or "read into this `UnsafeMutableBufferPointer`"
 
-Multiple `IORequests` can be enqueued on a single `IORing` using the `prepare(…)` family of methods, and then submitted together using `submitPreparedRequests`, allowing for things like "open this file, read its contents, and then close it" to be a single syscall. Conveniences are provided for preparing and submitting requests in one call.
+Multiple `Requests` can be enqueued on a single `IORing` using the `prepare(…)` family of methods, and then submitted together using `submitPreparedRequests`, allowing for things like "open this file, read its contents, and then close it" to be a single syscall. Conveniences are provided for preparing and submitting requests in one call.
 
 Since IO operations can execute in parallel or out of order by default, linked chains of operations can be established with `prepare(linkedRequests:…)` and related methods. Separate chains can still execute in parallel, and if an operation early in the chain fails, all subsequent operations will deliver cancellation errors as their completion.
 
@@ -70,14 +70,14 @@ Already-completed results can be retrieved from the ring using `tryConsumeComple
 
 Since neither polling nor synchronously waiting is optimal in many cases, `IORing` also exposes the ability to register an eventfd (see `man eventfd(2)`), which will become readable when completions are available on the ring. This can then be monitored asynchronously with `epoll`, `kqueue`, or for clients who are linking libdispatch, `DispatchSource`.
 
-`struct IOCompletion: ~Copyable` represents the result of an IO operation and provides
+`struct Completion: ~Copyable` represents the result of an IO operation and provides
 
 * Flags indicating various operation-specific metadata about the now-completed syscall
 * The context associated with the operation when it was enqueued, as an `UnsafeRawPointer` or a `UInt64`
 * The result of the operation, as an `Int32` with operation-specific meaning
 * The error, if one occurred
 
-Unfortunately the underlying kernel API makes it relatively difficult to determine which `IORequest` led to a given `IOCompletion`, so it's expected that users will need to create this association themselves via the context parameter.
+Unfortunately the underlying kernel API makes it relatively difficult to determine which `Request` led to a given `Completion`, so it's expected that users will need to create this association themselves via the context parameter.
 
 `IORing.Features` describes the supported features of the underlying kernel `IORing` implementation, which can be used to provide graceful reduction in functionality when running on older systems.
 
@@ -87,37 +87,35 @@ Unfortunately the underlying kernel API makes it relatively difficult to determi
 // IORing is intentionally not Sendable, to avoid internal locking overhead
 public struct IORing: ~Copyable {
 
-	public init(queueDepth: UInt32, flags: IORing.SetupFlags) throws(Errno)
-	
-    public struct SetupFlags: OptionSet, RawRepresentable, Hashable {
-        public var rawValue: UInt32
-        public init(rawValue: UInt32)
-        public static var pollCompletions: SetupFlags //IORING_SETUP_IOPOLL
-        public static var pollSubmissions: SetupFlags //IORING_SETUP_SQPOLL
-        public static var clampMaxEntries: SetupFlags //IORING_SETUP_CLAMP
-        public static var startDisabled: SetupFlags //IORING_SETUP_R_DISABLED
-        public static var continueSubmittingOnError: SetupFlags //IORING_SETUP_SUBMIT_ALL
-        public static var singleSubmissionThread: SetupFlags //IORING_SETUP_SINGLE_ISSUER
-        public static var deferRunningTasks: SetupFlags //IORING_SETUP_DEFER_TASKRUN
-    }
-	
-	public mutating func registerEventFD(_ descriptor: FileDescriptor) throws(Errno)
-	public mutating func unregisterEventFD(_ descriptor: FileDescriptor) throws(Errno)
+	public init(queueDepth: UInt32, flags: IORing.SetupFlags = []) throws(Errno)
+  
+  public struct SetupFlags: OptionSet, RawRepresentable, Hashable {
+    public var rawValue: UInt32
+    public init(rawValue: UInt32)
+    public static var pollCompletions: SetupFlags //IORING_SETUP_IOPOLL
+    public static var pollSubmissions: SetupFlags //IORING_SETUP_SQPOLL
+    public static var clampMaxEntries: SetupFlags //IORING_SETUP_CLAMP
+    public static var startDisabled: SetupFlags //IORING_SETUP_R_DISABLED
+    public static var continueSubmittingOnError: SetupFlags //IORING_SETUP_SUBMIT_ALL
+    public static var singleSubmissionThread: SetupFlags //IORING_SETUP_SINGLE_ISSUER
+    public static var deferRunningTasks: SetupFlags //IORING_SETUP_DEFER_TASKRUN
+  }
+
+  public mutating func registerEventFD(_ descriptor: FileDescriptor) throws(Errno)
+  public mutating func unregisterEventFD() throws(Errno)
  
   public struct RegisteredResource<T> { }
   public typealias RegisteredFile = RegisteredResource<UInt32>
   public typealias RegisteredBuffer = RegisteredResource<iovec> 
-	
-	// A `RegisteredResources` is a view into the buffers or files registered with the ring, if any
-	public struct RegisteredResources<T>: RandomAccessCollection {
-		public subscript(position: Int) -> IOResource<T>
-		public subscript(position: UInt16) -> IOResource<T> // This is useful because io_uring likes to use UInt16s as indexes
-	}
+  
+  // A `RegisteredResources` is a view into the buffers or files registered with the ring, if any
+  public struct RegisteredResources<T>: RandomAccessCollection {
+    public subscript(position: Int) -> RegisteredResource<T>
+    public subscript(position: UInt16) -> RegisteredResource<T> // This is useful because io_uring likes to use UInt16s as indexes
+  }
 	
 	public mutating func registerFileSlots(count: Int) throws(Errno) -> RegisteredResources<RegisteredFile.Resource>
-	
 	public func unregisterFiles()
-	
 	public var registeredFileSlots: RegisteredResources<RegisteredFile.Resource>
 	
 	public mutating func registerBuffers(
@@ -132,33 +130,33 @@ public struct IORing: ~Copyable {
 	
 	public var registeredBuffers: RegisteredResources<RegisteredBuffer.Resource>
 	
-	public func prepare(requests: IORequest...)
-	public func prepare(linkedRequests: IORequest...)
+	public func prepare(requests: Request...)
+	public func prepare(linkedRequests: Request...)
 	
 	public func submitPreparedRequests(timeout: Duration? = nil) throws(Errno)
-	public func submit(requests: IORequest..., timeout: Duration? = nil) throws(Errno)
-	public func submit(linkedRequests: IORequest..., timeout: Duration? = nil) throws(Errno)
+	public func submit(requests: Request..., timeout: Duration? = nil) throws(Errno)
+	public func submit(linkedRequests: Request..., timeout: Duration? = nil) throws(Errno)
 	
 	public func submitPreparedRequests() throws(Errno)
 	public func submitPreparedRequestsAndWait(timeout: Duration? = nil) throws(Errno)
 	
 	public func submitPreparedRequestsAndConsumeCompletions(
-        minimumCount: UInt32 = 1,
-        timeout: Duration? = nil,
-        consumer: (consuming IOCompletion?, Errno?, Bool) throws(E) -> Void
-   ) throws(E)
+    minimumCount: UInt32 = 1,
+    timeout: Duration? = nil,
+    consumer: (consuming Completion?, Errno?, Bool) throws(E) -> Void
+  ) throws(E)
 	
 	public func blockingConsumeCompletion(
-       timeout: Duration? = nil
-	) throws(Errno) -> IOCompletion
+    timeout: Duration? = nil
+	) throws(Errno) -> Completion
     
 	public func blockingConsumeCompletions<E>(
-       minimumCount: UInt32 = 1,
-       timeout: Duration? = nil,
-		consumer: (consuming IOCompletion?, Errno?, Bool) throws(E) -> Void
+    minimumCount: UInt32 = 1,
+    timeout: Duration? = nil,
+    consumer: (consuming Completion?, Errno?, Bool) throws(E) -> Void
 	) throws(E)
     
-	public func tryConsumeCompletion() -> IOCompletion?
+	public func tryConsumeCompletion() -> Completion?
 	
 	public struct Features: OptionSet, RawRepresentable, Hashable {
 		let rawValue: UInt32
@@ -185,155 +183,156 @@ public struct IORing: ~Copyable {
 	public var supportedFeatures: Features
 }
 
-extension IORing.RegisteredBuffer {
-    public var unsafeBuffer: UnsafeMutableRawBufferPointer
+public extension IORing.RegisteredBuffer {
+  var unsafeBuffer: UnsafeMutableRawBufferPointer
 }
 
-public struct IORequest: ~Copyable {
-    public static func nop(context: UInt64 = 0) -> IORequest
-	
-	// overloads for each combination of registered vs unregistered buffer/descriptor
-	// Read
+public extension IORing {
+  struct Request: ~Copyable {
+    public static func nop(context: UInt64 = 0) -> Request
+
+    // overloads for each combination of registered vs unregistered buffer/descriptor
+    // Read
     public static func read(
-        _ file: IORing.RegisteredFile,
-        into buffer: IORing.RegisteredBuffer,
-        at offset: UInt64 = 0,
-        context: UInt64 = 0
-    ) -> IORequest
-	
+      _ file: IORing.RegisteredFile,
+      into buffer: IORing.RegisteredBuffer,
+      at offset: UInt64 = 0,
+      context: UInt64 = 0
+    ) -> Request
+
     public static func read(
-        _ file: FileDescriptor,
-        into buffer: IORing.RegisteredBuffer,
-        at offset: UInt64 = 0,
-        context: UInt64 = 0
-    ) -> IORequest
-    
+      _ file: FileDescriptor,
+      into buffer: IORing.RegisteredBuffer,
+      at offset: UInt64 = 0,
+      context: UInt64 = 0
+    ) -> Request
+
     public static func read(
-        _ file: IORing.RegisteredFile,
-        into buffer: UnsafeMutableRawBufferPointer,
-        at offset: UInt64 = 0,
-        context: UInt64 = 0
-    ) -> IORequest
-    
+      _ file: IORing.RegisteredFile,
+      into buffer: UnsafeMutableRawBufferPointer,
+      at offset: UInt64 = 0,
+      context: UInt64 = 0
+    ) -> Request
+
     public static func read(
-        _ file: FileDescriptor,
-        into buffer: UnsafeMutableRawBufferPointer,
-        at offset: UInt64 = 0,
-        context: UInt64 = 0
-    ) -> IORequest
-    
+      _ file: FileDescriptor,
+      into buffer: UnsafeMutableRawBufferPointer,
+      at offset: UInt64 = 0,
+      context: UInt64 = 0
+    ) -> Request
+
     // Write
     public static func write(
-        _ buffer: IORing.RegisteredBuffer,
-        into file: IORing.RegisteredFile,
-        at offset: UInt64 = 0,
-        context: UInt64 = 0
-    ) -> IORequest
-    
+      _ buffer: IORing.RegisteredBuffer,
+      into file: IORing.RegisteredFile,
+      at offset: UInt64 = 0,
+      context: UInt64 = 0
+    ) -> Request
+
     public static func write(
-        _ buffer: IORing.RegisteredBuffer,
-        into file: FileDescriptor,
-        at offset: UInt64 = 0,
-        context: UInt64 = 0
-    ) -> IORequest 
-    
+      _ buffer: IORing.RegisteredBuffer,
+      into file: FileDescriptor,
+      at offset: UInt64 = 0,
+      context: UInt64 = 0
+    ) -> Request 
+
     public static func write(
-        _ buffer: UnsafeMutableRawBufferPointer,
-        into file: IORing.RegisteredFile,
-        at offset: UInt64 = 0,
-        context: UInt64 = 0
-    ) -> IORequest
-    
+      _ buffer: UnsafeMutableRawBufferPointer,
+      into file: IORing.RegisteredFile,
+      at offset: UInt64 = 0,
+      context: UInt64 = 0
+    ) -> Request
+
     public static func write(
-        _ buffer: UnsafeMutableRawBufferPointer,
-        into file: FileDescriptor,
-        at offset: UInt64 = 0,
-        context: UInt64 = 0
-    ) -> IORequest
-    
+      _ buffer: UnsafeMutableRawBufferPointer,
+      into file: FileDescriptor,
+      at offset: UInt64 = 0,
+      context: UInt64 = 0
+    ) -> Request
+
     // Close
     public static func close(
-        _ file: FileDescriptor,
-        context: UInt64 = 0
-    ) -> IORequest 
-    
+      _ file: FileDescriptor,
+      context: UInt64 = 0
+    ) -> Request 
+
     public static func close(
-        _ file: IORing.RegisteredFile,
-        context: UInt64 = 0
-    ) -> IORequest
-    
+      _ file: IORing.RegisteredFile,
+      context: UInt64 = 0
+    ) -> Request
+
     // Open At
     public static func open(
-        _ path: FilePath,
-        in directory: FileDescriptor,
-        into slot: IORing.RegisteredFile,
-        mode: FileDescriptor.AccessMode,
-        options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
-        permissions: FilePermissions? = nil,
-        context: UInt64 = 0
-    ) -> IORequest
-    
+      _ path: FilePath,
+      in directory: FileDescriptor,
+      into slot: IORing.RegisteredFile,
+      mode: FileDescriptor.AccessMode,
+      options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
+      permissions: FilePermissions? = nil,
+      context: UInt64 = 0
+    ) -> Request
+
     public static func open(
-        _ path: FilePath,
-        in directory: FileDescriptor,
-        mode: FileDescriptor.AccessMode,
-        options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
-        permissions: FilePermissions? = nil,
-        context: UInt64 = 0
-    ) -> IORequest 
-    
+      _ path: FilePath,
+      in directory: FileDescriptor,
+      mode: FileDescriptor.AccessMode,
+      options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
+      permissions: FilePermissions? = nil,
+      context: UInt64 = 0
+    ) -> Request 
+
     public static func unlink(
-        _ path: FilePath,
-        in directory: FileDescriptor,
-        context: UInt64 = 0
-    ) -> IORequest
-    
+      _ path: FilePath,
+      in directory: FileDescriptor,
+      context: UInt64 = 0
+    ) -> Request
+
     // Cancel
-    
+
     public enum CancellationMatch {
-    	case all
-    	case first
+      case all
+      case first
     }
-    
+
     public static func cancel(
       _ matchAll: CancellationMatch,
       matchingContext: UInt64,
-    ) -> IORequest
-    
+    ) -> Request
+
     public static func cancel(
       _ matchAll: CancellationMatch,
       matching: FileDescriptor,
-    ) -> IORequest
-    
+    ) -> Request
+
     public static func cancel(
       _ matchAll: CancellationMatch,
       matching: IORing.RegisteredFile,
-    ) -> IORequest
-    
+    ) -> Request
+
     // Other operations follow in the same pattern
-}
+  }
+  
+  struct Completion {
+    public struct Flags: OptionSet, Hashable, Codable {
+      public let rawValue: UInt32
 
-public struct IOCompletion {
+      public init(rawValue: UInt32)
 
-	public struct Flags: OptionSet, Hashable, Codable {
-        public let rawValue: UInt32
+      public static let moreCompletions: Flags
+      public static let socketNotEmpty: Flags
+      public static let isNotificationEvent: Flags
+    }
 
-        public init(rawValue: UInt32)
-        
-        public static let moreCompletions: Flags
-        public static let socketNotEmpty: Flags
-        public static let isNotificationEvent: Flags
-   }
-
-	//These are both the same value, but having both eliminates some ugly casts in client code
-	public var context: UInt64 
-	public var contextPointer: UnsafeRawPointer
-	
-	public var result: Int32
-	
-	public var error: Errno? // Convenience wrapper over `result`
-	
-	public var flags: Flags	
+    //These are both the same value, but having both eliminates some ugly casts in client code
+    public var context: UInt64 
+    public var contextPointer: UnsafeRawPointer
+    
+    public var result: Int32
+    
+    public var error: Errno? // Convenience wrapper over `result`
+    
+    public var flags: Flags  
+  }
 }
 	
 ```
@@ -363,7 +362,7 @@ ring.prepare(linkedRequests:
 	)
 )
 //batch submit 2 syscalls in 1!
-try ring.submitPreparedRequestsAndConsumeCompletions(minimumCount: 2) { (completion: consuming IOCompletion?, error, done) in
+try ring.submitPreparedRequestsAndConsumeCompletions(minimumCount: 2) { (completion: consuming Completion?, error, done) in
 	if let error {
 		throw error //or other error handling as desired
 	}
@@ -381,7 +380,7 @@ ring.prepare(linkedRequests:
 )
 
 //batch submit 2 syscalls in 1!
-try ring.submitPreparedRequestsAndConsumeCompletions(minimumCount: 2) { (completion: consuming IOCompletion?, error, done) in
+try ring.submitPreparedRequestsAndConsumeCompletions(minimumCount: 2) { (completion: consuming Completion?, error, done) in
 	if let error {
 		throw error //or other error handling as desired
 	}
@@ -439,8 +438,8 @@ This feature is intrinsically linked to Linux kernel support, so constrains the 
 ```
 func submitLinkedRequestsAndWait<each Request>(
   _ requests: repeat each Request
-) where Request == IORequest 
-  -> InlineArray<(repeat each Request).count, IOCompletion>
+) where Request == IORing.Request 
+  -> InlineArray<(repeat each Request).count, IORing.Completion>
 ```
 * Once mutable borrows are supported, we should consider replacing the closure-taking bulk completion APIs (e.g. `blockingConsumeCompletions(…)`) with ones that return a sequence of completions instead
 * We should consider making more types noncopyable as compiler support improves
@@ -457,7 +456,7 @@ func submitLinkedRequestsAndWait<each Request>(
 * Using POSIX AIO instead of or as well as io_uring would greatly increase our ability to support older kernels and other Unix systems, but it has well-documented performance and usability issues that have prevented its adoption elsewhere, and apply just as much to Swift.
 * Earlier versions of this proposal had higher level "managed" abstractions over IORing. These have been removed due to lack of interest from clients, but could be added back later if needed.
 * I considered having dedicated error types for IORing, but eventually decided throwing Errno was more consistent with other platform APIs
-* IOResource<T> was originally a class in an attempt to manage the lifetime of the resource via language features. Changing to the current model of it being a copyable struct didn't make the lifetime management any less safe (the IORing still owns the actual resource), and reduces overhead. In the future it would be neat if we could express IOResources as being borrowed from the IORing so they can't be used after its lifetime.
+* RegisteredResource<T> was originally a class in an attempt to manage the lifetime of the resource via language features. Changing to the current model of it being a copyable struct didn't make the lifetime management any less safe (the IORing still owns the actual resource), and reduces overhead. In the future it would be neat if we could express RegisteredResources as being borrowed from the IORing so they can't be used after its lifetime.
 
 ## Acknowledgments
 
