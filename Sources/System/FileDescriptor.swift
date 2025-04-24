@@ -13,9 +13,14 @@
 /// You are responsible for managing the lifetime and validity
 /// of `FileDescriptor` values,
 /// in the same way as you manage a raw C file handle.
+///
+/// File descriptors are not necessarily safe to use across threads,
+/// even though they conform to `Sendable`.
+/// It is your responsibility to make sure that
+/// they are not used in an insecure way.
 @frozen
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
-public struct FileDescriptor: RawRepresentable, Hashable, Codable {
+public struct FileDescriptor: RawRepresentable, Sendable, Hashable, Codable {
   /// The raw C file handle.
   @_alwaysEmitIntoClient
   public let rawValue: CInt
@@ -503,8 +508,3 @@ extension FileDescriptor.OpenOptions
   /// A textual representation of the open options, suitable for debugging.
   public var debugDescription: String { self.description }
 }
-
-// The decision on whether to make FileDescriptor Sendable or not
-// is currently being discussed in https://github.com/apple/swift-system/pull/112
-//@available(*, unavailable, message: "File descriptors are not completely thread-safe.")
-//extension FileDescriptor: Sendable {}
