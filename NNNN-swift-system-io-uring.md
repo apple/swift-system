@@ -70,7 +70,7 @@ Already-completed results can be retrieved from the ring using `tryConsumeComple
 
 Since neither polling nor synchronously waiting is optimal in many cases, `IORing` also exposes the ability to register an eventfd (see `man eventfd(2)`), which will become readable when completions are available on the ring. This can then be monitored asynchronously with `epoll`, `kqueue`, or for clients who are linking libdispatch, `DispatchSource`.
 
-`struct Completion: ~Copyable` represents the result of an IO operation and provides
+`struct IORing.Completion: ~Copyable` represents the result of an IO operation and provides
 
 * Flags indicating various operation-specific metadata about the now-completed syscall
 * The context associated with the operation when it was enqueued, as an `UnsafeRawPointer` or a `UInt64`
@@ -87,7 +87,7 @@ Unfortunately the underlying kernel API makes it relatively difficult to determi
 // IORing is intentionally not Sendable, to avoid internal locking overhead
 public struct IORing: ~Copyable {
 
-	public init(queueDepth: UInt32, flags: IORing.SetupFlags = []) throws(Errno)
+  public init(queueDepth: UInt32, flags: IORing.SetupFlags = []) throws(Errno)
   
   public struct SetupFlags: OptionSet, RawRepresentable, Hashable {
     public var rawValue: UInt32
@@ -164,21 +164,21 @@ public struct IORing: ~Copyable {
 		public init(rawValue: UInt32)
 		
 		//IORING_FEAT_SINGLE_MMAP is handled internally
-		public static let nonDroppingCompletions: Bool //IORING_FEAT_NODROP
-		public static let stableSubmissions: Bool //IORING_FEAT_SUBMIT_STABLE
-		public static let currentFilePosition: Bool //IORING_FEAT_RW_CUR_POS
-		public static let assumingTaskCredentials: Bool //IORING_FEAT_CUR_PERSONALITY
-		public static let fastPolling: Bool //IORING_FEAT_FAST_POLL
-		public static let epoll32BitFlags: Bool //IORING_FEAT_POLL_32BITS
-		public static let pollNonFixedFiles: Bool //IORING_FEAT_SQPOLL_NONFIXED
-		public static let extendedArguments: Bool //IORING_FEAT_EXT_ARG
-		public static let nativeWorkers: Bool //IORING_FEAT_NATIVE_WORKERS
-		public static let resourceTags: Bool //IORING_FEAT_RSRC_TAGS
-		public static let allowsSkippingSuccessfulCompletions: Bool //IORING_FEAT_CQE_SKIP
-		public static let improvedLinkedFiles: Bool //IORING_FEAT_LINKED_FILE
-		public static let registerRegisteredRings: Bool //IORING_FEAT_REG_REG_RING
-		public static let minimumTimeout: Bool //IORING_FEAT_MIN_TIMEOUT
-		public static let bundledSendReceive: Bool //IORING_FEAT_RECVSEND_BUNDLE
+		public static let nonDroppingCompletions: Features //IORING_FEAT_NODROP
+		public static let stableSubmissions: Features //IORING_FEAT_SUBMIT_STABLE
+		public static let currentFilePosition: Features //IORING_FEAT_RW_CUR_POS
+		public static let assumingTaskCredentials: Features //IORING_FEAT_CUR_PERSONALITY
+		public static let fastPolling: Features //IORING_FEAT_FAST_POLL
+		public static let epoll32BitFlags: Features //IORING_FEAT_POLL_32BITS
+		public static let pollNonFixedFiles: Features //IORING_FEAT_SQPOLL_NONFIXED
+		public static let extendedArguments: Features //IORING_FEAT_EXT_ARG
+		public static let nativeWorkers: Features //IORING_FEAT_NATIVE_WORKERS
+		public static let resourceTags: Features //IORING_FEAT_RSRC_TAGS
+		public static let allowsSkippingSuccessfulCompletions: Features //IORING_FEAT_CQE_SKIP
+		public static let improvedLinkedFiles: Features //IORING_FEAT_LINKED_FILE
+		public static let registerRegisteredRings: Features //IORING_FEAT_REG_REG_RING
+		public static let minimumTimeout: Features //IORING_FEAT_MIN_TIMEOUT
+		public static let bundledSendReceive: Features //IORING_FEAT_RECVSEND_BUNDLE
 	}
 	public var supportedFeatures: Features
 }
