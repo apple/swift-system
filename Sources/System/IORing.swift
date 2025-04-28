@@ -466,7 +466,7 @@ public struct IORing: ~Copyable {
                 var args = io_uring_getevents_arg(
                     sigmask: 0,
                     sigmask_sz: 0,
-                    pad: 0,
+                    min_wait_usec: 0,
                     ts: UInt64(UInt(bitPattern: tsPtr))
                 )
                 return try _blockingConsumeOneCompletion(extraArgs: &args)
@@ -490,7 +490,7 @@ public struct IORing: ~Copyable {
                 var args = io_uring_getevents_arg(
                     sigmask: 0,
                     sigmask_sz: 0,
-                    pad: 0,
+                    min_wait_usec: 0,
                     ts: UInt64(UInt(bitPattern: tsPtr))
                 )
                 try _blockingConsumeCompletionGuts(
@@ -530,7 +530,7 @@ public struct IORing: ~Copyable {
         let result = withUnsafePointer(to: &rawfd) { fdptr in
             let result = io_uring_register(
                 ringDescriptor,
-                IORING_REGISTER_EVENTFD,
+                IORING_REGISTER_EVENTFD.rawValue,
                 UnsafeMutableRawPointer(mutating: fdptr),
                 1
             )
@@ -544,7 +544,7 @@ public struct IORing: ~Copyable {
     public mutating func unregisterEventFD() throws(Errno) {
         let result = io_uring_register(
             ringDescriptor,
-            IORING_UNREGISTER_EVENTFD,
+            IORING_UNREGISTER_EVENTFD.rawValue,
             nil,
             0
         )
@@ -561,7 +561,7 @@ public struct IORing: ~Copyable {
         let regResult = files.withUnsafeBufferPointer { bPtr in
             let result = io_uring_register(
                 self.ringDescriptor,
-                IORING_REGISTER_FILES,
+                IORING_REGISTER_FILES.rawValue,
                 UnsafeMutableRawPointer(mutating: bPtr.baseAddress!),
                 UInt32(truncatingIfNeeded: count)
             )
@@ -594,7 +594,7 @@ public struct IORing: ~Copyable {
         let regResult = iovecs.withUnsafeBufferPointer { bPtr in
             let result = io_uring_register(
                 self.ringDescriptor,
-                IORING_REGISTER_BUFFERS,
+                IORING_REGISTER_BUFFERS.rawValue,
                 UnsafeMutableRawPointer(mutating: bPtr.baseAddress!),
                 UInt32(truncatingIfNeeded: buffers.count)
             )
