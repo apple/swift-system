@@ -164,7 +164,7 @@ internal func _getSubmissionEntry(
 }
 
 private func setUpRing(
-    queueDepth: UInt32, flags: IORing.SetupFlags, submissionRing: inout SQRing
+    queueDepth: UInt32, flags: IORing.SetupFlags
 ) throws(Errno) -> 
     (params: io_uring_params, ringDescriptor: Int32, ringPtr: UnsafeMutableRawPointer, ringSize: Int, sqes: UnsafeMutableRawPointer) {
     var params = io_uring_params()
@@ -217,36 +217,6 @@ private func setUpRing(
         throw errno
     }
 
-    let submissionRing = SQRing(
-        kernelHead: UnsafePointer<Atomic<UInt32>>(
-            ringPtr.advanced(by: params.sq_off.head)
-                .assumingMemoryBound(to: Atomic<UInt32>.self)
-        ),
-        kernelTail: UnsafePointer<Atomic<UInt32>>(
-            ringPtr.advanced(by: params.sq_off.tail)
-                .assumingMemoryBound(to: Atomic<UInt32>.self)
-        ),
-        userTail: 0,  // no requests yet
-        ringMask: ringPtr.advanced(by: params.sq_off.ring_mask)
-            .assumingMemoryBound(to: UInt32.self).pointee,
-        flags: UnsafePointer<Atomic<UInt32>>(
-            ringPtr.advanced(by: params.sq_off.flags)
-                .assumingMemoryBound(to: Atomic<UInt32>.self)
-        ),
-        array: UnsafeMutableBufferPointer(
-            start: ringPtr.advanced(by: params.sq_off.array)
-                .assumingMemoryBound(to: UInt32.self),
-            count: Int(
-                ringPtr.advanced(by: params.sq_off.ring_entries)
-                    .assumingMemoryBound(to: UInt32.self).pointee)
-        )
-    )
-
-    // fill submission ring array with 1:1 map to underlying SQEs
-    for i in 0..<submissionRing.array.count {
-        submissionRing.array[i] = UInt32(i)
-    }
-
     // map the submission queue
     let sqes = mmap(
         /* addr: */ nil,
@@ -272,7 +242,7 @@ public struct IORing: ~Copyable {
     let ringFlags: UInt32
     let ringDescriptor: Int32
 
-    @usableFromInline var submissionRing: SQRing!
+    @usableFromInline var submissionRing: SQRing
     // FEAT: set this eventually
     let submissionPolling: Bool = false
 
@@ -331,7 +301,7 @@ public struct IORing: ~Copyable {
     }
 
     public init(queueDepth: UInt32, flags: SetupFlags = []) throws(Errno) {
-        let (params, tmpRingDescriptor, tmpRingPtr, tmpRingSize, sqes) = try setUpRing(queueDepth: queueDepth, flags: flags, submissionRing: &submissionRing)
+        let (params, tmpRingDescriptor, tmpRingPtr, tmpRingSize, sqes) = try setUpRing(queueDepth: queueDepth, flags: flags)
         // All throws need to be before initializing ivars here to avoid 
         // "error: conditional initialization or destruction of noncopyable types is not supported; 
         // this variable must be consistently in an initialized or uninitialized state through every code path"
@@ -341,6 +311,35 @@ public struct IORing: ~Copyable {
         ringSize = tmpRingSize
         _registeredFiles = []
         _registeredBuffers = []
+        submissionRing = SQRing(
+            kernelHead: UnsafePointer<Atomic<UInt32>>(
+                ringPtr.advanced(by: params.sq_off.head)
+                    .assumingMemoryBound(to: Atomic<UInt32>.self)
+            ),
+            kernelTail: UnsafePointer<Atomic<UInt32>>(
+                ringPtr.advanced(by: params.sq_off.tail)
+                    .assumingMemoryBound(to: Atomic<UInt32>.self)
+            ),
+            userTail: 0,  // no requests yet
+            ringMask: ringPtr.advanced(by: params.sq_off.ring_mask)
+                .assumingMemoryBound(to: UInt32.self).pointee,
+            flags: UnsafePointer<Atomic<UInt32>>(
+                ringPtr.advanced(by: params.sq_off.flags)
+                    .assumingMemoryBound(to: Atomic<UInt32>.self)
+            ),
+            array: UnsafeMutableBufferPointer(
+                start: ringPtr.advanced(by: params.sq_off.array)
+                    .assumingMemoryBound(to: UInt32.self),
+                count: Int(
+                    ringPtr.advanced(by: params.sq_off.ring_entries)
+                        .assumingMemoryBound(to: UInt32.self).pointee)
+            )
+        )
+
+        // fill submission ring array with 1:1 map to underlying SQEs
+        for i in 0 ..< submissionRing.array.count {
+            submissionRing.array[i] = UInt32(i)
+        }
 
         submissionQueueEntries = UnsafeMutableBufferPointer(
             start: sqes.assumingMemoryBound(to: io_uring_sqe.self),
@@ -641,12 +640,7 @@ public struct IORing: ~Copyable {
     }
 
     public func submitPreparedRequests() throws(Errno) {
-        switch submissionRing {
-        case .some(let submissionRing):
-            try _submitRequests(ring: submissionRing, ringDescriptor: ringDescriptor)
-        case .none:
-            fatalError()
-        }
+        try _submitRequests(ring: submissionRing, ringDescriptor: ringDescriptor)
     }
 
     public func submitPreparedRequestsAndConsumeCompletions<Err: Error>(
