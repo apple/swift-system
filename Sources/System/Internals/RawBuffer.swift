@@ -80,7 +80,13 @@ extension _RawBuffer {
     internal static func create(minimumCapacity: Int) -> Storage {
       Storage.create(
         minimumCapacity: minimumCapacity,
-        makingHeaderWith: { $0.capacity }
+        makingHeaderWith: {
+#if os(OpenBSD)
+          minimumCapacity
+#else
+          $0.capacity
+#endif
+        }
       ) as! Storage
     }
   }

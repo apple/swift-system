@@ -131,10 +131,13 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(ENOLCK == Errno.noLocks.rawValue)
     XCTAssert(ENOSYS == Errno.noFunction.rawValue)
 
-#if SYSTEM_PACKAGE_DARWIN
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
     XCTAssert(EFTYPE == Errno.badFileTypeOrFormat.rawValue)
     XCTAssert(EAUTH == Errno.authenticationError.rawValue)
     XCTAssert(ENEEDAUTH == Errno.needAuthenticator.rawValue)
+#endif
+
+#if SYSTEM_PACKAGE_DARWIN
     XCTAssert(EPWROFF == Errno.devicePowerIsOff.rawValue)
     XCTAssert(EDEVERR == Errno.deviceError.rawValue)
 #endif
@@ -164,13 +167,17 @@ final class ErrnoTest: XCTestCase {
 #if !os(Windows)
     XCTAssert(EBADMSG == Errno.badMessage.rawValue)
     XCTAssert(EMULTIHOP == Errno.multiHop.rawValue)
-    XCTAssert(ENODATA == Errno.noData.rawValue)
     XCTAssert(ENOLINK == Errno.noLink.rawValue)
+    XCTAssert(EPROTO == Errno.protocolError.rawValue)
+#endif
+
+#if !os(Windows) && !os(FreeBSD)
+    XCTAssert(ENODATA == Errno.noData.rawValue)
     XCTAssert(ENOSR == Errno.noStreamResources.rawValue)
     XCTAssert(ENOSTR == Errno.notStream.rawValue)
-    XCTAssert(EPROTO == Errno.protocolError.rawValue)
     XCTAssert(ETIME == Errno.timeout.rawValue)
 #endif
+
     XCTAssert(EOPNOTSUPP == Errno.notSupportedOnSocket.rawValue)
 
     // From headers but not man page
@@ -190,6 +197,12 @@ final class ErrnoTest: XCTestCase {
 #if !os(Windows)
     XCTAssert(ENOTRECOVERABLE == Errno.notRecoverable.rawValue)
     XCTAssert(EOWNERDEAD == Errno.previousOwnerDied.rawValue)
+#endif
+
+#if os(FreeBSD)
+    XCTAssert(ENOTCAPABLE == Errno.notCapable.rawValue)
+    XCTAssert(ECAPMODE == Errno.capabilityMode.rawValue)
+    XCTAssert(EINTEGRITY == Errno.integrityCheckFailed.rawValue)
 #endif
 
 #if SYSTEM_PACKAGE_DARWIN
