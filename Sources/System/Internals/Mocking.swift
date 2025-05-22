@@ -130,7 +130,7 @@ internal var mockingEnabled: Bool {
 @inline(__always)
 internal var forceWindowsPaths: Bool? {
   #if !ENABLE_MOCKING
-  return false
+  return nil
   #else
   return MockingDriver.forceWindowsPaths
   #endif
