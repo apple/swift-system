@@ -40,7 +40,7 @@ fileprivate func forEachFile(
 
   try searchPath.withPlatformString { szPath in
     var findData = WIN32_FIND_DATAW()
-    let hFind = FindFirstFileW(szPath, &findData)
+    let hFind = try szPath.withCanonicalPathRepresentation({ szPath in FindFirstFileW(szPath, &findData) })
     if hFind == INVALID_HANDLE_VALUE {
       throw Errno(windowsError: GetLastError())
     }
@@ -95,8 +95,8 @@ internal func _recursiveRemove(
     let subpath = path.appending(component)
 
     if (findData.dwFileAttributes & DWORD(FILE_ATTRIBUTE_DIRECTORY)) == 0 {
-      try subpath.withPlatformString {
-        if !DeleteFileW($0) {
+      try subpath.withPlatformString { subpath in
+        if try !subpath.withCanonicalPathRepresentation({ DeleteFileW($0) }) {
           throw Errno(windowsError: GetLastError())
         }
       }
@@ -105,7 +105,7 @@ internal func _recursiveRemove(
 
   // Finally, delete the parent
   try path.withPlatformString {
-    if !RemoveDirectoryW($0) {
+    if try !$0.withCanonicalPathRepresentation({ RemoveDirectoryW($0) }) {
       throw Errno(windowsError: GetLastError())
     }
   }

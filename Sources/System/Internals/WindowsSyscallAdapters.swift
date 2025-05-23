@@ -35,17 +35,17 @@ internal func open(
     bInheritHandle: decodedFlags.bInheritHandle
   )
 
-  let hFile = CreateFileW(path,
-                          decodedFlags.dwDesiredAccess,
-                          DWORD(FILE_SHARE_DELETE
-                                  | FILE_SHARE_READ
-                                  | FILE_SHARE_WRITE),
-                          &saAttrs,
-                          decodedFlags.dwCreationDisposition,
-                          decodedFlags.dwFlagsAndAttributes,
-                          nil)
-
-  if hFile == INVALID_HANDLE_VALUE {
+  guard let hFile = try? path.withCanonicalPathRepresentation({ path in
+    CreateFileW(path,
+                decodedFlags.dwDesiredAccess,
+                DWORD(FILE_SHARE_DELETE
+                      | FILE_SHARE_READ
+                      | FILE_SHARE_WRITE),
+                &saAttrs,
+                decodedFlags.dwCreationDisposition,
+                decodedFlags.dwFlagsAndAttributes,
+                nil)
+  }), hFile != INVALID_HANDLE_VALUE else {
     ucrt._set_errno(_mapWindowsErrorToErrno(GetLastError()))
     return -1
   }
@@ -77,17 +77,17 @@ internal func open(
     bInheritHandle: decodedFlags.bInheritHandle
   )
 
-  let hFile = CreateFileW(path,
-                          decodedFlags.dwDesiredAccess,
-                          DWORD(FILE_SHARE_DELETE
-                                  | FILE_SHARE_READ
-                                  | FILE_SHARE_WRITE),
-                          &saAttrs,
-                          decodedFlags.dwCreationDisposition,
-                          decodedFlags.dwFlagsAndAttributes,
-                          nil)
-
-  if hFile == INVALID_HANDLE_VALUE {
+  guard let hFile = try? path.withCanonicalPathRepresentation({ path in
+    CreateFileW(path,
+                decodedFlags.dwDesiredAccess,
+                DWORD(FILE_SHARE_DELETE
+                      | FILE_SHARE_READ
+                      | FILE_SHARE_WRITE),
+                &saAttrs,
+                decodedFlags.dwCreationDisposition,
+                decodedFlags.dwFlagsAndAttributes,
+                nil)
+  }), hFile != INVALID_HANDLE_VALUE else {
     ucrt._set_errno(_mapWindowsErrorToErrno(GetLastError()))
     return -1
   }
@@ -242,7 +242,7 @@ internal func mkdir(
     bInheritHandle: false
   )
 
-  if !CreateDirectoryW(path, &saAttrs) {
+  guard (try? path.withCanonicalPathRepresentation({ path in CreateDirectoryW(path, &saAttrs) })) == true else {
     ucrt._set_errno(_mapWindowsErrorToErrno(GetLastError()))
     return -1
   }
@@ -254,7 +254,7 @@ internal func mkdir(
 internal func rmdir(
   _ path: UnsafePointer<CInterop.PlatformChar>
 ) -> CInt {
-  if !RemoveDirectoryW(path) {
+  guard (try? path.withCanonicalPathRepresentation({ path in RemoveDirectoryW(path) })) == true else {
     ucrt._set_errno(_mapWindowsErrorToErrno(GetLastError()))
     return -1
   }
