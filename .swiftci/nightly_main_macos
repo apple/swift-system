@@ -1,5 +1,5 @@
 macOSSwiftPackageJob {
     swift_version = "main"
     repo = "swift-system"
-    branch = "main"
+    branch = "release/1.5.0"
 }

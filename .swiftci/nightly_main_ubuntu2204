@@ -1,5 +1,5 @@
 LinuxSwiftPackageJob {
     nightly_docker_tag = "nightly-jammy"
     repo = "swift-system"
-    branch = "main"
+    branch = "release/1.5.0"
 }
