@@ -14,7 +14,7 @@
 /// of `FileDescriptor` values,
 /// in the same way as you manage a raw C file handle.
 @frozen
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+@available(System 0.0.1, *)
 public struct FileDescriptor: RawRepresentable, Hashable, Codable {
   /// The raw C file handle.
   @_alwaysEmitIntoClient
@@ -26,7 +26,7 @@ public struct FileDescriptor: RawRepresentable, Hashable, Codable {
 }
 
 // Standard file descriptors.
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+@available(System 0.0.1, *)
 extension FileDescriptor {
   /// The standard input file descriptor, with a numeric value of 0.
   @_alwaysEmitIntoClient
@@ -41,11 +41,11 @@ extension FileDescriptor {
   public static var standardError: FileDescriptor { .init(rawValue: 2) }
 }
 
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+@available(System 0.0.1, *)
 extension FileDescriptor {
   /// The desired read and write access for a newly opened file.
   @frozen
-  @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+  @available(System 0.0.1, *)
   public struct AccessMode: RawRepresentable, Sendable, Hashable, Codable {
     /// The raw C access mode.
     @_alwaysEmitIntoClient
@@ -88,7 +88,7 @@ extension FileDescriptor {
 
   /// Options that specify behavior for a newly-opened file.
   @frozen
-  @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+  @available(System 0.0.1, *)
   public struct OpenOptions: OptionSet, Sendable, Hashable, Codable {
     /// The raw C options.
     @_alwaysEmitIntoClient
@@ -326,7 +326,7 @@ extension FileDescriptor {
 
   /// Options for specifying what a file descriptor's offset is relative to.
   @frozen
-  @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+  @available(System 0.0.1, *)
   public struct SeekOrigin: RawRepresentable, Sendable, Hashable, Codable {
     /// The raw C value.
     @_alwaysEmitIntoClient
@@ -402,7 +402,7 @@ extension FileDescriptor {
   }
 }
 
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+@available(System 0.0.1, *)
 extension FileDescriptor.AccessMode
   : CustomStringConvertible, CustomDebugStringConvertible
 {
@@ -421,7 +421,7 @@ extension FileDescriptor.AccessMode
   public var debugDescription: String { self.description }
 }
 
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+@available(System 0.0.1, *)
 extension FileDescriptor.SeekOrigin
   : CustomStringConvertible, CustomDebugStringConvertible
 {
@@ -444,7 +444,7 @@ extension FileDescriptor.SeekOrigin
   public var debugDescription: String { self.description }
 }
 
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+@available(System 0.0.1, *)
 extension FileDescriptor.OpenOptions
   : CustomStringConvertible, CustomDebugStringConvertible
 {

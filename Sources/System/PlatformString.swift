@@ -7,7 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
+@available(System 0.0.2, *)
 extension String {
   /// Creates a string by interpreting the null-terminated platform string as
   /// UTF-8 on Unix and UTF-16 on Windows.
@@ -165,7 +165,7 @@ extension String {
 
 }
 
-@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
+@available(System 0.0.2, *)
 extension CInterop.PlatformChar {
   internal var _platformCodeUnit: CInterop.PlatformUnicodeEncoding.CodeUnit {
     #if os(Windows)
@@ -176,7 +176,7 @@ extension CInterop.PlatformChar {
   }
 }
 
-@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
+@available(System 0.0.2, *)
 extension CInterop.PlatformUnicodeEncoding.CodeUnit {
   internal var _platformChar: CInterop.PlatformChar {
     #if os(Windows)

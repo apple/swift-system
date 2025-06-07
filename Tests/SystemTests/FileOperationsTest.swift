@@ -18,7 +18,7 @@ import XCTest
 import Android
 #endif
 
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+@available(System 0.0.1, *)
 final class FileOperationsTest: XCTestCase {
   func testSyscalls() {
     let fd = FileDescriptor(rawValue: 1)
