@@ -15,7 +15,7 @@ import SystemPackage
 import System
 #endif
 
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+@available(System 0.0.1, *)
 func filePathFromInvalidCodePointSequence<S: Sequence>(_ bytes: S) -> FilePath where S.Element == CInterop.PlatformUnicodeEncoding.CodeUnit {
   var array = Array(bytes)
   assert(array.last != 0, "already null terminated")
@@ -28,7 +28,7 @@ func filePathFromInvalidCodePointSequence<S: Sequence>(_ bytes: S) -> FilePath w
   }
 }
 
-@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
+@available(System 0.0.2, *)
 final class FilePathTest: XCTestCase {
   struct TestPath {
     let filePath: FilePath

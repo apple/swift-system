@@ -18,7 +18,7 @@ import SystemPackage
 import System
 #endif
 
-@available(/*System 1.4.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
+@available(System 1.4.0, *)
 final class MachPortTests: XCTestCase {
     func refCountForMachPortName(name:mach_port_name_t, kind:mach_port_right_t) -> mach_port_urefs_t {
         var refCount:mach_port_urefs_t = .max

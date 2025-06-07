@@ -146,7 +146,7 @@ extension SyntaxTestCase {
   }
 }
 
-@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
+@available(System 0.0.2, *)
 extension SyntaxTestCase {
   func testComponents(_ path: FilePath, expected: [String]) {
     let expectedComponents = expected.map { FilePath.Component($0)! }
@@ -342,7 +342,7 @@ private struct WindowsRootTestCase: TestCase {
   var line: UInt
 }
 
-@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
+@available(System 0.0.2, *)
 extension WindowsRootTestCase {
   func runAllTests() {
     withWindowsPaths(enabled: true) {
@@ -357,7 +357,7 @@ extension WindowsRootTestCase {
   }
 }
 
-@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
+@available(System 0.0.2, *)
 final class FilePathSyntaxTest: XCTestCase {
   func testPathSyntax() {
     let unixPaths: Array<SyntaxTestCase> = [

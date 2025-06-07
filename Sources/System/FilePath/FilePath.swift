@@ -37,7 +37,7 @@
 /// However, the rules for path equivalence
 /// are file-system–specific and have additional considerations
 /// like case insensitivity, Unicode normalization, and symbolic links.
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+@available(System 0.0.1, *)
 public struct FilePath: Sendable {
   // TODO(docs): Section on all the new syntactic operations, lexical normalization, decomposition,
   // components, etc.
@@ -59,16 +59,16 @@ public struct FilePath: Sendable {
   }
 }
 
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+@available(System 0.0.1, *)
 extension FilePath {
   /// The length of the file path, excluding the null terminator.
   public var length: Int { _storage.length }
 }
 
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+@available(System 0.0.1, *)
 extension FilePath: Hashable {}
 
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+@available(System 0.0.1, *)
 extension FilePath: Codable {
   // Encoder is synthesized; it probably should have been explicit and used
   // a single-value container, but making that change now is somewhat risky.
