@@ -10,7 +10,7 @@
 /// An error number used by system calls to communicate what kind of error
 /// occurred.
 @frozen
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+@available(System 0.0.1, *)
 public struct Errno: RawRepresentable, Error, Hashable, Codable {
   /// The raw C error number.
   @_alwaysEmitIntoClient
@@ -1391,7 +1391,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
 }
 
 // Constants defined in header but not man page
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+@available(System 0.0.1, *)
 extension Errno {
   /// Operation would block.
   ///
@@ -1520,7 +1520,7 @@ extension Errno {
 #endif
 }
 
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+@available(System 0.0.1, *)
 extension Errno {
   // TODO: We want to provide safe access to `errno`, but we need a
   // release-barrier to do so.
@@ -1535,14 +1535,14 @@ extension Errno {
 }
 
 // Use "hidden" entry points for `NSError` bridging
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+@available(System 0.0.1, *)
 extension Errno {
   public var _code: Int { Int(rawValue) }
 
   public var _domain: String { "NSPOSIXErrorDomain" }
 }
 
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+@available(System 0.0.1, *)
 extension Errno: CustomStringConvertible, CustomDebugStringConvertible {
   ///  A textual representation of the most recent error
   ///  returned by a system call.
@@ -1562,7 +1562,7 @@ extension Errno: CustomStringConvertible, CustomDebugStringConvertible {
   public var debugDescription: String { self.description }
 }
 
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+@available(System 0.0.1, *)
 extension Errno {
   @_alwaysEmitIntoClient
   public static func ~=(_ lhs: Errno, _ rhs: Error) -> Bool {

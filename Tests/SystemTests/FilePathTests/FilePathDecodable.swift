@@ -15,7 +15,7 @@ import XCTest
 @testable import System
 #endif
 
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+@available(System 0.0.1, *)
 final class FilePathDecodableTest: XCTestCase {
   func testInvalidFilePath() {
     // _storage is a valid SystemString, but the invariants of FilePath are

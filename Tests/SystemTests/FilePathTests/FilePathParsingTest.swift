@@ -68,7 +68,7 @@ extension ParsingTestCase {
 @testable import System
 #endif
 
-@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
+@available(System 0.0.2, *)
 final class FilePathParsingTest: XCTestCase {
   func testNormalization() {
     let unixPaths: Array<ParsingTestCase> = [
