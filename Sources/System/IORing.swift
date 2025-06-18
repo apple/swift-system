@@ -372,7 +372,7 @@ public struct IORing: ~Copyable {
     private func _blockingConsumeCompletionGuts<Err: Error>(
         minimumCount: UInt32,
         maximumCount: UInt32,
-        extraArgs: UnsafeMutablePointer<io_uring_getevents_arg>? = nil,
+        extraArgs: UnsafeMutablePointer<swift_io_uring_getevents_arg>? = nil,
         consumer: (consuming IORing.Completion?, Errno?, Bool) throws(Err) -> Void
     ) throws(Err) {
         var count = 0
@@ -393,7 +393,7 @@ public struct IORing: ~Copyable {
             while count < minimumCount {
                 var sz = 0
                 if extraArgs != nil {
-                    sz = MemoryLayout<io_uring_getevents_arg>.size
+                    sz = MemoryLayout<swift_io_uring_getevents_arg>.size
                 }
                 let res = io_uring_enter2(
                     ringDescriptor,
@@ -438,7 +438,7 @@ public struct IORing: ~Copyable {
     }
 
     internal func _blockingConsumeOneCompletion(
-        extraArgs: UnsafeMutablePointer<io_uring_getevents_arg>? = nil
+        extraArgs: UnsafeMutablePointer<swift_io_uring_getevents_arg>? = nil
     ) throws(Errno) -> Completion {
         var result: Completion? = nil
         try _blockingConsumeCompletionGuts(minimumCount: 1, maximumCount: 1, extraArgs: extraArgs) {
@@ -462,7 +462,7 @@ public struct IORing: ~Copyable {
                 tv_nsec: timeout.components.attoseconds / 1_000_000_000
             )
             return try withUnsafePointer(to: &ts) { (tsPtr) throws(Errno) -> Completion in
-                var args = io_uring_getevents_arg(
+                var args = swift_io_uring_getevents_arg(
                     sigmask: 0,
                     sigmask_sz: 0,
                     min_wait_usec: 0,
@@ -486,7 +486,7 @@ public struct IORing: ~Copyable {
                 tv_nsec: timeout.components.attoseconds / 1_000_000_000
             )
             try withUnsafePointer(to: &ts) { (tsPtr) throws(Err) in
-                var args = io_uring_getevents_arg(
+                var args = swift_io_uring_getevents_arg(
                     sigmask: 0,
                     sigmask_sz: 0,
                     min_wait_usec: 0,
@@ -529,7 +529,7 @@ public struct IORing: ~Copyable {
         let result = withUnsafePointer(to: &rawfd) { fdptr in
             let result = io_uring_register(
                 ringDescriptor,
-                IORING_REGISTER_EVENTFD.rawValue,
+                SWIFT_IORING_REGISTER_EVENTFD.rawValue,
                 UnsafeMutableRawPointer(mutating: fdptr),
                 1
             )
