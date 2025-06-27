@@ -1,9 +1,9 @@
 import XCTest
 
 #if SYSTEM_PACKAGE
-@testable import SystemPackage
+    @testable import SystemPackage
 #else
-import System
+    import System
 #endif
 
 func requestBytes(_ request: consuming RawIORequest) -> [UInt8] {
@@ -27,37 +27,30 @@ final class IORequestTests: XCTestCase {
         XCTAssertEqual(sourceBytes, .init(repeating: 0, count: 64))
     }
 
-    func testOpenatFixedFile() throws {
-        let pathPtr = UnsafePointer<CChar>(bitPattern: 0x414141410badf00d)!
-        let fileSlot = IORing.RegisteredFile(resource: UInt32.max, index: 0)
-        let req = IORing.Request.open(FilePath(platformString: pathPtr),
-            in: FileDescriptor(rawValue: -100),
-            into: fileSlot,
-            mode: .readOnly,
-            options: [],
-            permissions: nil
+    func testOpenAndReadFixedFile() throws {
+        mkdir("/tmp/IORingTests/", 0o777)
+        let path: FilePath = "/tmp/IORingTests/test.txt"
+        let fd = try FileDescriptor.open(
+            path, .readWrite, options: .create, permissions: .ownerReadWrite)
+        try fd.writeAll("Hello, World!".utf8)
+        try fd.close()
+        var ring = try IORing(queueDepth: 3)
+        let parent = try FileDescriptor.open("/tmp/IORingTests/", .readOnly)
+        let fileSlot = try ring.registerFileSlots(count: 1)[0]
+        let rawBuffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 64, alignment: 16)
+        let buffer = try ring.registerBuffers([rawBuffer])[0]
+        try ring.submit(linkedRequests:
+            .open(path, in: parent, into: fileSlot, mode: .readOnly),
+            .read(fileSlot, into: buffer),
+            .close(fileSlot)
         )
+        _ = try ring.blockingConsumeCompletion() //open
+        _ = try ring.blockingConsumeCompletion() //read
+        _ = try ring.blockingConsumeCompletion() //close
 
-        let expectedRequest: [UInt8] = {
-            var bin = [UInt8].init(repeating: 0, count: 64)
-            bin[0] = 0x12 // opcode for the request
-            // bin[1] = 0 - no request flags
-            // bin[2...3] = 0 - padding
-            bin[4...7] = [0x9c, 0xff, 0xff, 0xff] // -100 in UInt32 - dirfd
-            // bin[8...15] = 0 - zeroes
-            withUnsafeBytes(of: pathPtr) {
-                // path pointer
-                bin[16...23] = ArraySlice($0)
-            }
-            // bin[24...43] = 0 - zeroes
-            withUnsafeBytes(of: UInt32(fileSlot.index + 1)) {
-                // file index + 1 - yes, unfortunately
-                bin[44...47] = ArraySlice($0)
-            }
-            return bin
-        }()
-
-        let actualRequest = requestBytes(req.makeRawRequest())
-        XCTAssertEqual(expectedRequest, actualRequest)
+        let result = String(cString: rawBuffer.assumingMemoryBound(to: CChar.self).baseAddress!)
+        XCTAssertEqual(result, "Hello, World!")
+   
+        rmdir("/tmp/IORingTests/")
     }
 }
