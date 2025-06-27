@@ -306,6 +306,9 @@ extension FilePath: ExpressibleByStringLiteral {
   }
 }
 
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+extension FilePath: ExpressibleByStringInterpolation {}
+
 @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.Component: ExpressibleByStringLiteral {
   /// Create a file path component from a string literal.
@@ -331,6 +334,9 @@ extension FilePath.Component: ExpressibleByStringLiteral {
   }
 }
 
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+extension FilePath.Component: ExpressibleByStringInterpolation {}
+
 @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
 extension FilePath.Root: ExpressibleByStringLiteral {
   /// Create a file path root from a string literal.
@@ -353,6 +359,8 @@ extension FilePath.Root: ExpressibleByStringLiteral {
     self.init(SystemString(string))
   }
 }
+@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+extension FilePath.Root: ExpressibleByStringInterpolation {}
 
 // MARK: - Printing and dumping
 
