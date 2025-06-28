@@ -24,7 +24,7 @@ try fd.closeAfter {
 }
 ```
 
-[API documentation](https://swiftpackageindex.com/apple/swift-system/main/documentation/SystemPackage)
+[API documentation](https://swiftpackageindex.com/apple/swift-system/documentation/SystemPackage)
 
 ## Adding `SystemPackage` as a Dependency
 
