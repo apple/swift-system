@@ -7,7 +7,7 @@ import XCTest
 #endif
 
 func requestBytes(_ request: consuming RawIORequest) -> [UInt8] {
-    return withUnsafePointer(to: request) {
+    return withUnsafePointer(to: request.rawValue) {
         let requestBuf = UnsafeBufferPointer(start: $0, count: 1)
         let rawBytes = UnsafeRawBufferPointer(requestBuf)
         return .init(rawBytes)
@@ -31,26 +31,32 @@ final class IORequestTests: XCTestCase {
         mkdir("/tmp/IORingTests/", 0o777)
         let path: FilePath = "/tmp/IORingTests/test.txt"
         let fd = try FileDescriptor.open(
-            path, .readWrite, options: .create, permissions: .ownerReadWrite)
+            path, 
+            .readWrite, 
+            options: .create, 
+            permissions: .ownerReadWrite
+        )
         try fd.writeAll("Hello, World!".utf8)
         try fd.close()
-        var ring = try IORing(queueDepth: 3)
+        var ring = try IORing(queueDepth: 6)
         let parent = try FileDescriptor.open("/tmp/IORingTests/", .readOnly)
         let fileSlot = try ring.registerFileSlots(count: 1)[0]
-        let rawBuffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 64, alignment: 16)
+        let rawBuffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 13, alignment: 16)
         let buffer = try ring.registerBuffers([rawBuffer])[0]
+
         try ring.submit(linkedRequests:
             .open(path, in: parent, into: fileSlot, mode: .readOnly),
             .read(fileSlot, into: buffer),
-            .close(fileSlot)
-        )
+            .close(fileSlot))
         _ = try ring.blockingConsumeCompletion() //open
         _ = try ring.blockingConsumeCompletion() //read
         _ = try ring.blockingConsumeCompletion() //close
 
+
         let result = String(cString: rawBuffer.assumingMemoryBound(to: CChar.self).baseAddress!)
         XCTAssertEqual(result, "Hello, World!")
    
+        try parent.close()
         rmdir("/tmp/IORingTests/")
     }
 }
