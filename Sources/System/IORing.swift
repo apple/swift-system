@@ -1,6 +1,11 @@
 #if os(Linux)
 @_implementationOnly import CSystem
-import Glibc  // needed for mmap
+// needed for mmap
+#if canImport(Glibc)
+import Glibc
+#elseif canImport(Musl)
+import Musl
+#endif
 import Synchronization
 
 @_implementationOnly import struct CSystem.io_uring_sqe
