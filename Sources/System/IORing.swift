@@ -1,3 +1,4 @@
+#if os(Linux)
 @_implementationOnly import CSystem
 import Glibc  // needed for mmap
 import Synchronization
@@ -742,3 +743,4 @@ extension IORing.RegisteredBuffer {
         return .init(start: resource.iov_base, count: resource.iov_len)
     }
 }
+#endif

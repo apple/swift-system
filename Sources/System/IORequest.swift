@@ -1,3 +1,4 @@
+#if os(Linux)
 @_implementationOnly import struct CSystem.io_uring_sqe
 
 @usableFromInline
@@ -471,3 +472,4 @@ extension IORing.Request {
         return request
     }
 }
+#endif

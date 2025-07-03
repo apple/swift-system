@@ -1,3 +1,4 @@
+#if os(Linux)
 // TODO: investigate @usableFromInline / @_implementationOnly dichotomy
 @_implementationOnly import CSystem
 @_implementationOnly import struct CSystem.io_uring_sqe
@@ -197,3 +198,4 @@ extension RawIORequest {
         }
     }
 }
+#endif

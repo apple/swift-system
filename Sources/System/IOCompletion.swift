@@ -1,3 +1,4 @@
+#if os(Linux)
 @_implementationOnly import CSystem
 
 public extension IORing {
@@ -56,3 +57,4 @@ public extension IORing.Completion {
         }
     }
 }
+#endif
