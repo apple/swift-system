@@ -1,3 +1,4 @@
+#if os(Linux)
 import XCTest
 
 #if SYSTEM_PACKAGE
@@ -27,3 +28,4 @@ final class IORequestTests: XCTestCase {
         XCTAssertEqual(sourceBytes, .init(repeating: 0, count: 64))
     }
 }
+#endif
