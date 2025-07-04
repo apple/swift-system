@@ -1,11 +1,8 @@
 #if os(Linux)
-@_implementationOnly import CSystem
+import CSystem
 import Glibc  // needed for mmap
 import Synchronization
 
-@_implementationOnly import struct CSystem.io_uring_sqe
-
-// XXX: this *really* shouldn't be here. oh well.
 extension UnsafeMutableRawPointer {
     func advanced(by offset: UInt32) -> UnsafeMutableRawPointer {
         return advanced(by: Int(offset))
@@ -20,40 +17,40 @@ extension UnsafeMutableRawBufferPointer {
 
 // all pointers in this struct reference kernel-visible memory
 @usableFromInline struct SQRing: ~Copyable {
-    let kernelHead: UnsafePointer<Atomic<UInt32>>
-    let kernelTail: UnsafePointer<Atomic<UInt32>>
-    var userTail: UInt32
+    @usableFromInline let kernelHead: UnsafePointer<Atomic<UInt32>>
+    @usableFromInline let kernelTail: UnsafePointer<Atomic<UInt32>>
+    @usableFromInline var userTail: UInt32
 
     // from liburing: the kernel should never change these
     // might change in the future with resizable rings?
-    let ringMask: UInt32
+    @usableFromInline let ringMask: UInt32
     // let ringEntries: UInt32 - absorbed into array.count
 
     // ring flags bitfield
     // currently used by the kernel only in SQPOLL mode to indicate
     // when the polling thread needs to be woken up
-    let flags: UnsafePointer<Atomic<UInt32>>
+    @usableFromInline let flags: UnsafePointer<Atomic<UInt32>>
 
     // ring array
     // maps indexes between the actual ring and the submissionQueueEntries list,
     // allowing the latter to be used as a kind of freelist with enough work?
     // currently, just 1:1 mapping (0..<n)
-    let array: UnsafeMutableBufferPointer<UInt32>
+    @usableFromInline let array: UnsafeMutableBufferPointer<UInt32>
 }
 
-struct CQRing: ~Copyable {
-    let kernelHead: UnsafePointer<Atomic<UInt32>>
-    let kernelTail: UnsafePointer<Atomic<UInt32>>
+@usableFromInline struct CQRing: ~Copyable {
+    @usableFromInline let kernelHead: UnsafePointer<Atomic<UInt32>>
+    @usableFromInline let kernelTail: UnsafePointer<Atomic<UInt32>>
 
     // TODO: determine if this is actually used
     var userHead: UInt32
 
-    let ringMask: UInt32
+    @usableFromInline let ringMask: UInt32
 
-    let cqes: UnsafeBufferPointer<io_uring_cqe>
+    @usableFromInline let cqes: UnsafeBufferPointer<io_uring_cqe>
 }
 
-@inline(__always)
+@inline(__always) @inlinable
 internal func _writeRequest(
     _ request: __owned RawIORequest, ring: inout SQRing,
     submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>
@@ -66,7 +63,7 @@ internal func _writeRequest(
     return true
 }
 
-@inline(__always)
+@inline(__always) @inlinable
 internal func _blockingGetSubmissionEntry(
     ring: inout SQRing, submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>
 ) -> UnsafeMutablePointer<
@@ -86,6 +83,7 @@ internal func _blockingGetSubmissionEntry(
 
 //TODO: omitting signal mask for now
 //Tell the kernel that we've submitted requests and/or are waiting for completions
+@inlinable
 internal func _enter(
     ringDescriptor: Int32,
     numEvents: UInt32,
@@ -113,22 +111,26 @@ internal func _enter(
     }
 }
 
+@inlinable
 internal func _submitRequests(ring: borrowing SQRing, ringDescriptor: Int32) throws(Errno) {
     let flushedEvents = _flushQueue(ring: ring)
     _ = try _enter(
         ringDescriptor: ringDescriptor, numEvents: flushedEvents, minCompletions: 0, flags: 0)
 }
 
+@inlinable
 internal func _getUnconsumedSubmissionCount(ring: borrowing SQRing) -> UInt32 {
     return ring.userTail - ring.kernelHead.pointee.load(ordering: .acquiring)
 }
 
+@inlinable
 internal func _getUnconsumedCompletionCount(ring: borrowing CQRing) -> UInt32 {
     return ring.kernelTail.pointee.load(ordering: .acquiring)
         - ring.kernelHead.pointee.load(ordering: .acquiring)
 }
 
 //TODO: pretty sure this is supposed to do more than it does
+@inlinable
 internal func _flushQueue(ring: borrowing SQRing) -> UInt32 {
     ring.kernelTail.pointee.store(
         ring.userTail, ordering: .releasing
@@ -136,7 +138,7 @@ internal func _flushQueue(ring: borrowing SQRing) -> UInt32 {
     return _getUnconsumedSubmissionCount(ring: ring)
 }
 
-@inline(__always)
+@inlinable
 internal func _getSubmissionEntry(
     ring: inout SQRing, submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>
 ) -> UnsafeMutablePointer<
@@ -188,7 +190,6 @@ private func setUpRing(
         || params.features & IORING_FEAT_NODROP == 0
     {
         close(ringDescriptor)
-        // TODO: error handling
         throw Errno.invalidArgument
     }
 
@@ -241,22 +242,22 @@ private func setUpRing(
 
 public struct IORing: ~Copyable {
     let ringFlags: UInt32
-    let ringDescriptor: Int32
+    @usableFromInline let ringDescriptor: Int32
 
     @usableFromInline var submissionRing: SQRing
     // FEAT: set this eventually
     let submissionPolling: Bool = false
 
-    let completionRing: CQRing
+    @usableFromInline let completionRing: CQRing
 
-    let submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>
+    @usableFromInline let submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>
 
     // kept around for unmap / cleanup
     let ringSize: Int
     let ringPtr: UnsafeMutableRawPointer
 
-    var _registeredFiles: [UInt32]
-    var _registeredBuffers: [iovec]
+    @usableFromInline var _registeredFiles: [UInt32]
+    @usableFromInline var _registeredBuffers: [iovec]
 
     var features = Features(rawValue: 0)
     
@@ -265,7 +266,7 @@ public struct IORing: ~Copyable {
         @usableFromInline let resource: T
         @usableFromInline let index: Int
 
-        internal init(
+        @inlinable internal init(
             resource: T,
             index: Int
         ) {
@@ -277,7 +278,6 @@ public struct IORing: ~Copyable {
     public typealias RegisteredFile = RegisteredResource<UInt32>
     public typealias RegisteredBuffer = RegisteredResource<iovec>
 
-    @frozen
     public struct SetupFlags: OptionSet, RawRepresentable, Hashable {
         public var rawValue: UInt32
 
@@ -370,7 +370,8 @@ public struct IORing: ~Copyable {
         self.ringFlags = params.flags
     }
 
-    private func _blockingConsumeCompletionGuts<Err: Error>(
+    @inlinable
+    internal func _blockingConsumeCompletionGuts<Err: Error>(
         minimumCount: UInt32,
         maximumCount: UInt32,
         extraArgs: UnsafeMutablePointer<swift_io_uring_getevents_arg>? = nil,
@@ -438,6 +439,7 @@ public struct IORing: ~Copyable {
         }
     }
 
+    @inlinable
     internal func _blockingConsumeOneCompletion(
         extraArgs: UnsafeMutablePointer<swift_io_uring_getevents_arg>? = nil
     ) throws(Errno) -> Completion {
@@ -454,6 +456,7 @@ public struct IORing: ~Copyable {
         return result.take()!
     }
 
+    @inlinable
     public func blockingConsumeCompletion(
         timeout: Duration? = nil
     ) throws(Errno) -> Completion {
@@ -476,6 +479,7 @@ public struct IORing: ~Copyable {
         }
     }
 
+    @inlinable
     public func blockingConsumeCompletions<Err: Error>(
         minimumCount: UInt32 = 1,
         timeout: Duration? = nil,
@@ -507,10 +511,12 @@ public struct IORing: ~Copyable {
 
     // }
 
+    @inlinable
     public func tryConsumeCompletion() -> Completion? {
         return _tryConsumeCompletion(ring: completionRing)
     }
 
+    @inlinable
     func _tryConsumeCompletion(ring: borrowing CQRing) -> Completion? {
         let tail = ring.kernelTail.pointee.load(ordering: .acquiring)
         let head = ring.kernelHead.pointee.load(ordering: .acquiring)
@@ -580,6 +586,7 @@ public struct IORing: ~Copyable {
         fatalError("failed to unregister files")
     }
 
+    @inlinable
     public var registeredFileSlots: RegisteredResources<RegisteredFile.Resource> {
         RegisteredResources(resources: _registeredFiles)
     }
@@ -610,6 +617,7 @@ public struct IORing: ~Copyable {
         return registeredBuffers
     }
 
+    @inlinable
     public mutating func registerBuffers(_ buffers: UnsafeMutableRawBufferPointer...) throws(Errno)
         -> RegisteredResources<RegisteredBuffer.Resource>
     {
@@ -617,33 +625,44 @@ public struct IORing: ~Copyable {
     }
 
     public struct RegisteredResources<T>: RandomAccessCollection {
-        let resources: [T]
+        @usableFromInline let resources: [T]
 
-        public var startIndex: Int { 0 }
-        public var endIndex: Int { resources.endIndex }
-        init(resources: [T]) {
+        @inlinable public var startIndex: Int { 0 }
+        @inlinable public var endIndex: Int { resources.endIndex }
+        @inlinable init(resources: [T]) {
             self.resources = resources
         }
-        public subscript(position: Int) -> RegisteredResource<T> {
+        @inlinable public subscript(position: Int) -> RegisteredResource<T> {
             RegisteredResource(resource: resources[position], index: position)
         }
-        public subscript(position: UInt16) -> RegisteredResource<T> {
+        @inlinable public subscript(position: UInt16) -> RegisteredResource<T> {
             RegisteredResource(resource: resources[Int(position)], index: Int(position))
         }
     }
 
+    @inlinable
     public var registeredBuffers: RegisteredResources<RegisteredBuffer.Resource> {
         RegisteredResources(resources: _registeredBuffers)
     }
 
-    public func unregisterBuffers() {
-        fatalError("failed to unregister buffers: TODO")
+    public func unregisterBuffers() throws {
+        let result = io_uring_register(
+            self.ringDescriptor,
+            IORING_UNREGISTER_BUFFERS.rawValue,
+            nil,
+            0
+        )
+        guard result >= 0 else {
+            throw Errno(rawValue: -result)
+        }
     }
 
+    @inlinable
     public func submitPreparedRequests() throws(Errno) {
         try _submitRequests(ring: submissionRing, ringDescriptor: ringDescriptor)
     }
 
+    @inlinable
     public func submitPreparedRequestsAndConsumeCompletions<Err: Error>(
         minimumCount: UInt32 = 1,
         timeout: Duration? = nil,
@@ -662,12 +681,14 @@ public struct IORing: ~Copyable {
         )
     }
 
+    @inlinable
     public mutating func prepare(request: __owned Request) -> Bool {
         var raw: RawIORequest? = request.makeRawRequest()
         return _writeRequest(
             raw.take()!, ring: &submissionRing, submissionQueueEntries: submissionQueueEntries)
     }
 
+    @inlinable
     mutating func prepare(linkedRequests: some BidirectionalCollection<Request>) {
         guard linkedRequests.count > 0 else {
             return
@@ -684,17 +705,17 @@ public struct IORing: ~Copyable {
             submissionQueueEntries: submissionQueueEntries)
     }
 
-    //@inlinable //TODO: make sure the array allocation gets optimized out...
+    @inlinable 
     public mutating func prepare(linkedRequests: Request...) {
         prepare(linkedRequests: linkedRequests)
     }
 
+    @inlinable
     public mutating func submit(linkedRequests: Request...) throws(Errno) {
         prepare(linkedRequests: linkedRequests)
         try submitPreparedRequests()
     }
 
-    @frozen
     public struct Features: OptionSet, RawRepresentable, Hashable {
 		public let rawValue: UInt32
 		
@@ -734,12 +755,12 @@ public struct IORing: ~Copyable {
 }
 
 extension IORing.RegisteredFile {
-    public var unsafeFileSlot: Int {
+    @inlinable public var unsafeFileSlot: Int {
         return index
     }
 }
 extension IORing.RegisteredBuffer {
-    public var unsafeBuffer: UnsafeMutableRawBufferPointer {
+    @inlinable public var unsafeBuffer: UnsafeMutableRawBufferPointer {
         return .init(start: resource.iov_base, count: resource.iov_len)
     }
 }

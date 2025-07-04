@@ -1,5 +1,5 @@
 #if os(Linux)
-@_implementationOnly import struct CSystem.io_uring_sqe
+import CSystem
 
 @usableFromInline
 internal enum IORequestCore {
@@ -96,7 +96,7 @@ internal enum IORequestCore {
     )
 }
 
-@inline(__always)
+@inline(__always) @inlinable
 internal func makeRawRequest_readWrite_registered(
     file: FileDescriptor,
     buffer: IORing.RegisteredBuffer,
@@ -112,7 +112,7 @@ internal func makeRawRequest_readWrite_registered(
     return request
 }
 
-@inline(__always)
+@inline(__always) @inlinable
 internal func makeRawRequest_readWrite_registered_slot(
     file: IORing.RegisteredFile,
     buffer: IORing.RegisteredBuffer,
@@ -129,7 +129,7 @@ internal func makeRawRequest_readWrite_registered_slot(
     return request
 }
 
-@inline(__always)
+@inline(__always) @inlinable
 internal func makeRawRequest_readWrite_unregistered(
     file: FileDescriptor,
     buffer: UnsafeMutableRawBufferPointer,
@@ -144,7 +144,7 @@ internal func makeRawRequest_readWrite_unregistered(
     return request
 }
 
-@inline(__always)
+@inline(__always) @inlinable
 internal func makeRawRequest_readWrite_unregistered_slot(
     file: IORing.RegisteredFile,
     buffer: UnsafeMutableRawBufferPointer,
@@ -164,6 +164,10 @@ extension IORing {
     public struct Request {
         @usableFromInline var core: IORequestCore
 
+        @inlinable internal init(core inCore: IORequestCore) {
+            core = inCore
+        }
+
         @inlinable internal consuming func extractCore() -> IORequestCore {
             return core
         }
@@ -173,11 +177,11 @@ extension IORing {
 
 
 extension IORing.Request {
-    public static func nop(context: UInt64 = 0) -> IORing.Request {
+    @inlinable public static func nop(context: UInt64 = 0) -> IORing.Request {
         .init(core: .nop)
     }
 
-    public static func read(
+    @inlinable public static func read(
         _ file: IORing.RegisteredFile,
         into buffer: IORing.RegisteredBuffer,
         at offset: UInt64 = 0,
@@ -186,7 +190,7 @@ extension IORing.Request {
         .init(core: .readSlot(file: file, buffer: buffer, offset: offset, context: context))
     }
 
-    public static func read(
+    @inlinable public static func read(
         _ file: FileDescriptor,
         into buffer: IORing.RegisteredBuffer,
         at offset: UInt64 = 0,
@@ -195,7 +199,7 @@ extension IORing.Request {
         .init(core: .read(file: file, buffer: buffer, offset: offset, context: context))
     }
 
-    public static func read(
+    @inlinable public static func read(
         _ file: IORing.RegisteredFile,
         into buffer: UnsafeMutableRawBufferPointer,
         at offset: UInt64 = 0,
@@ -204,7 +208,7 @@ extension IORing.Request {
         .init(core: .readUnregisteredSlot(file: file, buffer: buffer, offset: offset, context: context))
     }
 
-    public static func read(
+    @inlinable public static func read(
         _ file: FileDescriptor,
         into buffer: UnsafeMutableRawBufferPointer,
         at offset: UInt64 = 0,
@@ -213,7 +217,7 @@ extension IORing.Request {
         .init(core: .readUnregistered(file: file, buffer: buffer, offset: offset, context: context))
     }
 
-    public static func write(
+    @inlinable public static func write(
         _ buffer: IORing.RegisteredBuffer,
         into file: IORing.RegisteredFile,
         at offset: UInt64 = 0,
@@ -222,7 +226,7 @@ extension IORing.Request {
         .init(core: .writeSlot(file: file, buffer: buffer, offset: offset, context: context))
     }
 
-    public static func write(
+    @inlinable public static func write(
         _ buffer: IORing.RegisteredBuffer,
         into file: FileDescriptor,
         at offset: UInt64 = 0,
@@ -231,7 +235,7 @@ extension IORing.Request {
         .init(core: .write(file: file, buffer: buffer, offset: offset, context: context))
     }
 
-    public static func write(
+    @inlinable public static func write(
         _ buffer: UnsafeMutableRawBufferPointer,
         into file: IORing.RegisteredFile,
         at offset: UInt64 = 0,
@@ -241,7 +245,7 @@ extension IORing.Request {
                 file: file, buffer: buffer, offset: offset, context: context))
     }
 
-    public static func write(
+    @inlinable public static func write(
         _ buffer: UnsafeMutableRawBufferPointer,
         into file: FileDescriptor,
         at offset: UInt64 = 0,
@@ -252,21 +256,21 @@ extension IORing.Request {
         )
     }
 
-    public static func close(
+    @inlinable public static func close(
         _ file: FileDescriptor,
         context: UInt64 = 0
     ) -> IORing.Request {
         .init(core: .close(file, context: context))
     }
 
-    public static func close(
+    @inlinable public static func close(
         _ file: IORing.RegisteredFile,
         context: UInt64 = 0
     ) -> IORing.Request {
         .init(core: .closeSlot(file, context: context))
     }
 
-    public static func open(
+    @inlinable public static func open(
         _ path: FilePath,
         in directory: FileDescriptor,
         into slot: IORing.RegisteredFile,
@@ -281,7 +285,7 @@ extension IORing.Request {
                 permissions: permissions, intoSlot: slot, context: context))
     }
 
-    public static func open(
+    @inlinable public static func open(
         _ path: FilePath,
         in directory: FileDescriptor,
         mode: FileDescriptor.AccessMode,
@@ -296,7 +300,7 @@ extension IORing.Request {
             ))
     }
 
-    public static func unlink(
+    @inlinable public static func unlink(
         _ path: FilePath,
         in directory: FileDescriptor,
         context: UInt64 = 0
@@ -307,31 +311,22 @@ extension IORing.Request {
     // Cancel
 
     /*
- * ASYNC_CANCEL flags.
- *
- * IORING_ASYNC_CANCEL_ALL	Cancel all requests that match the given key
- * IORING_ASYNC_CANCEL_FD	Key off 'fd' for cancelation rather than the
- *				request 'user_data'
- * IORING_ASYNC_CANCEL_ANY	Match any request
- * IORING_ASYNC_CANCEL_FD_FIXED	'fd' passed in is a fixed descriptor
- * IORING_ASYNC_CANCEL_USERDATA	Match on user_data, default for no other key
- * IORING_ASYNC_CANCEL_OP	Match request based on opcode
- */ 
-    //TODO: why aren't these showing up from the header import?
-    private static var IORING_ASYNC_CANCEL_ALL: UInt32 { (1 as UInt32) << 0 }
-    private static var IORING_ASYNC_CANCEL_FD: UInt32 { (1 as UInt32) << 1 }
-    private static var IORING_ASYNC_CANCEL_ANY: UInt32 { (1 as UInt32) << 2 }
-    private static var IORING_ASYNC_CANCEL_FD_FIXED: UInt32 { (1 as UInt32) << 3 }
-    private static var IORING_ASYNC_CANCEL_USERDATA: UInt32 { (1 as UInt32) << 4 }
-    private static var IORING_ASYNC_CANCEL_OP: UInt32 { (1 as UInt32) << 5 }
-
-
+    * ASYNC_CANCEL flags.
+    *
+    * IORING_ASYNC_CANCEL_ALL	Cancel all requests that match the given key
+    * IORING_ASYNC_CANCEL_FD	Key off 'fd' for cancelation rather than the
+    *				request 'user_data'
+    * IORING_ASYNC_CANCEL_ANY	Match any request
+    * IORING_ASYNC_CANCEL_FD_FIXED	'fd' passed in is a fixed descriptor
+    * IORING_ASYNC_CANCEL_USERDATA	Match on user_data, default for no other key
+    * IORING_ASYNC_CANCEL_OP	Match request based on opcode
+    */ 
     public enum CancellationMatch {
     	case all
     	case first
     }
     
-    public static func cancel(
+    @inlinable public static func cancel(
     	_ matchAll: CancellationMatch,
     	matchingContext: UInt64,
     ) -> IORing.Request {
@@ -343,7 +338,7 @@ extension IORing.Request {
         }
     }
     
-    public static func cancel(
+    @inlinable public static func cancel(
     	_ matchAll: CancellationMatch,
     	matching: FileDescriptor,
     ) -> IORing.Request {
@@ -355,7 +350,7 @@ extension IORing.Request {
         }
     }
     
-    public static func cancel(
+    @inlinable public static func cancel(
     	_ matchAll: CancellationMatch,
     	matching: IORing.RegisteredFile,
     ) -> IORing.Request {
@@ -369,8 +364,8 @@ extension IORing.Request {
 
     //TODO: add support for CANCEL_OP
 
-    @inline(__always)
-    public consuming func makeRawRequest() -> RawIORequest {
+    @inline(__always) @inlinable
+    internal consuming func makeRawRequest() -> RawIORequest {
         var request = RawIORequest()
         switch extractCore() {
         case .nop:

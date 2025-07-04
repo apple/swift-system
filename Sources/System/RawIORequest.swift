@@ -1,19 +1,19 @@
 #if os(Linux)
-// TODO: investigate @usableFromInline / @_implementationOnly dichotomy
-@_implementationOnly import CSystem
-@_implementationOnly import struct CSystem.io_uring_sqe
+import CSystem
+import struct CSystem.io_uring_sqe
     
-//TODO: make this internal
-public struct RawIORequest: ~Copyable {
-    var rawValue: io_uring_sqe
-    var path: FilePath? //buffer owner for the path pointer that the sqe may have
+@usableFromInline
+internal struct RawIORequest: ~Copyable {
+    @usableFromInline var rawValue: io_uring_sqe
+    @usableFromInline var path: FilePath? //buffer owner for the path pointer that the sqe may have
 
-    public init() {
+    @inlinable public init() {
         self.rawValue = io_uring_sqe()
     }
 }
 
 extension RawIORequest {
+    @usableFromInline
     enum Operation: UInt8 {
         case nop = 0
         case readv = 1
@@ -45,49 +45,49 @@ extension RawIORequest {
     public struct Flags: OptionSet, Hashable, Codable {
         public let rawValue: UInt8
 
-        public init(rawValue: UInt8) {
+        @inlinable public init(rawValue: UInt8) {
             self.rawValue = rawValue
         }
 
-        public static let fixedFile = Flags(rawValue: 1 << 0)
-        public static let drainQueue = Flags(rawValue: 1 << 1)
-        public static let linkRequest = Flags(rawValue: 1 << 2)
-        public static let hardlinkRequest = Flags(rawValue: 1 << 3)
-        public static let asynchronous = Flags(rawValue: 1 << 4)
-        public static let selectBuffer = Flags(rawValue: 1 << 5)
-        public static let skipSuccess = Flags(rawValue: 1 << 6)
+        @inlinable public static var fixedFile: RawIORequest.Flags { Flags(rawValue: 1 << 0) }
+        @inlinable public static var drainQueue: RawIORequest.Flags { Flags(rawValue: 1 << 1) }
+        @inlinable public static var linkRequest: RawIORequest.Flags { Flags(rawValue: 1 << 2) }
+        @inlinable public static var hardlinkRequest: RawIORequest.Flags { Flags(rawValue: 1 << 3) }
+        @inlinable public static var asynchronous: RawIORequest.Flags { Flags(rawValue: 1 << 4) }
+        @inlinable public static var selectBuffer: RawIORequest.Flags { Flags(rawValue: 1 << 5) }
+        @inlinable public static var skipSuccess: RawIORequest.Flags { Flags(rawValue: 1 << 6) }
     }
 
-    var operation: Operation {
+    @inlinable var operation: Operation {
         get { Operation(rawValue: rawValue.opcode)! }
         set { rawValue.opcode = newValue.rawValue }
     }
 
-    var cancel_flags: UInt32 {
+    @inlinable var cancel_flags: UInt32 {
         get { rawValue.cancel_flags }
         set { rawValue.cancel_flags = newValue }
     }
 
-    var addr: UInt64 {
+    @inlinable var addr: UInt64 {
         get { rawValue.addr }
         set { rawValue.addr = newValue }
     }
 
-    public var flags: Flags {
+    @inlinable public var flags: Flags {
         get { Flags(rawValue: rawValue.flags) }
         set { rawValue.flags = newValue.rawValue }
     }
 
-    public mutating func linkToNextRequest() {
+    @inlinable public mutating func linkToNextRequest() {
         flags = Flags(rawValue: flags.rawValue | Flags.linkRequest.rawValue)
     }
 
-    public var fileDescriptor: FileDescriptor {
+    @inlinable public var fileDescriptor: FileDescriptor {
         get { FileDescriptor(rawValue: rawValue.fd) }
         set { rawValue.fd = newValue.rawValue }
     }
 
-    public var offset: UInt64? {
+    @inlinable public var offset: UInt64? {
         get { 
             if (rawValue.off == UInt64.max) {
                 return nil
@@ -104,7 +104,7 @@ extension RawIORequest {
         }
     }
 
-    public var buffer: UnsafeMutableRawBufferPointer {
+    @inlinable public var buffer: UnsafeMutableRawBufferPointer {
         get {
             let ptr = UnsafeMutableRawPointer(bitPattern: UInt(exactly: rawValue.addr)!)
             return UnsafeMutableRawBufferPointer(start: ptr, count: Int(rawValue.len))
@@ -135,45 +135,46 @@ extension RawIORequest {
 
     public struct ReadWriteFlags: OptionSet, Hashable, Codable {
         public var rawValue: UInt32
-        public init(rawValue: UInt32) {
+        @inlinable public init(rawValue: UInt32) {
             self.rawValue = rawValue
         }
 
-        public static let highPriority = ReadWriteFlags(rawValue: 1 << 0)
+        @inlinable public static var highPriority: RawIORequest.ReadWriteFlags { ReadWriteFlags(rawValue: 1 << 0) }
 
         // sync with only data integrity
-        public static let dataSync = ReadWriteFlags(rawValue: 1 << 1)
+        @inlinable public static var dataSync: RawIORequest.ReadWriteFlags { ReadWriteFlags(rawValue: 1 << 1) }
 
         // sync with full data + file integrity
-        public static let fileSync = ReadWriteFlags(rawValue: 1 << 2)
+        @inlinable public static var fileSync: RawIORequest.ReadWriteFlags { ReadWriteFlags(rawValue: 1 << 2) }
 
         // return -EAGAIN if operation blocks
-        public static let noWait = ReadWriteFlags(rawValue: 1 << 3)
+        @inlinable public static var noWait: RawIORequest.ReadWriteFlags { ReadWriteFlags(rawValue: 1 << 3) }
 
         // append to end of the file
-        public static let append = ReadWriteFlags(rawValue: 1 << 4)
+        @inlinable public static var append: RawIORequest.ReadWriteFlags { ReadWriteFlags(rawValue: 1 << 4) }
     }
 
     public struct TimeOutFlags: OptionSet, Hashable, Codable {
         public var rawValue: UInt32
 
-        public init(rawValue: UInt32) {
+        @inlinable public init(rawValue: UInt32) {
             self.rawValue = rawValue
         }
 
-        public static let relativeTime: RawIORequest.TimeOutFlags = TimeOutFlags(rawValue: 0)
-        public static let absoluteTime: RawIORequest.TimeOutFlags = TimeOutFlags(rawValue: 1 << 0)
+        @inlinable public static var relativeTime: RawIORequest.TimeOutFlags { TimeOutFlags(rawValue: 0) }
+        @inlinable public static var absoluteTime: RawIORequest.TimeOutFlags { TimeOutFlags(rawValue: 1 << 0) }
     }
 }
 
 extension RawIORequest {
+    @inlinable
     static func nop() -> RawIORequest {
         var req: RawIORequest = RawIORequest()
         req.operation = .nop
         return req
     }
 
-    //TODO: typed errors
+    @inlinable
     static func withTimeoutRequest<R>(
         linkedTo opEntry: UnsafeMutablePointer<io_uring_sqe>,
         in timeoutEntry: UnsafeMutablePointer<io_uring_sqe>,
