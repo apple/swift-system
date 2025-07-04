@@ -1,6 +1,11 @@
 #if os(Linux)
 import CSystem
-import Glibc  // needed for mmap
+// needed for mmap
+#if canImport(Glibc)
+import Glibc
+#elseif canImport(Musl)
+import Musl
+#endif
 import Synchronization
 
 extension UnsafeMutableRawPointer {

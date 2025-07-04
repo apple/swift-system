@@ -1,3 +1,4 @@
+#if os(Linux)
 import XCTest
 import CSystem //for eventfd
 
@@ -98,3 +99,4 @@ final class IORingTests: XCTestCase {
         rawBuffer.deallocate()
     }
 }
+#endif
