@@ -15,7 +15,7 @@ final class IORingTests: XCTestCase {
 
     func testNop() throws {
         var ring = try IORing(queueDepth: 32, flags: [])
-        try ring.submit(linkedRequests: .nop())
+        _ = try ring.submit(linkedRequests: .nop())
         let completion = try ring.blockingConsumeCompletion()
         XCTAssertEqual(completion.result, 0)
     }
@@ -57,10 +57,11 @@ final class IORingTests: XCTestCase {
         try ring.registerEventFD(eventFD)
 
         //Part 1: read the file we just created, and make sure the eventfd fires
-        try ring.submit(linkedRequests:
+        let enqueued = try ring.submit(linkedRequests:
             .open(path, in: parent, into: ring.registeredFileSlots[0], mode: .readOnly),
             .read(ring.registeredFileSlots[0], into: ring.registeredBuffers[0]),
             .close(ring.registeredFileSlots[0]))
+        XCTAssert(enqueued)
         let efdBuf = UnsafeMutableRawBufferPointer.allocate(byteCount: 8, alignment: 0)
         _ = try eventFD.read(into: efdBuf)
         _ = try ring.blockingConsumeCompletion() //open
@@ -76,10 +77,11 @@ final class IORingTests: XCTestCase {
             remove($0)
         }
         XCTAssertEqual(rmResult, 0)
-        try ring.submit(linkedRequests:
+        let enqueued2 = try ring.submit(linkedRequests:
             .open(path, in: parent, into: ring.registeredFileSlots[0], mode: .readWrite, options: .create, permissions: .ownerReadWrite),
             .write(ring.registeredBuffers[0], into: ring.registeredFileSlots[0]),
             .close(ring.registeredFileSlots[0]))
+        XCTAssert(enqueued2)
         _ = try eventFD.read(into: efdBuf)
         _ = try ring.blockingConsumeCompletion() //open
         _ = try eventFD.read(into: efdBuf)

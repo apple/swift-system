@@ -724,23 +724,15 @@ public struct IORing: ~Copyable {
 
     /// Attempts to prepare an IO request for submission to the kernel. Returns false if no space is available to enqueue the request
     @inlinable
-    public mutating func tryPrepare(request: __owned Request) -> Bool {
+    public mutating func prepare(request: __owned Request) -> Bool {
         var raw: RawIORequest? = request.makeRawRequest()
         return _tryWriteRequest(
             raw.take()!, ring: &submissionRing, submissionQueueEntries: submissionQueueEntries)
     }
 
-    /// Attempts to prepare an IO request for submission to the kernel. Blocks if needed until space becomes available to enqueue the request
-    @inlinable
-    public mutating func prepare(request: __owned Request) {
-        var raw: RawIORequest? = request.makeRawRequest()
-        _writeRequest(
-            raw.take()!, ring: &submissionRing, submissionQueueEntries: submissionQueueEntries)
-    }
-
     /// Attempts to prepare a chain of linked IO requests for submission to the kernel. Returns false if not enough space is available to enqueue the request. If any linked operation fails, subsequent operations will be canceled. Linked operations always execute in order.
     @inlinable
-    mutating func tryPrepare(linkedRequests: some BidirectionalCollection<Request>) -> Bool {
+    mutating func prepare(linkedRequests: some BidirectionalCollection<Request>) -> Bool {
         guard linkedRequests.count > 0 else {
             return true
         }
@@ -763,41 +755,20 @@ public struct IORing: ~Copyable {
         return true
     }
 
-    /// Prepares a chain of linked IO requests for submission to the kernel. Blocks if needed until space becomes available to enqueue the requests. If any linked operation fails, subsequent operations will be canceled. Linked operations always execute in order.
-    @inlinable
-    mutating func prepare(linkedRequests: some BidirectionalCollection<Request>) {
-        guard linkedRequests.count > 0 else {
-            return
-        }
-        let last = linkedRequests.last!
-        for req in linkedRequests.dropLast() {
-            var raw = req.makeRawRequest()
-            raw.linkToNextRequest()
-            _writeRequest(
-                raw, ring: &submissionRing, submissionQueueEntries: submissionQueueEntries)
-        }
-        _writeRequest(
-            last.makeRawRequest(), ring: &submissionRing,
-            submissionQueueEntries: submissionQueueEntries)
-    }
-
     /// Prepares a sequence of requests for submission to the ring. Returns false if the submission queue doesn't have enough available space.
     @inlinable 
-    public mutating func tryPrepare(linkedRequests: Request...) -> Bool {
-        tryPrepare(linkedRequests: linkedRequests)
-    }
-
-    /// Prepares a sequence of requests for submission to the ring. Blocks if the submission queue doesn't have enough available space.
-    @inlinable 
-    public mutating func prepare(linkedRequests: Request...) {
+    public mutating func prepare(linkedRequests: Request...) -> Bool {
         prepare(linkedRequests: linkedRequests)
     }
 
-    /// Prepares and submits a sequence of requests to the ring. Blocks if the submission queue doesn't have enough available space.
+    /// Prepares and submits a sequence of requests to the ring. Returns false if the submission queue doesn't have enough available space.
     @inlinable
-    public mutating func submit(linkedRequests: Request...) throws(Errno) {
-        prepare(linkedRequests: linkedRequests)
+    public mutating func submit(linkedRequests: Request...) throws(Errno) -> Bool {
+        if !prepare(linkedRequests: linkedRequests) {
+            return false
+        }
         try submitPreparedRequests()
+        return true
     }
 
     /// Describes which io_uring features are supported by the kernel this program is running on
