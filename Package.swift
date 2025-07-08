@@ -22,6 +22,7 @@ let swiftSettings: [SwiftSetting] = [
     .when(platforms: [.macOS, .macCatalyst, .iOS, .watchOS, .tvOS, .visionOS])),
   .define("SYSTEM_PACKAGE"),
   .define("ENABLE_MOCKING", .when(configuration: .debug)),
+  .enableExperimentalFeature("Lifetimes"),
 ]
 
 let package = Package(

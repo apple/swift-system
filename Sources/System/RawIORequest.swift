@@ -1,6 +1,5 @@
 #if os(Linux)
 import CSystem
-import struct CSystem.io_uring_sqe
     
 @usableFromInline
 internal struct RawIORequest: ~Copyable {
@@ -111,7 +110,6 @@ extension RawIORequest {
         }
 
         set {
-            // TODO: cleanup?
             rawValue.addr = UInt64(Int(bitPattern: newValue.baseAddress!))
             rawValue.len = UInt32(exactly: newValue.count)!
         }

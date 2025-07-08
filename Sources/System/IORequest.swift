@@ -362,8 +362,6 @@ extension IORing.Request {
         }
     }
 
-    //TODO: add support for CANCEL_OP
-
     @inline(__always) @inlinable
     internal consuming func makeRawRequest() -> RawIORequest {
         var request = RawIORequest()
