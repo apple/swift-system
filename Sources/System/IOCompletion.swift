@@ -18,10 +18,15 @@ public extension IORing.Completion {
             self.rawValue = rawValue
         }
         
-        public static let allocatedBuffer = Flags(rawValue: 1 << 0)
-        public static let moreCompletions = Flags(rawValue: 1 << 1)
-        public static let socketNotEmpty = Flags(rawValue: 1 << 2)
-        public static let isNotificationEvent = Flags(rawValue: 1 << 3)
+        ///`IORING_CQE_F_BUFFER` Indicates the buffer ID is stored in the upper 16 bits
+        @inlinable public static var allocatedBuffer: Flags { Flags(rawValue: 1 << 0) }
+        ///`IORING_CQE_F_MORE`  Indicates more completions will be generated from the request that generated this
+        @inlinable public static var moreCompletions: Flags { Flags(rawValue: 1 << 1) }
+        //`IORING_CQE_F_SOCK_NONEMPTY`, but currently unused
+        //@inlinable public static var socketNotEmpty: Flags { Flags(rawValue: 1 << 2) }
+        //`IORING_CQE_F_NOTIF`, but currently unused
+        //@inlinable public static var isNotificationEvent: Flags { Flags(rawValue: 1 << 3) }
+        //IORING_CQE_F_BUF_MORE  will eventually be  (1U << 4) if we add IOU_PBUF_RING_INC support
     }
 }
 
