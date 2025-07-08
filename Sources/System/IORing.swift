@@ -67,35 +67,6 @@ internal func _tryWriteRequest(
     return false
 }
 
-@inline(__always) @inlinable
-internal func _writeRequest(
-    _ request: __owned RawIORequest, ring: inout SQRing,
-    submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>
-)
-{
-    let entry = _blockingGetSubmissionEntry(
-        ring: &ring, submissionQueueEntries: submissionQueueEntries)
-    entry.pointee = request.rawValue
-}
-
-@inline(__always) @inlinable
-internal func _blockingGetSubmissionEntry(
-    ring: inout SQRing, submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>
-) -> UnsafeMutablePointer<
-    io_uring_sqe
-> {
-    while true {
-        if let entry = _getSubmissionEntry(
-            ring: &ring,
-            submissionQueueEntries: submissionQueueEntries
-        ) {
-            return entry
-        }
-        // TODO: actually block here instead of spinning
-    }
-
-}
-
 //TODO: omitting signal mask for now
 //Tell the kernel that we've submitted requests and/or are waiting for completions
 @inlinable
