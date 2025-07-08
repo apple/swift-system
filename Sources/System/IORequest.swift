@@ -328,7 +328,7 @@ extension IORing.Request {
     
     @inlinable public static func cancel(
     	_ matchAll: CancellationMatch,
-    	matchingContext: UInt64,
+    	matchingContext: UInt64
     ) -> IORing.Request {
         switch matchAll {
             case .all:
@@ -340,7 +340,7 @@ extension IORing.Request {
     
     @inlinable public static func cancel(
     	_ matchAll: CancellationMatch,
-    	matching: FileDescriptor,
+    	matching: FileDescriptor
     ) -> IORing.Request {
         switch matchAll {
             case .all:
@@ -352,7 +352,7 @@ extension IORing.Request {
     
     @inlinable public static func cancel(
     	_ matchAll: CancellationMatch,
-    	matching: IORing.RegisteredFile,
+    	matching: IORing.RegisteredFile
     ) -> IORing.Request {
         switch matchAll {
             case .all:
