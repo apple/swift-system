@@ -42,17 +42,23 @@ final class IORingTests: XCTestCase {
     }
 
     func setupTestRing(depth: Int, fileSlots: Int, buffers: [UnsafeMutableRawBufferPointer]) throws -> IORing {
-        var ring: IORing = try IORing(queueDepth: 6)
+        var ring: IORing = try IORing(queueDepth: UInt32(depth))
         _ = try ring.registerFileSlots(count: 1)
         _ = try ring.registerBuffers(buffers)
         return ring
+    }
+
+    func testUndersizedSubmissionQueue() throws {
+        var ring: IORing = try IORing(queueDepth: 1)
+        let enqueued = ring.prepare(linkedRequests: .nop(), .nop())
+        XCTAssertFalse(enqueued)
     }
 
     // Exercises opening, reading, closing, registered files, registered buffers, and eventfd
     func testOpenReadAndWriteFixedFile() throws {
         let (parent, path) = try makeHelloWorldFile()
         let rawBuffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 13, alignment: 16)
-        var ring = try setupTestRing(depth: 3, fileSlots: 1, buffers: [rawBuffer])
+        var ring = try setupTestRing(depth: 6, fileSlots: 1, buffers: [rawBuffer])
         let eventFD = FileDescriptor(rawValue: eventfd(0, Int32(EFD_SEMAPHORE)))
         try ring.registerEventFD(eventFD)
 

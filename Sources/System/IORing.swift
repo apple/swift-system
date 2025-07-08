@@ -105,8 +105,13 @@ internal func _submitRequests(ring: borrowing SQRing, ringDescriptor: Int32) thr
 }
 
 @inlinable
-internal func _getUnconsumedSubmissionCount(ring: borrowing SQRing) -> UInt32 {
+internal func _getSubmissionQueueCount(ring: borrowing SQRing) -> UInt32 {
     return ring.userTail - ring.kernelHead.pointee.load(ordering: .acquiring)
+}
+
+@inlinable
+internal func _getRemainingSubmissionQueueCapacity(ring: borrowing SQRing) -> UInt32 {
+    return UInt32(truncatingIfNeeded: ring.array.count) - _getSubmissionQueueCount(ring: ring) 
 }
 
 @inlinable
@@ -115,13 +120,12 @@ internal func _getUnconsumedCompletionCount(ring: borrowing CQRing) -> UInt32 {
         - ring.kernelHead.pointee.load(ordering: .acquiring)
 }
 
-//TODO: pretty sure this is supposed to do more than it does
 @inlinable
 internal func _flushQueue(ring: borrowing SQRing) -> UInt32 {
     ring.kernelTail.pointee.store(
         ring.userTail, ordering: .releasing
     )
-    return _getUnconsumedSubmissionCount(ring: ring)
+    return _getSubmissionQueueCount(ring: ring)
 }
 
 @inlinable
@@ -707,7 +711,7 @@ public struct IORing: ~Copyable {
         guard linkedRequests.count > 0 else {
             return true
         }
-        let freeSQECount = _getUnconsumedSubmissionCount(ring: submissionRing)
+        let freeSQECount = _getRemainingSubmissionQueueCapacity(ring: submissionRing)
         guard freeSQECount >= linkedRequests.count else {
             return false
         }
