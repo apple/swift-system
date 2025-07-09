@@ -8,6 +8,21 @@ import Musl
 #endif
 import Synchronization
 
+//This was #defines in older headers, so we redeclare it to get a consistent import
+internal enum RegistrationOps: UInt32 {
+	case registerBuffers		= 0
+	case unregisterBuffers		= 1
+	case registerFiles			= 2
+	case unregisterFiles		= 3
+	case registerEventFD		= 4
+	case unregisterEventFD		= 5
+	case registerFilesUpdate	= 6
+	case registerEventFDAsync	= 7
+	case registerProbe			= 8
+	case registerPersonality	= 9
+	case unregisterPersonality	= 10
+}
+
 extension UnsafeMutableRawPointer {
     func advanced(by offset: UInt32) -> UnsafeMutableRawPointer {
         return advanced(by: Int(offset))
@@ -71,6 +86,7 @@ internal func _tryWriteRequest(
 //Tell the kernel that we've submitted requests and/or are waiting for completions
 @inlinable
 internal func _enter(
+    ring: borrowing SQRing,
     ringDescriptor: Int32,
     numEvents: UInt32,
     minCompletions: UInt32,
@@ -91,6 +107,9 @@ internal func _enter(
             continue
         } else if ret < 0 {
             throw(Errno(rawValue: -ret))
+        } else if _getSubmissionQueueCount(ring: ring) > 0 {
+            // See https://github.com/axboe/liburing/issues/309, in some cases not all pending requests are submitted
+            continue
         } else {
             return ret
         }
@@ -101,7 +120,7 @@ internal func _enter(
 internal func _submitRequests(ring: borrowing SQRing, ringDescriptor: Int32) throws(Errno) {
     let flushedEvents = _flushQueue(ring: ring)
     _ = try _enter(
-        ringDescriptor: ringDescriptor, numEvents: flushedEvents, minCompletions: 0, flags: 0)
+        ring: ring, ringDescriptor: ringDescriptor, numEvents: flushedEvents, minCompletions: 0, flags: 0)
 }
 
 @inlinable
@@ -536,7 +555,7 @@ public struct IORing: ~Copyable {
         let result = withUnsafePointer(to: &rawfd) { fdptr in
             let result = io_uring_register(
                 ringDescriptor,
-                SWIFT_IORING_REGISTER_EVENTFD.rawValue,
+                RegistrationOps.registerEventFD.rawValue,
                 UnsafeMutableRawPointer(mutating: fdptr),
                 1
             )
@@ -551,7 +570,7 @@ public struct IORing: ~Copyable {
     public mutating func unregisterEventFD() throws(Errno) {
         let result = io_uring_register(
             ringDescriptor,
-            IORING_UNREGISTER_EVENTFD.rawValue,
+            RegistrationOps.unregisterEventFD.rawValue,
             nil,
             0
         )
@@ -569,7 +588,7 @@ public struct IORing: ~Copyable {
         let regResult = files.withUnsafeBufferPointer { bPtr in
             let result = io_uring_register(
                 self.ringDescriptor,
-                IORING_REGISTER_FILES.rawValue,
+                RegistrationOps.registerFiles.rawValue,
                 UnsafeMutableRawPointer(mutating: bPtr.baseAddress!),
                 UInt32(truncatingIfNeeded: count)
             )
@@ -588,7 +607,7 @@ public struct IORing: ~Copyable {
     public func unregisterFiles() throws {
             let result = io_uring_register(
             ringDescriptor,
-            IORING_UNREGISTER_FILES.rawValue,
+            RegistrationOps.unregisterFiles.rawValue,
             nil,
             0
         )
@@ -613,7 +632,7 @@ public struct IORing: ~Copyable {
         let regResult = iovecs.withUnsafeBufferPointer { bPtr in
             let result = io_uring_register(
                 self.ringDescriptor,
-                IORING_REGISTER_BUFFERS.rawValue,
+                RegistrationOps.registerBuffers.rawValue,
                 UnsafeMutableRawPointer(mutating: bPtr.baseAddress!),
                 UInt32(truncatingIfNeeded: buffers.count)
             )
@@ -662,7 +681,7 @@ public struct IORing: ~Copyable {
     public func unregisterBuffers() throws {
         let result = io_uring_register(
             self.ringDescriptor,
-            IORING_UNREGISTER_BUFFERS.rawValue,
+            RegistrationOps.unregisterBuffers.rawValue,
             nil,
             0
         )

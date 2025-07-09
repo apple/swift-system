@@ -33,24 +33,6 @@ struct swift_io_uring_getevents_arg {
 	__u64	ts;
 };
 
-//This was #defines in older headers, so we redeclare it to get a consistent import
-typedef enum : __u32 {
-	SWIFT_IORING_REGISTER_BUFFERS			= 0,
-	SWIFT_IORING_UNREGISTER_BUFFERS		= 1,
-	SWIFT_IORING_REGISTER_FILES			= 2,
-	SWIFT_IORING_UNREGISTER_FILES			= 3,
-	SWIFT_IORING_REGISTER_EVENTFD			= 4,
-	SWIFT_IORING_UNREGISTER_EVENTFD		= 5,
-	SWIFT_IORING_REGISTER_FILES_UPDATE		= 6,
-	SWIFT_IORING_REGISTER_EVENTFD_ASYNC		= 7,
-	SWIFT_IORING_REGISTER_PROBE			= 8,
-	SWIFT_IORING_REGISTER_PERSONALITY		= 9,
-	SWIFT_IORING_UNREGISTER_PERSONALITY		= 10,
-
-	/* this goes last */
-	SWIFT_IORING_REGISTER_LAST
-} SWIFT_IORING_REGISTER_OPS;
-
 static inline int io_uring_register(int fd, unsigned int opcode, void *arg,
 		      unsigned int nr_args)
 {
