@@ -1,4 +1,6 @@
 #if os(Linux)
+#if compiler(>=6.2)
+
 import CSystem
     
 @usableFromInline
@@ -197,4 +199,5 @@ extension RawIORequest {
         }
     }
 }
+#endif
 #endif

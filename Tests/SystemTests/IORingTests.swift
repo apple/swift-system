@@ -1,4 +1,6 @@
 #if os(Linux)
+#if compiler(>=6.2)
+
 import XCTest
 import CSystem //for eventfd
 
@@ -107,4 +109,5 @@ final class IORingTests: XCTestCase {
         rawBuffer.deallocate()
     }
 }
+#endif
 #endif
