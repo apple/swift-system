@@ -321,7 +321,15 @@ extension IORing.Request {
     * IORING_ASYNC_CANCEL_FD_FIXED	'fd' passed in is a fixed descriptor
     * IORING_ASYNC_CANCEL_USERDATA	Match on user_data, default for no other key
     * IORING_ASYNC_CANCEL_OP	Match request based on opcode
-    */ 
+    */
+
+@inlinable internal static var SWIFT_IORING_ASYNC_CANCEL_ALL: UInt32 { 1 << 0 }
+@inlinable internal static var SWIFT_IORING_ASYNC_CANCEL_FD: UInt32 { 1 << 1 }
+@inlinable internal static var SWIFT_IORING_ASYNC_CANCEL_ANY: UInt32 { 1 << 2 }
+@inlinable internal static var SWIFT_IORING_ASYNC_CANCEL_FD_FIXED: UInt32 { 1 << 3 }
+@inlinable internal static var SWIFT_IORING_ASYNC_CANCEL_USERDATA: UInt32 { 1 << 4 }
+@inlinable internal static var SWIFT_IORING_ASYNC_CANCEL_OP: UInt32 { 1 << 5 }
+
     public enum CancellationMatch {
     	case all
     	case first
@@ -333,9 +341,9 @@ extension IORing.Request {
     ) -> IORing.Request {
         switch matchAll {
             case .all:
-                .init(core: .cancel(flags: IORING_ASYNC_CANCEL_ALL | IORING_ASYNC_CANCEL_USERDATA, targetContext: matchingContext))
+                .init(core: .cancel(flags: SWIFT_IORING_ASYNC_CANCEL_ALL | SWIFT_IORING_ASYNC_CANCEL_USERDATA, targetContext: matchingContext))
             case .first:
-                .init(core: .cancel(flags: IORING_ASYNC_CANCEL_ANY | IORING_ASYNC_CANCEL_USERDATA, targetContext: matchingContext))
+                .init(core: .cancel(flags: SWIFT_IORING_ASYNC_CANCEL_ANY | SWIFT_IORING_ASYNC_CANCEL_USERDATA, targetContext: matchingContext))
         }
     }
     
@@ -345,9 +353,9 @@ extension IORing.Request {
     ) -> IORing.Request {
         switch matchAll {
             case .all:
-                .init(core: .cancelFD(flags: IORING_ASYNC_CANCEL_ALL | IORING_ASYNC_CANCEL_FD, targetFD: matching))
+                .init(core: .cancelFD(flags: SWIFT_IORING_ASYNC_CANCEL_ALL | SWIFT_IORING_ASYNC_CANCEL_FD, targetFD: matching))
             case .first:
-                .init(core: .cancelFD(flags: IORING_ASYNC_CANCEL_ANY | IORING_ASYNC_CANCEL_FD, targetFD: matching))
+                .init(core: .cancelFD(flags: SWIFT_IORING_ASYNC_CANCEL_ANY | SWIFT_IORING_ASYNC_CANCEL_FD, targetFD: matching))
         }
     }
     
@@ -357,9 +365,9 @@ extension IORing.Request {
     ) -> IORing.Request {
         switch matchAll {
             case .all:
-                .init(core: .cancelFDSlot(flags: IORING_ASYNC_CANCEL_ALL | IORING_ASYNC_CANCEL_FD_FIXED, target: matching))
+                .init(core: .cancelFDSlot(flags: SWIFT_IORING_ASYNC_CANCEL_ALL | SWIFT_IORING_ASYNC_CANCEL_FD_FIXED, target: matching))
             case .first:
-                .init(core: .cancelFDSlot(flags: IORING_ASYNC_CANCEL_ANY | IORING_ASYNC_CANCEL_FD_FIXED, target: matching))
+                .init(core: .cancelFDSlot(flags: SWIFT_IORING_ASYNC_CANCEL_ANY | SWIFT_IORING_ASYNC_CANCEL_FD_FIXED, target: matching))
         }
     }
 
