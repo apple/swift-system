@@ -184,9 +184,9 @@ extension RawIORequest {
 
         opEntry.pointee.flags |= Flags.linkRequest.rawValue
         opEntry.pointee.off = 1
-        var ts = __kernel_timespec(
-            tv_sec: duration.components.seconds, 
-            tv_nsec: duration.components.attoseconds / 1_000_000_000 
+        var ts = timespec(
+            tv_sec: Int(duration.components.seconds), 
+            tv_nsec: Int(duration.components.attoseconds / 1_000_000_000)
         )
         return try withUnsafePointer(to: &ts) { tsPtr in
             var req: RawIORequest = RawIORequest()

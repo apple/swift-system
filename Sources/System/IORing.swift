@@ -479,9 +479,9 @@ public struct IORing: ~Copyable {
         timeout: Duration? = nil
     ) throws(Errno) -> Completion {
         if let timeout {
-            var ts = __kernel_timespec(
-                tv_sec: timeout.components.seconds,
-                tv_nsec: timeout.components.attoseconds / 1_000_000_000
+            var ts = timespec(
+                tv_sec: Int(timeout.components.seconds),
+                tv_nsec: Int(timeout.components.attoseconds / 1_000_000_000)
             )
             return try withUnsafePointer(to: &ts) { (tsPtr) throws(Errno) -> Completion in
                 var args = swift_io_uring_getevents_arg(
@@ -505,9 +505,9 @@ public struct IORing: ~Copyable {
         consumer: (consuming Completion?, Errno?, Bool) throws(Err) -> Void
     ) throws(Err) {
         if let timeout {
-            var ts = __kernel_timespec(
-                tv_sec: timeout.components.seconds,
-                tv_nsec: timeout.components.attoseconds / 1_000_000_000
+            var ts = timespec(
+                tv_sec: Int(timeout.components.seconds),
+                tv_nsec: Int(timeout.components.attoseconds / 1_000_000_000)
             )
             try withUnsafePointer(to: &ts) { (tsPtr) throws(Err) in
                 var args = swift_io_uring_getevents_arg(
