@@ -10,12 +10,25 @@ import SystemPackage
 import System
 #endif
 
+func uringEnabled() throws -> Bool {
+    let procPath = FilePath("/proc/sys/kernel/io_uring_disabled")
+    let fd = try FileDescriptor.open(procPath, .readOnly)
+    let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 1024, alignment: 0)
+    _ = try fd.read(into: buffer)
+    if buffer.load(fromByteOffset: 0, as: Int.self) == 0 {
+        return true
+    }
+    return false
+}
+
 final class IORingTests: XCTestCase {
     func testInit() throws {
+        guard try uringEnabled() else { return }
         _ = try IORing(queueDepth: 32, flags: [])
     }
 
     func testNop() throws {
+        guard try uringEnabled() else { return }
         var ring = try IORing(queueDepth: 32, flags: [])
         _ = try ring.submit(linkedRequests: .nop())
         let completion = try ring.blockingConsumeCompletion()
@@ -51,6 +64,7 @@ final class IORingTests: XCTestCase {
     }
 
     func testUndersizedSubmissionQueue() throws {
+        guard try uringEnabled() else { return }
         var ring: IORing = try IORing(queueDepth: 1)
         let enqueued = ring.prepare(linkedRequests: .nop(), .nop())
         XCTAssertFalse(enqueued)
@@ -58,6 +72,7 @@ final class IORingTests: XCTestCase {
 
     // Exercises opening, reading, closing, registered files, registered buffers, and eventfd
     func testOpenReadAndWriteFixedFile() throws {
+        guard try uringEnabled() else { return }
         let (parent, path) = try makeHelloWorldFile()
         let rawBuffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 13, alignment: 16)
         var ring = try setupTestRing(depth: 6, fileSlots: 1, buffers: [rawBuffer])
