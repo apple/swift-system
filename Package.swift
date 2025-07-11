@@ -28,7 +28,13 @@ let swiftSettings: [SwiftSetting] = [
 #if os(Linux)
 let filesToExclude = ["CMakeLists.txt"]
 #else
-let filesToExclude = ["CMakeLists.txt", "Sources/IORing/", "Tests/SystemTests/IORequestTests.swift", "Tests/SystemTests/IORingTests.swift"]
+let filesToExclude = ["CMakeLists.txt", "IORing"]
+#endif
+
+#if os(Linux)
+let testsToExclude:[String] = []
+#else
+let testsToExclude = ["IORequestTests.swift", "IORingTests.swift"]
 #endif
 
 let package = Package(
@@ -53,6 +59,7 @@ let package = Package(
     .testTarget(
       name: "SystemTests",
       dependencies: ["SystemPackage"],
+      exclude: testsToExclude,
       cSettings: cSettings,
       swiftSettings: swiftSettings),
   ])
