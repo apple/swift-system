@@ -1,5 +1,5 @@
-#if os(Linux)
 #if compiler(>=6.2)
+#if os(Linux)
 
 import XCTest
 import CSystem //for eventfd

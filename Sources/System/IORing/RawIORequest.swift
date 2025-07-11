@@ -1,4 +1,5 @@
-#if os(Linux) && compiler(>=6.2)
+#if compiler(>=6.2)
+#if os(Linux)
 
 import CSystem
     
@@ -198,4 +199,5 @@ extension RawIORequest {
         }
     }
 }
+#endif
 #endif

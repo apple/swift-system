@@ -1,4 +1,6 @@
-#if os(Linux) && compiler(>=6.2)
+#if compiler(>=6.2)
+#if os(Linux)
+
 import CSystem
 
 public extension IORing {
@@ -65,4 +67,5 @@ public extension IORing.Completion {
         }
     }
 }
+#endif
 #endif
