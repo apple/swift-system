@@ -1,5 +1,4 @@
-#if os(Linux)
-#if compiler(>=6.2)
+#if os(Linux) && compiler(>=6.2)
 
 import CSystem
 // needed for mmap
@@ -882,5 +881,4 @@ extension IORing.RegisteredBuffer {
         return unsafe _overrideLifetime(span, borrowing: self)
     }
 }
-#endif
 #endif

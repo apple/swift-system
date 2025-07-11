@@ -1,5 +1,4 @@
-#if os(Linux)
-#if compiler(>=6.2)
+#if os(Linux) && compiler(>=6.2)
 import CSystem
 
 @usableFromInline
@@ -492,5 +491,4 @@ extension IORing.Request {
         return request
     }
 }
-#endif
 #endif
