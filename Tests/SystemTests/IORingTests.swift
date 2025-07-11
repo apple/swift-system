@@ -11,12 +11,16 @@ import System
 #endif
 
 func uringEnabled() throws -> Bool {
-    let procPath = FilePath("/proc/sys/kernel/io_uring_disabled")
-    let fd = try FileDescriptor.open(procPath, .readOnly)
-    let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 1024, alignment: 0)
-    _ = try fd.read(into: buffer)
-    if buffer.load(fromByteOffset: 0, as: Int.self) == 0 {
-        return true
+    do {
+        let procPath = FilePath("/proc/sys/kernel/io_uring_disabled")
+        let fd = try FileDescriptor.open(procPath, .readOnly)
+        let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 1024, alignment: 0)
+        _ = try fd.read(into: buffer)
+        if buffer.load(fromByteOffset: 0, as: Int.self) == 0 {
+            return true
+        }
+    } catch (_) {
+        return false
     }
     return false
 }
