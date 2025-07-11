@@ -25,6 +25,12 @@ let swiftSettings: [SwiftSetting] = [
   .enableExperimentalFeature("Lifetimes"),
 ]
 
+#if os(Linux)
+let filesToExclude = ["CMakeLists.txt"]
+#else
+let filesToExclude = ["CMakeLists.txt", "Sources/IORing/", "Tests/SystemTests/IORequestTests.swift", "Tests/SystemTests/IORingTests.swift"]
+#endif
+
 let package = Package(
   name: "swift-system",
   products: [
@@ -41,7 +47,7 @@ let package = Package(
       name: "SystemPackage",
       dependencies: ["CSystem"],
       path: "Sources/System",
-      exclude: ["CMakeLists.txt"],
+      exclude: filesToExclude,
       cSettings: cSettings,
       swiftSettings: swiftSettings),
     .testTarget(
