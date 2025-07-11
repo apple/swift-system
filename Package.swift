@@ -32,7 +32,7 @@ let filesToExclude = ["CMakeLists.txt", "IORing"]
 #endif
 
 #if os(Linux)
-let testsToExclude = []
+let testsToExclude:[String] = []
 #else
 let testsToExclude = ["IORequestTests.swift", "IORingTests.swift"]
 #endif
