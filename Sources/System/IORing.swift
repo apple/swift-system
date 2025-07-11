@@ -378,6 +378,7 @@ public struct IORing: ~Copyable {
         submissionRingSize = tmpSQSize
         completionRingPtr = tmpCQPtr
         completionRingSize = tmpCQSize
+
         _registeredFiles = []
         _registeredBuffers = []
         submissionRing = SQRing(

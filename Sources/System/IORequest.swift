@@ -84,6 +84,9 @@ internal enum IORequestCore {
         context: UInt64 = 0
     )
     case cancel(
+        flags:UInt32
+    )
+    case cancelContext(
         flags: UInt32,
         targetContext: UInt64
     )
@@ -95,6 +98,7 @@ internal enum IORequestCore {
         flags: UInt32,
         target: IORing.RegisteredFile
     )
+
 }
 
 @inline(__always) @inlinable
@@ -341,9 +345,9 @@ extension IORing.Request {
     ) -> IORing.Request {
         switch matchAll {
             case .all:
-                .init(core: .cancel(flags: SWIFT_IORING_ASYNC_CANCEL_ALL | SWIFT_IORING_ASYNC_CANCEL_USERDATA, targetContext: matchingContext))
+                .init(core: .cancelContext(flags: SWIFT_IORING_ASYNC_CANCEL_ALL | SWIFT_IORING_ASYNC_CANCEL_USERDATA, targetContext: matchingContext))
             case .first:
-                .init(core: .cancel(flags: SWIFT_IORING_ASYNC_CANCEL_ANY | SWIFT_IORING_ASYNC_CANCEL_USERDATA, targetContext: matchingContext))
+                .init(core: .cancelContext(flags: SWIFT_IORING_ASYNC_CANCEL_USERDATA, targetContext: matchingContext))
         }
     }
     
@@ -355,7 +359,7 @@ extension IORing.Request {
             case .all:
                 .init(core: .cancelFD(flags: SWIFT_IORING_ASYNC_CANCEL_ALL | SWIFT_IORING_ASYNC_CANCEL_FD, targetFD: matching))
             case .first:
-                .init(core: .cancelFD(flags: SWIFT_IORING_ASYNC_CANCEL_ANY | SWIFT_IORING_ASYNC_CANCEL_FD, targetFD: matching))
+                .init(core: .cancelFD(flags: SWIFT_IORING_ASYNC_CANCEL_FD, targetFD: matching))
         }
     }
     
@@ -367,7 +371,18 @@ extension IORing.Request {
             case .all:
                 .init(core: .cancelFDSlot(flags: SWIFT_IORING_ASYNC_CANCEL_ALL | SWIFT_IORING_ASYNC_CANCEL_FD_FIXED, target: matching))
             case .first:
-                .init(core: .cancelFDSlot(flags: SWIFT_IORING_ASYNC_CANCEL_ANY | SWIFT_IORING_ASYNC_CANCEL_FD_FIXED, target: matching))
+                .init(core: .cancelFDSlot(flags: SWIFT_IORING_ASYNC_CANCEL_FD_FIXED, target: matching))
+        }
+    }
+
+    @inlinable public static func cancel(
+    	_ matchAll: CancellationMatch,
+    ) -> IORing.Request {
+        switch matchAll {
+            case .all:
+                .init(core: .cancel(flags: SWIFT_IORING_ASYNC_CANCEL_ALL))
+            case .first:
+                .init(core: .cancel(flags: SWIFT_IORING_ASYNC_CANCEL_ANY))
         }
     }
 
@@ -457,7 +472,7 @@ extension IORing.Request {
             )
             request.path = path
             request.rawValue.user_data = context
-        case .cancel(let flags, let targetContext):
+        case .cancelContext(let flags, let targetContext):
             request.operation = .asyncCancel
             request.cancel_flags = flags
             request.addr = targetContext
@@ -469,6 +484,9 @@ extension IORing.Request {
             request.operation = .asyncCancel
             request.cancel_flags = flags
             request.rawValue.fd = Int32(target.index)
+        case .cancel(let flags):
+            request.operation = .asyncCancel
+            request.cancel_flags = flags
         }
 
         return request
