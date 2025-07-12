@@ -22,7 +22,20 @@ let swiftSettings: [SwiftSetting] = [
     .when(platforms: [.macOS, .macCatalyst, .iOS, .watchOS, .tvOS, .visionOS])),
   .define("SYSTEM_PACKAGE"),
   .define("ENABLE_MOCKING", .when(configuration: .debug)),
+  .enableExperimentalFeature("Lifetimes"),
 ]
+
+#if os(Linux)
+let filesToExclude = ["CMakeLists.txt"]
+#else
+let filesToExclude = ["CMakeLists.txt", "IORing"]
+#endif
+
+#if os(Linux)
+let testsToExclude:[String] = []
+#else
+let testsToExclude = ["IORequestTests.swift", "IORingTests.swift"]
+#endif
 
 let package = Package(
   name: "swift-system",
@@ -40,12 +53,13 @@ let package = Package(
       name: "SystemPackage",
       dependencies: ["CSystem"],
       path: "Sources/System",
-      exclude: ["CMakeLists.txt"],
+      exclude: filesToExclude,
       cSettings: cSettings,
       swiftSettings: swiftSettings),
     .testTarget(
       name: "SystemTests",
       dependencies: ["SystemPackage"],
+      exclude: testsToExclude,
       cSettings: cSettings,
       swiftSettings: swiftSettings),
   ])
