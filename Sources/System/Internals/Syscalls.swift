@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 - 2024 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2025 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -14,6 +14,7 @@ import Glibc
 #elseif canImport(Musl)
 import Musl
 #elseif canImport(WASILibc)
+import CSystem
 import WASILibc
 #elseif os(Windows)
 import ucrt
@@ -189,9 +190,14 @@ internal func system_confstr(
 
 #if !os(Windows)
 internal let SYSTEM_AT_REMOVE_DIR = AT_REMOVEDIR
+#if os(WASI)
+internal let SYSTEM_DT_DIR = _getConst_DT_DIR()
+internal typealias system_dirent = _system_dirent
+#else
 internal let SYSTEM_DT_DIR = DT_DIR
 internal typealias system_dirent = dirent
-#if os(Linux) || os(Android) || os(FreeBSD) || os(OpenBSD)
+#endif
+#if os(Linux) || os(Android) || os(FreeBSD) || os(OpenBSD) || os(WASI)
 internal typealias system_DIRPtr = OpaquePointer
 #else
 internal typealias system_DIRPtr = UnsafeMutablePointer<DIR>
@@ -216,8 +222,12 @@ internal func system_fdopendir(
 
 internal func system_readdir(
   _ dir: system_DIRPtr
-) -> UnsafeMutablePointer<dirent>? {
+) -> UnsafeMutablePointer<system_dirent>? {
+  #if os(WASI)
+  return _system_dirent_from_wasi_dirent(readdir(dir))
+  #else
   return readdir(dir)
+  #endif
 }
 
 internal func system_rewinddir(
@@ -246,11 +256,13 @@ internal func system_openat(
 }
 #endif
 
+#if !os(WASI) // WASI has no umask
 internal func system_umask(
   _ mode: CInterop.Mode
 ) -> CInterop.Mode {
   return umask(mode)
 }
+#endif
 
 internal func system_getenv(
   _ name: UnsafePointer<CChar>
