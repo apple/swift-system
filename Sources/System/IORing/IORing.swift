@@ -370,72 +370,82 @@ public struct IORing: ~Copyable {
         // All throws need to be before initializing ivars here to avoid 
         // "error: conditional initialization or destruction of noncopyable types is not supported; 
         // this variable must be consistently in an initialized or uninitialized state through every code path"
-        features = Features(rawValue: params.features)
-        ringDescriptor = tmpRingDescriptor
-        ringPtr = tmpRingPtr
-        ringSize = tmpRingSize
-        submissionRingPtr = tmpSQPtr
-        submissionRingSize = tmpSQSize
-        completionRingPtr = tmpCQPtr
-        completionRingSize = tmpCQSize
-
-        _registeredFiles = []
-        _registeredBuffers = []
-        submissionRing = SQRing(
+        
+        // Pre-compute values to avoid accessing partially initialized state
+        let ringBasePtr = tmpRingPtr ?? tmpSQPtr!
+        let completionBasePtr = tmpRingPtr ?? tmpCQPtr!
+        
+        let submissionRing = SQRing(
             kernelHead: UnsafePointer<Atomic<UInt32>>(
-                (ringPtr ?? submissionRingPtr!).advanced(by: params.sq_off.head)
+                ringBasePtr.advanced(by: params.sq_off.head)
                     .assumingMemoryBound(to: Atomic<UInt32>.self)
             ),
             kernelTail: UnsafePointer<Atomic<UInt32>>(
-                (ringPtr ?? submissionRingPtr!).advanced(by: params.sq_off.tail)
+                ringBasePtr.advanced(by: params.sq_off.tail)
                     .assumingMemoryBound(to: Atomic<UInt32>.self)
             ),
             userTail: 0,  // no requests yet
-            ringMask: (ringPtr ?? submissionRingPtr!).advanced(by: params.sq_off.ring_mask)
+            ringMask: ringBasePtr.advanced(by: params.sq_off.ring_mask)
                 .assumingMemoryBound(to: UInt32.self).pointee,
             flags: UnsafePointer<Atomic<UInt32>>(
-                (ringPtr ?? submissionRingPtr!).advanced(by: params.sq_off.flags)
+                ringBasePtr.advanced(by: params.sq_off.flags)
                     .assumingMemoryBound(to: Atomic<UInt32>.self)
             ),
             array: UnsafeMutableBufferPointer(
-                start: (ringPtr ?? submissionRingPtr!).advanced(by: params.sq_off.array)
+                start: ringBasePtr.advanced(by: params.sq_off.array)
                     .assumingMemoryBound(to: UInt32.self),
                 count: Int(
-                    (ringPtr ?? submissionRingPtr!).advanced(by: params.sq_off.ring_entries)
+                    ringBasePtr.advanced(by: params.sq_off.ring_entries)
                         .assumingMemoryBound(to: UInt32.self).pointee)
             )
         )
-
-        // fill submission ring array with 1:1 map to underlying SQEs
-        for i in 0 ..< submissionRing.array.count {
-            submissionRing.array[i] = UInt32(i)
-        }
-
-        submissionQueueEntries = UnsafeMutableBufferPointer(
-            start: sqes.assumingMemoryBound(to: io_uring_sqe.self),
-            count: Int(params.sq_entries)
-        )
-
-        completionRing = CQRing(
+        
+        let completionRing = CQRing(
             kernelHead: UnsafePointer<Atomic<UInt32>>(
-                (ringPtr ?? completionRingPtr!).advanced(by: params.cq_off.head)
+                completionBasePtr.advanced(by: params.cq_off.head)
                     .assumingMemoryBound(to: Atomic<UInt32>.self)
             ),
             kernelTail: UnsafePointer<Atomic<UInt32>>(
-                (ringPtr ?? completionRingPtr!).advanced(by: params.cq_off.tail)
+                completionBasePtr.advanced(by: params.cq_off.tail)
                     .assumingMemoryBound(to: Atomic<UInt32>.self)
             ),
-            ringMask: (ringPtr ?? completionRingPtr!).advanced(by: params.cq_off.ring_mask)
+            ringMask: completionBasePtr.advanced(by: params.cq_off.ring_mask)
                 .assumingMemoryBound(to: UInt32.self).pointee,
             cqes: UnsafeBufferPointer(
-                start: (ringPtr ?? completionRingPtr!).advanced(by: params.cq_off.cqes)
+                start: completionBasePtr.advanced(by: params.cq_off.cqes)
                     .assumingMemoryBound(to: io_uring_cqe.self),
                 count: Int(
-                    (ringPtr ?? completionRingPtr!).advanced(by: params.cq_off.ring_entries)
+                    completionBasePtr.advanced(by: params.cq_off.ring_entries)
                         .assumingMemoryBound(to: UInt32.self).pointee)
             )
         )
+        
+        let submissionQueueEntries = UnsafeMutableBufferPointer(
+            start: sqes.assumingMemoryBound(to: io_uring_sqe.self),
+            count: Int(params.sq_entries)
+        )
+        
+        // Now initialize all stored properties
+        self.features = Features(rawValue: params.features)
+        self.ringDescriptor = tmpRingDescriptor
+        self.ringPtr = tmpRingPtr
+        self.ringSize = tmpRingSize
+        self.submissionRingPtr = tmpSQPtr
+        self.submissionRingSize = tmpSQSize
+        self.completionRingPtr = tmpCQPtr
+        self.completionRingSize = tmpCQSize
+        self._registeredFiles = []
+        self._registeredBuffers = []
+        self.submissionRing = submissionRing
+        self.completionRing = completionRing
+        self.submissionQueueEntries = submissionQueueEntries
         self.ringFlags = params.flags
+
+        // fill submission ring array with 1:1 map to underlying SQEs
+        // (happens after all properties are initialized)
+        for i in 0 ..< self.submissionRing.array.count {
+            self.submissionRing.array[i] = UInt32(i)
+        }
     }
 
     @inlinable
