@@ -223,7 +223,7 @@ private func setUpRing(
             /* prot: */ PROT_READ | PROT_WRITE,
             /* flags: */ MAP_SHARED | MAP_POPULATE,
             /* fd: */ ringDescriptor,
-            /* offset: */ __off_t(IORING_OFF_SQ_RING)
+            /* offset: */ off_t(IORING_OFF_SQ_RING)
         )
 
         if ringPtr == MAP_FAILED {
@@ -238,7 +238,7 @@ private func setUpRing(
             /* prot: */ PROT_READ | PROT_WRITE,
             /* flags: */ MAP_SHARED | MAP_POPULATE,
             /* fd: */ ringDescriptor,
-            /* offset: */ __off_t(IORING_OFF_SQ_RING)
+            /* offset: */ off_t(IORING_OFF_SQ_RING)
         )
 
         if sqPtr == MAP_FAILED {
@@ -253,7 +253,7 @@ private func setUpRing(
             /* prot: */ PROT_READ | PROT_WRITE,
             /* flags: */ MAP_SHARED | MAP_POPULATE,
             /* fd: */ ringDescriptor,
-            /* offset: */ __off_t(IORING_OFF_CQ_RING)
+            /* offset: */ off_t(IORING_OFF_CQ_RING)
         )
 
         if cqPtr == MAP_FAILED {
@@ -270,7 +270,7 @@ private func setUpRing(
         /* prot: */ PROT_READ | PROT_WRITE,
         /* flags: */ MAP_SHARED | MAP_POPULATE,
         /* fd: */ ringDescriptor,
-        /* offset: */ __off_t(IORING_OFF_SQES)
+        /* offset: */ off_t(IORING_OFF_SQES)
     )
 
     if sqes == MAP_FAILED {
