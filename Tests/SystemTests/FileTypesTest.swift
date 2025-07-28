@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 - 2021 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2025 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -32,6 +32,7 @@ final class FileDescriptorTest: XCTestCase {
     XCTAssertEqual(O_WRONLY, FileDescriptor.AccessMode.writeOnly.rawValue)
     XCTAssertEqual(O_RDWR, FileDescriptor.AccessMode.readWrite.rawValue)
 
+#if !os(WASI) // Would need to use _getConst funcs from CSystem
 #if !os(Windows)
     XCTAssertEqual(O_NONBLOCK, FileDescriptor.OpenOptions.nonBlocking.rawValue)
 #endif
@@ -39,6 +40,7 @@ final class FileDescriptorTest: XCTestCase {
     XCTAssertEqual(O_CREAT, FileDescriptor.OpenOptions.create.rawValue)
     XCTAssertEqual(O_TRUNC, FileDescriptor.OpenOptions.truncate.rawValue)
     XCTAssertEqual(O_EXCL, FileDescriptor.OpenOptions.exclusiveCreate.rawValue)
+#endif // !os(WASI
 #if !os(Windows)
     XCTAssertEqual(O_NOFOLLOW, FileDescriptor.OpenOptions.noFollow.rawValue)
     XCTAssertEqual(O_CLOEXEC, FileDescriptor.OpenOptions.closeOnExec.rawValue)
