@@ -10,6 +10,10 @@ import Musl
 #endif
 import Synchronization
 
+private var ioringSupported: Bool {
+    __SWIFT_IORING_SUPPORTED != 0
+}
+
 //This was #defines in older headers, so we redeclare it to get a consistent import
 internal enum RegistrationOps: UInt32 {
 	case registerBuffers		= 0
@@ -366,7 +370,7 @@ public struct IORing: ~Copyable {
 
     /// Initializes an IORing with enough space for `queueDepth` prepared requests and completed operations
     public init(queueDepth: UInt32, flags: SetupFlags = []) throws(Errno) {
-        guard __SWIFT_IORING_SUPPORTED != 0 else {
+        guard ioringSupported else {
             throw Errno.notSupported
         }
 
