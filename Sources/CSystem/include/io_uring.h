@@ -3,11 +3,111 @@
 #include <sys/uio.h>
 #include <signal.h>
 
+#define __SWIFT_IORING_SQE_FALLBACK_STRUCT { \
+    __u8    opcode; \
+    __u8    flags; \
+    __u16   ioprio; \
+    __s32   fd; \
+    union { \
+        __u64   off; \
+        __u64   addr2; \
+        struct { \
+            __u32   cmd_op; \
+            __u32   __pad1; \
+        }; \
+    }; \
+    union { \
+        __u64   addr; \
+        __u64   splice_off_in; \
+        struct { \
+            __u32   level; \
+            __u32   optname; \
+        }; \
+    }; \
+    __u32   len; \
+    union { \
+        __kernel_rwf_t  rw_flags; \
+        __u32           fsync_flags; \
+        __u16           poll_events; \
+        __u32           poll32_events; \
+        __u32           sync_range_flags; \
+        __u32           msg_flags; \
+        __u32           timeout_flags; \
+        __u32           accept_flags; \
+        __u32           cancel_flags; \
+        __u32           open_flags; \
+        __u32           statx_flags; \
+        __u32           fadvise_advice; \
+        __u32           splice_flags; \
+        __u32           rename_flags; \
+        __u32           unlink_flags; \
+        __u32           hardlink_flags; \
+        __u32           xattr_flags; \
+        __u32           msg_ring_flags; \
+        __u32           uring_cmd_flags; \
+        __u32           waitid_flags; \
+        __u32           futex_flags; \
+        __u32           install_fd_flags; \
+        __u32           nop_flags; \
+    }; \
+    __u64   user_data; \
+    union { \
+        __u16   buf_index; \
+        __u16   buf_group; \
+    } __attribute__((packed)); \
+    __u16   personality; \
+    union { \
+        __s32   splice_fd_in; \
+        __u32   file_index; \
+        __u32   optlen; \
+        struct { \
+            __u16   addr_len; \
+            __u16   __pad3[1]; \
+        }; \
+    }; \
+    union { \
+        struct { \
+            __u64   addr3; \
+            __u64   __pad2[1]; \
+        }; \
+        __u64   optval; \
+        __u8    cmd[0]; \
+    }; \
+}
+
 #if __has_include(<linux/io_uring.h>)
 #include <linux/io_uring.h>
+
+#ifdef IORING_TIMEOUT_BOOTTIME
+// Kernel version >= 5.15, io_uring_sqe has file_index
+// and all current Swift operations are supported.
+#define __SWIFT_IORING_SUPPORTED true
+typedef struct io_uring_sqe swift_io_uring_sqe;
+#else
+// io_uring_sqe is missing properties that IORequest expects.
+// This configuration is not supported for now.
+//
+// Define a fallback struct to avoid build errors, but IORing
+// will throw ENOTSUP on initialization.
+#define __SWIFT_IORING_SUPPORTED false
+typedef struct __SWIFT_IORING_SQE_FALLBACK_STRUCT swift_io_uring_sqe;
+#endif
+
+// We can define more specific availability later
+
+#ifdef IORING_FEAT_RW_CUR_POS
+// Kernel version >= 5.6, io_uring_sqe has open_flags
+#endif
+
+#ifdef IORING_FEAT_NODROP
+// Kernel version >= 5.5, io_uring_sqe has cancel_flags
+#endif
+
 #else
 // Minimal fallback definitions when linux/io_uring.h is not available (e.g. static SDK)
 #include <stdint.h>
+
+#define __SWIFT_IORING_SUPPORTED false
 
 #define IORING_OFF_SQ_RING      0ULL
 #define IORING_OFF_CQ_RING      0x8000000ULL
@@ -44,77 +144,7 @@ typedef int32_t  __s32;
 typedef int __kernel_rwf_t;
 #endif
 
-struct io_uring_sqe {
-    __u8    opcode;
-    __u8    flags;
-    __u16   ioprio;
-    __s32   fd;
-    union {
-        __u64   off;
-        __u64   addr2;
-        struct {
-            __u32   cmd_op;
-            __u32   __pad1;
-        };
-    };
-    union {
-        __u64   addr;
-        __u64   splice_off_in;
-        struct {
-            __u32   level;
-            __u32   optname;
-        };
-    };
-    __u32   len;
-    union {
-        __kernel_rwf_t  rw_flags;
-        __u32           fsync_flags;
-        __u16           poll_events;
-        __u32           poll32_events;
-        __u32           sync_range_flags;
-        __u32           msg_flags;
-        __u32           timeout_flags;
-        __u32           accept_flags;
-        __u32           cancel_flags;
-        __u32           open_flags;
-        __u32           statx_flags;
-        __u32           fadvise_advice;
-        __u32           splice_flags;
-        __u32           rename_flags;
-        __u32           unlink_flags;
-        __u32           hardlink_flags;
-        __u32           xattr_flags;
-        __u32           msg_ring_flags;
-        __u32           uring_cmd_flags;
-        __u32           waitid_flags;
-        __u32           futex_flags;
-        __u32           install_fd_flags;
-        __u32           nop_flags;
-    };
-    __u64   user_data;
-    union {
-        __u16   buf_index;
-        __u16   buf_group;
-    } __attribute__((packed));
-    __u16   personality;
-    union {
-        __s32   splice_fd_in;
-        __u32   file_index;
-        __u32   optlen;
-        struct {
-            __u16   addr_len;
-            __u16   __pad3[1];
-        };
-    };
-    union {
-        struct {
-            __u64   addr3;
-            __u64   __pad2[1];
-        };
-        __u64   optval;
-        __u8    cmd[0];
-    };
-};
+typedef struct __SWIFT_IORING_SQE_FALLBACK_STRUCT swift_io_uring_sqe;
 
 struct io_uring_cqe {
     __u64   user_data;

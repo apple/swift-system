@@ -72,7 +72,7 @@ extension UnsafeMutableRawBufferPointer {
 @inline(__always) @inlinable
 internal func _tryWriteRequest(
     _ request: __owned RawIORequest, ring: inout SQRing,
-    submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>
+    submissionQueueEntries: UnsafeMutableBufferPointer<swift_io_uring_sqe>
 )
     -> Bool
 {
@@ -151,9 +151,9 @@ internal func _flushQueue(ring: borrowing SQRing) -> UInt32 {
 
 @inlinable
 internal func _getSubmissionEntry(
-    ring: inout SQRing, submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>
+    ring: inout SQRing, submissionQueueEntries: UnsafeMutableBufferPointer<swift_io_uring_sqe>
 ) -> UnsafeMutablePointer<
-    io_uring_sqe
+    swift_io_uring_sqe
 >? {
     let next = ring.userTail &+ 1  //this is expected to wrap
 
@@ -196,7 +196,7 @@ private func setUpRing(
         throw err
     }
 
-    if params.features & IORING_FEAT_NODROP == 0
+    if params.features & IORing.Features.nonDroppingCompletions.rawValue == 0
     {
         close(ringDescriptor)
         throw Errno.invalidArgument
@@ -266,7 +266,7 @@ private func setUpRing(
     // map the submission queue
     let sqes = mmap(
         /* addr: */ nil,
-        /* len: */ Int(params.sq_entries) * MemoryLayout<io_uring_sqe>.size,
+        /* len: */ Int(params.sq_entries) * MemoryLayout<swift_io_uring_sqe>.size,
         /* prot: */ PROT_READ | PROT_WRITE,
         /* flags: */ MAP_SHARED | MAP_POPULATE,
         /* fd: */ ringDescriptor,
@@ -307,7 +307,7 @@ public struct IORing: ~Copyable {
 
     @usableFromInline let completionRing: CQRing
 
-    @usableFromInline let submissionQueueEntries: UnsafeMutableBufferPointer<io_uring_sqe>
+    @usableFromInline let submissionQueueEntries: UnsafeMutableBufferPointer<swift_io_uring_sqe>
 
     // kept around for unmap / cleanup. TODO: we can save a few words of memory by figuring out how to handle cleanup for non-IORING_FEAT_SINGLE_MMAP better
     let ringSize: Int
@@ -366,6 +366,10 @@ public struct IORing: ~Copyable {
 
     /// Initializes an IORing with enough space for `queueDepth` prepared requests and completed operations
     public init(queueDepth: UInt32, flags: SetupFlags = []) throws(Errno) {
+        guard __SWIFT_IORING_SUPPORTED != 0 else {
+            throw Errno.notSupported
+        }
+
         let (params, tmpRingDescriptor, tmpRingPtr, tmpRingSize, tmpSQPtr, tmpSQSize, tmpCQPtr, tmpCQSize, sqes) = try setUpRing(queueDepth: queueDepth, flags: flags)
         // All throws need to be before initializing ivars here to avoid 
         // "error: conditional initialization or destruction of noncopyable types is not supported; 
@@ -421,7 +425,7 @@ public struct IORing: ~Copyable {
         )
         
         let submissionQueueEntries = UnsafeMutableBufferPointer(
-            start: sqes.assumingMemoryBound(to: io_uring_sqe.self),
+            start: sqes.assumingMemoryBound(to: swift_io_uring_sqe.self),
             count: Int(params.sq_entries)
         )
         
@@ -868,7 +872,7 @@ public struct IORing: ~Copyable {
         }
         munmap(
             UnsafeMutableRawPointer(submissionQueueEntries.baseAddress!),
-            submissionQueueEntries.count * MemoryLayout<io_uring_sqe>.size
+            submissionQueueEntries.count * MemoryLayout<swift_io_uring_sqe>.size
         )
         close(ringDescriptor)
     }
