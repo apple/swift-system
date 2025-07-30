@@ -1,4 +1,4 @@
-#if compiler(>=6.2)
+#if compiler(>=6.2) && $Lifetimes
 #if os(Linux)
 
 import CSystem
@@ -67,5 +67,5 @@ public extension IORing.Completion {
         }
     }
 }
-#endif
-#endif
+#endif // os(Linux)
+#endif // compiler(>=6.2) && $Lifetimes

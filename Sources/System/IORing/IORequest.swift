@@ -1,4 +1,4 @@
-#if compiler(>=6.2)
+#if compiler(>=6.2) && $Lifetimes
 #if os(Linux)
 
 import CSystem
@@ -493,5 +493,5 @@ extension IORing.Request {
         return request
     }
 }
-#endif
-#endif
+#endif // os(Linux)
+#endif // compiler(>=6.2) && $Lifetimes

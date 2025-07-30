@@ -1,4 +1,4 @@
-#if compiler(>=6.2)
+#if compiler(>=6.2) && $Lifetimes
 #if os(Linux)
 
 import XCTest
@@ -30,5 +30,5 @@ final class IORequestTests: XCTestCase {
         XCTAssertEqual(sourceBytes, .init(repeating: 0, count: 64))
     }
 }
-#endif
-#endif
+#endif // os(Linux)
+#endif // compiler(>=6.2) && $Lifetimes
