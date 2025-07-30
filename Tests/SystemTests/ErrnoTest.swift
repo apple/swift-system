@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2025 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -36,7 +36,7 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(ENOMEM == Errno.noMemory.rawValue)
     XCTAssert(EACCES == Errno.permissionDenied.rawValue)
     XCTAssert(EFAULT == Errno.badAddress.rawValue)
-#if !os(Windows)
+#if !os(Windows) && !os(WASI)
     XCTAssert(ENOTBLK == Errno.notBlockDevice.rawValue)
 #endif
     XCTAssert(EBUSY == Errno.resourceBusy.rawValue)
@@ -74,9 +74,11 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(WSAEOPNOTSUPP == Errno.notSupported.rawValue)
     XCTAssert(WSAEPFNOSUPPORT == Errno.protocolFamilyNotSupported.rawValue)
 #else
-    XCTAssert(ESOCKTNOSUPPORT == Errno.socketTypeNotSupported.rawValue)
     XCTAssert(ENOTSUP == Errno.notSupported.rawValue)
+#if !os(WASI)
+    XCTAssert(ESOCKTNOSUPPORT == Errno.socketTypeNotSupported.rawValue)
     XCTAssert(EPFNOSUPPORT == Errno.protocolFamilyNotSupported.rawValue)
+#endif
 #endif
     XCTAssert(EAFNOSUPPORT == Errno.addressFamilyNotSupported.rawValue)
     XCTAssert(EADDRINUSE == Errno.addressInUse.rawValue)
@@ -91,7 +93,7 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(ENOTCONN == Errno.socketNotConnected.rawValue)
 #if os(Windows)
     XCTAssert(WSAESHUTDOWN == Errno.socketShutdown.rawValue)
-#else
+#elseif !os(WASI)
     XCTAssert(ESHUTDOWN == Errno.socketShutdown.rawValue)
 #endif
     XCTAssert(ETIMEDOUT == Errno.timedOut.rawValue)
@@ -100,7 +102,7 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(ENAMETOOLONG == Errno.fileNameTooLong.rawValue)
 #if os(Windows)
     XCTAssert(WSAEHOSTDOWN == Errno.hostIsDown.rawValue)
-#else
+#elseif !os(WASI)
     XCTAssert(EHOSTDOWN == Errno.hostIsDown.rawValue)
 #endif
     XCTAssert(EHOSTUNREACH == Errno.noRouteToHost.rawValue)
@@ -115,7 +117,9 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(WSAEDQUOT == Errno.diskQuotaExceeded.rawValue)
     XCTAssert(WSAESTALE == Errno.staleNFSFileHandle.rawValue)
 #else
+#if !os(WASI)
     XCTAssert(EUSERS == Errno.tooManyUsers.rawValue)
+#endif
     XCTAssert(EDQUOT == Errno.diskQuotaExceeded.rawValue)
     XCTAssert(ESTALE == Errno.staleNFSFileHandle.rawValue)
 #endif
@@ -171,7 +175,7 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(EPROTO == Errno.protocolError.rawValue)
 #endif
 
-#if !os(Windows) && !os(FreeBSD)
+#if !os(Windows) && !os(FreeBSD) && !os(WASI)
     XCTAssert(ENODATA == Errno.noData.rawValue)
     XCTAssert(ENOSR == Errno.noStreamResources.rawValue)
     XCTAssert(ENOSTR == Errno.notStream.rawValue)
@@ -181,11 +185,13 @@ final class ErrnoTest: XCTestCase {
     XCTAssert(EOPNOTSUPP == Errno.notSupportedOnSocket.rawValue)
 
     // From headers but not man page
+#if !os(WASI) // Would need to use _getConst func from CSystem
     XCTAssert(EWOULDBLOCK == Errno.wouldBlock.rawValue)
+#endif
 #if os(Windows)
     XCTAssert(WSAETOOMANYREFS == Errno.tooManyReferences.rawValue)
     XCTAssert(WSAEREMOTE == Errno.tooManyRemoteLevels.rawValue)
-#else
+#elseif !os(WASI)
     XCTAssert(ETOOMANYREFS == Errno.tooManyReferences.rawValue)
     XCTAssert(EREMOTE == Errno.tooManyRemoteLevels.rawValue)
 #endif

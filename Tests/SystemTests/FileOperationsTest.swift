@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2025 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -16,10 +16,13 @@ import XCTest
 #endif
 #if canImport(Android)
 import Android
+#elseif os(WASI)
+import CSystem
 #endif
 
 @available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
 final class FileOperationsTest: XCTestCase {
+  #if !os(WASI) // Would need to use _getConst funcs from CSystem
   func testSyscalls() {
     let fd = FileDescriptor(rawValue: 1)
 
@@ -88,6 +91,7 @@ final class FileOperationsTest: XCTestCase {
 
     for test in syscallTestCases { test.runAllTests() }
   }
+  #endif // !os(WASI)
 
   func testWriteFromEmptyBuffer() throws {
     #if os(Windows)
@@ -153,6 +157,7 @@ final class FileOperationsTest: XCTestCase {
     // TODO: Test writeAll, writeAll(toAbsoluteOffset), closeAfter
   }
 
+  #if !os(WASI) // WASI has no pipe
   func testAdHocPipe() throws {
     // Ad-hoc test testing `Pipe` functionality.
     // We cannot test `Pipe` using `MockTestCase` because it calls `pipe` with a pointer to an array local to the `Pipe`, the address of which we do not know prior to invoking `Pipe`.
@@ -171,6 +176,7 @@ final class FileOperationsTest: XCTestCase {
       }
     }
   }
+  #endif
 
   func testAdHocOpen() {
     // Ad-hoc test touching a file system.
@@ -211,8 +217,13 @@ final class FileOperationsTest: XCTestCase {
 
   func testGithubIssues() {
     // https://github.com/apple/swift-system/issues/26
+    #if os(WASI)
+    let openOptions = _getConst_O_WRONLY() | _getConst_O_CREAT()
+    #else
+    let openOptions = O_WRONLY | O_CREAT
+    #endif
     let issue26 = MockTestCase(
-      name: "open", .interruptable, "a path", O_WRONLY | O_CREAT, 0o020
+      name: "open", .interruptable, "a path", openOptions, 0o020
     ) {
       retryOnInterrupt in
       _ = try FileDescriptor.open(
@@ -221,7 +232,6 @@ final class FileOperationsTest: XCTestCase {
         retryOnInterrupt: retryOnInterrupt)
     }
     issue26.runAllTests()
-
   }
 
   func testResizeFile() throws {

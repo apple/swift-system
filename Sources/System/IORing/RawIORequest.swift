@@ -5,11 +5,13 @@ import CSystem
     
 @usableFromInline
 internal struct RawIORequest: ~Copyable {
-    @usableFromInline var rawValue: io_uring_sqe
+    // swift_io_uring_sqe is a typedef of io_uring_sqe on platforms where
+    // IORing is supported (currently requires kernel version >= 5.15).
+    @usableFromInline var rawValue: swift_io_uring_sqe
     @usableFromInline var path: FilePath? //buffer owner for the path pointer that the sqe may have
 
     @inlinable public init() {
-        self.rawValue = io_uring_sqe()
+        self.rawValue = swift_io_uring_sqe()
     }
 }
 
@@ -176,8 +178,8 @@ extension RawIORequest {
 
     @inlinable
     static func withTimeoutRequest<R>(
-        linkedTo opEntry: UnsafeMutablePointer<io_uring_sqe>,
-        in timeoutEntry: UnsafeMutablePointer<io_uring_sqe>,
+        linkedTo opEntry: UnsafeMutablePointer<swift_io_uring_sqe>,
+        in timeoutEntry: UnsafeMutablePointer<swift_io_uring_sqe>,
         duration: Duration, 
         flags: TimeOutFlags, 
         work: () throws -> R) rethrows -> R {
