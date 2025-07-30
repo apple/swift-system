@@ -23,15 +23,18 @@ detect_os_info() {
         fatal "Cannot detect OS: /etc/os-release not found"
     fi
 
-    local os_id=$(grep '^ID=' /etc/os-release | cut -d'=' -f2 | tr -d '"' | tr '[:upper:]' '[:lower:]')
-    local version_id=$(grep '^VERSION_ID=' /etc/os-release | cut -d'=' -f2 | tr -d '"')
+    local os_id
+    os_id=$(grep '^ID=' /etc/os-release | cut -d'=' -f2 | tr -d '"' | tr '[:upper:]' '[:lower:]')
+    local version_id
+    version_id=$(grep '^VERSION_ID=' /etc/os-release | cut -d'=' -f2 | tr -d '"')
 
     if [[ -z "$os_id" || -z "$version_id" ]]; then
         fatal "Could not parse OS information from /etc/os-release"
     fi
 
     # Create both formats
-    local os_name="${os_id}$(echo "$version_id" | tr -d '.')"
+    local os_name
+    os_name="${os_id}$(echo "$version_id" | tr -d '.')"
     local os_dotted="${os_id}${version_id}"
 
     log "Detected OS from /etc/os-release: $os_name (dotted: $os_dotted)"
@@ -76,7 +79,8 @@ TOOLCHAIN_DIR="${HOME}/.swift-toolchains"
 get_current_swift_version() {
     # Check /.swift_tag file
     if [[ -f "/.swift_tag" ]]; then
-        local swift_tag=$(cat /.swift_tag | tr -d '\n' | tr -d ' ')
+        local swift_tag
+        swift_tag=$(tr -d '\n' < /.swift_tag | tr -d ' ')
         if [[ -n "$swift_tag" ]]; then
             log "Found Swift tag in /.swift_tag: $swift_tag"
             echo "$swift_tag"
@@ -107,7 +111,9 @@ download_and_verify() {
     curl -fsSL "$sig_url" -o "$temp_sig"
 
     log "Setting up GPG for verification"
-    export GNUPGHOME="$(mktemp -d)"
+    local gnupghome
+    gnupghome="$(mktemp -d)"
+    export GNUPGHOME="$gnupghome"
     curl -fSsL https://swift.org/keys/all-keys.asc | zcat -f | gpg --import - >/dev/null 2>&1
 
     log "Verifying signature"
@@ -136,7 +142,8 @@ download_and_extract_toolchain() {
     local toolchain_sig_url="${PLATFORM_WEBROOT}/${dir_name}/${toolchain_sig_filename}"
 
     # Check if toolchain is available
-    local http_code=$(curl -sSL --head -w "%{http_code}" -o /dev/null "$toolchain_url")
+    local http_code
+    http_code=$(curl -sSL --head -w "%{http_code}" -o /dev/null "$toolchain_url")
     if [[ "$http_code" == "404" ]]; then
         log "❌ Toolchain not found: ${toolchain_url##*/}"
         log "Exiting workflow..."
@@ -156,7 +163,8 @@ download_and_extract_toolchain() {
     fi
 
     # Create temporary directory
-    local temp_dir=$(mktemp -d)
+    local temp_dir
+    temp_dir=$(mktemp -d)
     local toolchain_file="${temp_dir}/swift_toolchain.tar.gz"
 
     # Download and verify toolchain
@@ -181,9 +189,12 @@ download_and_extract_toolchain() {
 install_static_sdk() {
     local sdk_info="$1"
     local swift_executable="$2"
-    local download_name=$(parse_yaml_value "download" "$sdk_info")
-    local dir_name=$(parse_yaml_value "dir" "$sdk_info")
-    local checksum=$(parse_yaml_value "checksum" "$sdk_info")
+    local download_name
+    download_name=$(parse_yaml_value "download" "$sdk_info")
+    local dir_name
+    dir_name=$(parse_yaml_value "dir" "$sdk_info")
+    local checksum
+    checksum=$(parse_yaml_value "checksum" "$sdk_info")
 
     # Check if the static SDK is already installed
     if "$swift_executable" sdk list 2>/dev/null | grep -q "^$dir_name"; then
@@ -206,9 +217,10 @@ install_static_sdk() {
 
 get_static_sdk_name() {
     local sdk_info="$1"
-    local download_name=$(parse_yaml_value "download" "$sdk_info")
+    local download_name
+    download_name=$(parse_yaml_value "download" "$sdk_info")
     # Note: we want to keep the "_static-linux-0.0.1"
-    echo "$download_name" | sed 's/\.artifactbundle\.tar\.gz$//'
+    echo "${download_name%.artifactbundle.tar.gz}"
 }
 
 run_swift_static_sdk_build() {
@@ -231,7 +243,8 @@ main() {
 
     check_and_install_tools
 
-    local current_swift_version=$(get_current_swift_version)
+    local current_swift_version
+    current_swift_version=$(get_current_swift_version)
     log "Current Swift version: $current_swift_version"
 
     log "Fetching latest 6.2 static SDK information"
@@ -240,8 +253,10 @@ main() {
         fatal "Failed to fetch static SDK information"
     fi
 
-    local sdk_dir=$(parse_yaml_value "dir" "$sdk_info")
-    local sdk_checksum=$(parse_yaml_value "checksum" "$sdk_info")
+    local sdk_dir
+    sdk_dir=$(parse_yaml_value "dir" "$sdk_info")
+    local sdk_checksum
+    sdk_checksum=$(parse_yaml_value "checksum" "$sdk_info")
 
     log "Latest static SDK: $sdk_dir"
     log "Static SDK checksum: ${sdk_checksum:0:16}..."
