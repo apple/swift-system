@@ -11,6 +11,13 @@ jobs:
     with:
       linux_os_versions: '["jammy", "focal"]'
       enable_macos_checks: true
+      # FIXME: https://github.com/swiftlang/github-workflows/pull/140
+      # Xcode 16.0 and 16.1 are not actually available
+      macos_exclude_xcode_versions: |
+        [
+          {"xcode_version": "16.0"},
+          {"xcode_version": "16.1"},
+        ]
       swift_flags: "-Xbuild-tools-swiftc -DSYSTEM_CI"
 
   build-abi-stable:
@@ -22,12 +29,12 @@ jobs:
       enable_windows_checks: false
       # Only build
       macos_build_command: "xcrun swift build --build-tests"
-      # Only test against latest Xcode
+      # FIXME: https://github.com/swiftlang/github-workflows/pull/140
+      # Xcode 16.0 and 16.1 are not actually available
       macos_exclude_xcode_versions: |
         [
           {"xcode_version": "16.0"},
           {"xcode_version": "16.1"},
-          {"xcode_version": "16.2"},
         ]
       # Enable availability to match ABI stable verion of system.
       swift_flags: "-Xbuild-tools-swiftc -DSYSTEM_CI -Xbuild-tools-swiftc -DSYSTEM_ABI_STABLE"
