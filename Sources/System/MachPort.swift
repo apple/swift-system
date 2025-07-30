@@ -1,13 +1,13 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2022 Apple Inc. and the Swift System project authors
+ Copyright (c) 2022 - 2025 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
 */
 
-#if swift(>=5.9) && SYSTEM_PACKAGE_DARWIN
+#if SYSTEM_PACKAGE_DARWIN
 
 import Darwin.Mach
 
