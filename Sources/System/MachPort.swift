@@ -7,7 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-#if swift(>=5.9) && SYSTEM_PACKAGE_DARWIN
+#if SYSTEM_PACKAGE_DARWIN
 
 import Darwin.Mach
 
