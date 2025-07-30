@@ -63,6 +63,7 @@ let availability: [Available] = [
   Available("1.4.2", "macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, visionOS 9999"),
   Available("1.5.0", "macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, visionOS 9999"),
   Available("1.6.0", "macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, visionOS 9999"),
+  Available("1.6.1", "macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, visionOS 9999"),
 ]
 
 let swiftSettingsAvailability = availability.map(\.swiftSetting)
