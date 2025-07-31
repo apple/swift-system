@@ -22,7 +22,7 @@ import CSystem
 
 @available(System 0.0.1, *)
 final class FileOperationsTest: XCTestCase {
-  #if !os(WASI) // Would need to use _getConst funcs from CSystem
+  #if ENABLE_MOCKING && !os(WASI) // Would need to use _getConst funcs from CSystem
   func testSyscalls() {
     let fd = FileDescriptor(rawValue: 1)
 
@@ -91,7 +91,7 @@ final class FileOperationsTest: XCTestCase {
 
     for test in syscallTestCases { test.runAllTests() }
   }
-  #endif // !os(WASI)
+  #endif // ENABLE_MOCKING && !os(WASI)
 
   func testWriteFromEmptyBuffer() throws {
     #if os(Windows)
@@ -215,6 +215,7 @@ final class FileOperationsTest: XCTestCase {
     }
   }
 
+  #if ENABLE_MOCKING
   func testGithubIssues() {
     // https://github.com/apple/swift-system/issues/26
     #if os(WASI)
@@ -233,6 +234,7 @@ final class FileOperationsTest: XCTestCase {
     }
     issue26.runAllTests()
   }
+  #endif // ENABLE_MOCKING
 
   func testResizeFile() throws {
     try withTemporaryFilePath(basename: "testResizeFile") { path in 

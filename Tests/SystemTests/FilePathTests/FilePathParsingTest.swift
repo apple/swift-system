@@ -7,6 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
+#if ENABLE_MOCKING
 import XCTest
 
 #if SYSTEM_PACKAGE
@@ -105,3 +106,4 @@ final class FilePathParsingTest: XCTestCase {
     }
   }
 }
+#endif // ENABLE_MOCKING

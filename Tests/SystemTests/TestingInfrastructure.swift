@@ -17,6 +17,7 @@ import XCTest
 
 internal struct Wildcard: Hashable {}
 
+#if ENABLE_MOCKING
 extension Trace.Entry {
   /// This implements `==` with wildcard matching.
   /// (`Entry` cannot conform to `Equatable`/`Hashable` this way because
@@ -33,6 +34,7 @@ extension Trace.Entry {
     return true
   }
 }
+#endif // ENABLE_MOCKING
 
 // To aid debugging, force failures to fatal error
 internal var forceFatalFailures = false
@@ -81,6 +83,7 @@ extension TestCase {
       fail(message)
     }
   }
+  #if ENABLE_MOCKING
   func expectMatch(
     _ expected: Trace.Entry?, _ actual: Trace.Entry?,
     _ message: String? = nil
@@ -102,6 +105,7 @@ extension TestCase {
       fail(message)
     }
   }
+  #endif // ENABLE_MOCKING
   func expectNil<T>(
     _ actual: T?,
     _ message: String? = nil
@@ -142,6 +146,7 @@ extension TestCase {
 
 }
 
+#if ENABLE_MOCKING
 internal struct MockTestCase: TestCase {
   var file: StaticString
   var line: UInt
@@ -241,6 +246,7 @@ internal struct MockTestCase: TestCase {
     }
   }
 }
+#endif // ENABLE_MOCKING
 
 internal func withWindowsPaths(enabled: Bool, _ body: () -> ()) {
   _withWindowsPaths(enabled: enabled, body)
