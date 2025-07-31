@@ -1,13 +1,13 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2022 Apple Inc. and the Swift System project authors
+ Copyright (c) 2022 - 2025 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
 */
 
-#if swift(>=5.9) && SYSTEM_PACKAGE_DARWIN
+#if SYSTEM_PACKAGE_DARWIN
 
 import XCTest
 import Darwin.Mach
@@ -18,7 +18,7 @@ import SystemPackage
 import System
 #endif
 
-@available(/*System 1.4.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
+@available(System 1.4.0, *)
 final class MachPortTests: XCTestCase {
     func refCountForMachPortName(name:mach_port_name_t, kind:mach_port_right_t) -> mach_port_urefs_t {
         var refCount:mach_port_urefs_t = .max

@@ -1,4 +1,4 @@
-#if compiler(>=6.2)
+#if compiler(>=6.2) && $Lifetimes
 #if os(Linux)
 
 import XCTest
@@ -128,5 +128,5 @@ final class IORingTests: XCTestCase {
         rawBuffer.deallocate()
     }
 }
-#endif
-#endif
+#endif // os(Linux)
+#endif // compiler(>=6.2) && $Lifetimes
