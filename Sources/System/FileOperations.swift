@@ -7,7 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+@available(System 0.0.1, *)
 extension FileDescriptor {
   /// Opens or creates a file for reading or writing.
   ///
@@ -368,7 +368,7 @@ extension FileDescriptor {
 }
 
 #if !os(WASI)
-@available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
+@available(System 0.0.2, *)
 extension FileDescriptor {
   /// Duplicates this file descriptor and return the newly created copy.
   ///
@@ -398,7 +398,7 @@ extension FileDescriptor {
   ///
   /// The corresponding C functions are `dup` and `dup2`.
   @_alwaysEmitIntoClient
-  @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
+  @available(System 0.0.2, *)
   public func duplicate(
     as target: FileDescriptor? = nil,
     retryOnInterrupt: Bool = true
@@ -406,7 +406,7 @@ extension FileDescriptor {
     try _duplicate(as: target, retryOnInterrupt: retryOnInterrupt).get()
   }
 
-  @available(/*System 0.0.2: macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0*/iOS 8, *)
+  @available(System 0.0.2, *)
   @usableFromInline
   internal func _duplicate(
     as target: FileDescriptor?,
@@ -435,7 +435,7 @@ extension FileDescriptor {
 #endif
 
 #if !os(WASI)
-@available(/*System 1.1.0: macOS 12.3, iOS 15.4, watchOS 8.5, tvOS 15.4*/iOS 8, *)
+@available(System 1.1.0, *)
 extension FileDescriptor {
   /// Creates a unidirectional data channel, which can be used for interprocess communication.
   ///
@@ -443,12 +443,12 @@ extension FileDescriptor {
   ///
   /// The corresponding C function is `pipe`.
   @_alwaysEmitIntoClient
-  @available(/*System 1.1.0: macOS 12.3, iOS 15.4, watchOS 8.5, tvOS 15.4*/iOS 8, *)
+  @available(System 1.1.0, *)
   public static func pipe() throws -> (readEnd: FileDescriptor, writeEnd: FileDescriptor) {
     try _pipe().get()
   }
 
-  @available(/*System 1.1.0: macOS 12.3, iOS 15.4, watchOS 8.5, tvOS 15.4*/iOS 8, *)
+  @available(System 1.1.0, *)
   @usableFromInline
   internal static func _pipe() -> Result<(readEnd: FileDescriptor, writeEnd: FileDescriptor), Errno> {
     var fds: (Int32, Int32) = (-1, -1)
@@ -463,7 +463,7 @@ extension FileDescriptor {
 }
 #endif
 
-@available(/*System 1.2.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
+@available(System 1.2.0, *)
 extension FileDescriptor {
   /// Truncates or extends the file referenced by this file descriptor.
   ///
@@ -485,7 +485,7 @@ extension FileDescriptor {
   /// associated with the file.
   ///
   /// The corresponding C function is `ftruncate`.
-  @available(/*System 1.2.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
+  @available(System 1.2.0, *)
   @_alwaysEmitIntoClient
   public func resize(
     to newSize: Int64,
@@ -497,7 +497,7 @@ extension FileDescriptor {
     ).get()
   }
 
-  @available(/*System 1.2.0: macOS 9999, iOS 9999, watchOS 9999, tvOS 9999*/iOS 8, *)
+  @available(System 1.2.0, *)
   @usableFromInline
   internal func _resize(
     to newSize: Int64,

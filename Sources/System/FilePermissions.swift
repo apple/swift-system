@@ -17,7 +17,7 @@
 ///     let perms = FilePermissions(rawValue: 0o644)
 ///     perms == [.ownerReadWrite, .groupRead, .otherRead] // true
 @frozen
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+@available(System 0.0.1, *)
 public struct FilePermissions: OptionSet, Sendable, Hashable, Codable {
   /// The raw C file permissions.
   @_alwaysEmitIntoClient
@@ -132,7 +132,7 @@ public struct FilePermissions: OptionSet, Sendable, Hashable, Codable {
   public static var saveText: FilePermissions { .init(rawValue: 0o1000) }
 }
 
-@available(/*System 0.0.1: macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0*/iOS 8, *)
+@available(System 0.0.1, *)
 extension FilePermissions
   : CustomStringConvertible, CustomDebugStringConvertible
 {
