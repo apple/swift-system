@@ -7,6 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
+#if ENABLE_MOCKING
 import XCTest
 
 #if SYSTEM_PACKAGE
@@ -1238,3 +1239,4 @@ final class FilePathSyntaxTest: XCTestCase {
   }
 
 }
+#endif // ENABLE_MOCKING
