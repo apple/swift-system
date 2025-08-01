@@ -19,6 +19,8 @@ jobs:
           {"xcode_version": "16.1"},
         ]
       swift_flags: "-Xbuild-tools-swiftc -DSYSTEM_CI"
+      enable_linux_static_sdk_build: true
+      enable_wasm_sdk_build: true
 
   build-abi-stable:
     name: Build ABI Stable
