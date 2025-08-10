@@ -320,7 +320,7 @@ extension IORing.Request {
     * ASYNC_CANCEL flags.
     *
     * IORING_ASYNC_CANCEL_ALL	Cancel all requests that match the given key
-    * IORING_ASYNC_CANCEL_FD	Key off 'fd' for cancelation rather than the
+    * IORING_ASYNC_CANCEL_FD	Key off 'fd' for cancellation rather than the
     *				request 'user_data'
     * IORING_ASYNC_CANCEL_ANY	Match any request
     * IORING_ASYNC_CANCEL_FD_FIXED	'fd' passed in is a fixed descriptor
