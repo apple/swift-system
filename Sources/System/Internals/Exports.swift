@@ -5,7 +5,7 @@
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
-*/
+ */
 
 // Internal wrappers and typedefs which help reduce #if littering in System's
 // code base.
@@ -90,6 +90,34 @@ internal func system_strlen(_ s: UnsafeMutablePointer<CChar>) -> Int {
   strlen(s)
 }
 
+#if !os(Windows)
+internal func system_stat(_ p: UnsafePointer<CChar>, _ s: inout CInterop.Stat) -> Int32 {
+  stat(p, &s)
+}
+internal func system_lstat(_ p: UnsafePointer<CChar>, _ s: inout CInterop.Stat) -> Int32 {
+  lstat(p, &s)
+}
+internal func system_fstat(_ fd: CInt, _ s: inout CInterop.Stat) -> Int32 {
+  fstat(fd, &s)
+}
+internal func system_fstatat(_ fd: CInt, _ p: UnsafePointer<CChar>, _ s: inout CInterop.Stat, _ flags: CInt) -> Int32 {
+  fstatat(fd, p, &s, flags)
+}
+
+@usableFromInline
+internal func system_major(_ dev: CInterop.DeviceID) -> CInt {
+  numericCast((dev >> 24) & 0xff)
+}
+@usableFromInline
+internal func system_minor(_ dev: CInterop.DeviceID) -> CInt {
+  numericCast(dev & 0xffffff)
+}
+@usableFromInline
+internal func system_makedev(_ maj: CUnsignedInt, _ min: CUnsignedInt) -> CInterop.DeviceID {
+  CInterop.DeviceID((maj << 24) | min)
+}
+#endif
+
 // Convention: `system_platform_foo` is a
 // platform-representation-abstracted wrapper around `foo`-like functionality.
 // Type and layout differences such as the `char` vs `wchar` are abstracted.
@@ -167,20 +195,20 @@ internal typealias _PlatformTLSKey = DWORD
 #elseif os(WASI) && (swift(<6.1) || !_runtime(_multithreaded))
 // Mock TLS storage for single-threaded WASI
 internal final class _PlatformTLSKey {
-    fileprivate init() {}
+  fileprivate init() {}
 }
 private final class TLSStorage: @unchecked Sendable {
-    var storage = [ObjectIdentifier: UnsafeMutableRawPointer]()
+  var storage = [ObjectIdentifier: UnsafeMutableRawPointer]()
 }
 private let sharedTLSStorage = TLSStorage()
 
 func pthread_setspecific(_ key: _PlatformTLSKey, _ p: UnsafeMutableRawPointer?) -> Int {
-    sharedTLSStorage.storage[ObjectIdentifier(key)] = p
-    return 0
+  sharedTLSStorage.storage[ObjectIdentifier(key)] = p
+  return 0
 }
 
 func pthread_getspecific(_ key: _PlatformTLSKey) -> UnsafeMutableRawPointer? {
-    sharedTLSStorage.storage[ObjectIdentifier(key)]
+  sharedTLSStorage.storage[ObjectIdentifier(key)]
 }
 #else
 internal typealias _PlatformTLSKey = pthread_key_t

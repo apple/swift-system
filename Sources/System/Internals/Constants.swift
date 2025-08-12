@@ -5,7 +5,7 @@
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
-*/
+ */
 
 // For platform constants redefined in Swift. We define them here so that
 // they can be used anywhere without imports and without confusion to
@@ -17,6 +17,7 @@ import Darwin
 import CSystem
 import ucrt
 #elseif canImport(Glibc)
+import CSystem
 import Glibc
 #elseif canImport(Musl)
 import CSystem
@@ -438,7 +439,7 @@ internal var _ENOSR: CInt { ENOSR }
 
 @_alwaysEmitIntoClient
 internal var _ENOSTR: CInt { ENOSTR }
-#endif 
+#endif
 #endif
 
 @_alwaysEmitIntoClient
@@ -639,3 +640,150 @@ internal var _SEEK_HOLE: CInt { SEEK_HOLE }
 @_alwaysEmitIntoClient
 internal var _SEEK_DATA: CInt { SEEK_DATA }
 #endif
+
+// MARK: - File System
+
+#if !os(Windows)
+
+@_alwaysEmitIntoClient
+internal var _AT_FDCWD: CInt { AT_FDCWD }
+
+// MARK: - fstatat Flags
+
+@_alwaysEmitIntoClient
+internal var _AT_SYMLINK_NOFOLLOW: CInt { AT_SYMLINK_FOLLOW }
+
+#if SYSTEM_PACKAGE_DARWIN
+@_alwaysEmitIntoClient
+internal var _AT_SYMLINK_NOFOLLOW_ANY: CInt { AT_SYMLINK_NOFOLLOW_ANY }
+#endif
+
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
+@_alwaysEmitIntoClient
+internal var _AT_RESOLVE_BENEATH: CInt { AT_RESOLVE_BENEATH }
+#endif
+
+#if os(FreeBSD) || os(Linux) || os(Android)
+@_alwaysEmitIntoClient
+internal var _AT_EMPTY_PATH: CInt { AT_EMPTY_PATH }
+#endif
+
+// MARK: - File Mode / File Type
+
+@_alwaysEmitIntoClient
+internal var _MODE_FILETYPE_MASK: CInterop.Mode { S_IFMT }
+
+@_alwaysEmitIntoClient
+internal var _MODE_PERMISSIONS_MASK: CInterop.Mode { 0o7777 }
+
+@_alwaysEmitIntoClient
+internal var _S_IFDIR: CInterop.Mode { S_IFDIR }
+
+@_alwaysEmitIntoClient
+internal var _S_IFCHR: CInterop.Mode { S_IFCHR }
+
+@_alwaysEmitIntoClient
+internal var _S_IFBLK: CInterop.Mode { S_IFBLK }
+
+@_alwaysEmitIntoClient
+internal var _S_IFREG: CInterop.Mode { S_IFREG }
+
+@_alwaysEmitIntoClient
+internal var _S_IFIFO: CInterop.Mode { S_IFIFO }
+
+@_alwaysEmitIntoClient
+internal var _S_IFLNK: CInterop.Mode { S_IFLNK }
+
+@_alwaysEmitIntoClient
+internal var _S_IFSOCK: CInterop.Mode { S_IFSOCK }
+
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
+@_alwaysEmitIntoClient
+internal var _S_IFWHT: CInterop.Mode { S_IFWHT }
+#endif
+
+// MARK: - stat/chflags File Flags
+
+// MARK: Flags Available on Darwin, FreeBSD, and OpenBSD
+
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+@_alwaysEmitIntoClient
+internal var _UF_NODUMP: CInterop.FileFlags { UInt32(bitPattern: UF_NODUMP) }
+
+@_alwaysEmitIntoClient
+internal var _UF_IMMUTABLE: CInterop.FileFlags { UInt32(bitPattern: UF_IMMUTABLE) }
+
+@_alwaysEmitIntoClient
+internal var _UF_APPEND: CInterop.FileFlags { UInt32(bitPattern: UF_APPEND) }
+
+@_alwaysEmitIntoClient
+internal var _SF_ARCHIVED: CInterop.FileFlags { UInt32(bitPattern: SF_ARCHIVED) }
+
+@_alwaysEmitIntoClient
+internal var _SF_IMMUTABLE: CInterop.FileFlags { UInt32(bitPattern: SF_IMMUTABLE) }
+
+@_alwaysEmitIntoClient
+internal var _SF_APPEND: CInterop.FileFlags { UInt32(bitPattern: SF_APPEND) }
+#endif
+
+// MARK: Flags Available on Darwin and FreeBSD
+
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
+@_alwaysEmitIntoClient
+internal var _UF_OPAQUE: CInterop.FileFlags { UInt32(bitPattern: UF_OPAQUE) }
+
+@_alwaysEmitIntoClient
+internal var _UF_COMPRESSED: CInterop.FileFlags { UInt32(bitPattern: UF_COMPRESSED) }
+
+@_alwaysEmitIntoClient
+internal var _UF_TRACKED: CInterop.FileFlags { UInt32(bitPattern: UF_TRACKED) }
+
+@_alwaysEmitIntoClient
+internal var _UF_HIDDEN: CInterop.FileFlags { UInt32(bitPattern: UF_HIDDEN) }
+
+@_alwaysEmitIntoClient
+internal var _SF_RESTRICTED: CInterop.FileFlags { UInt32(bitPattern: SF_RESTRICTED) }
+
+@_alwaysEmitIntoClient
+internal var _SF_NOUNLINK: CInterop.FileFlags { UInt32(bitPattern: SF_NOUNLINK) }
+#endif
+
+// MARK: Flags Available on Darwin Only
+
+#if SYSTEM_PACKAGE_DARWIN
+@_alwaysEmitIntoClient
+internal var _UF_DATAVAULT: CInterop.FileFlags { UInt32(bitPattern: UF_DATAVAULT) }
+
+@_alwaysEmitIntoClient
+internal var _SF_FIRMLINK: CInterop.FileFlags { UInt32(bitPattern: SF_FIRMLINK) }
+
+@_alwaysEmitIntoClient
+internal var _SF_DATALESS: CInterop.FileFlags { UInt32(bitPattern: SF_DATALESS) }
+#endif
+
+// MARK: Flags Available on FreeBSD Only
+
+#if os(FreeBSD)
+@_alwaysEmitIntoClient
+internal var _UF_NOUNLINK: CInterop.FileFlags { UInt32(bitPattern: UF_NOUNLINK) }
+
+@_alwaysEmitIntoClient
+internal var _UF_OFFLINE: CInterop.FileFlags { UInt32(bitPattern: UF_OFFLINE) }
+
+@_alwaysEmitIntoClient
+internal var _UF_READONLY: CInterop.FileFlags { UInt32(bitPattern: UF_READONLY) }
+
+@_alwaysEmitIntoClient
+internal var _UF_REPARSE: CInterop.FileFlags { UInt32(bitPattern: UF_REPARSE) }
+
+@_alwaysEmitIntoClient
+internal var _UF_SPARSE: CInterop.FileFlags { UInt32(bitPattern: UF_SPARSE) }
+
+@_alwaysEmitIntoClient
+internal var _UF_SYSTEM: CInterop.FileFlags { UInt32(bitPattern: UF_SYSTEM) }
+
+@_alwaysEmitIntoClient
+internal var _SF_SNAPSHOT: CInterop.FileFlags { UInt32(bitPattern: SF_SNAPSHOT) }
+#endif
+
+#endif // !os(Windows)
