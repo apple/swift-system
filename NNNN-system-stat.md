@@ -5,7 +5,7 @@
 * Review Manager: TBD
 * Status: **Awaiting review**
 * Implementation: [apple/swift-system#256](https://github.com/apple/swift-system/pull/256)
-* Review: ([pitch](https://forums.swift.org/))
+* Review: ([pitch](https://forums.swift.org/t/pitch-stat-types-for-swift-system/81616))
 
 ## Introduction
 
