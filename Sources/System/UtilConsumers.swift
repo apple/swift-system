@@ -52,13 +52,13 @@ extension Slice where Element: Equatable {
     return self[...idx]
   }
 
-  // If `e` is present, eat up to first occurence of `e`
+  // If `e` is present, eat up to first occurrence of `e`
   internal mutating func _eatUntil(_ e: Element) -> Slice? {
     guard let idx = self.firstIndex(of: e) else { return nil }
     return _eatUntil(idx)
   }
 
-  // If `e` is present, eat up to and through first occurence of `e`
+  // If `e` is present, eat up to and through first occurrence of `e`
   internal mutating func _eatThrough(_ e: Element) -> Slice? {
     guard let idx = self.firstIndex(of: e) else { return nil }
     return _eatThrough(idx)
