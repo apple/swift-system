@@ -87,6 +87,7 @@ let swiftSettings = swiftSettingsAvailability + swiftSettingsCI + [
 
 let cSettings: [CSetting] = [
   .define("_CRT_SECURE_NO_WARNINGS", .when(platforms: [.windows])),
+  .define("_GNU_SOURCE", .when(platforms: [.linux])),
 ]
 
 #if SYSTEM_ABI_STABLE
