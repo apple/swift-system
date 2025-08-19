@@ -52,7 +52,7 @@ internal func _debugPrecondition(
   // Only check in debug mode.
   if _slowPath(_isDebugAssertConfiguration()) {
     precondition(
-      condition(), String(describing: message), file: file, line: line)
+      condition(), "\(message)", file: file, line: line)
   }
 }
 
