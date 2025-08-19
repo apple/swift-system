@@ -8,8 +8,7 @@
 */
 
 // A platform-native character representation, currently used for file paths
-internal struct SystemChar:
-  RawRepresentable, Sendable, Comparable, Hashable, Codable {
+internal struct SystemChar: RawRepresentable, Sendable, Comparable, Hashable {
   internal typealias RawValue = CInterop.PlatformChar
 
   internal var rawValue: RawValue
@@ -22,6 +21,10 @@ internal struct SystemChar:
     lhs.rawValue < rhs.rawValue
   }
 }
+
+#if !hasFeature(Embedded)
+extension SystemChar: Codable {}
+#endif
 
 extension SystemChar {
   internal init(ascii: Unicode.Scalar) {
@@ -137,6 +140,7 @@ extension SystemString: RandomAccessCollection, MutableCollection {
     }
   }
 }
+
 extension SystemString: RangeReplaceableCollection {
   internal mutating func replaceSubrange<C: Collection>(
     _ subrange: Range<Index>, with newElements: C
@@ -173,7 +177,10 @@ extension SystemString: RangeReplaceableCollection {
   }
 }
 
-extension SystemString: Hashable, Codable {
+extension SystemString: Hashable {}
+
+#if !hasFeature(Embedded)
+extension SystemString: Codable {
   // Encoder is synthesized; it probably should have been explicit and used
   // a single-value container, but making that change now is somewhat risky.
   
@@ -194,9 +201,9 @@ extension SystemString: Hashable, Codable {
     }
   }
 }
+#endif
 
 extension SystemString {
-
   internal func withNullTerminatedSystemChars<T>(
     _ f: (UnsafeBufferPointer<SystemChar>) throws -> T
   ) rethrows -> T {

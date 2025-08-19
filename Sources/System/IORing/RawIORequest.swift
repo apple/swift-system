@@ -45,7 +45,7 @@ extension RawIORequest {
         case unlinkAt = 36
     }
 
-    public struct Flags: OptionSet, Hashable, Codable {
+    public struct Flags: OptionSet, Hashable {
         public let rawValue: UInt8
 
         @inlinable public init(rawValue: UInt8) {
@@ -135,7 +135,7 @@ extension RawIORequest {
         // splice_flags
     }
 
-    public struct ReadWriteFlags: OptionSet, Hashable, Codable {
+    public struct ReadWriteFlags: OptionSet, Hashable {
         public var rawValue: UInt32
         @inlinable public init(rawValue: UInt32) {
             self.rawValue = rawValue
@@ -156,7 +156,7 @@ extension RawIORequest {
         @inlinable public static var append: RawIORequest.ReadWriteFlags { ReadWriteFlags(rawValue: 1 << 4) }
     }
 
-    public struct TimeOutFlags: OptionSet, Hashable, Codable {
+    public struct TimeOutFlags: OptionSet, Hashable {
         public var rawValue: UInt32
 
         @inlinable public init(rawValue: UInt32) {
@@ -167,6 +167,16 @@ extension RawIORequest {
         @inlinable public static var absoluteTime: RawIORequest.TimeOutFlags { TimeOutFlags(rawValue: 1 << 0) }
     }
 }
+
+#if !hasFeature(Embedded)
+extension IORing.Completion.Flags: Codable {}
+
+extension RawIORequest.Flags: Codable {}
+
+extension RawIORequest.ReadWriteFlags: Codable {}
+
+extension RawIORequest.TimeOutFlags: Codable {}
+#endif
 
 extension RawIORequest {
     @inlinable

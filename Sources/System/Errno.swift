@@ -11,7 +11,7 @@
 /// occurred.
 @frozen
 @available(System 0.0.1, *)
-public struct Errno: RawRepresentable, Error, Hashable, Codable {
+public struct Errno: RawRepresentable, Error, Hashable {
   /// The raw C error number.
   @_alwaysEmitIntoClient
   public let rawValue: CInt
@@ -1389,6 +1389,10 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   @available(*, unavailable, renamed: "notSupportedOnSocket")
   public static var EOPNOTSUPP: Errno { notSupportedOnSocket }
 }
+
+#if !hasFeature(Embedded)
+extension FileDescriptor: Codable {}
+#endif
 
 // Constants defined in header but not man page
 @available(System 0.0.1, *)

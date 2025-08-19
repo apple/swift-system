@@ -68,6 +68,7 @@ extension FilePath {
 @available(System 0.0.1, *)
 extension FilePath: Hashable {}
 
+#if !hasFeature(Embedded)
 @available(System 0.0.1, *)
 extension FilePath: Codable {
   // Encoder is synthesized; it probably should have been explicit and used
@@ -88,3 +89,4 @@ extension FilePath: Codable {
     }
   }
 }
+#endif

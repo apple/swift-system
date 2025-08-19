@@ -37,10 +37,17 @@ internal typealias _COffT = off_t
 // MARK: syscalls and variables
 
 #if SYSTEM_PACKAGE_DARWIN
+#if hasFeature(Embedded)
+internal var system_errno: CInt {
+  get { _DarwinFoundation1.errno }
+  set { _DarwinFoundation1.errno = newValue }
+}
+#else
 internal var system_errno: CInt {
   get { Darwin.errno }
   set { Darwin.errno = newValue }
 }
+#endif
 #elseif os(Windows)
 internal var system_errno: CInt {
   get {

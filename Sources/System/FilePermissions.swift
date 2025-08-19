@@ -18,7 +18,7 @@
 ///     perms == [.ownerReadWrite, .groupRead, .otherRead] // true
 @frozen
 @available(System 0.0.1, *)
-public struct FilePermissions: OptionSet, Sendable, Hashable, Codable {
+public struct FilePermissions: OptionSet, Sendable, Hashable {
   /// The raw C file permissions.
   @_alwaysEmitIntoClient
   public let rawValue: CModeT
@@ -131,6 +131,10 @@ public struct FilePermissions: OptionSet, Sendable, Hashable, Codable {
   @_alwaysEmitIntoClient
   public static var saveText: FilePermissions { .init(rawValue: 0o1000) }
 }
+
+#if !hasFeature(Embedded)
+extension FilePermissions: Codable { }
+#endif
 
 @available(System 0.0.1, *)
 extension FilePermissions

@@ -25,7 +25,7 @@ struct Available {
     self.name = "System"
     self.version = version
     self.osAvailability = osAvailability
-    self.sourceAvailability = "macOS 10.10, iOS 8.0, watchOS 2.0, tvOS 9.0, visionOS 1.0"
+    self.sourceAvailability = "macOS 14.0, iOS 8.0, watchOS 2.0, tvOS 9.0, visionOS 1.0"
   }
 
   var swiftSetting: SwiftSetting {
@@ -81,7 +81,7 @@ let swiftSettings = swiftSettingsAvailability + swiftSettingsCI + [
     "SYSTEM_PACKAGE_DARWIN",
     .when(platforms: [.macOS, .macCatalyst, .iOS, .watchOS, .tvOS, .visionOS])),
   .define("SYSTEM_PACKAGE"),
-  .define("ENABLE_MOCKING", .when(configuration: .debug)),
+  // .define("ENABLE_MOCKING", .when(configuration: .debug)),
   .enableExperimentalFeature("Lifetimes"),
 ]
 
@@ -97,8 +97,8 @@ let platforms: [SupportedPlatform] = [
   .tvOS("26"),
   .visionOS("26"),
 ]
-#else 
-let platforms: [SupportedPlatform]? = nil
+#else
+let platforms: [SupportedPlatform] = [.macOS(.v14)]
 #endif
 
 #if os(Linux)

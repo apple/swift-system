@@ -15,7 +15,7 @@
 /// in the same way as you manage a raw C file handle.
 @frozen
 @available(System 0.0.1, *)
-public struct FileDescriptor: RawRepresentable, Hashable, Codable {
+public struct FileDescriptor: RawRepresentable, Hashable {
   /// The raw C file handle.
   @_alwaysEmitIntoClient
   public let rawValue: CInt
@@ -24,6 +24,10 @@ public struct FileDescriptor: RawRepresentable, Hashable, Codable {
   @_alwaysEmitIntoClient
   public init(rawValue: CInt) { self.rawValue = rawValue }
 }
+
+#if !hasFeature(Embedded)
+extension FileDescriptor: Codable {}
+#endif
 
 // Standard file descriptors.
 @available(System 0.0.1, *)
@@ -46,7 +50,7 @@ extension FileDescriptor {
   /// The desired read and write access for a newly opened file.
   @frozen
   @available(System 0.0.1, *)
-  public struct AccessMode: RawRepresentable, Sendable, Hashable, Codable {
+  public struct AccessMode: RawRepresentable, Sendable, Hashable {
     /// The raw C access mode.
     @_alwaysEmitIntoClient
     public var rawValue: CInt
@@ -89,7 +93,7 @@ extension FileDescriptor {
   /// Options that specify behavior for a newly-opened file.
   @frozen
   @available(System 0.0.1, *)
-  public struct OpenOptions: OptionSet, Sendable, Hashable, Codable {
+  public struct OpenOptions: OptionSet, Sendable, Hashable {
     /// The raw C options.
     @_alwaysEmitIntoClient
     public var rawValue: CInt
@@ -327,7 +331,7 @@ extension FileDescriptor {
   /// Options for specifying what a file descriptor's offset is relative to.
   @frozen
   @available(System 0.0.1, *)
-  public struct SeekOrigin: RawRepresentable, Sendable, Hashable, Codable {
+  public struct SeekOrigin: RawRepresentable, Sendable, Hashable {
     /// The raw C value.
     @_alwaysEmitIntoClient
     public var rawValue: CInt
@@ -401,6 +405,14 @@ extension FileDescriptor {
 
   }
 }
+
+#if !hasFeature(Embedded)
+extension FileDescriptor.AccessMode: Codable { }
+
+extension FileDescriptor.OpenOptions: Codable { }
+
+extension FileDescriptor.SeekOrigin: Codable { }
+#endif
 
 @available(System 0.0.1, *)
 extension FileDescriptor.AccessMode

@@ -13,7 +13,7 @@ public extension IORing {
 }
 
 public extension IORing.Completion {
-    struct Flags: OptionSet, Hashable, Codable {
+    struct Flags: OptionSet, Hashable {
         public let rawValue: UInt32
 
         @inlinable public init(rawValue: UInt32) {
@@ -31,6 +31,10 @@ public extension IORing.Completion {
         //IORING_CQE_F_BUF_MORE  will eventually be  (1U << 4) if we add IOU_PBUF_RING_INC support
     }
 }
+
+#if !hasFeature(Embedded)
+extension IORing.Completion.Flags: Codable {}
+#endif
 
 public extension IORing.Completion {
     @inlinable var context: UInt64 {
