@@ -76,12 +76,13 @@ public struct Stat: RawRepresentable, Sendable {
     public static var symlinkNoFollowAny: Flags { Flags(rawValue: _AT_SYMLINK_NOFOLLOW_ANY) }
     #endif
 
-    #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
+    #if canImport(Darwin, _version: 346) || os(FreeBSD)
     /// If the path does not reside in the hierarchy beneath the starting directory, return an error.
     ///
     /// The corresponding C constant is `AT_RESOLVE_BENEATH`.
     /// - Note: Only available on Darwin and FreeBSD.
     @_alwaysEmitIntoClient
+    @available(macOS 26.0, iOS 26.0, tvOS 26.0, watchOS 26.0, visionOS 26.0, *)
     public static var resolveBeneath: Flags { Flags(rawValue: _AT_RESOLVE_BENEATH) }
     #endif
 
