@@ -658,7 +658,7 @@ internal var _AT_SYMLINK_NOFOLLOW: CInt { AT_SYMLINK_FOLLOW }
 internal var _AT_SYMLINK_NOFOLLOW_ANY: CInt { AT_SYMLINK_NOFOLLOW_ANY }
 #endif
 
-#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
+#if canImport(Darwin, _version: 346) || os(FreeBSD)
 @_alwaysEmitIntoClient
 internal var _AT_RESOLVE_BENEATH: CInt { AT_RESOLVE_BENEATH }
 #endif
