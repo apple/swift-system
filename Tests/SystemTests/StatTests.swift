@@ -111,10 +111,10 @@ private struct StatTests {
       #endif // !os(WASI)
 
       let targetStat = try targetFilePath.stat()
-      let originalTargetAccessTime = targetStat.accessTime
+      let originalTargetAccessTime = targetStat.st_atim
 
       let symlinkStat = try symlinkPath.stat(followTargetSymlink: false)
-      let originalSymlinkAccessTime = symlinkStat.accessTime
+      let originalSymlinkAccessTime = symlinkStat.st_atim
 
       #expect(targetStat != symlinkStat)
       #expect(targetStat.type == .regular)
@@ -122,72 +122,72 @@ private struct StatTests {
       #expect(symlinkStat.size < targetStat.size)
       #expect(symlinkStat.sizeAllocated < targetStat.sizeAllocated)
 
-      // Set each .accessTime back to its original value for comparison
+      // Set each .st_atim back to its original value for comparison
 
       // FileDescriptor Extensions
 
       var stat = try targetFD.stat()
-      stat.accessTime = originalTargetAccessTime
+      stat.st_atim = originalTargetAccessTime
       #expect(stat == targetStat)
 
       #if !os(WASI)
       stat = try symlinkFD.stat()
-      stat.accessTime = originalSymlinkAccessTime
+      stat.st_atim = originalSymlinkAccessTime
       #expect(stat == symlinkStat)
       #endif
 
       // Initializing Stat with FileDescriptor
 
       stat = try Stat(targetFD)
-      stat.accessTime = originalTargetAccessTime
+      stat.st_atim = originalTargetAccessTime
       #expect(stat == targetStat)
 
       #if !os(WASI)
       stat = try Stat(symlinkFD)
-      stat.accessTime = originalSymlinkAccessTime
+      stat.st_atim = originalSymlinkAccessTime
       #expect(stat == symlinkStat)
       #endif
 
       // FilePath Extensions
 
       stat = try symlinkPath.stat(followTargetSymlink: true)
-      stat.accessTime = originalTargetAccessTime
+      stat.st_atim = originalTargetAccessTime
       #expect(stat == targetStat)
 
       stat = try symlinkPath.stat(followTargetSymlink: false)
-      stat.accessTime = originalSymlinkAccessTime
+      stat.st_atim = originalSymlinkAccessTime
       #expect(stat == symlinkStat)
 
       // Initializing Stat with UnsafePointer<CChar>
 
       try symlinkPath.withPlatformString { pathPtr in
         stat = try Stat(pathPtr, followTargetSymlink: true)
-        stat.accessTime = originalTargetAccessTime
+        stat.st_atim = originalTargetAccessTime
         #expect(stat == targetStat)
 
         stat = try Stat(pathPtr, followTargetSymlink: false)
-        stat.accessTime = originalSymlinkAccessTime
+        stat.st_atim = originalSymlinkAccessTime
         #expect(stat == symlinkStat)
       }
 
       // Initializing Stat with FilePath
 
       stat = try Stat(symlinkPath, followTargetSymlink: true)
-      stat.accessTime = originalTargetAccessTime
+      stat.st_atim = originalTargetAccessTime
       #expect(stat == targetStat)
 
       stat = try Stat(symlinkPath, followTargetSymlink: false)
-      stat.accessTime = originalSymlinkAccessTime
+      stat.st_atim = originalSymlinkAccessTime
       #expect(stat == symlinkStat)
 
       // Initializing Stat with String
 
       stat = try Stat(symlinkPath.string, followTargetSymlink: true)
-      stat.accessTime = originalTargetAccessTime
+      stat.st_atim = originalTargetAccessTime
       #expect(stat == targetStat)
 
       stat = try Stat(symlinkPath.string, followTargetSymlink: false)
-      stat.accessTime = originalSymlinkAccessTime
+      stat.st_atim = originalSymlinkAccessTime
       #expect(stat == symlinkStat)
     }
   }
@@ -222,29 +222,30 @@ private struct StatTests {
   }
 
   @Test
-  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
   func times() async throws {
-    let startTime = Int64(time(nil))
-    try #require(startTime >= 0, "\(Errno.current)")
-    let start: Duration = .seconds(startTime - 1) // A little wiggle room
+    var start = timespec()
+    try #require(clock_gettime(CLOCK_REALTIME, &start) == 0, "\(Errno.current)")
+    start.tv_sec -= 1 // A little wiggle room
     try withTemporaryFilePath(basename: "Stat_times") { tempDir in
       var dirStat = try tempDir.stat()
-      let dirAccessTime0 = dirStat.accessTime
-      let dirModificationTime0 = dirStat.modificationTime
-      let dirChangeTime0 = dirStat.changeTime
+      let dirAccessTime0 = dirStat.st_atim
+      let dirModificationTime0 = dirStat.st_mtim
+      let dirChangeTime0 = dirStat.st_ctim
       #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
-      let dirCreationTime0 = dirStat.creationTime
+      let dirCreationTime0 = dirStat.st_birthtim
       #endif
 
+      var startUpperBound = start
+      startUpperBound.tv_sec += 5
       #expect(dirAccessTime0 >= start)
-      #expect(dirAccessTime0 < start + .seconds(5))
+      #expect(dirAccessTime0 < startUpperBound)
       #expect(dirModificationTime0 >= start)
-      #expect(dirModificationTime0 < start + .seconds(5))
+      #expect(dirModificationTime0 < startUpperBound)
       #expect(dirChangeTime0 >= start)
-      #expect(dirChangeTime0 < start + .seconds(5))
+      #expect(dirChangeTime0 < startUpperBound)
       #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
       #expect(dirCreationTime0 >= start)
-      #expect(dirCreationTime0 < start + .seconds(5))
+      #expect(dirCreationTime0 < startUpperBound)
       #endif
 
       // Fails intermittently if less than 5ms
@@ -257,11 +258,11 @@ private struct StatTests {
       }
 
       dirStat = try tempDir.stat()
-      let dirAccessTime1 = dirStat.accessTime
-      let dirModificationTime1 = dirStat.modificationTime
-      let dirChangeTime1 = dirStat.changeTime
+      let dirAccessTime1 = dirStat.st_atim
+      let dirModificationTime1 = dirStat.st_mtim
+      let dirChangeTime1 = dirStat.st_ctim
       #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
-      let dirCreationTime1 = dirStat.creationTime
+      let dirCreationTime1 = dirStat.st_birthtim
       #endif
 
       // Creating a file updates directory modification and change time.
@@ -286,31 +287,31 @@ private struct StatTests {
       }
 
       dirStat = try tempDir.stat()
-      let dirChangeTime2 = dirStat.changeTime
+      let dirChangeTime2 = dirStat.st_ctim
       #expect(dirChangeTime2 > dirChangeTime1)
-      #expect(dirStat.accessTime == dirAccessTime1)
-      #expect(dirStat.modificationTime == dirModificationTime1)
+      #expect(dirStat.st_atim == dirAccessTime1)
+      #expect(dirStat.st_mtim == dirModificationTime1)
       #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
-      #expect(dirStat.creationTime == dirCreationTime1)
+      #expect(dirStat.st_birthtim == dirCreationTime1)
       #endif
 
       var stat1 = try file1.stat()
-      let file1AccessTime1 = stat1.accessTime
-      let file1ModificationTime1 = stat1.modificationTime
-      let file1ChangeTime1 = stat1.changeTime
+      let file1AccessTime1 = stat1.st_atim
+      let file1ModificationTime1 = stat1.st_mtim
+      let file1ChangeTime1 = stat1.st_ctim
       #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
-      let file1CreationTime1 = stat1.creationTime
+      let file1CreationTime1 = stat1.st_birthtim
       #endif
 
       usleep(10000)
 
       try fd1.writeAll("Hello, world!".utf8)
       stat1 = try file1.stat()
-      let file1AccessTime2 = stat1.accessTime
-      let file1ModificationTime2 = stat1.modificationTime
-      let file1ChangeTime2 = stat1.changeTime
+      let file1AccessTime2 = stat1.st_atim
+      let file1ModificationTime2 = stat1.st_mtim
+      let file1ChangeTime2 = stat1.st_ctim
       #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
-      let file1CreationTime2 = stat1.creationTime
+      let file1CreationTime2 = stat1.st_birthtim
       #endif
 
       #expect(file1AccessTime2 >= file1AccessTime1)
@@ -323,11 +324,11 @@ private struct StatTests {
       // Changing file metadata or content does not update directory times
 
       dirStat = try tempDir.stat()
-      #expect(dirStat.changeTime == dirChangeTime2)
-      #expect(dirStat.accessTime == dirAccessTime1)
-      #expect(dirStat.modificationTime == dirModificationTime1)
+      #expect(dirStat.st_ctim == dirChangeTime2)
+      #expect(dirStat.st_atim == dirAccessTime1)
+      #expect(dirStat.st_mtim == dirModificationTime1)
       #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
-      #expect(dirStat.creationTime == dirCreationTime1)
+      #expect(dirStat.st_birthtim == dirCreationTime1)
       #endif
 
       usleep(10000)
@@ -339,11 +340,11 @@ private struct StatTests {
       }
 
       let stat2 = try file2.stat()
-      #expect(stat2.accessTime > file1AccessTime2)
-      #expect(stat2.modificationTime > file1ModificationTime2)
-      #expect(stat2.changeTime > file1ChangeTime2)
+      #expect(stat2.st_atim > file1AccessTime2)
+      #expect(stat2.st_mtim > file1ModificationTime2)
+      #expect(stat2.st_ctim > file1ChangeTime2)
       #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
-      #expect(stat2.creationTime > file1CreationTime2)
+      #expect(stat2.st_birthtim > file1CreationTime2)
       #endif
     }
   }
@@ -404,5 +405,22 @@ private extension FileDescriptor.OpenOptions {
   static var path: Self { Self(rawValue: O_PATH) }
 }
 #endif
+
+// Comparison operators for timespec until UTCClock.Instant properties are available
+private func >= (lhs: timespec, rhs: timespec) -> Bool {
+  (lhs.tv_sec, lhs.tv_nsec) >= (rhs.tv_sec, rhs.tv_nsec)
+}
+
+private func < (lhs: timespec, rhs: timespec) -> Bool {
+  (lhs.tv_sec, lhs.tv_nsec) < (rhs.tv_sec, rhs.tv_nsec)
+}
+
+private func > (lhs: timespec, rhs: timespec) -> Bool {
+  (lhs.tv_sec, lhs.tv_nsec) > (rhs.tv_sec, rhs.tv_nsec)
+}
+
+private func == (lhs: timespec, rhs: timespec) -> Bool {
+  lhs.tv_sec == rhs.tv_sec && lhs.tv_nsec == rhs.tv_nsec
+}
 
 #endif

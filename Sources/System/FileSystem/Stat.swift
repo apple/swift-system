@@ -410,118 +410,145 @@ public struct Stat: RawRepresentable, Sendable {
     512 * blocksAllocated
   }
 
-  // TODO: jflat - Change time properties to UTCClock.Instant when possible.
-
-  /// Time of last access, given as a `Duration` since the Epoch
+  /// Time of last access, given as a C `timespec` since the Epoch.
   ///
   /// The corresponding C property is `st_atim` (or `st_atimespec` on Darwin).
-  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-  public var accessTime: Duration {
+  @_alwaysEmitIntoClient
+  public var st_atim: timespec {
     get {
       #if SYSTEM_PACKAGE_DARWIN
-      let timespec = rawValue.st_atimespec
+      rawValue.st_atimespec
       #else
-      let timespec = rawValue.st_atim
+      rawValue.st_atim
       #endif
-      return .seconds(timespec.tv_sec) + .nanoseconds(timespec.tv_nsec)
     }
     set {
-      let (seconds, attoseconds) = newValue.components
-      let timespec = timespec(
-        tv_sec: numericCast(seconds),
-        tv_nsec: numericCast(attoseconds / 1_000_000_000)
-      )
       #if SYSTEM_PACKAGE_DARWIN
-      rawValue.st_atimespec = timespec
+      rawValue.st_atimespec = newValue
       #else
-      rawValue.st_atim = timespec
+      rawValue.st_atim = newValue
       #endif
     }
   }
 
-  /// Time of last modification, given as a `Duration` since the Epoch
+  /// Time of last modification, given as a C `timespec` since the Epoch.
   ///
   /// The corresponding C property is `st_mtim` (or `st_mtimespec` on Darwin).
-  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-  public var modificationTime: Duration {
+  @_alwaysEmitIntoClient
+  public var st_mtim: timespec {
     get {
       #if SYSTEM_PACKAGE_DARWIN
-      let timespec = rawValue.st_mtimespec
+      rawValue.st_mtimespec
       #else
-      let timespec = rawValue.st_mtim
+      rawValue.st_mtim
       #endif
-      return .seconds(timespec.tv_sec) + .nanoseconds(timespec.tv_nsec)
     }
     set {
-      let (seconds, attoseconds) = newValue.components
-      let timespec = timespec(
-        tv_sec: numericCast(seconds),
-        tv_nsec: numericCast(attoseconds / 1_000_000_000)
-      )
       #if SYSTEM_PACKAGE_DARWIN
-      rawValue.st_mtimespec = timespec
+      rawValue.st_mtimespec = newValue
       #else
-      rawValue.st_mtim = timespec
+      rawValue.st_mtim = newValue
       #endif
     }
   }
 
-  /// Time of last status (inode) change, given as a `Duration` since the Epoch
+  /// Time of last status (inode) change, given as a C `timespec` since the Epoch.
   ///
   /// The corresponding C property is `st_ctim` (or `st_ctimespec` on Darwin).
-  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-  public var changeTime: Duration {
+  @_alwaysEmitIntoClient
+  public var st_ctim: timespec {
     get {
       #if SYSTEM_PACKAGE_DARWIN
-      let timespec = rawValue.st_ctimespec
+      rawValue.st_ctimespec
       #else
-      let timespec = rawValue.st_ctim
+      rawValue.st_ctim
       #endif
-      return .seconds(timespec.tv_sec) + .nanoseconds(timespec.tv_nsec)
     }
     set {
-      let (seconds, attoseconds) = newValue.components
-      let timespec = timespec(
-        tv_sec: numericCast(seconds),
-        tv_nsec: numericCast(attoseconds / 1_000_000_000)
-      )
       #if SYSTEM_PACKAGE_DARWIN
-      rawValue.st_ctimespec = timespec
+      rawValue.st_ctimespec = newValue
       #else
-      rawValue.st_ctim = timespec
+      rawValue.st_ctim = newValue
       #endif
     }
   }
 
   #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
-  /// Time of file creation, given as a `Duration` since the Epoch
+  /// Time of file creation, given as a C `timespec` since the Epoch.
   ///
   /// The corresponding C property is `st_birthtim` (or `st_birthtimespec` on Darwin).
   /// - Note: Only available on Darwin and FreeBSD.
-  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-  public var creationTime: Duration {
+  @_alwaysEmitIntoClient
+  public var st_birthtim: timespec {
     get {
       #if SYSTEM_PACKAGE_DARWIN
-      let timespec = rawValue.st_birthtimespec
+      rawValue.st_birthtimespec
       #else
-      let timespec = rawValue.st_birthtim
+      rawValue.st_birthtim
       #endif
-      return .seconds(timespec.tv_sec) + .nanoseconds(timespec.tv_nsec)
     }
     set {
-      let (seconds, attoseconds) = newValue.components
-      let timespec = timespec(
-        tv_sec: numericCast(seconds),
-        tv_nsec: numericCast(attoseconds / 1_000_000_000)
-      )
       #if SYSTEM_PACKAGE_DARWIN
-      rawValue.st_birthtimespec = timespec
+      rawValue.st_birthtimespec = newValue
       #else
-      rawValue.st_birthtim = timespec
+      rawValue.st_birthtim = newValue
       #endif
     }
   }
   #endif
+
+  // TODO: jflat - Change time properties to UTCClock.Instant when possible.
+
+//  /// Time of last access, given as a `UTCClock.Instant`
+//  ///
+//  /// The corresponding C property is `st_atim` (or `st_atimespec` on Darwin).
+//  public var accessTime: UTCClock.Instant {
+//    get {
+//      UTCClock.systemEpoch.advanced(by: Duration(st_atim))
+//    }
+//    set {
+//      st_atim = timespec(UTCClock.systemEpoch.duration(to: newValue))
+//    }
+//  }
+//
+//  /// Time of last modification, given as a `UTCClock.Instant`
+//  ///
+//  /// The corresponding C property is `st_mtim` (or `st_mtimespec` on Darwin).
+//  public var modificationTime: UTCClock.Instant {
+//    get {
+//      UTCClock.systemEpoch.advanced(by: Duration(st_mtim))
+//    }
+//    set {
+//      st_mtim = timespec(UTCClock.systemEpoch.duration(to: newValue))
+//    }
+//  }
+//
+//  /// Time of last status (inode) change, given as a `UTCClock.Instant`
+//  ///
+//  /// The corresponding C property is `st_ctim` (or `st_ctimespec` on Darwin).
+//  public var changeTime: UTCClock.Instant {
+//    get {
+//      UTCClock.systemEpoch.advanced(by: Duration(st_ctim))
+//    }
+//    set {
+//      st_ctim = timespec(UTCClock.systemEpoch.duration(to: newValue))
+//    }
+//  }
+//
+//  #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
+//  /// Time of file creation, given as a `UTCClock.Instant`
+//  ///
+//  /// The corresponding C property is `st_birthtim` (or `st_birthtimespec` on Darwin).
+//  /// - Note: Only available on Darwin and FreeBSD.
+//  public var creationTime: UTCClock.Instant {
+//    get {
+//      UTCClock.systemEpoch.advanced(by: Duration(st_birthtim))
+//    }
+//    set {
+//      st_birthtim = timespec(UTCClock.systemEpoch.duration(to: newValue))
+//    }
+//  }
+//  #endif
 
   #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
   /// File flags
