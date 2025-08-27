@@ -64,7 +64,7 @@ extension FilePath {
   }
 
 #if !os(Windows)
-  // Note: This function should have been opaque, but it shipped as 
+  // Note: This function should have been opaque, but it shipped as
   // `@_alwaysEmitIntoClient` in macOS 12/iOS 15, and now it is stuck
   // this way forever. (Or until the language provides a way for us
   // to declare separate availability for a function's exported symbol
@@ -84,7 +84,7 @@ extension FilePath {
   /// Don't try to store the pointer for later use.
   @_alwaysEmitIntoClient
   public func withPlatformString<Result>(
-    _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
+    _ body: (UnsafePointer<CInterop.PlatformChar>) throws(SystemError) -> Result
   ) rethrows -> Result {
     return try withCString(body)
   }
@@ -102,7 +102,7 @@ extension FilePath {
   /// only during the execution of this method.
   /// Don't try to store the pointer for later use.
   public func withPlatformString<Result>(
-    _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
+    _ body: (UnsafePointer<CInterop.PlatformChar>) throws(SystemError) -> Result
   ) rethrows -> Result {
     return try _withPlatformString(body)
   }
@@ -595,8 +595,8 @@ extension FilePath {
   /// For backwards compatibility only. This function is equivalent to
   /// the preferred `withPlatformString`.
   public func withCString<Result>(
-    _ body: (UnsafePointer<CChar>) throws -> Result
-  ) rethrows -> Result {
+    _ body: (UnsafePointer<CChar>) throws(SystemError) -> Result
+  ) throws(SystemError) -> Result {
     return try _withPlatformString(body)
   }
 }

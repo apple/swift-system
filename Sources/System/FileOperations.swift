@@ -30,24 +30,24 @@ extension FileDescriptor {
     options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
     permissions: FilePermissions? = nil,
     retryOnInterrupt: Bool = true
-  ) throws -> FileDescriptor {
+  ) throws(SystemError) -> FileDescriptor {
     #if !os(Windows)
-    return try path.withCString {
+    return try path.withCString { (cString) throws(SystemError) in
       try FileDescriptor.open(
-        $0, mode, options: options, permissions: permissions, retryOnInterrupt: retryOnInterrupt)
+        cString, mode, options: options, permissions: permissions, retryOnInterrupt: retryOnInterrupt)
     }
-    #else 
-    return try path.withPlatformString {
+    #else
+    return try path.withPlatformString { (platformString) throws(SystemError) in
       try FileDescriptor.open(
-        $0, mode, options: options, permissions: permissions, retryOnInterrupt: retryOnInterrupt)
+        platformString, mode, options: options, permissions: permissions, retryOnInterrupt: retryOnInterrupt)
     }
     #endif
   }
 
-  #if !os(Windows) 
-  // On Darwin, `CInterop.PlatformChar` is less available than 
+  #if !os(Windows)
+  // On Darwin, `CInterop.PlatformChar` is less available than
   // `FileDescriptor.open`, so we need to use `CChar` instead.
-  
+
   /// Opens or creates a file for reading or writing.
   ///
   /// - Parameters:
@@ -69,7 +69,7 @@ extension FileDescriptor {
     options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
     permissions: FilePermissions? = nil,
     retryOnInterrupt: Bool = true
-  ) throws -> FileDescriptor {
+  ) throws(SystemError) -> FileDescriptor {
     try FileDescriptor._open(
       path, mode, options: options, permissions: permissions, retryOnInterrupt: retryOnInterrupt
     ).get()
@@ -116,7 +116,7 @@ extension FileDescriptor {
     options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
     permissions: FilePermissions? = nil,
     retryOnInterrupt: Bool = true
-  ) throws -> FileDescriptor {
+  ) throws(SystemError) -> FileDescriptor {
     try FileDescriptor._open(
       path, mode, options: options, permissions: permissions, retryOnInterrupt: retryOnInterrupt
     ).get()
@@ -149,7 +149,7 @@ extension FileDescriptor {
   ///
   /// The corresponding C function is `close`.
   @_alwaysEmitIntoClient
-  public func close() throws { try _close().get() }
+  public func close() throws(SystemError) { try _close().get() }
 
   @usableFromInline
   internal func _close() -> Result<(), Errno> {
@@ -169,7 +169,7 @@ extension FileDescriptor {
   @discardableResult
   public func seek(
     offset: Int64, from whence: FileDescriptor.SeekOrigin
-  ) throws -> Int64 {
+  ) throws(SystemError) -> Int64 {
     try _seek(offset: offset, from: whence).get()
   }
 
@@ -187,7 +187,7 @@ extension FileDescriptor {
   @available(*, unavailable, renamed: "seek")
   public func lseek(
     offset: Int64, from whence: FileDescriptor.SeekOrigin
-  ) throws -> Int64 {
+  ) throws(SystemError) -> Int64 {
     try seek(offset: offset, from: whence)
   }
 
@@ -214,7 +214,7 @@ extension FileDescriptor {
   public func read(
     into buffer: UnsafeMutableRawBufferPointer,
     retryOnInterrupt: Bool = true
-  ) throws -> Int {
+  ) throws(SystemError) -> Int {
     try _read(into: buffer, retryOnInterrupt: retryOnInterrupt).get()
   }
 
@@ -222,7 +222,7 @@ extension FileDescriptor {
   internal func _read(
     into buffer: UnsafeMutableRawBufferPointer,
     retryOnInterrupt: Bool
-  ) throws -> Result<Int, Errno> {
+  ) throws(SystemError) -> Result<Int, Errno> {
     valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
       system_read(self.rawValue, buffer.baseAddress, buffer.count)
     }
@@ -251,7 +251,7 @@ extension FileDescriptor {
     fromAbsoluteOffset offset: Int64,
     into buffer: UnsafeMutableRawBufferPointer,
     retryOnInterrupt: Bool = true
-  ) throws -> Int {
+  ) throws(SystemError) -> Int {
     try _read(
       fromAbsoluteOffset: offset,
       into: buffer,
@@ -276,7 +276,7 @@ extension FileDescriptor {
     fromAbsoluteOffset offset: Int64,
     into buffer: UnsafeMutableRawBufferPointer,
     retryOnInterrupt: Bool = true
-  ) throws -> Int {
+  ) throws(SystemError) -> Int {
     try read(
       fromAbsoluteOffset: offset,
       into: buffer,
@@ -303,7 +303,7 @@ extension FileDescriptor {
   public func write(
     _ buffer: UnsafeRawBufferPointer,
     retryOnInterrupt: Bool = true
-  ) throws -> Int {
+  ) throws(SystemError) -> Int {
     try _write(buffer, retryOnInterrupt: retryOnInterrupt).get()
   }
 
@@ -337,7 +337,7 @@ extension FileDescriptor {
     toAbsoluteOffset offset: Int64,
     _ buffer: UnsafeRawBufferPointer,
     retryOnInterrupt: Bool = true
-  ) throws -> Int {
+  ) throws(SystemError) -> Int {
     try _write(toAbsoluteOffset: offset, buffer, retryOnInterrupt: retryOnInterrupt).get()
   }
 
@@ -359,7 +359,7 @@ extension FileDescriptor {
     toAbsoluteOffset offset: Int64,
     into buffer: UnsafeRawBufferPointer,
     retryOnInterrupt: Bool = true
-  ) throws -> Int {
+  ) throws(SystemError) -> Int {
     try write(
       toAbsoluteOffset: offset,
       buffer,
@@ -402,7 +402,7 @@ extension FileDescriptor {
   public func duplicate(
     as target: FileDescriptor? = nil,
     retryOnInterrupt: Bool = true
-  ) throws -> FileDescriptor {
+  ) throws(SystemError) -> FileDescriptor {
     try _duplicate(as: target, retryOnInterrupt: retryOnInterrupt).get()
   }
 
@@ -411,7 +411,7 @@ extension FileDescriptor {
   internal func _duplicate(
     as target: FileDescriptor?,
     retryOnInterrupt: Bool
-  ) throws -> Result<FileDescriptor, Errno> {
+  ) throws(SystemError) -> Result<FileDescriptor, Errno> {
     valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
       if let target = target {
         return system_dup2(self.rawValue, target.rawValue)
@@ -422,13 +422,13 @@ extension FileDescriptor {
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "duplicate")
-  public func dup() throws -> FileDescriptor {
+  public func dup() throws(SystemError) -> FileDescriptor {
     fatalError("Not implemented")
   }
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "duplicate")
-  public func dup2() throws -> FileDescriptor {
+  public func dup2() throws(SystemError) -> FileDescriptor {
     fatalError("Not implemented")
   }
 }
@@ -444,7 +444,7 @@ extension FileDescriptor {
   /// The corresponding C function is `pipe`.
   @_alwaysEmitIntoClient
   @available(System 1.1.0, *)
-  public static func pipe() throws -> (readEnd: FileDescriptor, writeEnd: FileDescriptor) {
+  public static func pipe() throws(SystemError) -> (readEnd: FileDescriptor, writeEnd: FileDescriptor) {
     try _pipe().get()
   }
 
@@ -490,7 +490,7 @@ extension FileDescriptor {
   public func resize(
     to newSize: Int64,
     retryOnInterrupt: Bool = true
-  ) throws {
+  ) throws(SystemError) {
     try _resize(
       to: newSize,
       retryOnInterrupt: retryOnInterrupt
@@ -537,7 +537,7 @@ extension FilePermissions {
   /// afterwards, because of the way reading the creation mask works.
   internal static func withCreationMask<R>(
     _ permissions: FilePermissions,
-    body: () throws -> R
+    body: () throws(SystemError) -> R
   ) rethrows -> R {
     let oldMask = _umask(permissions.rawValue)
     defer {
