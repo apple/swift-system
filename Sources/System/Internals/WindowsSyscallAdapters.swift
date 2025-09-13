@@ -135,7 +135,11 @@ internal func dup(_ fd: Int32) -> Int32 {
 
 @inline(__always)
 internal func dup2(_ fd: Int32, _ fd2: Int32) -> Int32 {
-  _dup2(fd, fd2)
+  // _dup2 returns 0 to indicate success. 
+  if _dup2(fd, fd2) == 0 {
+    return fd2
+  }
+  return -1
 }
 
 @inline(__always)
