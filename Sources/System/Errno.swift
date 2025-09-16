@@ -11,7 +11,7 @@
 /// occurred.
 @frozen
 @available(System 0.0.1, *)
-public struct Errno: RawRepresentable, Error, Hashable, Codable {
+public struct Errno: RawRepresentable, Error, Hashable {
   /// The raw C error number.
   @_alwaysEmitIntoClient
   public let rawValue: CInt
@@ -1562,6 +1562,8 @@ extension Errno: CustomStringConvertible, CustomDebugStringConvertible {
   public var debugDescription: String { self.description }
 }
 
+#if !$Embedded
+
 @available(System 0.0.1, *)
 extension Errno {
   @_alwaysEmitIntoClient
@@ -1571,3 +1573,13 @@ extension Errno {
   }
 }
 
+@available(System 0.0.1, *)
+extension Errno: Codable {}
+
+public typealias SystemError = any Error
+
+#else
+
+public typealias SystemError = Errno
+
+#endif // !$Embedded
