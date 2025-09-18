@@ -134,11 +134,13 @@ typedef struct __SWIFT_IORING_SQE_FALLBACK_STRUCT swift_io_uring_sqe;
 #define IORING_FEAT_RW_ATTR             (1U << 16)
 #define IORING_FEAT_NO_IOWAIT           (1U << 17)
 
+#if !defined(_ASM_GENERIC_INT_LL64_H) && !defined(_ASM_GENERIC_INT_L64_H) && !defined(_UAPI_ASM_GENERIC_INT_LL64_H) && !defined(_UAPI_ASM_GENERIC_INT_L64_H)
 typedef uint8_t  __u8;
 typedef uint16_t __u16;
 typedef uint32_t __u32;
 typedef uint64_t __u64;
 typedef int32_t  __s32;
+#endif
 
 #ifndef __kernel_rwf_t
 typedef int __kernel_rwf_t;
