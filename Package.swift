@@ -139,5 +139,6 @@ let package = Package(
       exclude: testsToExclude,
       cSettings: cSettings,
       swiftSettings: swiftSettings),
-  ])
-
+  ],
+  swiftLanguageVersions: [.v5]
+)
