@@ -140,7 +140,7 @@ extension String {
     return
 
     #else
-    self.init(validatingUTF8: platformString)
+    self.init(validatingCString: platformString)
     #endif
   }
 

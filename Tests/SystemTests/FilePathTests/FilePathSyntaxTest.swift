@@ -850,7 +850,7 @@ final class FilePathSyntaxTest: XCTestCase {
 
     func expect(
       _ s: String,
-      _ file: StaticString = #file,
+      _ file: StaticString = #filePath,
       _ line: UInt = #line
     ) {
       if path == FilePath(s) { return }

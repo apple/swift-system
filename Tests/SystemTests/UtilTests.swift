@@ -34,7 +34,7 @@ class UtilTests: XCTestCase {
   func testCStringArray() {
     func check(
       _ array: [String],
-      file: StaticString = #file,
+      file: StaticString = #filePath,
       line: UInt = #line
     ) {
       array._withCStringArray { carray in

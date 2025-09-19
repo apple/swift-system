@@ -1,4 +1,4 @@
-// swift-tools-version:5.9
+// swift-tools-version:6.0
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the Swift System open source project
@@ -139,5 +139,6 @@ let package = Package(
       exclude: testsToExclude,
       cSettings: cSettings,
       swiftSettings: swiftSettings),
-  ])
-
+  ],
+  swiftLanguageVersions: [.v5]
+)
