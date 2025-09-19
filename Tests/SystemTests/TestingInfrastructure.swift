@@ -37,7 +37,7 @@ extension Trace.Entry {
 #endif // ENABLE_MOCKING
 
 // To aid debugging, force failures to fatal error
-internal var forceFatalFailures = false
+internal let forceFatalFailures = false
 
 internal protocol TestCase {
   // TODO: want a source location stack, more fidelity, kinds of stack entries, etc
