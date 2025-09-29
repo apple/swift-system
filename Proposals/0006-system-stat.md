@@ -1,6 +1,6 @@
 # Stat for Swift System
 
-* Proposal: [SYS-0006](NNNN-system-stat.md)
+* Proposal: [SYS-0006](0006-system-stat.md)
 * Authors: [Jonathan Flat](https://github.com/jrflat), [Michael Ilseman](https://github.com/milseman), [Rauhul Varma](https://github.com/rauhul)
 * Review Manager: TBD
 * Status: **Awaiting review**
