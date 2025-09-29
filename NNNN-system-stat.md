@@ -1,11 +1,17 @@
 # Stat for Swift System
 
-* Proposal: [SE-NNNN](NNNN-system-stat.md)
+* Proposal: [SYS-0006](NNNN-system-stat.md)
 * Authors: [Jonathan Flat](https://github.com/jrflat), [Michael Ilseman](https://github.com/milseman), [Rauhul Varma](https://github.com/rauhul)
 * Review Manager: TBD
 * Status: **Awaiting review**
 * Implementation: [apple/swift-system#256](https://github.com/apple/swift-system/pull/256)
 * Review: ([pitch](https://forums.swift.org/t/pitch-stat-types-for-swift-system/81616))
+
+#### Revision history
+
+* **v1** Initial version
+* **v2** Moved `UTCClock.Instant` properties to **Future Directions** and exposed C `timespec` properties. Expanded **Alternatives Considered** for `Stat` name and time properties.
+* **v3** Add `init(_:)` to wrapper types, clarify `FileType(rawValue:)` behavior with `S_IFMT`, rename `.pipe` to `.fifo`, mention `ALLPERMS` instead of `0o7777`, explain "is"-less flag names in **Alternatives Considered**, fix conditionals for FreeBSD flags, clarify that `.type` and `.permissions` depend on `.mode`, clarify that size property behaviors are file system-dependent.
 
 ## Introduction
 
@@ -42,6 +48,7 @@ let stat = try symlinkPath.stat(followTargetSymlink: false)
 let stat = try Stat("path/to/file", relativeTo: fd, flags: .symlinkNoFollow)
 
 print("Size: \(stat.size) bytes")
+print("Size allocated: \(stat.sizeAllocated) bytes")
 print("Type: \(stat.type)") // .regular, .directory, .symbolicLink, etc.
 print("Permissions: \(stat.permissions)")
 print("Modified: \(stat.modificationTime)")
@@ -88,11 +95,17 @@ public struct FileType: RawRepresentable, Sendable, Hashable, Codable {
   /// The raw file-type bits from the C mode.
   public var rawValue: CInterop.Mode
 
-  /// Creates a strongly-typed file type from the raw C value.
+  /// Creates a strongly-typed file type from the raw C `mode_t`.
   ///
-  /// - Note: `rawValue` should only contain the mode's file-type bits. Otherwise,
-  ///   use `FileMode(rawValue:)` to get a strongly-typed `FileMode`, then
-  ///   call `.type` to get the properly masked `FileType`.
+  /// - Note: This initializer stores the `rawValue` directly and **does not**
+  ///   mask the value with `S_IFMT`. If the supplied `rawValue` contains bits
+  ///   outside of the `S_IFMT` mask, the resulting `FileType` will not compare
+  ///   equal to constants like `.directory` and `.symbolicLink`, which may
+  ///   be unexpected.
+  /// 
+  ///   If you're unsure whether the `mode_t` contains bits outside of `S_IFMT`,
+  ///   you can use `FileMode(rawValue:)` instead to get a strongly-typed
+  /// `FileMode`, then call `.type` to get the properly masked `FileType`.
   public init(rawValue: CInterop.Mode)
 
   /// Directory
@@ -115,10 +128,10 @@ public struct FileType: RawRepresentable, Sendable, Hashable, Codable {
   /// The corresponding C constant is `S_IFREG`.
   public static var regular: FileType { get }
 
-  /// FIFO (or pipe)
+  /// FIFO (or named pipe)
   ///
   /// The corresponding C constant is `S_IFIFO`.
-  public static var pipe: FileType { get }
+  public static var fifo: FileType { get }
 
   /// Symbolic link
   ///
@@ -152,6 +165,9 @@ public struct FileMode: RawRepresentable, Sendable, Hashable, Codable {
 
   /// Creates a strongly-typed `FileMode` from the raw C value.
   public init(rawValue: CInterop.Mode)
+  
+  /// Creates a strongly-typed `FileMode` from the raw C value.
+  public init(_ rawValue: CInterop.Mode)
 
   /// Creates a `FileMode` from the given file type and permissions.
   ///
@@ -165,7 +181,7 @@ public struct FileMode: RawRepresentable, Sendable, Hashable, Codable {
 
   /// The file's permissions, from the mode's permission bits.
   ///
-  /// Setting this property will mask the `newValue` with the permissions bit mask `0o7777`.
+  /// Setting this property will mask the `newValue` with the permissions bit mask `ALLPERMS`.
   public var permissions: FilePermissions { get set }
 }
 ```
@@ -183,24 +199,28 @@ For now, we define the following for use in `Stat`.
 public struct UserID: RawRepresentable, Sendable, Hashable, Codable {
   public var rawValue: CInterop.UserID
   public init(rawValue: CInterop.UserID)
+  public init(_ rawValue: CInterop.UserID)
 }
 
 @frozen
 public struct GroupID: RawRepresentable, Sendable, Hashable, Codable {
   public var rawValue: CInterop.GroupID
   public init(rawValue: CInterop.GroupID)
+  public init(_ rawValue: CInterop.GroupID)
 }
 
 @frozen
 public struct DeviceID: RawRepresentable, Sendable, Hashable, Codable {
   public var rawValue: CInterop.DeviceID
   public init(rawValue: CInterop.DeviceID)
+  public init(_ rawValue: CInterop.DeviceID)
 }
 
 @frozen
 public struct Inode: RawRepresentable, Sendable, Hashable, Codable {
   public var rawValue: CInterop.Inode
   public init(rawValue: CInterop.Inode)
+  public init(_ rawValue: CInterop.Inode)
 }
 ```
 
@@ -271,29 +291,11 @@ public struct FileFlags: OptionSet, Sendable, Hashable, Codable {
   /// - Note: This flag may be changed by the file owner or superuser.
   public static var opaque: FileFlags { get }
 
-  /// File is compressed at the file system level.
-  ///
-  /// The corresponding C constant is `UF_COMPRESSED`.
-  /// - Note: This flag is read-only. Attempting to change it will result in undefined behavior.
-  public static var compressed: FileFlags { get }
-
-  /// File is tracked for the purpose of document IDs.
-  ///
-  /// The corresponding C constant is `UF_TRACKED`.
-  /// - Note: This flag may be changed by the file owner or superuser.
-  public static var tracked: FileFlags { get }
-
   /// File should not be displayed in a GUI.
   ///
   /// The corresponding C constant is `UF_HIDDEN`.
   /// - Note: This flag may be changed by the file owner or superuser.
   public static var hidden: FileFlags { get }
-
-  /// File requires an entitlement for writing.
-  ///
-  /// The corresponding C constant is `SF_RESTRICTED`.
-  /// - Note: This flag may only be changed by the superuser.
-  public static var restricted: FileFlags { get }
 
   /// File may not be removed or renamed.
   ///
@@ -305,11 +307,29 @@ public struct FileFlags: OptionSet, Sendable, Hashable, Codable {
   // MARK: Flags Available on Darwin only
 
   #if SYSTEM_PACKAGE_DARWIN
+  /// File is compressed at the file system level.
+  ///
+  /// The corresponding C constant is `UF_COMPRESSED`.
+  /// - Note: This flag is read-only. Attempting to change it will result in undefined behavior.
+  public static var compressed: FileFlags { get }
+  
+  /// File is tracked for the purpose of document IDs.
+  ///
+  /// The corresponding C constant is `UF_TRACKED`.
+  /// - Note: This flag may be changed by the file owner or superuser.
+  public static var tracked: FileFlags { get }
+  
   /// File requires an entitlement for reading and writing.
   ///
   /// The corresponding C constant is `UF_DATAVAULT`.
   /// - Note: This flag may be changed by the file owner or superuser.
   public static var dataVault: FileFlags { get }
+  
+  /// File requires an entitlement for writing.
+  ///
+  /// The corresponding C constant is `SF_RESTRICTED`.
+  /// - Note: This flag may only be changed by the superuser.
+  public static var restricted: FileFlags { get }
 
   /// File is a firmlink.
   ///
@@ -449,6 +469,7 @@ public struct Stat: RawRepresentable, Sendable {
     ///
     /// The corresponding C constant is `AT_RESOLVE_BENEATH`.
     /// - Note: Only available on Darwin and FreeBSD.
+    @available(macOS 26.0, iOS 26.0, tvOS 26.0, watchOS 26.0, visionOS 26.0, *)
     public static var resolveBeneath: Flags { get }
     #endif
 
@@ -478,7 +499,7 @@ public struct Stat: RawRepresentable, Sendable {
     retryOnInterrupt: Bool = true
   ) throws(Errno)
 
-  /// Creates a `Stat` struct from an`UnsafePointer<CChar>` path.
+  /// Creates a `Stat` struct from an `UnsafePointer<CChar>` path.
   ///
   /// `followTargetSymlink` determines the behavior if `path` ends with a symbolic link.
   /// By default, `followTargetSymlink` is `true` and this initializer behaves like `stat()`.
@@ -568,9 +589,15 @@ public struct Stat: RawRepresentable, Sendable {
   public var mode: FileMode { get set }
 
   /// File type for the given mode
+  ///
+  /// - Note: This property is equivalent to `mode.type`. Modifying this
+  ///   property will update the underlying `st_mode` accordingly.
   public var type: FileType { get set }
 
   /// File permissions for the given mode
+  ///
+  /// - Note: This property is equivalent to `mode.permissions`. Modifying
+  ///   this property will update the underlying `st_mode` accordingly.
   public var permissions: FilePermissions { get set }
 
   /// Number of hard links
@@ -599,6 +626,12 @@ public struct Stat: RawRepresentable, Sendable {
 
   /// Total size, in bytes
   ///
+  /// The semantics of this property are tied to the underlying C `st_size` field,
+  /// which can have file system-dependent behavior. For example, this property
+  /// can return different values for a file's data fork and resource fork, and some
+  /// file systems report logical size rather than actual disk usage for compressed
+  /// or cloned files.
+  ///
   /// The corresponding C property is `st_size`.
   public var size: Int64 { get set }
 
@@ -609,39 +642,46 @@ public struct Stat: RawRepresentable, Sendable {
 
   /// Number of 512-byte blocks allocated
   ///
+  /// The semantics of this property are tied to the underlying C `st_blocks` field,
+  /// which can have file system-dependent behavior.
+  ///
   /// The corresponding C property is `st_blocks`.
   public var blocksAllocated: Int64 { get set }
 
   /// Total size allocated, in bytes
   ///
+  /// The semantics of this property are tied to the underlying C `st_blocks` field,
+  /// which can have file system-dependent behavior.
+  ///
   /// - Note: Calculated as `512 * blocksAllocated`.
   public var sizeAllocated: Int64 { get }
-
-  /// Time of last access, given as a `UTCClock.Instant`
+  
+  // NOTE: "st_" property names are used for the `timespec` properties so
+  // we can reserve `accessTime`, `modificationTime`, etc. for potential 
+  // `UTCClock.Instant` properties in the future.
+  // See Future Directions for more info.
+  
+  /// Time of last access, given as a C `timespec` since the Epoch.
   ///
   /// The corresponding C property is `st_atim` (or `st_atimespec` on Darwin).
-  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-  public var accessTime: UTCClock.Instant { get set }
-
-  /// Time of last modification, given as a `UTCClock.Instant`
+  public var st_atim: timespec { get set }
+  
+  /// Time of last modification, given as a C `timespec` since the Epoch.
   ///
   /// The corresponding C property is `st_mtim` (or `st_mtimespec` on Darwin).
-  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-  public var modificationTime: UTCClock.Instant { get set }
-
-  /// Time of last status (inode) change, given as a `UTCClock.Instant`
+  public var st_mtim: timespec { get set }
+  
+  /// Time of last status (inode) change, given as a C `timespec` since the Epoch.
   ///
   /// The corresponding C property is `st_ctim` (or `st_ctimespec` on Darwin).
-  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-  public var changeTime: UTCClock.Instant { get set }
+  public var st_ctim: timespec { get set }
 
   #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
-  /// Time of file creation, given as a `UTCClock.Instant`
+  /// Time of file creation, given as a C `timespec` since the Epoch.
   ///
   /// The corresponding C property is `st_birthtim` (or `st_birthtimespec` on Darwin).
   /// - Note: Only available on Darwin and FreeBSD.
-  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
-  public var creationTime: UTCClock.Instant { get set }
+  public var st_birthtim: timespec { get set }
   #endif
 
   #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
@@ -703,7 +743,7 @@ extension FilePath {
     retryOnInterrupt: Bool = true
   ) throws(Errno) -> Stat
   
-  /// Creates a `Stat` struct for the file referenced by this`FilePath` using the given `Flags`.
+  /// Creates a `Stat` struct for the file referenced by this `FilePath` using the given `Flags`.
   ///
   /// If `path` is relative, it is resolved against the current working directory.
   ///
@@ -713,7 +753,7 @@ extension FilePath {
     retryOnInterrupt: Bool = true
   ) throws(Errno) -> Stat
 
-  /// Creates a `Stat` struct for the file referenced by this`FilePath` using the given `Flags`,
+  /// Creates a `Stat` struct for the file referenced by this `FilePath` using the given `Flags`,
   /// including a `FileDescriptor` to resolve a relative path.
   ///
   /// If `path` is absolute (starts with a forward slash), then `fd` is ignored.
@@ -761,9 +801,42 @@ To remain faithful to the underlying system calls, we don't anticipate extending
 
 While this proposal does not include `Stat` on Windows, a separate proposal should provide Swift-native wrappers of idiomatic `GetFileInformation` functions with their associated types.
 
-A more general `FileInfo` API could then build on these OS-specific types to provide an ergonomic, cross-platform abstraction for file metadata. These future cross-platform APIs might be better implemented outside of System, such as in Foundation, the standard library, or somewhere in between. They could provide additional information or conveniences, such as reading and modifying extended attributes or setting file timestamps.
+A more general `FileInfo` API could then build on these OS-specific types to provide an ergonomic, cross-platform abstraction for file metadata. These future cross-platform APIs might be better implemented outside of System, such as in Foundation, the standard library, or somewhere in between. They could provide additional information or convenience features, such as reading and modifying extended attributes or setting file timestamps.
 
 In the future, more functionality could be added to types such as `DeviceID`.
+
+### Using `UTCClock.Instant` for time properties
+
+When the `UTCClock` proposal and code destination is finalized, we could use the `UTCClock.Instant` type for `Stat` time properties:
+
+```swift
+extension Stat {
+  /// Time of last access, given as a `UTCClock.Instant`
+  ///
+  /// The corresponding C property is `st_atim` (or `st_atimespec` on Darwin).
+  public var accessTime: UTCClock.Instant { get set }
+  
+  /// Time of last modification, given as a `UTCClock.Instant`
+  ///
+  /// The corresponding C property is `st_mtim` (or `st_mtimespec` on Darwin).
+  public var modificationTime: UTCClock.Instant { get set }
+  
+  /// Time of last status (inode) change, given as a `UTCClock.Instant`
+  ///
+  /// The corresponding C property is `st_ctim` (or `st_ctimespec` on Darwin).
+  public var changeTime: UTCClock.Instant { get set }
+  
+  #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
+  /// Time of file creation, given as a `UTCClock.Instant`
+  ///
+  /// The corresponding C property is `st_birthtim` (or `st_birthtimespec` on Darwin).
+  /// - Note: Only available on Darwin and FreeBSD.
+  public var creationTime: UTCClock.Instant { get set }
+  #endif
+}
+```
+
+We would reserve the more ergonomic `accessTime`, `modificationTime`, etc. names for these future extensions.
 
 ## Alternatives considered
 
@@ -787,14 +860,33 @@ While having `.stat()` functions on `FilePath` and `FileDescriptor` is preferred
 
 ### Types for time properties
 
-`UTCClock.Instant` was chosen over alternatives such as `Duration` or a new `Timespec` type to provide a comparable instant in time rather than a duration since the Epoch. This would depend on lowering `UTCClock` to System or the standard library, which could be discussed in a separate pitch or proposal.
+`UTCClock.Instant` would ideally be chosen over alternatives such as `Duration` or a new `Timespec` type to provide a comparable instant in time rather than a duration since the Epoch. However, this would depend on lowering `UTCClock` to System or the standard library and depends on that separate proposal.
+
+Exposing a `timespec` property directly also has benefits; it's faithful to the underlying system's type and already has conversion support to/from `Duration` in the standard library.
+
+Given that `timespec` is not particularly crufty and already has public API supporting its conversions, we decided to expose the raw `timespec` for now under the original C property names (`st_atim`, `st_mtim`, etc.) and reserve more ergonomic names for future extensions.
 
 ### Type names
 
 `Stat` was chosen over alternatives like `FileStat` or `FileStatus` for its brevity and likeness to the "stat" system call. Unlike generic names such as `FileInfo` or `FileMetadata`, `Stat` emphasizes the platform-specific nature of this type.
 
-`Inode` was similarly chosen over alternatives like `FileIndex` or `FileID` to emphasize the platform-specific nature. `IndexNode` is a bit verbose, and despite its etymology, "inode" is now ubiquitous and understood as a single word, making the capitalization `Inode` preferable to `INode`.
+`Stat` and (possible future) `StatFS` names were chosen over `FileStat` and `FileSystemStat`, or a namespaced `File.Stat` and `FileSystem.Stat`, because `Stat` is recognized more as its own concept rather than shorthand for "status." Thus, using `FileSystem.Stat` or `FileSystemStat` for `statfs` in the future might lead to confusion. Also, precedence from other languages' `stat` APIs that use a "file system" namespace might add to this confusion:
 
+```
+Rust: fs::metadata() -> fs::Metadata
+Python: os.stat() -> os.stat_result
+Go: os.Stat() -> fs.FileInfo
+```
+
+`Inode` was chosen over alternatives like `FileIndex` or `FileID` to emphasize the platform-specific nature. `IndexNode` is a bit verbose, and despite its etymology, "inode" is now ubiquitous and understood as a single word, making the capitalization `Inode` preferable to `INode`.
+
+### `FileFlags` naming conventions
+
+`FileFlags` property names such as `hidden` and `compressed` could alternatively use an "is" prefix commonly seen in boolean properties to form `.isHidden` and `.isCompressed`. However, we chose to omit the "is" prefix for the following reasons:
+
+- The "is"-less flag names are succinct and closely aligned with the underlying C constants they represent.
+- `OptionSet` property names often use an adjective ("hidden") rather than a predicate ("is hidden") when describing a single subject, such as a file. This is likely because "is" does not add to the flow of `flags.contains(.isHidden)` like it does for a direct boolean property, such as `file.isHidden`.
+- For both `OptionSet` APIs that describe a single subject and those that describe a collection of elements, there's precedence to omit the "is". Examples of single-subject `OptionSet` APIs include `UIControl.State`, which uses `.highlighted` and `.disabled` rather than `.isHighlighted` and `.isDisabled`, and `FilePermissions`, which uses `.ownerRead` rather than `.isOwnerReadable`. Examples of multi-subject `OptionSet` APIs include `Edge.Set`, which uses `.top` and `.bottom`, and `ShippingOptions` from the `OptionSet` documentation, which uses `.nextDay`, `.priority`, etc.
 
 ## Acknowledgments
 
@@ -844,10 +936,10 @@ The `retryOnInterrupt: Bool = true` parameter is omitted for clarity.
 | `size` | `st_size` | " | " | " | " | " |
 | `preferredIOBlockSize` | `st_blksize` | " | " | " | " | " |
 | `blocksAllocated` | `st_blocks` | " | " | " | " | " |
-| `accessTime` | `st_atimespec` | `st_atim` | `st_atim` | `st_atim` | `st_atim` | `st_atim` |
-| `modificationTime` | `st_mtimespec` | `st_mtim` | `st_mtim` | `st_mtim` | `st_mtim` | `st_mtim` |
-| `changeTime` | `st_ctimespec` | `st_ctim` | `st_ctim` | `st_ctim` | `st_ctim` | `st_ctim` |
-| `creationTime` | `st_birthtimespec` | `st_birthtim` | N/A | N/A | N/A | N/A |
+| `st_atim` | `st_atimespec` | `st_atim` | `st_atim` | `st_atim` | `st_atim` | `st_atim` |
+| `st_mtim` | `st_mtimespec` | `st_mtim` | `st_mtim` | `st_mtim` | `st_mtim` | `st_mtim` |
+| `st_ctim` | `st_ctimespec` | `st_ctim` | `st_ctim` | `st_ctim` | `st_ctim` | `st_ctim` |
+| `st_birthtim` | `st_birthtimespec` | `st_birthtim` | N/A | N/A | N/A | N/A |
 | `flags` | `st_flags` | `st_flags` | `st_flags` | N/A | N/A | N/A |
 | `generationNumber` | `st_gen` | `st_gen` | `st_gen` | N/A | N/A | N/A |
 
@@ -873,12 +965,12 @@ The `retryOnInterrupt: Bool = true` parameter is omitted for clarity.
 | `systemImmutable` | `SF_IMMUTABLE` | `SF_IMMUTABLE` | `SF_IMMUTABLE` |
 | `systemAppend` | `SF_APPEND` | `SF_APPEND` | `SF_APPEND` |
 | `opaque` | `UF_OPAQUE` | `UF_OPAQUE` | N/A |
-| `compressed` | `UF_COMPRESSED` | `UF_COMPRESSED` | N/A |
-| `tracked` | `UF_TRACKED` | `UF_TRACKED` | N/A |
 | `hidden` | `UF_HIDDEN` | `UF_HIDDEN` | N/A |
-| `restricted` | `SF_RESTRICTED` | `SF_RESTRICTED` | N/A |
 | `systemNoUnlink` | `SF_NOUNLINK` | `SF_NOUNLINK` | N/A |
+| `compressed` | `UF_COMPRESSED` | N/A | N/A |
+| `tracked` | `UF_TRACKED` | N/A | N/A |
 | `dataVault` | `UF_DATAVAULT` | N/A | N/A |
+| `restricted` | `SF_RESTRICTED` | N/A | N/A |
 | `firmlink` | `SF_FIRMLINK` | N/A | N/A |
 | `dataless` | `SF_DATALESS` | N/A | N/A |
 | `userNoUnlink` | N/A | `UF_NOUNLINK` | N/A |
