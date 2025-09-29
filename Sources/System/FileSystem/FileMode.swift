@@ -44,7 +44,7 @@ public struct FileMode: RawRepresentable, Sendable, Hashable, Codable {
 
   /// The file's permissions, from the mode's permission bits.
   ///
-  /// Setting this property will mask the `newValue` with the permissions bit mask `0o7777`.
+  /// Setting this property will mask the `newValue` with the permissions bit mask `ALLPERMS`.
   @_alwaysEmitIntoClient
   public var permissions: FilePermissions {
     get { FilePermissions(rawValue: rawValue & _MODE_PERMISSIONS_MASK) }

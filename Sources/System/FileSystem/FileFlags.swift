@@ -21,12 +21,12 @@
 // | systemImmutable  | SF_IMMUTABLE  | SF_IMMUTABLE  | SF_IMMUTABLE  |
 // | systemAppend     | SF_APPEND     | SF_APPEND     | SF_APPEND     |
 // | opaque           | UF_OPAQUE     | UF_OPAQUE     | N/A           |
-// | compressed       | UF_COMPRESSED | UF_COMPRESSED | N/A           |
-// | tracked          | UF_TRACKED    | UF_TRACKED    | N/A           |
 // | hidden           | UF_HIDDEN     | UF_HIDDEN     | N/A           |
-// | restricted       | SF_RESTRICTED | SF_RESTRICTED | N/A           |
 // | systemNoUnlink   | SF_NOUNLINK   | SF_NOUNLINK   | N/A           |
+// | compressed       | UF_COMPRESSED | N/A           | N/A           |
+// | tracked          | UF_TRACKED    | N/A           | N/A           |
 // | dataVault        | UF_DATAVAULT  | N/A           | N/A           |
+// | restricted       | SF_RESTRICTED | N/A           | N/A           |
 // | firmlink         | SF_FIRMLINK   | N/A           | N/A           |
 // | dataless         | SF_DATALESS   | N/A           | N/A           |
 // | userNoUnlink     | N/A           | UF_NOUNLINK   | N/A           |
@@ -114,6 +114,24 @@ public struct FileFlags: OptionSet, Sendable, Hashable, Codable {
   @_alwaysEmitIntoClient
   public static var opaque: FileFlags { FileFlags(rawValue: _UF_OPAQUE) }
 
+  /// File should not be displayed in a GUI.
+  ///
+  /// The corresponding C constant is `UF_HIDDEN`.
+  /// - Note: This flag may be changed by the file owner or superuser.
+  @_alwaysEmitIntoClient
+  public static var hidden: FileFlags { FileFlags(rawValue: _UF_HIDDEN) }
+
+  /// File may not be removed or renamed.
+  ///
+  /// The corresponding C constant is `SF_NOUNLINK`.
+  /// - Note: This flag may only be changed by the superuser.
+  @_alwaysEmitIntoClient
+  public static var systemNoUnlink: FileFlags { FileFlags(rawValue: _SF_NOUNLINK) }
+  #endif
+
+  // MARK: Flags Available on Darwin only
+
+  #if SYSTEM_PACKAGE_DARWIN
   /// File is compressed at the file system level.
   ///
   /// The corresponding C constant is `UF_COMPRESSED`.
@@ -128,12 +146,12 @@ public struct FileFlags: OptionSet, Sendable, Hashable, Codable {
   @_alwaysEmitIntoClient
   public static var tracked: FileFlags { FileFlags(rawValue: _UF_TRACKED) }
 
-  /// File should not be displayed in a GUI.
+  /// File requires an entitlement for reading and writing.
   ///
-  /// The corresponding C constant is `UF_HIDDEN`.
+  /// The corresponding C constant is `UF_DATAVAULT`.
   /// - Note: This flag may be changed by the file owner or superuser.
   @_alwaysEmitIntoClient
-  public static var hidden: FileFlags { FileFlags(rawValue: _UF_HIDDEN) }
+  public static var dataVault: FileFlags { FileFlags(rawValue: _UF_DATAVAULT) }
 
   /// File requires an entitlement for writing.
   ///
@@ -141,24 +159,6 @@ public struct FileFlags: OptionSet, Sendable, Hashable, Codable {
   /// - Note: This flag may only be changed by the superuser.
   @_alwaysEmitIntoClient
   public static var restricted: FileFlags { FileFlags(rawValue: _SF_RESTRICTED) }
-
-  /// File may not be removed or renamed.
-  ///
-  /// The corresponding C constant is `SF_NOUNLINK`.
-  /// - Note: This flag may only be changed by the superuser.
-  @_alwaysEmitIntoClient
-  public static var systemNoUnlink: FileFlags { FileFlags(rawValue: _SF_NOUNLINK) }
-  #endif
-
-  // MARK: Flags Available on Darwin only
-
-  #if SYSTEM_PACKAGE_DARWIN
-  /// File requires an entitlement for reading and writing.
-  ///
-  /// The corresponding C constant is `UF_DATAVAULT`.
-  /// - Note: This flag may be changed by the file owner or superuser.
-  @_alwaysEmitIntoClient
-  public static var dataVault: FileFlags { FileFlags(rawValue: _UF_DATAVAULT) }
 
   /// File is a firmlink.
   ///

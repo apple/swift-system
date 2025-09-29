@@ -733,16 +733,7 @@ internal var _SF_APPEND: CInterop.FileFlags { UInt32(bitPattern: SF_APPEND) }
 internal var _UF_OPAQUE: CInterop.FileFlags { UInt32(bitPattern: UF_OPAQUE) }
 
 @_alwaysEmitIntoClient
-internal var _UF_COMPRESSED: CInterop.FileFlags { UInt32(bitPattern: UF_COMPRESSED) }
-
-@_alwaysEmitIntoClient
-internal var _UF_TRACKED: CInterop.FileFlags { UInt32(bitPattern: UF_TRACKED) }
-
-@_alwaysEmitIntoClient
 internal var _UF_HIDDEN: CInterop.FileFlags { UInt32(bitPattern: UF_HIDDEN) }
-
-@_alwaysEmitIntoClient
-internal var _SF_RESTRICTED: CInterop.FileFlags { UInt32(bitPattern: SF_RESTRICTED) }
 
 @_alwaysEmitIntoClient
 internal var _SF_NOUNLINK: CInterop.FileFlags { UInt32(bitPattern: SF_NOUNLINK) }
@@ -752,7 +743,16 @@ internal var _SF_NOUNLINK: CInterop.FileFlags { UInt32(bitPattern: SF_NOUNLINK) 
 
 #if SYSTEM_PACKAGE_DARWIN
 @_alwaysEmitIntoClient
+internal var _UF_COMPRESSED: CInterop.FileFlags { UInt32(bitPattern: UF_COMPRESSED) }
+
+@_alwaysEmitIntoClient
+internal var _UF_TRACKED: CInterop.FileFlags { UInt32(bitPattern: UF_TRACKED) }
+
+@_alwaysEmitIntoClient
 internal var _UF_DATAVAULT: CInterop.FileFlags { UInt32(bitPattern: UF_DATAVAULT) }
+
+@_alwaysEmitIntoClient
+internal var _SF_RESTRICTED: CInterop.FileFlags { UInt32(bitPattern: SF_RESTRICTED) }
 
 @_alwaysEmitIntoClient
 internal var _SF_FIRMLINK: CInterop.FileFlags { UInt32(bitPattern: SF_FIRMLINK) }

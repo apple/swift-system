@@ -122,7 +122,7 @@ public struct Stat: RawRepresentable, Sendable {
     }.get()
   }
 
-  /// Creates a `Stat` struct from an`UnsafePointer<CChar>` path.
+  /// Creates a `Stat` struct from an `UnsafePointer<CChar>` path.
   ///
   /// `followTargetSymlink` determines the behavior if `path` ends with a symbolic link.
   /// By default, `followTargetSymlink` is `true` and this initializer behaves like `stat()`.
@@ -314,6 +314,9 @@ public struct Stat: RawRepresentable, Sendable {
   }
 
   /// File type for the given mode
+  ///
+  /// - Note: This property is equivalent to `mode.type`. Modifying this
+  ///   property will update the underlying `st_mode` accordingly.
   @_alwaysEmitIntoClient
   public var type: FileType {
     get { mode.type }
@@ -325,6 +328,9 @@ public struct Stat: RawRepresentable, Sendable {
   }
 
   /// File permissions for the given mode
+  ///
+  /// - Note: This property is equivalent to `mode.permissions`. Modifying
+  ///   this property will update the underlying `st_mode` accordingly.
   @_alwaysEmitIntoClient
   public var permissions: FilePermissions {
     get { mode.permissions }
@@ -365,7 +371,7 @@ public struct Stat: RawRepresentable, Sendable {
   /// Device ID (if special file)
   ///
   /// For character or block special files, the returned `DeviceID` may have
-  /// meaningful `.major` and `.minor` values. For non-special files, this
+  /// meaningful major and minor values. For non-special files, this
   /// property is usually meaningless and often set to 0.
   ///
   /// The corresponding C property is `st_rdev`.
@@ -376,6 +382,12 @@ public struct Stat: RawRepresentable, Sendable {
   }
 
   /// Total size, in bytes
+  ///
+  /// The semantics of this property are tied to the underlying C `st_size` field,
+  /// which can have file system-dependent behavior. For example, this property
+  /// can return different values for a file's data fork and resource fork, and some
+  /// file systems report logical size rather than actual disk usage for compressed
+  /// or cloned files.
   ///
   /// The corresponding C property is `st_size`.
   @_alwaysEmitIntoClient
@@ -395,6 +407,9 @@ public struct Stat: RawRepresentable, Sendable {
 
   /// Number of 512-byte blocks allocated
   ///
+  /// The semantics of this property are tied to the underlying C `st_blocks` field,
+  /// which can have file system-dependent behavior.
+  ///
   /// The corresponding C property is `st_blocks`.
   @_alwaysEmitIntoClient
   public var blocksAllocated: Int64 {
@@ -404,11 +419,18 @@ public struct Stat: RawRepresentable, Sendable {
 
   /// Total size allocated, in bytes
   ///
+  /// The semantics of this property are tied to the underlying C `st_blocks` field,
+  /// which can have file system-dependent behavior.
+  ///
   /// - Note: Calculated as `512 * blocksAllocated`.
   @_alwaysEmitIntoClient
   public var sizeAllocated: Int64 {
     512 * blocksAllocated
   }
+
+  // NOTE: "st_" property names are used for the `timespec` properties so
+  // we can reserve `accessTime`, `modificationTime`, etc. for potential
+  // `UTCClock.Instant` properties in the future.
 
   /// Time of last access, given as a C `timespec` since the Epoch.
   ///
@@ -497,7 +519,7 @@ public struct Stat: RawRepresentable, Sendable {
   }
   #endif
 
-  // TODO: jflat - Change time properties to UTCClock.Instant when possible.
+  // TODO: Investigate changing time properties to UTCClock.Instant once available.
 
 //  /// Time of last access, given as a `UTCClock.Instant`
 //  ///
@@ -602,8 +624,6 @@ extension Stat: Hashable {
 
 // MARK: - CustomStringConvertible and CustomDebugStringConvertible
 
-// TODO: jflat
-
 // MARK: - FileDescriptor Extensions
 
 // @available(System X.Y.Z, *)
@@ -673,7 +693,7 @@ extension FilePath {
     }
   }
 
-  /// Creates a `Stat` struct for the file referenced by this`FilePath` using the given `Flags`.
+  /// Creates a `Stat` struct for the file referenced by this `FilePath` using the given `Flags`.
   ///
   /// If `path` is relative, it is resolved against the current working directory.
   ///
@@ -690,7 +710,7 @@ extension FilePath {
     ).get()
   }
 
-  /// Creates a `Stat` struct for the file referenced by this`FilePath` using the given `Flags`,
+  /// Creates a `Stat` struct for the file referenced by this `FilePath` using the given `Flags`,
   /// including a `FileDescriptor` to resolve a relative path.
   ///
   /// If `path` is absolute (starts with a forward slash), then `fd` is ignored.

@@ -19,9 +19,13 @@ public struct UserID: RawRepresentable, Sendable, Hashable, Codable {
   @_alwaysEmitIntoClient
   public var rawValue: CInterop.UserID
 
-  /// Creates a strongly-typed `GroupID` from the raw C value.
+  /// Creates a strongly-typed `UserID` from the raw C value.
   @_alwaysEmitIntoClient
   public init(rawValue: CInterop.UserID) { self.rawValue = rawValue }
+
+  /// Creates a strongly-typed `UserID` from the raw C value.
+  @_alwaysEmitIntoClient
+  public init(_ rawValue: CInterop.UserID) { self.rawValue = rawValue }
 }
 
 /// A Swift wrapper of the C `gid_t` type.
@@ -36,6 +40,10 @@ public struct GroupID: RawRepresentable, Sendable, Hashable, Codable {
   /// Creates a strongly-typed `GroupID` from the raw C value.
   @_alwaysEmitIntoClient
   public init(rawValue: CInterop.GroupID) { self.rawValue = rawValue }
+
+  /// Creates a strongly-typed `GroupID` from the raw C value.
+  @_alwaysEmitIntoClient
+  public init(_ rawValue: CInterop.GroupID) { self.rawValue = rawValue }
 }
 
 /// A Swift wrapper of the C `dev_t` type.
@@ -51,26 +59,31 @@ public struct DeviceID: RawRepresentable, Sendable, Hashable, Codable {
   @_alwaysEmitIntoClient
   public init(rawValue: CInterop.DeviceID) { self.rawValue = rawValue }
 
-
-  /// Creates a `DeviceID` from the given major and minor device numbers.
-  ///
-  /// The corresponding C function is `makedev()`.
+  /// Creates a strongly-typed `DeviceID` from the raw C value.
   @_alwaysEmitIntoClient
-  public static func make(major: CUnsignedInt, minor: CUnsignedInt) -> DeviceID {
-    DeviceID(rawValue: system_makedev(major, minor))
-  }
+  public init(_ rawValue: CInterop.DeviceID) { self.rawValue = rawValue }
 
-  /// The major device number
-  ///
-  /// The corresponding C function is `major()`.
-  @_alwaysEmitIntoClient
-  public var major: CInt { system_major(rawValue) }
+  // TODO: API review for ID wrapper functionality
 
-  /// The minor device number
-  ///
-  /// The corresponding C function is `minor()`.
-  @_alwaysEmitIntoClient
-  public var minor: CInt { system_minor(rawValue) }
+//  /// Creates a `DeviceID` from the given major and minor device numbers.
+//  ///
+//  /// The corresponding C function is `makedev()`.
+//  @_alwaysEmitIntoClient
+//  private static func make(major: CUnsignedInt, minor: CUnsignedInt) -> DeviceID {
+//    DeviceID(rawValue: system_makedev(major, minor))
+//  }
+//
+//  /// The major device number
+//  ///
+//  /// The corresponding C function is `major()`.
+//  @_alwaysEmitIntoClient
+//  private var major: CInt { system_major(rawValue) }
+//
+//  /// The minor device number
+//  ///
+//  /// The corresponding C function is `minor()`.
+//  @_alwaysEmitIntoClient
+//  private var minor: CInt { system_minor(rawValue) }
 }
 
 /// A Swift wrapper of the C `ino_t` type.
@@ -85,5 +98,9 @@ public struct Inode: RawRepresentable, Sendable, Hashable, Codable {
   /// Creates a strongly-typed `Inode` from the raw C value.
   @_alwaysEmitIntoClient
   public init(rawValue: CInterop.Inode) { self.rawValue = rawValue }
+
+  /// Creates a strongly-typed `Inode` from the raw C value.
+  @_alwaysEmitIntoClient
+  public init(_ rawValue: CInterop.Inode) { self.rawValue = rawValue }
 }
 #endif // !os(Windows)
