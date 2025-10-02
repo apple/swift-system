@@ -324,6 +324,141 @@ extension FileDescriptor {
 #endif
   }
 
+  /// Options that specify behavior for a newly-created pipe.
+  @frozen
+  @available(Windows, unavailable)
+  @available(macOS, unavailable)
+  @available(iOS, unavailable)
+  @available(tvOS, unavailable)
+  @available(watchOS, unavailable)
+  @available(visionOS, unavailable)
+  public struct PipeOptions: OptionSet, Sendable, Hashable, Codable {
+    /// The raw C options.
+    @_alwaysEmitIntoClient
+    public var rawValue: CInt
+
+    /// Create a strongly-typed options value from raw C options.
+    @_alwaysEmitIntoClient
+    public init(rawValue: CInt) { self.rawValue = rawValue }
+
+#if !os(Windows)
+    /// Indicates that all
+    /// subsequent input and output operations on the pipe's file descriptors will be nonblocking.
+    ///
+    /// The corresponding C constant is `O_NONBLOCK`.
+    @_alwaysEmitIntoClient
+    public static var nonBlocking: OpenOptions { .init(rawValue: _O_NONBLOCK) }
+
+    @_alwaysEmitIntoClient
+    @available(*, unavailable, renamed: "nonBlocking")
+    public static var O_NONBLOCK: OpenOptions { nonBlocking }
+
+    /// Indicates that executing a program closes the file.
+    ///
+    /// Normally, file descriptors remain open
+    /// across calls to the `exec(2)` family of functions.
+    /// If you specify this option,
+    /// the file descriptor is closed when replacing this process
+    /// with another process.
+    ///
+    /// The state of the file
+    /// descriptor flags can be inspected using `F_GETFD`,
+    /// as described in the `fcntl(2)` man page.
+    ///
+    /// The corresponding C constant is `O_CLOEXEC`.
+    @_alwaysEmitIntoClient
+    public static var closeOnExec: OpenOptions { .init(rawValue: _O_CLOEXEC) }
+
+    @_alwaysEmitIntoClient
+    @available(*, unavailable, renamed: "closeOnExec")
+    public static var O_CLOEXEC: OpenOptions { closeOnExec }
+
+#if !os(WASI) && !os(Linux) && !os(Android)
+    /// Indicates that forking a program closes the file.
+    ///
+    /// Normally, file descriptors remain open
+    /// across calls to the `fork(2)` function.
+    /// If you specify this option,
+    /// the file descriptor is closed when forking this process
+    /// into another process.
+    ///
+    /// The state of the file
+    /// descriptor flags can be inspected using `F_GETFD`,
+    /// as described in the `fcntl(2)` man page.
+    ///
+    /// The corresponding C constant is `O_CLOFORK`.
+    @_alwaysEmitIntoClient
+    public static var closeOnFork: OpenOptions { .init(rawValue: _O_CLOFORK) }
+
+    @_alwaysEmitIntoClient
+    @available(*, unavailable, renamed: "closeOnFork")
+    public static var O_CLOFORK: OpenOptions { closeOnFork }
+#endif
+#endif
+  }
+
+  /// Options that specify behavior for a duplicated file descriptor.
+  @frozen
+  @available(Windows, unavailable)
+  @available(macOS, unavailable)
+  @available(iOS, unavailable)
+  @available(tvOS, unavailable)
+  @available(watchOS, unavailable)
+  @available(visionOS, unavailable)
+  public struct DuplicateOptions: OptionSet, Sendable, Hashable, Codable {
+    /// The raw C options.
+    @_alwaysEmitIntoClient
+    public var rawValue: CInt
+
+    /// Create a strongly-typed options value from raw C options.
+    @_alwaysEmitIntoClient
+    public init(rawValue: CInt) { self.rawValue = rawValue }
+
+#if !os(Windows)
+    /// Indicates that executing a program closes the file.
+    ///
+    /// Normally, file descriptors remain open
+    /// across calls to the `exec(2)` family of functions.
+    /// If you specify this option,
+    /// the file descriptor is closed when replacing this process
+    /// with another process.
+    ///
+    /// The state of the file
+    /// descriptor flags can be inspected using `F_GETFD`,
+    /// as described in the `fcntl(2)` man page.
+    ///
+    /// The corresponding C constant is `O_CLOEXEC`.
+    @_alwaysEmitIntoClient
+    public static var closeOnExec: OpenOptions { .init(rawValue: _O_CLOEXEC) }
+
+    @_alwaysEmitIntoClient
+    @available(*, unavailable, renamed: "closeOnExec")
+    public static var O_CLOEXEC: OpenOptions { closeOnExec }
+
+#if !os(WASI) && !os(Linux) && !os(Android)
+    /// Indicates that forking a program closes the file.
+    ///
+    /// Normally, file descriptors remain open
+    /// across calls to the `fork(2)` function.
+    /// If you specify this option,
+    /// the file descriptor is closed when forking this process
+    /// into another process.
+    ///
+    /// The state of the file
+    /// descriptor flags can be inspected using `F_GETFD`,
+    /// as described in the `fcntl(2)` man page.
+    ///
+    /// The corresponding C constant is `O_CLOFORK`.
+    @_alwaysEmitIntoClient
+    public static var closeOnFork: OpenOptions { .init(rawValue: _O_CLOFORK) }
+
+    @_alwaysEmitIntoClient
+    @available(*, unavailable, renamed: "closeOnFork")
+    public static var O_CLOFORK: OpenOptions { closeOnFork }
+#endif
+#endif
+  }
+
   /// Options for specifying what a file descriptor's offset is relative to.
   @frozen
   @available(System 0.0.1, *)
