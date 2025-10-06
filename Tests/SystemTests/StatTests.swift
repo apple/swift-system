@@ -81,7 +81,6 @@ private struct StatTests {
   }
 
   @Test
-  @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
   func followSymlinkInits() async throws {
     try withTemporaryFilePath(basename: "Stat_followSymlinkInits") { tempDir in
       let targetFilePath = tempDir.appending("target.txt")
@@ -98,17 +97,15 @@ private struct StatTests {
         }
       }
 
-      #if !os(WASI) // Can't open an fd to a symlink on WASI (no O_PATH)
+      // Can't open an fd to a symlink on WASI (no O_PATH)
+      // On non-Darwin, we need O_PATH | O_NOFOLLOW to open the symlink
+      // directly, but O_PATH requires _GNU_SOURCE be defined (TODO).
       #if SYSTEM_PACKAGE_DARWIN
       let symlinkFD = try FileDescriptor.open(symlinkPath, .readOnly, options: .symlink)
-      #else
-      // Need O_PATH | O_NOFOLLOW to open the symlink directly
-      let symlinkFD = try FileDescriptor.open(symlinkPath, .readOnly, options: [.path, .noFollow])
-      #endif
       defer {
         try? symlinkFD.close()
       }
-      #endif // !os(WASI)
+      #endif
 
       let targetStat = try targetFilePath.stat()
       let originalTargetAccessTime = targetStat.st_atim
@@ -130,7 +127,7 @@ private struct StatTests {
       stat.st_atim = originalTargetAccessTime
       #expect(stat == targetStat)
 
-      #if !os(WASI)
+      #if SYSTEM_PACKAGE_DARWIN
       stat = try symlinkFD.stat()
       stat.st_atim = originalSymlinkAccessTime
       #expect(stat == symlinkStat)
@@ -142,7 +139,7 @@ private struct StatTests {
       stat.st_atim = originalTargetAccessTime
       #expect(stat == targetStat)
 
-      #if !os(WASI)
+      #if SYSTEM_PACKAGE_DARWIN
       stat = try Stat(symlinkFD)
       stat.st_atim = originalSymlinkAccessTime
       #expect(stat == symlinkStat)
@@ -400,11 +397,12 @@ private struct StatTests {
 
 }
 
-#if !SYSTEM_PACKAGE_DARWIN && !os(WASI)
-private extension FileDescriptor.OpenOptions {
-  static var path: Self { Self(rawValue: O_PATH) }
-}
-#endif
+// TODO: Re-enable for testing when _GNU_SOURCE can be defined.
+//#if !SYSTEM_PACKAGE_DARWIN && !os(WASI)
+//private extension FileDescriptor.OpenOptions {
+//  static var path: Self { Self(rawValue: O_PATH) }
+//}
+//#endif
 
 // Comparison operators for timespec until UTCClock.Instant properties are available
 private func >= (lhs: timespec, rhs: timespec) -> Bool {
