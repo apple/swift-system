@@ -85,17 +85,6 @@ public struct Stat: RawRepresentable, Sendable {
     @available(macOS 26.0, iOS 26.0, tvOS 26.0, watchOS 26.0, visionOS 26.0, *)
     public static var resolveBeneath: Flags { Flags(rawValue: _AT_RESOLVE_BENEATH) }
     #endif
-
-    // TODO: Re-enable when _GNU_SOURCE can be defined.
-//    #if os(FreeBSD) || os(Linux) || os(Android)
-//    /// If the path is an empty string (or `NULL` since Linux 6.11),
-//    /// return information about the given file descriptor.
-//    ///
-//    /// The corresponding C constant is `AT_EMPTY_PATH`.
-//    /// - Note: Only available on FreeBSD, Linux, and Android.
-//    @_alwaysEmitIntoClient
-//    public static var emptyPath: Flags { Flags(rawValue: _AT_EMPTY_PATH) }
-//    #endif
   }
 
   // MARK: Initializers
@@ -519,59 +508,6 @@ public struct Stat: RawRepresentable, Sendable {
     }
   }
   #endif
-
-  // TODO: Investigate changing time properties to UTCClock.Instant once available.
-
-//  /// Time of last access, given as a `UTCClock.Instant`
-//  ///
-//  /// The corresponding C property is `st_atim` (or `st_atimespec` on Darwin).
-//  public var accessTime: UTCClock.Instant {
-//    get {
-//      UTCClock.systemEpoch.advanced(by: Duration(st_atim))
-//    }
-//    set {
-//      st_atim = timespec(UTCClock.systemEpoch.duration(to: newValue))
-//    }
-//  }
-//
-//  /// Time of last modification, given as a `UTCClock.Instant`
-//  ///
-//  /// The corresponding C property is `st_mtim` (or `st_mtimespec` on Darwin).
-//  public var modificationTime: UTCClock.Instant {
-//    get {
-//      UTCClock.systemEpoch.advanced(by: Duration(st_mtim))
-//    }
-//    set {
-//      st_mtim = timespec(UTCClock.systemEpoch.duration(to: newValue))
-//    }
-//  }
-//
-//  /// Time of last status (inode) change, given as a `UTCClock.Instant`
-//  ///
-//  /// The corresponding C property is `st_ctim` (or `st_ctimespec` on Darwin).
-//  public var changeTime: UTCClock.Instant {
-//    get {
-//      UTCClock.systemEpoch.advanced(by: Duration(st_ctim))
-//    }
-//    set {
-//      st_ctim = timespec(UTCClock.systemEpoch.duration(to: newValue))
-//    }
-//  }
-//
-//  #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
-//  /// Time of file creation, given as a `UTCClock.Instant`
-//  ///
-//  /// The corresponding C property is `st_birthtim` (or `st_birthtimespec` on Darwin).
-//  /// - Note: Only available on Darwin and FreeBSD.
-//  public var creationTime: UTCClock.Instant {
-//    get {
-//      UTCClock.systemEpoch.advanced(by: Duration(st_birthtim))
-//    }
-//    set {
-//      st_birthtim = timespec(UTCClock.systemEpoch.duration(to: newValue))
-//    }
-//  }
-//  #endif
 
   #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
   /// File flags

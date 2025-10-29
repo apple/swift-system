@@ -103,19 +103,6 @@ internal func system_fstat(_ fd: CInt, _ s: inout CInterop.Stat) -> Int32 {
 internal func system_fstatat(_ fd: CInt, _ p: UnsafePointer<CChar>, _ s: inout CInterop.Stat, _ flags: CInt) -> Int32 {
   fstatat(fd, p, &s, flags)
 }
-
-@usableFromInline
-internal func system_major(_ dev: CInterop.DeviceID) -> CInt {
-  numericCast((dev >> 24) & 0xff)
-}
-@usableFromInline
-internal func system_minor(_ dev: CInterop.DeviceID) -> CInt {
-  numericCast(dev & 0xffffff)
-}
-@usableFromInline
-internal func system_makedev(_ maj: CUnsignedInt, _ min: CUnsignedInt) -> CInterop.DeviceID {
-  CInterop.DeviceID((maj << 24) | min)
-}
 #endif
 
 // Convention: `system_platform_foo` is a

@@ -62,28 +62,6 @@ public struct DeviceID: RawRepresentable, Sendable, Hashable, Codable {
   /// Creates a strongly-typed `DeviceID` from the raw C value.
   @_alwaysEmitIntoClient
   public init(_ rawValue: CInterop.DeviceID) { self.rawValue = rawValue }
-
-  // TODO: API review for ID wrapper functionality
-
-//  /// Creates a `DeviceID` from the given major and minor device numbers.
-//  ///
-//  /// The corresponding C function is `makedev()`.
-//  @_alwaysEmitIntoClient
-//  private static func make(major: CUnsignedInt, minor: CUnsignedInt) -> DeviceID {
-//    DeviceID(rawValue: system_makedev(major, minor))
-//  }
-//
-//  /// The major device number
-//  ///
-//  /// The corresponding C function is `major()`.
-//  @_alwaysEmitIntoClient
-//  private var major: CInt { system_major(rawValue) }
-//
-//  /// The minor device number
-//  ///
-//  /// The corresponding C function is `minor()`.
-//  @_alwaysEmitIntoClient
-//  private var minor: CInt { system_minor(rawValue) }
 }
 
 /// A Swift wrapper of the C `ino_t` type.
