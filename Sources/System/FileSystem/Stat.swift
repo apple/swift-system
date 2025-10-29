@@ -374,7 +374,7 @@ public struct Stat: RawRepresentable, Sendable {
   /// Total size, in bytes
   ///
   /// The semantics of this property are tied to the underlying C `st_size` field,
-  /// which can have file system-dependent behavior. For example, this property
+  /// which can have file-system–dependent behavior. For example, this property
   /// can return different values for a file's data fork and resource fork, and some
   /// file systems report logical size rather than actual disk usage for compressed
   /// or cloned files.
@@ -386,7 +386,7 @@ public struct Stat: RawRepresentable, Sendable {
     set { rawValue.st_size = numericCast(newValue) }
   }
 
-  /// Block size for filesystem I/O, in bytes
+  /// Block size for file system I/O, in bytes
   ///
   /// The corresponding C property is `st_blksize`.
   @_alwaysEmitIntoClient
@@ -398,7 +398,7 @@ public struct Stat: RawRepresentable, Sendable {
   /// Number of 512-byte blocks allocated
   ///
   /// The semantics of this property are tied to the underlying C `st_blocks` field,
-  /// which can have file system-dependent behavior.
+  /// which can have file-system–dependent behavior.
   ///
   /// The corresponding C property is `st_blocks`.
   @_alwaysEmitIntoClient
@@ -410,7 +410,7 @@ public struct Stat: RawRepresentable, Sendable {
   /// Total size allocated, in bytes
   ///
   /// The semantics of this property are tied to the underlying C `st_blocks` field,
-  /// which can have file system-dependent behavior.
+  /// which can have file-system–dependent behavior.
   ///
   /// - Note: Calculated as `512 * blocksAllocated`.
   @_alwaysEmitIntoClient
