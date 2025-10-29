@@ -651,7 +651,7 @@ internal var _AT_FDCWD: CInt { AT_FDCWD }
 // MARK: - fstatat Flags
 
 @_alwaysEmitIntoClient
-internal var _AT_SYMLINK_NOFOLLOW: CInt { AT_SYMLINK_FOLLOW }
+internal var _AT_SYMLINK_NOFOLLOW: CInt { AT_SYMLINK_NOFOLLOW }
 
 #if SYSTEM_PACKAGE_DARWIN
 @_alwaysEmitIntoClient
