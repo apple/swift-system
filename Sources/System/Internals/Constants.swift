@@ -663,12 +663,6 @@ internal var _AT_SYMLINK_NOFOLLOW_ANY: CInt { AT_SYMLINK_NOFOLLOW_ANY }
 internal var _AT_RESOLVE_BENEATH: CInt { AT_RESOLVE_BENEATH }
 #endif
 
-// TODO: Re-enable when _GNU_SOURCE can be defined.
-//#if os(FreeBSD) || os(Linux) || os(Android)
-//@_alwaysEmitIntoClient
-//internal var _AT_EMPTY_PATH: CInt { AT_EMPTY_PATH }
-//#endif
-
 // MARK: - File Mode / File Type
 
 @_alwaysEmitIntoClient

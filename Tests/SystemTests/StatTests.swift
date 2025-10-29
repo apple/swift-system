@@ -400,13 +400,6 @@ private struct StatTests {
 
 }
 
-// TODO: Re-enable for testing when _GNU_SOURCE can be defined.
-//#if !SYSTEM_PACKAGE_DARWIN && !os(WASI)
-//private extension FileDescriptor.OpenOptions {
-//  static var path: Self { Self(rawValue: O_PATH) }
-//}
-//#endif
-
 // Comparison operators for timespec until UTCClock.Instant properties are available
 private func >= (lhs: timespec, rhs: timespec) -> Bool {
   (lhs.tv_sec, lhs.tv_nsec) >= (rhs.tv_sec, rhs.tv_nsec)
