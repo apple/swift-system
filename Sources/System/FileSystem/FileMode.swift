@@ -14,7 +14,7 @@
 ///
 /// - Note: Only available on Unix-like platforms.
 @frozen
-// @available(System X.Y.Z, *)
+@available(System 99, *)
 public struct FileMode: RawRepresentable, Sendable, Hashable, Codable {
   
   /// The raw C mode.

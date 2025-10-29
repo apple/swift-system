@@ -34,7 +34,7 @@
 ///
 /// - Note: Only available on Unix-like platforms.
 @frozen
-// @available(System X.Y.Z, *)
+@available(System 99, *)
 public struct FileType: RawRepresentable, Sendable, Hashable, Codable {
 
   /// The raw file-type bits from the C mode.

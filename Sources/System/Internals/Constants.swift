@@ -672,35 +672,35 @@ internal var _AT_RESOLVE_BENEATH: CInt { AT_RESOLVE_BENEATH }
 // MARK: - File Mode / File Type
 
 @_alwaysEmitIntoClient
-internal var _MODE_FILETYPE_MASK: CInterop.Mode { S_IFMT }
+internal var _MODE_FILETYPE_MASK: mode_t { S_IFMT }
 
 @_alwaysEmitIntoClient
-internal var _MODE_PERMISSIONS_MASK: CInterop.Mode { 0o7777 }
+internal var _MODE_PERMISSIONS_MASK: mode_t { 0o7777 }
 
 @_alwaysEmitIntoClient
-internal var _S_IFDIR: CInterop.Mode { S_IFDIR }
+internal var _S_IFDIR: mode_t { S_IFDIR }
 
 @_alwaysEmitIntoClient
-internal var _S_IFCHR: CInterop.Mode { S_IFCHR }
+internal var _S_IFCHR: mode_t { S_IFCHR }
 
 @_alwaysEmitIntoClient
-internal var _S_IFBLK: CInterop.Mode { S_IFBLK }
+internal var _S_IFBLK: mode_t { S_IFBLK }
 
 @_alwaysEmitIntoClient
-internal var _S_IFREG: CInterop.Mode { S_IFREG }
+internal var _S_IFREG: mode_t { S_IFREG }
 
 @_alwaysEmitIntoClient
-internal var _S_IFIFO: CInterop.Mode { S_IFIFO }
+internal var _S_IFIFO: mode_t { S_IFIFO }
 
 @_alwaysEmitIntoClient
-internal var _S_IFLNK: CInterop.Mode { S_IFLNK }
+internal var _S_IFLNK: mode_t { S_IFLNK }
 
 @_alwaysEmitIntoClient
-internal var _S_IFSOCK: CInterop.Mode { S_IFSOCK }
+internal var _S_IFSOCK: mode_t { S_IFSOCK }
 
 #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
 @_alwaysEmitIntoClient
-internal var _S_IFWHT: CInterop.Mode { S_IFWHT }
+internal var _S_IFWHT: mode_t { S_IFWHT }
 #endif
 
 // MARK: - stat/chflags File Flags
@@ -709,82 +709,82 @@ internal var _S_IFWHT: CInterop.Mode { S_IFWHT }
 
 #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
 @_alwaysEmitIntoClient
-internal var _UF_NODUMP: CInterop.FileFlags { UInt32(bitPattern: UF_NODUMP) }
+internal var _UF_NODUMP: UInt32 { UInt32(bitPattern: UF_NODUMP) }
 
 @_alwaysEmitIntoClient
-internal var _UF_IMMUTABLE: CInterop.FileFlags { UInt32(bitPattern: UF_IMMUTABLE) }
+internal var _UF_IMMUTABLE: UInt32 { UInt32(bitPattern: UF_IMMUTABLE) }
 
 @_alwaysEmitIntoClient
-internal var _UF_APPEND: CInterop.FileFlags { UInt32(bitPattern: UF_APPEND) }
+internal var _UF_APPEND: UInt32 { UInt32(bitPattern: UF_APPEND) }
 
 @_alwaysEmitIntoClient
-internal var _SF_ARCHIVED: CInterop.FileFlags { UInt32(bitPattern: SF_ARCHIVED) }
+internal var _SF_ARCHIVED: UInt32 { UInt32(bitPattern: SF_ARCHIVED) }
 
 @_alwaysEmitIntoClient
-internal var _SF_IMMUTABLE: CInterop.FileFlags { UInt32(bitPattern: SF_IMMUTABLE) }
+internal var _SF_IMMUTABLE: UInt32 { UInt32(bitPattern: SF_IMMUTABLE) }
 
 @_alwaysEmitIntoClient
-internal var _SF_APPEND: CInterop.FileFlags { UInt32(bitPattern: SF_APPEND) }
+internal var _SF_APPEND: UInt32 { UInt32(bitPattern: SF_APPEND) }
 #endif
 
 // MARK: Flags Available on Darwin and FreeBSD
 
 #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
 @_alwaysEmitIntoClient
-internal var _UF_OPAQUE: CInterop.FileFlags { UInt32(bitPattern: UF_OPAQUE) }
+internal var _UF_OPAQUE: UInt32 { UInt32(bitPattern: UF_OPAQUE) }
 
 @_alwaysEmitIntoClient
-internal var _UF_HIDDEN: CInterop.FileFlags { UInt32(bitPattern: UF_HIDDEN) }
+internal var _UF_HIDDEN: UInt32 { UInt32(bitPattern: UF_HIDDEN) }
 
 @_alwaysEmitIntoClient
-internal var _SF_NOUNLINK: CInterop.FileFlags { UInt32(bitPattern: SF_NOUNLINK) }
+internal var _SF_NOUNLINK: UInt32 { UInt32(bitPattern: SF_NOUNLINK) }
 #endif
 
 // MARK: Flags Available on Darwin Only
 
 #if SYSTEM_PACKAGE_DARWIN
 @_alwaysEmitIntoClient
-internal var _UF_COMPRESSED: CInterop.FileFlags { UInt32(bitPattern: UF_COMPRESSED) }
+internal var _UF_COMPRESSED: UInt32 { UInt32(bitPattern: UF_COMPRESSED) }
 
 @_alwaysEmitIntoClient
-internal var _UF_TRACKED: CInterop.FileFlags { UInt32(bitPattern: UF_TRACKED) }
+internal var _UF_TRACKED: UInt32 { UInt32(bitPattern: UF_TRACKED) }
 
 @_alwaysEmitIntoClient
-internal var _UF_DATAVAULT: CInterop.FileFlags { UInt32(bitPattern: UF_DATAVAULT) }
+internal var _UF_DATAVAULT: UInt32 { UInt32(bitPattern: UF_DATAVAULT) }
 
 @_alwaysEmitIntoClient
-internal var _SF_RESTRICTED: CInterop.FileFlags { UInt32(bitPattern: SF_RESTRICTED) }
+internal var _SF_RESTRICTED: UInt32 { UInt32(bitPattern: SF_RESTRICTED) }
 
 @_alwaysEmitIntoClient
-internal var _SF_FIRMLINK: CInterop.FileFlags { UInt32(bitPattern: SF_FIRMLINK) }
+internal var _SF_FIRMLINK: UInt32 { UInt32(bitPattern: SF_FIRMLINK) }
 
 @_alwaysEmitIntoClient
-internal var _SF_DATALESS: CInterop.FileFlags { UInt32(bitPattern: SF_DATALESS) }
+internal var _SF_DATALESS: UInt32 { UInt32(bitPattern: SF_DATALESS) }
 #endif
 
 // MARK: Flags Available on FreeBSD Only
 
 #if os(FreeBSD)
 @_alwaysEmitIntoClient
-internal var _UF_NOUNLINK: CInterop.FileFlags { UInt32(bitPattern: UF_NOUNLINK) }
+internal var _UF_NOUNLINK: UInt32 { UInt32(bitPattern: UF_NOUNLINK) }
 
 @_alwaysEmitIntoClient
-internal var _UF_OFFLINE: CInterop.FileFlags { UInt32(bitPattern: UF_OFFLINE) }
+internal var _UF_OFFLINE: UInt32 { UInt32(bitPattern: UF_OFFLINE) }
 
 @_alwaysEmitIntoClient
-internal var _UF_READONLY: CInterop.FileFlags { UInt32(bitPattern: UF_READONLY) }
+internal var _UF_READONLY: UInt32 { UInt32(bitPattern: UF_READONLY) }
 
 @_alwaysEmitIntoClient
-internal var _UF_REPARSE: CInterop.FileFlags { UInt32(bitPattern: UF_REPARSE) }
+internal var _UF_REPARSE: UInt32 { UInt32(bitPattern: UF_REPARSE) }
 
 @_alwaysEmitIntoClient
-internal var _UF_SPARSE: CInterop.FileFlags { UInt32(bitPattern: UF_SPARSE) }
+internal var _UF_SPARSE: UInt32 { UInt32(bitPattern: UF_SPARSE) }
 
 @_alwaysEmitIntoClient
-internal var _UF_SYSTEM: CInterop.FileFlags { UInt32(bitPattern: UF_SYSTEM) }
+internal var _UF_SYSTEM: UInt32 { UInt32(bitPattern: UF_SYSTEM) }
 
 @_alwaysEmitIntoClient
-internal var _SF_SNAPSHOT: CInterop.FileFlags { UInt32(bitPattern: SF_SNAPSHOT) }
+internal var _SF_SNAPSHOT: UInt32 { UInt32(bitPattern: SF_SNAPSHOT) }
 #endif
 
 #endif // !os(Windows)

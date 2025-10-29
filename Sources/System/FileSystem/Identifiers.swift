@@ -12,7 +12,7 @@
 #if !os(Windows)
 /// A Swift wrapper of the C `uid_t` type.
 @frozen
-// @available(System X.Y.Z, *)
+@available(System 99, *)
 public struct UserID: RawRepresentable, Sendable, Hashable, Codable {
 
   /// The raw C `uid_t`.
@@ -30,7 +30,7 @@ public struct UserID: RawRepresentable, Sendable, Hashable, Codable {
 
 /// A Swift wrapper of the C `gid_t` type.
 @frozen
-// @available(System X.Y.Z, *)
+@available(System 99, *)
 public struct GroupID: RawRepresentable, Sendable, Hashable, Codable {
 
   /// The raw C `gid_t`.
@@ -48,7 +48,7 @@ public struct GroupID: RawRepresentable, Sendable, Hashable, Codable {
 
 /// A Swift wrapper of the C `dev_t` type.
 @frozen
-// @available(System X.Y.Z, *)
+@available(System 99, *)
 public struct DeviceID: RawRepresentable, Sendable, Hashable, Codable {
 
   /// The raw C `dev_t`.
@@ -66,7 +66,7 @@ public struct DeviceID: RawRepresentable, Sendable, Hashable, Codable {
 
 /// A Swift wrapper of the C `ino_t` type.
 @frozen
-// @available(System X.Y.Z, *)
+@available(System 99, *)
 public struct Inode: RawRepresentable, Sendable, Hashable, Codable {
 
   /// The raw C `ino_t`.

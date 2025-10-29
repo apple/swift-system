@@ -39,6 +39,7 @@ import Android
 @Suite("Stat")
 private struct StatTests {
 
+  @available(System 99, *)
   @Test func basics() async throws {
     try withTemporaryFilePath(basename: "Stat_basics") { tempDir in
       let dirStatFromFilePath = try tempDir.stat()
@@ -80,8 +81,8 @@ private struct StatTests {
     }
   }
 
-  @Test
-  func followSymlinkInits() async throws {
+  @available(System 99, *)
+  @Test func followSymlinkInits() async throws {
     try withTemporaryFilePath(basename: "Stat_followSymlinkInits") { tempDir in
       let targetFilePath = tempDir.appending("target.txt")
       let symlinkPath = tempDir.appending("symlink")
@@ -189,6 +190,7 @@ private struct StatTests {
     }
   }
 
+  @available(System 99, *)
   @Test func permissions() async throws {
     try withTemporaryFilePath(basename: "Stat_permissions") { tempDir in
       let testFile = tempDir.appending("test.txt")
@@ -218,8 +220,8 @@ private struct StatTests {
     }
   }
 
-  @Test
-  func times() async throws {
+  @available(System 99, *)
+  @Test func times() async throws {
     var start = timespec()
     try #require(clock_gettime(CLOCK_REALTIME, &start) == 0, "\(Errno.current)")
     start.tv_sec -= 1 // A little wiggle room
@@ -347,6 +349,7 @@ private struct StatTests {
   }
 
   #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+  @available(System 99, *)
   @Test func flags() async throws {
     try withTemporaryFilePath(basename: "Stat_flags") { tempDir in
       let filePath = tempDir.appending("test.txt")

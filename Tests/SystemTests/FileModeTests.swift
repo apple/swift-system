@@ -36,6 +36,7 @@ import Android
 @Suite("FileMode")
 private struct FileModeTests {
 
+  @available(System 99, *)
   @Test func basics() async throws {
     var mode = FileMode(rawValue: S_IFREG | 0o644) // Regular file, rw-r--r--
     #expect(mode.type == .regular)
@@ -66,6 +67,7 @@ private struct FileModeTests {
     #expect(mode.type == mode2.type)
   }
 
+  @available(System 99, *)
   @Test func invalidInput() async throws {
     // No permissions, all other bits set
     var invalidMode = FileMode(rawValue: ~0o7777)

@@ -35,7 +35,7 @@ import Android
 ///
 /// - Note: Only available on Unix-like platforms.
 @frozen
-// @available(System X.Y.Z, *)
+@available(System 99, *)
 public struct Stat: RawRepresentable, Sendable {
 
   /// The raw C `stat` struct.
@@ -82,7 +82,6 @@ public struct Stat: RawRepresentable, Sendable {
     /// The corresponding C constant is `AT_RESOLVE_BENEATH`.
     /// - Note: Only available on Darwin and FreeBSD.
     @_alwaysEmitIntoClient
-    @available(macOS 26.0, iOS 26.0, tvOS 26.0, watchOS 26.0, visionOS 26.0, *)
     public static var resolveBeneath: Flags { Flags(rawValue: _AT_RESOLVE_BENEATH) }
     #endif
   }
@@ -537,6 +536,7 @@ public struct Stat: RawRepresentable, Sendable {
 
 // MARK: - Equatable and Hashable
 
+@available(System 99, *)
 extension Stat: Equatable {
   @_alwaysEmitIntoClient
   /// Compares the raw bytes of two `Stat` structs for equality.
@@ -549,6 +549,7 @@ extension Stat: Equatable {
   }
 }
 
+@available(System 99, *)
 extension Stat: Hashable {
   @_alwaysEmitIntoClient
   /// Hashes the raw bytes of this `Stat` struct.
@@ -563,7 +564,7 @@ extension Stat: Hashable {
 
 // MARK: - FileDescriptor Extensions
 
-// @available(System X.Y.Z, *)
+@available(System 99, *)
 extension FileDescriptor {
 
   /// Creates a `Stat` struct for the file referenced by this `FileDescriptor`.
@@ -579,7 +580,7 @@ extension FileDescriptor {
 
 // MARK: - FilePath Extensions
 
-// @available(System X.Y.Z, *)
+@available(System 99, *)
 extension FilePath {
 
   /// Creates a `Stat` struct for the file referenced by this `FilePath`.

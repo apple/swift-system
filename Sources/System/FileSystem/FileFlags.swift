@@ -39,7 +39,7 @@
 // |------------------|---------------|---------------|---------------|
 
 #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
-// @available(System X.Y.Z, *)
+@available(System 99, *)
 extension CInterop {
   public typealias FileFlags = UInt32
 }
@@ -49,7 +49,7 @@ extension CInterop {
 ///
 /// - Note: Only available on Darwin, FreeBSD, and OpenBSD.
 @frozen
-// @available(System X.Y.Z, *)
+@available(System 99, *)
 public struct FileFlags: OptionSet, Sendable, Hashable, Codable {
   
   /// The raw C flags.
