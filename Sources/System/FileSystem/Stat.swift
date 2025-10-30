@@ -102,7 +102,7 @@ public struct Stat: RawRepresentable, Sendable {
     followTargetSymlink: Bool = true,
     retryOnInterrupt: Bool = true
   ) throws(Errno) {
-    self = try path.withPlatformString {
+    self.rawValue = try path.withPlatformString {
       Self._stat(
         $0,
         followTargetSymlink: followTargetSymlink,
@@ -125,7 +125,7 @@ public struct Stat: RawRepresentable, Sendable {
     followTargetSymlink: Bool = true,
     retryOnInterrupt: Bool = true
   ) throws(Errno) {
-    self = try Self._stat(
+    self.rawValue = try Self._stat(
       path,
       followTargetSymlink: followTargetSymlink,
       retryOnInterrupt: retryOnInterrupt
@@ -137,7 +137,7 @@ public struct Stat: RawRepresentable, Sendable {
     _ ptr: UnsafePointer<CChar>,
     followTargetSymlink: Bool,
     retryOnInterrupt: Bool
-  ) -> Result<Stat, Errno> {
+  ) -> Result<CInterop.Stat, Errno> {
     var result = CInterop.Stat()
     return nothingOrErrno(retryOnInterrupt: retryOnInterrupt) {
       if followTargetSymlink {
@@ -145,7 +145,7 @@ public struct Stat: RawRepresentable, Sendable {
       } else {
         system_lstat(ptr, &result)
       }
-    }.map { Stat(rawValue: result) }
+    }.map { result }
   }
 
   /// Creates a `Stat` struct from a `FileDescriptor`.
@@ -156,7 +156,7 @@ public struct Stat: RawRepresentable, Sendable {
     _ fd: FileDescriptor,
     retryOnInterrupt: Bool = true
   ) throws(Errno) {
-    self = try Self._fstat(
+    self.rawValue = try Self._fstat(
       fd,
       retryOnInterrupt: retryOnInterrupt
     ).get()
@@ -166,11 +166,11 @@ public struct Stat: RawRepresentable, Sendable {
   internal static func _fstat(
     _ fd: FileDescriptor,
     retryOnInterrupt: Bool
-  ) -> Result<Stat, Errno> {
+  ) -> Result<CInterop.Stat, Errno> {
     var result = CInterop.Stat()
     return nothingOrErrno(retryOnInterrupt: retryOnInterrupt) {
       system_fstat(fd.rawValue, &result)
-    }.map { Stat(rawValue: result) }
+    }.map { result }
   }
 
   /// Creates a `Stat` struct from a `FilePath` and `Flags`.
@@ -184,7 +184,7 @@ public struct Stat: RawRepresentable, Sendable {
     flags: Stat.Flags,
     retryOnInterrupt: Bool = true
   ) throws(Errno) {
-    self = try path.withPlatformString {
+    self.rawValue = try path.withPlatformString {
       Self._fstatat(
         $0,
         relativeTo: _AT_FDCWD,
@@ -208,7 +208,7 @@ public struct Stat: RawRepresentable, Sendable {
     flags: Stat.Flags,
     retryOnInterrupt: Bool = true
   ) throws(Errno) {
-    self = try path.withPlatformString {
+    self.rawValue = try path.withPlatformString {
       Self._fstatat(
         $0,
         relativeTo: fd.rawValue,
@@ -229,7 +229,7 @@ public struct Stat: RawRepresentable, Sendable {
     flags: Stat.Flags,
     retryOnInterrupt: Bool = true
   ) throws(Errno) {
-    self = try Self._fstatat(
+    self.rawValue = try Self._fstatat(
       path,
       relativeTo: _AT_FDCWD,
       flags: flags,
@@ -251,7 +251,7 @@ public struct Stat: RawRepresentable, Sendable {
     flags: Stat.Flags,
     retryOnInterrupt: Bool = true
   ) throws(Errno) {
-    self = try Self._fstatat(
+    self.rawValue = try Self._fstatat(
       path,
       relativeTo: fd.rawValue,
       flags: flags,
@@ -265,11 +265,11 @@ public struct Stat: RawRepresentable, Sendable {
     relativeTo fd: FileDescriptor.RawValue,
     flags: Stat.Flags,
     retryOnInterrupt: Bool
-  ) -> Result<Stat, Errno> {
+  ) -> Result<CInterop.Stat, Errno> {
     var result = CInterop.Stat()
     return nothingOrErrno(retryOnInterrupt: retryOnInterrupt) {
       system_fstatat(fd, path, &result, flags.rawValue)
-    }.map { Stat(rawValue: result) }
+    }.map { result }
   }
 
 
