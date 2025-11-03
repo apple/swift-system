@@ -91,15 +91,19 @@ internal func system_strlen(_ s: UnsafeMutablePointer<CChar>) -> Int {
 }
 
 #if !os(Windows)
+@available(System 99, *)
 internal func system_stat(_ p: UnsafePointer<CChar>, _ s: inout CInterop.Stat) -> Int32 {
   stat(p, &s)
 }
+@available(System 99, *)
 internal func system_lstat(_ p: UnsafePointer<CChar>, _ s: inout CInterop.Stat) -> Int32 {
   lstat(p, &s)
 }
+@available(System 99, *)
 internal func system_fstat(_ fd: CInt, _ s: inout CInterop.Stat) -> Int32 {
   fstat(fd, &s)
 }
+@available(System 99, *)
 internal func system_fstatat(_ fd: CInt, _ p: UnsafePointer<CChar>, _ s: inout CInterop.Stat, _ flags: CInt) -> Int32 {
   fstatat(fd, p, &s, flags)
 }

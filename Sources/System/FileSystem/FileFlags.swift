@@ -39,10 +39,6 @@
 // |------------------|---------------|---------------|---------------|
 
 #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
-@available(System 99, *)
-extension CInterop {
-  public typealias FileFlags = UInt32
-}
 
 /// File-specific flags found in the `st_flags` property of a `stat` struct
 /// or used as input to `chflags()`.
