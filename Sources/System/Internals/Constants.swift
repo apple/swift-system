@@ -5,7 +5,7 @@
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
-*/
+ */
 
 // For platform constants redefined in Swift. We define them here so that
 // they can be used anywhere without imports and without confusion to
@@ -17,6 +17,7 @@ import Darwin
 import CSystem
 import ucrt
 #elseif canImport(Glibc)
+import CSystem
 import Glibc
 #elseif canImport(Musl)
 import CSystem
@@ -438,7 +439,7 @@ internal var _ENOSR: CInt { ENOSR }
 
 @_alwaysEmitIntoClient
 internal var _ENOSTR: CInt { ENOSTR }
-#endif 
+#endif
 #endif
 
 @_alwaysEmitIntoClient
@@ -639,3 +640,145 @@ internal var _SEEK_HOLE: CInt { SEEK_HOLE }
 @_alwaysEmitIntoClient
 internal var _SEEK_DATA: CInt { SEEK_DATA }
 #endif
+
+// MARK: - File System
+
+#if !os(Windows)
+
+@_alwaysEmitIntoClient
+internal var _AT_FDCWD: CInt { AT_FDCWD }
+
+// MARK: - fstatat Flags
+
+@_alwaysEmitIntoClient
+internal var _AT_SYMLINK_NOFOLLOW: CInt { AT_SYMLINK_NOFOLLOW }
+
+#if SYSTEM_PACKAGE_DARWIN
+@_alwaysEmitIntoClient
+internal var _AT_SYMLINK_NOFOLLOW_ANY: CInt { AT_SYMLINK_NOFOLLOW_ANY }
+#endif
+
+#if canImport(Darwin, _version: 346) || os(FreeBSD)
+@_alwaysEmitIntoClient
+internal var _AT_RESOLVE_BENEATH: CInt { AT_RESOLVE_BENEATH }
+#endif
+
+// MARK: - File Mode / File Type
+
+@_alwaysEmitIntoClient
+internal var _MODE_FILETYPE_MASK: mode_t { S_IFMT }
+
+@_alwaysEmitIntoClient
+internal var _MODE_PERMISSIONS_MASK: mode_t { 0o7777 }
+
+@_alwaysEmitIntoClient
+internal var _S_IFDIR: mode_t { S_IFDIR }
+
+@_alwaysEmitIntoClient
+internal var _S_IFCHR: mode_t { S_IFCHR }
+
+@_alwaysEmitIntoClient
+internal var _S_IFBLK: mode_t { S_IFBLK }
+
+@_alwaysEmitIntoClient
+internal var _S_IFREG: mode_t { S_IFREG }
+
+@_alwaysEmitIntoClient
+internal var _S_IFIFO: mode_t { S_IFIFO }
+
+@_alwaysEmitIntoClient
+internal var _S_IFLNK: mode_t { S_IFLNK }
+
+@_alwaysEmitIntoClient
+internal var _S_IFSOCK: mode_t { S_IFSOCK }
+
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
+@_alwaysEmitIntoClient
+internal var _S_IFWHT: mode_t { S_IFWHT }
+#endif
+
+// MARK: - stat/chflags File Flags
+
+// MARK: Flags Available on Darwin, FreeBSD, and OpenBSD
+
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+@_alwaysEmitIntoClient
+internal var _UF_NODUMP: UInt32 { UInt32(bitPattern: UF_NODUMP) }
+
+@_alwaysEmitIntoClient
+internal var _UF_IMMUTABLE: UInt32 { UInt32(bitPattern: UF_IMMUTABLE) }
+
+@_alwaysEmitIntoClient
+internal var _UF_APPEND: UInt32 { UInt32(bitPattern: UF_APPEND) }
+
+@_alwaysEmitIntoClient
+internal var _SF_ARCHIVED: UInt32 { UInt32(bitPattern: SF_ARCHIVED) }
+
+@_alwaysEmitIntoClient
+internal var _SF_IMMUTABLE: UInt32 { UInt32(bitPattern: SF_IMMUTABLE) }
+
+@_alwaysEmitIntoClient
+internal var _SF_APPEND: UInt32 { UInt32(bitPattern: SF_APPEND) }
+#endif
+
+// MARK: Flags Available on Darwin and FreeBSD
+
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
+@_alwaysEmitIntoClient
+internal var _UF_OPAQUE: UInt32 { UInt32(bitPattern: UF_OPAQUE) }
+
+@_alwaysEmitIntoClient
+internal var _UF_HIDDEN: UInt32 { UInt32(bitPattern: UF_HIDDEN) }
+
+@_alwaysEmitIntoClient
+internal var _SF_NOUNLINK: UInt32 { UInt32(bitPattern: SF_NOUNLINK) }
+#endif
+
+// MARK: Flags Available on Darwin Only
+
+#if SYSTEM_PACKAGE_DARWIN
+@_alwaysEmitIntoClient
+internal var _UF_COMPRESSED: UInt32 { UInt32(bitPattern: UF_COMPRESSED) }
+
+@_alwaysEmitIntoClient
+internal var _UF_TRACKED: UInt32 { UInt32(bitPattern: UF_TRACKED) }
+
+@_alwaysEmitIntoClient
+internal var _UF_DATAVAULT: UInt32 { UInt32(bitPattern: UF_DATAVAULT) }
+
+@_alwaysEmitIntoClient
+internal var _SF_RESTRICTED: UInt32 { UInt32(bitPattern: SF_RESTRICTED) }
+
+@_alwaysEmitIntoClient
+internal var _SF_FIRMLINK: UInt32 { UInt32(bitPattern: SF_FIRMLINK) }
+
+@_alwaysEmitIntoClient
+internal var _SF_DATALESS: UInt32 { UInt32(bitPattern: SF_DATALESS) }
+#endif
+
+// MARK: Flags Available on FreeBSD Only
+
+#if os(FreeBSD)
+@_alwaysEmitIntoClient
+internal var _UF_NOUNLINK: UInt32 { UInt32(bitPattern: UF_NOUNLINK) }
+
+@_alwaysEmitIntoClient
+internal var _UF_OFFLINE: UInt32 { UInt32(bitPattern: UF_OFFLINE) }
+
+@_alwaysEmitIntoClient
+internal var _UF_READONLY: UInt32 { UInt32(bitPattern: UF_READONLY) }
+
+@_alwaysEmitIntoClient
+internal var _UF_REPARSE: UInt32 { UInt32(bitPattern: UF_REPARSE) }
+
+@_alwaysEmitIntoClient
+internal var _UF_SPARSE: UInt32 { UInt32(bitPattern: UF_SPARSE) }
+
+@_alwaysEmitIntoClient
+internal var _UF_SYSTEM: UInt32 { UInt32(bitPattern: UF_SYSTEM) }
+
+@_alwaysEmitIntoClient
+internal var _SF_SNAPSHOT: UInt32 { UInt32(bitPattern: SF_SNAPSHOT) }
+#endif
+
+#endif // !os(Windows)

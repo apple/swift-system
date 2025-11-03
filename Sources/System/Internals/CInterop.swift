@@ -5,7 +5,7 @@
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
-*/
+ */
 
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
@@ -79,3 +79,17 @@ public enum CInterop {
   public typealias PlatformUnicodeEncoding = UTF8
   #endif
 }
+
+#if !os(Windows)
+@available(System 99, *)
+extension CInterop {
+  public typealias Stat = stat
+  public typealias DeviceID = dev_t
+  public typealias Inode = ino_t
+  public typealias UserID = uid_t
+  public typealias GroupID = gid_t
+  #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+  public typealias FileFlags = UInt32
+  #endif
+}
+#endif
