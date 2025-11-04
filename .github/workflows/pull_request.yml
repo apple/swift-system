@@ -45,6 +45,7 @@ jobs:
           {"os_version": "focal", "swift_version": "6.2"},
           {"os_version": "focal", "swift_version": "nightly-main"},
         ]
+      enable_android_sdk_build: true
 
   build-abi-stable:
     name: Build ABI Stable
