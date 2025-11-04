@@ -21,7 +21,7 @@ import Musl
 #elseif canImport(WASILibc)
 import WASILibc
 #elseif canImport(Bionic)
-@_implementationOnly import CSystem
+import CSystem
 import Bionic
 #else
 #error("Unsupported Platform")

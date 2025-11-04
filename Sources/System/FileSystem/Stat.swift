@@ -280,8 +280,8 @@ public struct Stat: RawRepresentable, Sendable {
   /// The corresponding C property is `st_dev`.
   @_alwaysEmitIntoClient
   public var deviceID: DeviceID {
-    get { DeviceID(rawValue: rawValue.st_dev) }
-    set { rawValue.st_dev = newValue.rawValue }
+    get { DeviceID(rawValue: numericCast(rawValue.st_dev)) }
+    set { rawValue.st_dev = numericCast(newValue.rawValue) }
   }
 
   /// Inode number
@@ -289,8 +289,8 @@ public struct Stat: RawRepresentable, Sendable {
   /// The corresponding C property is `st_ino`.
   @_alwaysEmitIntoClient
   public var inode: Inode {
-    get { Inode(rawValue: rawValue.st_ino) }
-    set { rawValue.st_ino = newValue.rawValue }
+    get { Inode(rawValue: numericCast(rawValue.st_ino)) }
+    set { rawValue.st_ino = numericCast(newValue.rawValue) }
   }
 
   /// File mode
@@ -298,8 +298,8 @@ public struct Stat: RawRepresentable, Sendable {
   /// The corresponding C property is `st_mode`.
   @_alwaysEmitIntoClient
   public var mode: FileMode {
-    get { FileMode(rawValue: rawValue.st_mode) }
-    set { rawValue.st_mode = newValue.rawValue }
+    get { FileMode(rawValue: numericCast(rawValue.st_mode)) }
+    set { rawValue.st_mode = numericCast(newValue.rawValue) }
   }
 
   /// File type for the given mode
@@ -366,8 +366,8 @@ public struct Stat: RawRepresentable, Sendable {
   /// The corresponding C property is `st_rdev`.
   @_alwaysEmitIntoClient
   public var specialDeviceID: DeviceID {
-    get { DeviceID(rawValue: rawValue.st_rdev) }
-    set { rawValue.st_rdev = newValue.rawValue }
+    get { DeviceID(rawValue: numericCast(rawValue.st_rdev)) }
+    set { rawValue.st_rdev = numericCast(newValue.rawValue) }
   }
 
   /// Total size, in bytes
