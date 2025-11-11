@@ -53,7 +53,7 @@ jobs:
       enable_linux_checks: false
       enable_macos_checks: true
       enable_windows_checks: false
-      enable_android_sdk_build: false
+      enable_android_sdk_build: true
       # Only build
       macos_build_command: "xcrun swift build --build-tests"
       macos_exclude_xcode_versions: '[]'
