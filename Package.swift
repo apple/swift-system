@@ -135,12 +135,27 @@ let package = Package(
       exclude: filesToExclude,
       cSettings: cSettings,
       swiftSettings: swiftSettings),
+    .target(
+      name: "SystemCompatibilityAdaptors",
+      dependencies: ["SystemPackage"],
+      path: "Sources/SystemCompatibilityAdaptors",
+      exclude: [],
+      cSettings: cSettings,
+      swiftSettings: swiftSettings
+    ),
     .testTarget(
       name: "SystemTests",
       dependencies: ["SystemPackage"],
       exclude: testsToExclude,
       cSettings: cSettings,
       swiftSettings: swiftSettings),
+    .testTarget(
+      name: "SystemCompatibilityAdaptorTests",
+      dependencies: ["SystemCompatibilityAdaptors", "SystemPackage"],
+      exclude: [],
+      cSettings: cSettings,
+      swiftSettings: swiftSettings
+    ),
   ],
   swiftLanguageVersions: [.v5]
 )
