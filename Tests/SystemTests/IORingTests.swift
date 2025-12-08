@@ -122,10 +122,68 @@ final class IORingTests: XCTestCase {
         let bytesRead = try nonRingFD.read(into: rawBuffer)
         XCTAssert(bytesRead == 13)
         let result2 = String(cString: rawBuffer.assumingMemoryBound(to: CChar.self).baseAddress!)
-        XCTAssertEqual(result2, "Hello, World!")   
+        XCTAssertEqual(result2, "Hello, World!")
         try cleanUpHelloWorldFile(parent)
         efdBuf.deallocate()
         rawBuffer.deallocate()
+    }
+
+    func testPollAddPollIn() throws {
+        guard try uringEnabled() else { return }
+        var ring = try IORing(queueDepth: 32, flags: [])
+
+        // Test POLLIN: Create an eventfd to monitor for read readiness
+        let testEventFD = FileDescriptor(rawValue: eventfd(0, 0))
+        defer {
+            // Clean up
+            try! testEventFD.close()
+        }
+        let pollInContext: UInt64 = 42
+
+        // Submit a pollAdd request to monitor for POLLIN events (data available for reading)
+        let enqueued = try ring.submit(linkedRequests:
+            .pollAdd(testEventFD, pollEvents: .pollin, isMultiShot: false, context: pollInContext))
+        XCTAssert(enqueued)
+
+        // Write to the eventfd to trigger the POLLIN event
+        var value: UInt64 = 1
+        withUnsafeBytes(of: &value) { bufferPtr in
+            _ = try? testEventFD.write(bufferPtr)
+        }
+
+        // Consume the completion from the poll operation
+        let completion = try ring.blockingConsumeCompletion()
+        XCTAssertEqual(completion.context, pollInContext)
+        XCTAssertGreaterThan(completion.result, 0) // Poll should return mask of ready events
+    }
+
+    func testPollAddPollOut() throws {
+        guard try uringEnabled() else { return }
+        var ring = try IORing(queueDepth: 32, flags: [])
+
+        // Test POLLOUT: Create a pipe to monitor for write readiness
+        var pipeFDs: [Int32] = [0, 0]
+        let pipeResult = pipe(&pipeFDs)
+        XCTAssertEqual(pipeResult, 0)
+        let writeFD = FileDescriptor(rawValue: pipeFDs[1])
+        let readFD = FileDescriptor(rawValue: pipeFDs[0])
+        defer {
+            // Clean up
+            try! writeFD.close()
+            try! readFD.close()
+        }
+        let pollOutContext: UInt64 = 43
+
+        // Submit a pollAdd request to monitor for POLLOUT events (ready for writing)
+        // Pipes are typically ready for writing when empty
+        let enqueuedOut = try ring.submit(linkedRequests:
+            .pollAdd(writeFD, pollEvents: .pollout, isMultiShot: false, context: pollOutContext))
+        XCTAssert(enqueuedOut)
+
+        // Consume the completion from the poll operation
+        let completionOut = try ring.blockingConsumeCompletion()
+        XCTAssertEqual(completionOut.context, pollOutContext)
+        XCTAssertGreaterThan(completionOut.result, 0) // Poll should return mask of ready events
     }
 }
 #endif // os(Linux)
