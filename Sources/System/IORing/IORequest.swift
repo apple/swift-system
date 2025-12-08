@@ -72,7 +72,7 @@ internal enum IORequestCore {
     )
     case writeUnregistered(
         file: FileDescriptor,
-        buffer: UnsafeMutableRawBufferPointer,
+        buffer: UnsafeRawBufferPointer,
         offset: UInt64 = 0,
         context: UInt64 = 0
     )
@@ -351,7 +351,7 @@ extension IORing.Request {
     }
 
     @inlinable public static func write(
-        _ buffer: UnsafeMutableRawBufferPointer,
+        _ buffer: UnsafeRawBufferPointer,
         into file: FileDescriptor,
         at offset: UInt64 = 0,
         context: UInt64 = 0
@@ -532,7 +532,7 @@ extension IORing.Request {
         case .writeUnregistered(let file, let buffer, let offset, let context):
             request.operation = .write
             return makeRawRequest_readWrite_unregistered(
-                file: file, buffer: buffer, offset: offset, context: context, request: request)
+                file: file, buffer: UnsafeMutableRawBufferPointer(mutating: buffer), offset: offset, context: context, request: request)
         case .writeUnregisteredSlot(let file, let buffer, let offset, let context):
             request.operation = .write
             return makeRawRequest_readWrite_unregistered_slot(
