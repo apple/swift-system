@@ -2,6 +2,7 @@
 #if os(Linux)
 
 import CSystem
+import Glibc
 
 @usableFromInline
 internal enum IORequestCore {
@@ -27,6 +28,16 @@ internal enum IORequestCore {
         file: FileDescriptor,
         pollEvents: IORing.Request.PollEvents,
         isMultiShot: Bool = true,
+        context: UInt64 = 0
+    )
+    case connect(
+        socketFD: FileDescriptor,
+        sockaddr: UnsafePointer<sockaddr>,
+        addrLen: socklen_t,
+        context: UInt64 = 0
+    )
+    case accept(
+        file: FileDescriptor,
         context: UInt64 = 0
     )
     case read(
@@ -257,6 +268,22 @@ extension IORing.Request {
         context: UInt64 = 0
     ) -> IORing.Request {
         .init(core: .pollAdd(file: file, pollEvents: pollEvents, context: context))
+    }
+
+    @inlinable public static func accept(
+        _ file: FileDescriptor,
+        context: UInt64 = 0
+    ) -> IORing.Request {
+        .init(core: .accept(file: file, context: context))
+    }
+
+    @inlinable public static func connect(
+        socketFD: FileDescriptor,
+        sockAddr: UnsafePointer<sockaddr>,
+        addrLen: socklen_t,
+        context: UInt64 = 0
+    ) -> IORing.Request {
+        .init(core: .connect(socketFD: socketFD, sockaddr: sockAddr, addrLen: addrLen, context: context))
     }
     
     @inlinable public static func read(
@@ -568,6 +595,20 @@ extension IORing.Request {
                 request.rawValue.len = IORING_POLL_ADD_MULTI
             }
             request.rawValue.poll32_events = pollEvents.rawValue
+        case .connect(let socketFD, let sockaddrPtr, let addrLen, let context):
+            request.operation = .connect
+            request.fileDescriptor = socketFD
+            request.rawValue.user_data = context
+            request.rawValue.addr = UInt64(UInt(bitPattern: sockaddrPtr))
+            request.rawValue.addr2 = UInt64(MemoryLayout<sockaddr_in>.size)
+        case .accept(let file, let context):
+            request.operation = .accept
+            request.fileDescriptor = file
+            request.rawValue.user_data = context
+            // For accept, we can set addr and len to 0 to ignore client address
+            request.rawValue.addr = 0
+            request.rawValue.len = 0
+            request.rawValue.accept_flags = 0
         }
 
         return request

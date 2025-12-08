@@ -30,8 +30,10 @@ extension RawIORequest {
         case sendMessage = 9
         case receiveMessage = 10
         // ...
+        case accept = 13
         case asyncCancel = 14
         case link_timeout = 15
+        case connect = 16
         // ...
         case openAt = 18
         case close = 19
