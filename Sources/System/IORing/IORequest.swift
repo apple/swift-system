@@ -23,6 +23,12 @@ internal enum IORequestCore {
         intoSlot: IORing.RegisteredFile,
         context: UInt64 = 0
     )
+    case pollAdd(
+        file: FileDescriptor,
+        pollEvents: IORing.Request.PollEvents,
+        isMultiShot: Bool = true,
+        context: UInt64 = 0
+    )
     case read(
         file: FileDescriptor,
         buffer: IORing.RegisteredBuffer,
@@ -187,6 +193,72 @@ extension IORing.Request {
         .init(core: .nop)
     }
 
+    /// Adds a poll operation to monitor a file descriptor for specific I/O events.
+    ///
+    /// This method creates an io_uring poll operation that monitors the specified file descriptor
+    /// for I/O readiness events. The operation completes when any of the requested events become
+    /// active on the file descriptor, such as data becoming available for reading or the descriptor
+    /// becoming ready for writing.
+    ///
+    /// Poll operations are useful for implementing efficient I/O multiplexing, allowing you to
+    /// monitor multiple file descriptors concurrently within a single io_uring instance. When used
+    /// with multishot mode, a single poll operation can deliver multiple completion events without
+    /// needing to be resubmitted.
+    ///
+    /// ## Multishot Behavior
+    ///
+    /// When `isMultiShot` is `true`, the poll operation automatically rearms after each completion
+    /// event, continuing to monitor the file descriptor for subsequent events. This reduces
+    /// submission overhead for long-lived monitoring operations. The operation continues until
+    /// explicitly cancelled or the file descriptor is closed.
+    ///
+    /// When `isMultiShot` is `false`, the poll operation completes once after the first matching
+    /// event occurs, requiring resubmission to continue monitoring.
+    ///
+    /// ## Example Usage
+    ///
+    /// ```swift
+    /// // Monitor a socket for incoming connections
+    /// let pollRequest = IORing.Request.pollAdd(
+    ///     listenSocket,
+    ///     pollEvents: .pollin,
+    ///     isMultiShot: true,
+    ///     context: 1
+    /// )
+    /// try ring.submit(pollRequest)
+    ///
+    /// // Process completions
+    /// for completion in try ring.completions() {
+    ///     if completion.context == 1 {
+    ///         // Handle incoming connection
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - file: The file descriptor to monitor for I/O events.
+    ///   - pollEvents: The I/O events to monitor on the file descriptor.
+    ///   - isMultiShot: If `true`, the poll operation automatically rearms after each event,
+    ///     continuing to monitor the file descriptor. If `false`, the operation completes after
+    ///     the first matching event. Defaults to `true`.
+    ///   - context: An application-specific value passed through to the completion event,
+    ///     allowing you to identify which operation completed. Defaults to `0`.
+    ///
+    /// - Returns: An I/O ring request that monitors the file descriptor for the specified events.
+    ///
+    /// ## See Also
+    ///
+    /// - ``PollEvents``: The events that can be monitored.
+    /// - ``IORing/Request/cancel(_:matching:)``: Cancelling poll operations.
+    @inlinable public static func pollAdd(
+        _ file: FileDescriptor,
+        pollEvents: PollEvents,
+        isMultiShot: Bool = true,
+        context: UInt64 = 0
+    ) -> IORing.Request {
+        .init(core: .pollAdd(file: file, pollEvents: pollEvents, context: context))
+    }
+    
     @inlinable public static func read(
         _ file: IORing.RegisteredFile,
         into buffer: IORing.RegisteredBuffer,
@@ -488,6 +560,14 @@ extension IORing.Request {
         case .cancel(let flags):
             request.operation = .asyncCancel
             request.cancel_flags = flags
+        case .pollAdd(let file, let pollEvents, let isMultiShot, let context):
+            request.operation = .pollAdd
+            request.fileDescriptor = file
+            request.rawValue.user_data = context
+            if isMultiShot {
+                request.rawValue.len = IORING_POLL_ADD_MULTI
+            }
+            request.rawValue.poll32_events = pollEvents.rawValue
         }
 
         return request
