@@ -517,7 +517,7 @@ fileprivate func HRESULT_CODE(_ hr: HRESULT) -> DWORD {
 
 @inline(__always)
 fileprivate func HRESULT_FACILITY(_ hr: HRESULT) -> DWORD {
-    DWORD(hr << 16) & 0x1fff
+    DWORD(hr >> 16) & 0x1fff
 }
 
 @inline(__always)
