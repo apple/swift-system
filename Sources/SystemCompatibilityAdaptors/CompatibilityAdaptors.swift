@@ -1,8 +1,16 @@
+/*
+ This source file is part of the Swift System open source project
+
+ Copyright (c) 2025 - 2026 Apple Inc. and the Swift System project authors
+ Licensed under Apache License v2.0 with Runtime Library Exception
+
+ See https://swift.org/LICENSE.txt for license information
+*/
+
 #if canImport(System) && canImport(SystemPackage)
 import System
 import SystemPackage
 
-@available(System 0.0.2, *)
 extension SystemPackage.FilePath {
   @available(System 0.0.2, *)
   public init(converting path: System.FilePath) {
@@ -10,7 +18,7 @@ extension SystemPackage.FilePath {
   }
 }
 
-@available(System 0.0.2, *)
+@available(System 0.0.1, *)
 extension System.FilePath {
   @available(System 0.0.2, *)
   public init(converting path: SystemPackage.FilePath) {
@@ -18,7 +26,6 @@ extension System.FilePath {
   }
 }
 
-@available(System 0.0.1, *)
 extension SystemPackage.FileDescriptor {
   @available(System 0.0.1, *)
   public init(converting descriptor: System.FileDescriptor) {

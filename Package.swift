@@ -31,17 +31,23 @@ struct Available {
   var swiftSetting: SwiftSetting {
     #if SYSTEM_ABI_STABLE
     // Use availability matching Darwin API.
-    let availability = self.osAvailability
+    let availabilityType = self.osAvailability
     #else
     // Use availability matching SwiftPM default.
-    let availability = self.sourceAvailability
+    let availabilityType = self.sourceAvailability
     #endif
     return .enableExperimentalFeature(
-      "AvailabilityMacro=\(self.name) \(version):\(availability)")
+      "AvailabilityMacro=\(self.name) \(version):\(availabilityType)")
+  }
+
+  var compatibilitySetting: SwiftSetting {
+    .enableExperimentalFeature(
+      "AvailabilityMacro=\(self.name) \(version):\(osAvailability)"
+    )
   }
 }
 
-let availability: [Available] = [
+let availabilityList: [Available] = [
   Available("0.0.1", "macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0"),
 
   Available("0.0.2", "macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0"),
@@ -68,7 +74,7 @@ let availability: [Available] = [
   Available("99", "macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, visionOS 9999"),
 ]
 
-let swiftSettingsAvailability = availability.map(\.swiftSetting)
+let availabilitySettings = availabilityList.map(\.swiftSetting)
 
 #if SYSTEM_CI
 let swiftSettingsCI: [SwiftSetting] = [
@@ -78,7 +84,7 @@ let swiftSettingsCI: [SwiftSetting] = [
 let swiftSettingsCI: [SwiftSetting] = []
 #endif
 
-let swiftSettings = swiftSettingsAvailability + swiftSettingsCI + [
+let sharedSwiftSettings = swiftSettingsCI + [
   .define(
     "SYSTEM_PACKAGE_DARWIN",
     .when(platforms: [.macOS, .macCatalyst, .iOS, .watchOS, .tvOS, .visionOS])),
@@ -86,6 +92,8 @@ let swiftSettings = swiftSettingsAvailability + swiftSettingsCI + [
   .define("ENABLE_MOCKING", .when(configuration: .debug)),
   .enableExperimentalFeature("Lifetimes"),
 ]
+
+let swiftSettings = sharedSwiftSettings + availabilitySettings
 
 let cSettings: [CSetting] = [
   .define("_CRT_SECURE_NO_WARNINGS", .when(platforms: [.windows])),
@@ -141,7 +149,8 @@ let package = Package(
       path: "Sources/SystemCompatibilityAdaptors",
       exclude: [],
       cSettings: cSettings,
-      swiftSettings: swiftSettings
+      swiftSettings:
+        sharedSwiftSettings + availabilityList.map(\.compatibilitySetting)
     ),
     .testTarget(
       name: "SystemTests",
@@ -154,7 +163,8 @@ let package = Package(
       dependencies: ["SystemCompatibilityAdaptors", "SystemPackage"],
       exclude: [],
       cSettings: cSettings,
-      swiftSettings: swiftSettings
+      swiftSettings:
+      	sharedSwiftSettings + availabilityList.map(\.compatibilitySetting)
     ),
   ],
   swiftLanguageVersions: [.v5]
