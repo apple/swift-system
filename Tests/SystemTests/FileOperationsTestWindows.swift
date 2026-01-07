@@ -242,6 +242,53 @@ final class FileOperationsTestWindows: XCTestCase {
       }
     }
   }
+
+  /// Test that buffer sizes exceeding DWORD.max (4GB) are properly rejected
+  func testBufferSizeLimit() throws {
+    try withTemporaryFilePath(basename: "testBufferSizeLimit") { path in
+      let fd = try FileDescriptor.open(
+        path.appending("test.txt"),
+        .readWrite,
+        options: [.create, .truncate],
+        permissions: .ownerReadWrite
+      )
+      defer { try? fd.close() }
+
+      // Write some data first
+      try fd.writeAll("test data".utf8)
+
+      // Allocate a small buffer for testing
+      let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 1024, alignment: 1)
+      defer { buffer.deallocate() }
+
+      // Test that a count exceeding DWORD.max (UInt32.max = 4,294,967,295) returns EINVAL
+      // We use a buffer pointer but pass a count > DWORD.max
+      let oversizedCount = Int(DWORD.max) + 1
+      let oversizedBuffer = UnsafeMutableRawBufferPointer(
+        start: buffer.baseAddress,
+        count: oversizedCount
+      )
+
+      // pread should fail with EINVAL
+      do {
+        _ = try fd.read(fromAbsoluteOffset: 0, into: oversizedBuffer)
+        XCTFail("Expected EINVAL for buffer size exceeding DWORD.max")
+      } catch let err as Errno {
+        XCTAssertEqual(err, .invalidArgument, "Expected EINVAL, got \(err)")
+      }
+
+      // pwrite should also fail with EINVAL
+      do {
+        _ = try fd.write(toAbsoluteOffset: 0, UnsafeRawBufferPointer(oversizedBuffer))
+        XCTFail("Expected EINVAL for buffer size exceeding DWORD.max")
+      } catch let err as Errno {
+        XCTAssertEqual(err, .invalidArgument, "Expected EINVAL, got \(err)")
+      }
+
+      // Verify that exactly DWORD.max works (if we had a buffer that large)
+      // We can't easily test this without allocating 4GB, but the boundary is correct
+    }
+  }
 }
 
 #endif // os(Windows)
