@@ -120,8 +120,12 @@ let package = Package(
   platforms: platforms,
   products: [
     .library(name: "SystemPackage", targets: ["SystemPackage"]),
+    .library(name: "SystemSockets", targets: ["SystemSockets"]),
+    .executable(name: "system-samples", targets: ["Samples"]),
   ],
-  dependencies: [],
+  dependencies: [
+    .package(url: "https://github.com/apple/swift-argument-parser", from: "1.3.0"),
+  ],
   targets: [
     .target(
       name: "CSystem",
@@ -140,6 +144,26 @@ let package = Package(
       dependencies: ["SystemPackage"],
       exclude: testsToExclude,
       cSettings: cSettings,
+      swiftSettings: swiftSettings),
+    .target(
+      name: "SystemSockets",
+      dependencies: ["SystemPackage", "CSystem"],
+      path: "Sources/SystemSockets",
+      cSettings: cSettings,
+      swiftSettings: swiftSettings),
+    .testTarget(
+      name: "SystemSocketsTests",
+      dependencies: ["SystemSockets"],
+      cSettings: cSettings,
+      swiftSettings: swiftSettings),
+    .executableTarget(
+      name: "Samples",
+      dependencies: [
+        "SystemPackage",
+        "SystemSockets",
+        .product(name: "ArgumentParser", package: "swift-argument-parser"),
+      ],
+      path: "Sources/Samples",
       swiftSettings: swiftSettings),
   ],
   swiftLanguageVersions: [.v5]
