@@ -7,3 +7,4 @@ xcuserdata/
 .*.sw?
 /.swiftpm
 .docc-build
+Package.resolved
