@@ -91,5 +91,20 @@ extension CInterop {
   #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
   public typealias FileFlags = UInt32
   #endif
+
+  /// The C `termios` structure.
+  public typealias Termios = termios
+
+  /// The C `tcflag_t` type for terminal mode flags.
+  public typealias TerminalFlags = tcflag_t
+
+  /// The C `cc_t` type for control character values.
+  public typealias ControlCharacterValue = cc_t
+
+  /// The C `speed_t` type for baud rate values.
+  public typealias SpeedT = speed_t
+
+  /// The C `winsize` structure for terminal window dimensions.
+  public typealias WinSize = winsize
 }
 #endif

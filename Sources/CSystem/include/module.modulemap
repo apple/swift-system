@@ -1,4 +1,5 @@
 module CSystem {
+  header "CSystemDarwin.h"
   header "CSystemLinux.h"
   header "CSystemWASI.h"
   header "CSystemWindows.h"

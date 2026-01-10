@@ -9,10 +9,13 @@
 
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
+import CSystem
 #elseif canImport(Glibc)
 import Glibc
+import CSystem
 #elseif canImport(Musl)
 import Musl
+import CSystem
 #elseif canImport(WASILibc)
 import CSystem
 import WASILibc
@@ -20,6 +23,7 @@ import WASILibc
 import ucrt
 #elseif canImport(Android)
 import Android
+import CSystem
 #else
 #error("Unsupported Platform")
 #endif
@@ -269,3 +273,176 @@ internal func system_getenv(
 ) -> UnsafeMutablePointer<CChar>? {
   return getenv(name)
 }
+
+// MARK: - Terminal Control (termios)
+
+#if !os(Windows)
+@usableFromInline
+internal func system_isatty(
+  _ fd: CInt
+) -> CInt {
+#if ENABLE_MOCKING
+  if mockingEnabled {
+    return _mock(fd)
+  }
+#endif
+  return isatty(fd)
+}
+
+internal func system_tcgetattr(
+  _ fd: CInt,
+  _ termios_p: UnsafeMutablePointer<CInterop.Termios>
+) -> CInt {
+#if ENABLE_MOCKING
+  if mockingEnabled {
+    return _mock(fd, termios_p)
+  }
+#endif
+  return tcgetattr(fd, termios_p)
+}
+
+internal func system_tcsetattr(
+  _ fd: CInt,
+  _ optional_actions: CInt,
+  _ termios_p: UnsafePointer<CInterop.Termios>
+) -> CInt {
+#if ENABLE_MOCKING
+  if mockingEnabled {
+    return _mock(fd, optional_actions, termios_p)
+  }
+#endif
+  return tcsetattr(fd, optional_actions, termios_p)
+}
+
+internal func system_tcdrain(
+  _ fd: CInt
+) -> CInt {
+#if ENABLE_MOCKING
+  if mockingEnabled {
+    return _mock(fd)
+  }
+#endif
+  return tcdrain(fd)
+}
+
+internal func system_tcflush(
+  _ fd: CInt,
+  _ queue_selector: CInt
+) -> CInt {
+#if ENABLE_MOCKING
+  if mockingEnabled {
+    return _mock(fd, queue_selector)
+  }
+#endif
+  return tcflush(fd, queue_selector)
+}
+
+internal func system_tcflow(
+  _ fd: CInt,
+  _ action: CInt
+) -> CInt {
+#if ENABLE_MOCKING
+  if mockingEnabled {
+    return _mock(fd, action)
+  }
+#endif
+  return tcflow(fd, action)
+}
+
+internal func system_tcsendbreak(
+  _ fd: CInt,
+  _ duration: CInt
+) -> CInt {
+#if ENABLE_MOCKING
+  if mockingEnabled {
+    return _mock(fd, duration)
+  }
+#endif
+  return tcsendbreak(fd, duration)
+}
+
+
+@usableFromInline
+internal func system_cfgetispeed(
+  _ termios_p: UnsafePointer<CInterop.Termios>
+) -> CInterop.SpeedT {
+  return cfgetispeed(termios_p)
+}
+
+
+@usableFromInline
+internal func system_cfgetospeed(
+  _ termios_p: UnsafePointer<CInterop.Termios>
+) -> CInterop.SpeedT {
+  return cfgetospeed(termios_p)
+}
+
+
+@usableFromInline
+internal func system_cfsetispeed(
+  _ termios_p: UnsafeMutablePointer<CInterop.Termios>,
+  _ speed: CInterop.SpeedT
+) -> CInt {
+  return cfsetispeed(termios_p, speed)
+}
+
+
+@usableFromInline
+internal func system_cfsetospeed(
+  _ termios_p: UnsafeMutablePointer<CInterop.Termios>,
+  _ speed: CInterop.SpeedT
+) -> CInt {
+  return cfsetospeed(termios_p, speed)
+}
+
+
+@usableFromInline
+internal func system_cfsetspeed(
+  _ termios_p: UnsafeMutablePointer<CInterop.Termios>,
+  _ speed: CInterop.SpeedT
+) -> CInt {
+#if ENABLE_MOCKING
+  if mockingEnabled {
+    return _mock(termios_p, speed)
+  }
+#endif
+  return cfsetspeed(termios_p, speed)
+}
+
+
+@usableFromInline
+internal func system_cfmakeraw(
+  _ termios_p: UnsafeMutablePointer<CInterop.Termios>
+) {
+  cfmakeraw(termios_p)
+}
+
+// Window size ioctls
+
+@usableFromInline
+internal func system_tiocgwinsz(
+  _ fd: CInt,
+  _ winsize_p: UnsafeMutablePointer<CInterop.WinSize>
+) -> CInt {
+#if ENABLE_MOCKING
+  if mockingEnabled {
+    return _mock(fd, winsize_p)
+  }
+#endif
+  return _system_ioctl_TIOCGWINSZ(fd, winsize_p)
+}
+
+
+@usableFromInline
+internal func system_tiocswinsz(
+  _ fd: CInt,
+  _ winsize_p: UnsafePointer<CInterop.WinSize>
+) -> CInt {
+#if ENABLE_MOCKING
+  if mockingEnabled {
+    return _mock(fd, winsize_p)
+  }
+#endif
+  return _system_ioctl_TIOCSWINSZ(fd, winsize_p)
+}
+#endif
