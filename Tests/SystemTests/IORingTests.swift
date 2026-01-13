@@ -142,7 +142,7 @@ final class IORingTests: XCTestCase {
 
         // Submit a pollAdd request to monitor for POLLIN events (data available for reading)
         let enqueued = try ring.submit(linkedRequests:
-            .pollAdd(testEventFD, pollEvents: .pollin, isMultiShot: false, context: pollInContext))
+            .pollAdd(testEventFD, pollEvents: .pollIn, isMultiShot: false, context: pollInContext))
         XCTAssert(enqueued)
 
         // Write to the eventfd to trigger the POLLIN event
@@ -177,7 +177,7 @@ final class IORingTests: XCTestCase {
         // Submit a pollAdd request to monitor for POLLOUT events (ready for writing)
         // Pipes are typically ready for writing when empty
         let enqueuedOut = try ring.submit(linkedRequests:
-            .pollAdd(writeFD, pollEvents: .pollout, isMultiShot: false, context: pollOutContext))
+            .pollAdd(writeFD, pollEvents: .pollOut, isMultiShot: false, context: pollOutContext))
         XCTAssert(enqueuedOut)
 
         // Consume the completion from the poll operation
