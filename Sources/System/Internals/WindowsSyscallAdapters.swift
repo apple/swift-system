@@ -149,6 +149,12 @@ internal func pread(
   let handle: intptr_t = _get_osfhandle(fd)
   if handle == /* INVALID_HANDLE_VALUE */ -1 { ucrt._set_errno(EBADF); return -1 }
 
+  // Windows ReadFile accepts DWORD (32-bit) for buffer size, so validate nbyte doesn't exceed it
+  if nbyte > Int(DWORD.max) {
+    ucrt._set_errno(EINVAL)
+    return -1
+  }
+
   // NOTE: this is a non-owning handle, do *not* call CloseHandle on it
   let hFile: HANDLE = HANDLE(bitPattern: handle)!
 
@@ -170,6 +176,12 @@ internal func pwrite(
 ) -> Int {
   let handle: intptr_t = _get_osfhandle(fd)
   if handle == /* INVALID_HANDLE_VALUE */ -1 { ucrt._set_errno(EBADF); return -1 }
+
+  // Windows WriteFile accepts DWORD (32-bit) for buffer size, so validate nbyte doesn't exceed it
+  if nbyte > Int(DWORD.max) {
+    ucrt._set_errno(EINVAL)
+    return -1
+  }
 
   // NOTE: this is a non-owning handle, do *not* call CloseHandle on it
   let hFile: HANDLE = HANDLE(bitPattern: handle)!

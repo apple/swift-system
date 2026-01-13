@@ -160,7 +160,7 @@ public struct Errno: RawRepresentable, Error, Hashable, Codable {
   /// No child processes.
   ///
   /// A `wait(2)` or `waitpid(2)` function was executed
-  /// by a process that dosn't have any existing child processes
+  /// by a process that doesn't have any existing child processes
   /// or whose child processes are all already being waited for.
   ///
   /// The corresponding C error is `ECHILD`.
