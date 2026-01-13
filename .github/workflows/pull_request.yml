@@ -17,8 +17,8 @@ jobs:
       linux_os_versions: '["noble", "jammy", "focal"]'
       linux_exclude_swift_versions: |
         [
-          {"swift_version": "5.9"},
-          {"swift_version": "5.10"},
+          {"os_version": "noble", "swift_version": "5.9"},
+          {"os_version": "noble", "swift_version": "5.10"},
           {"os_version": "focal", "swift_version": "nightly-6.2"},
           {"os_version": "focal", "swift_version": "6.2"},
           {"os_version": "focal", "swift_version": "nightly-6.3"},
