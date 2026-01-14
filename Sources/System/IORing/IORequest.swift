@@ -196,8 +196,8 @@ extension IORing.Request {
     /// Adds a poll operation to monitor a file descriptor for specific I/O events.
     ///
     /// This method creates an io_uring poll operation that monitors the specified file descriptor
-    /// for I/O readiness events. The operation completes when any of the requested events become
-    /// active on the file descriptor, such as data becoming available for reading or the descriptor
+    /// for I/O readiness events. The operation completes when any of the requested events
+    /// occur on the file descriptor, such as data becoming available for reading or the descriptor
     /// becoming ready for writing.
     ///
     /// Poll operations are useful for implementing efficient I/O multiplexing, allowing you to
