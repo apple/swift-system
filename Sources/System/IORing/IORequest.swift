@@ -256,7 +256,7 @@ extension IORing.Request {
         isMultiShot: Bool = false,
         context: UInt64 = 0
     ) -> IORing.Request {
-        .init(core: .pollAdd(file: file, pollEvents: pollEvents, context: context))
+        .init(core: .pollAdd(file: file, pollEvents: pollEvents, isMultiShot: isMultiShot, context: context))
     }
     
     @inlinable public static func read(
