@@ -145,6 +145,7 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
   ///
   /// The underlying port right will be automatically deallocated when
   /// the Mach.Port object is destroyed.
+  @available(System 1.4.0, *)
   public init(name: mach_port_name_t, context: mach_port_context_t) {
     precondition(name != mach_port_name_t(MACH_PORT_NULL),
                  "Mach.Port cannot be initialized with MACH_PORT_NULL")
@@ -180,7 +181,6 @@ extension Mach.Port where RightType == Mach.ReceiveRight {
   ///
   /// After this function completes, the Mach.Port is destroyed and no longer
   /// usable.
-  @inlinable
   @available(System 1.4.0, *)
   public consuming func relinquish(
   ) -> (name: mach_port_name_t, context: mach_port_context_t) {
@@ -322,7 +322,7 @@ extension Mach.Port where RightType == Mach.SendRight {
   ///
   /// After this function completes, the Mach.Port is destroyed and no longer
   /// usable.
-  @inlinable
+  @available(System 1.4.0, *)
   public consuming func relinquish() -> mach_port_name_t {
     let name = _name
     discard self
@@ -365,7 +365,6 @@ extension Mach.Port where RightType == Mach.SendOnceRight {
   ///
   /// After this function completes, the Mach.Port is destroyed and no longer
   /// usable.
-  @inlinable
   @available(System 1.4.0, *)
   public consuming func relinquish() -> mach_port_name_t {
     let name = _name
