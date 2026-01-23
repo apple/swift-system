@@ -365,6 +365,162 @@ extension FileDescriptor {
       buffer,
       retryOnInterrupt: retryOnInterrupt)
   }
+
+  /// Writes the contents of a buffer at the current file offset.
+  ///
+  /// - Parameters:
+  ///   - data: The region of memory that contains the data being written.
+  ///   - retryOnInterrupt: Whether to retry the write operation
+  ///     if it throws ``Errno/interrupted``.
+  ///     The default is `true`.
+  ///     Pass `false` to try only once and throw an error upon interruption.
+  /// - Returns: The number of bytes that were written.
+  ///
+  /// After writing,
+  /// this method increments the file's offset by the number of bytes written.
+  /// To change the file's offset,
+  /// call the ``seek(offset:from:)`` method.
+  ///
+  /// The corresponding C function is `write`.
+  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @_alwaysEmitIntoClient
+  public func write(
+    _ data: RawSpan,
+    retryOnInterrupt: Bool = true
+  ) throws(Errno) -> Int {
+    do {
+      return try data.withUnsafeBytes { bytes in
+        try write(bytes, retryOnInterrupt: retryOnInterrupt)
+      }
+    } catch let error as Errno {
+      throw error
+    } catch {
+      fatalError("Unexpected error type")
+    }
+  }
+
+  /// Writes the contents of a buffer at the specified offset.
+  ///
+  /// - Parameters:
+  ///   - offset: The file offset where writing begins.
+  ///   - data: The region of memory that contains the data being written.
+  ///   - retryOnInterrupt: Whether to retry the write operation
+  ///     if it throws ``Errno/interrupted``.
+  ///     The default is `true`.
+  ///     Pass `false` to try only once and throw an error upon interruption.
+  /// - Returns: The number of bytes that were written.
+  ///
+  /// Unlike ``write(_:retryOnInterrupt:)``,
+  /// this method leaves the file's existing offset unchanged.
+  ///
+  /// The corresponding C function is `pwrite`.
+  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @_alwaysEmitIntoClient
+  public func write(
+    toAbsoluteOffset offset: Int64,
+    _ data: RawSpan,
+    retryOnInterrupt: Bool = true
+  ) throws(Errno) -> Int {
+    do {
+      return try data.withUnsafeBytes { bytes in
+        try write(toAbsoluteOffset: offset, bytes, retryOnInterrupt: retryOnInterrupt)
+      }
+    } catch let error as Errno {
+      throw error
+    } catch {
+      fatalError("Unexpected error type")
+    }
+  }
+
+  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @_alwaysEmitIntoClient
+  internal func _readIntoOutputBuffer(
+    _ buffer: UnsafeMutableRawBufferPointer,
+    initializedCount: inout Int,
+    retryOnInterrupt: Bool
+  ) -> Result<Int, Errno> {
+    // Read into the uninitialized portion (starting at offset 'initializedCount')
+    let uninitializedPortion = UnsafeMutableRawBufferPointer(
+      start: buffer.baseAddress?.advanced(by: initializedCount),
+      count: buffer.count - initializedCount
+    )
+    do {
+      let result = try _read(into: uninitializedPortion, retryOnInterrupt: retryOnInterrupt)
+      if case .success(let bytesRead) = result {
+        initializedCount += bytesRead  // Add to existing count, don't replace it!
+      }
+      return result
+    } catch {
+      fatalError("Unexpected error from _read")
+    }
+  }
+
+  /// Reads bytes at the current file offset into a buffer.
+  ///
+  /// - Parameters:
+  ///   - buffer: The region of memory to read into.
+  ///   - retryOnInterrupt: Whether to retry the read operation
+  ///     if it throws ``Errno/interrupted``.
+  ///     The default is `true`.
+  ///     Pass `false` to try only once and throw an error upon interruption.
+  /// - Returns: The number of bytes that were read.
+  ///
+  /// After reading,
+  /// this method increments the file's offset by the number of bytes read.
+  /// To change the file's offset,
+  /// call the ``seek(offset:from:)`` method.
+  ///
+  /// The corresponding C function is `read`.
+  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @_alwaysEmitIntoClient
+  public func read(
+    into buffer: inout OutputRawSpan,
+    retryOnInterrupt: Bool = true
+  ) throws(Errno) -> Int {
+    try buffer.withUnsafeMutableBytes { buf, count throws(Errno) -> Int in
+      try _readIntoOutputBuffer(buf, initializedCount: &count, retryOnInterrupt: retryOnInterrupt).get()
+    }
+  }
+
+  /// Reads bytes at the specified offset into a buffer.
+  ///
+  /// - Parameters:
+  ///   - offset: The file offset where reading begins.
+  ///   - buffer: The region of memory to read into.
+  ///   - retryOnInterrupt: Whether to retry the read operation
+  ///     if it throws ``Errno/interrupted``.
+  ///     The default is `true`.
+  ///     Pass `false` to try only once and throw an error upon interruption.
+  /// - Returns: The number of bytes that were read.
+  ///
+  /// Unlike ``read(into:retryOnInterrupt:)``,
+  /// this method leaves the file's existing offset unchanged.
+  ///
+  /// The corresponding C function is `pread`.
+  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @_alwaysEmitIntoClient
+  public func read(
+    fromAbsoluteOffset offset: Int64,
+    into buffer: inout OutputRawSpan,
+    retryOnInterrupt: Bool = true
+  ) throws(Errno) -> Int {
+    do {
+      return try buffer.withUnsafeMutableBytes { buf, count in
+        // Read into the uninitialized portion (starting at offset 'count')
+        let uninitializedPortion = UnsafeMutableRawBufferPointer(
+          start: buf.baseAddress?.advanced(by: count),
+          count: buf.count - count
+        )
+        let bytesRead = try read(fromAbsoluteOffset: offset, into: uninitializedPortion, retryOnInterrupt: retryOnInterrupt)
+        count += bytesRead  // Add to existing count, don't replace it!
+        return bytesRead
+      }
+    } catch let error as Errno {
+      throw error
+    } catch {
+      fatalError("Unexpected error type")
+    }
+  }
 }
 
 #if !os(WASI)
