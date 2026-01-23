@@ -388,14 +388,8 @@ extension FileDescriptor {
     _ data: RawSpan,
     retryOnInterrupt: Bool = true
   ) throws(Errno) -> Int {
-    do {
-      return try data.withUnsafeBytes { bytes in
-        try write(bytes, retryOnInterrupt: retryOnInterrupt)
-      }
-    } catch let error as Errno {
-      throw error
-    } catch {
-      fatalError("Unexpected error type")
+    try data.withUnsafeBytes { bytes throws(Errno) -> Int in
+      try _write(bytes, retryOnInterrupt: retryOnInterrupt).get()
     }
   }
 
@@ -421,14 +415,8 @@ extension FileDescriptor {
     _ data: RawSpan,
     retryOnInterrupt: Bool = true
   ) throws(Errno) -> Int {
-    do {
-      return try data.withUnsafeBytes { bytes in
-        try write(toAbsoluteOffset: offset, bytes, retryOnInterrupt: retryOnInterrupt)
-      }
-    } catch let error as Errno {
-      throw error
-    } catch {
-      fatalError("Unexpected error type")
+    try data.withUnsafeBytes { bytes throws(Errno) -> Int in
+      try _write(toAbsoluteOffset: offset, bytes, retryOnInterrupt: retryOnInterrupt).get()
     }
   }
 
