@@ -20,6 +20,7 @@ extension FileDescriptor {
   /// If `body` throws an error
   /// or an error occurs while closing the file descriptor,
   /// this method rethrows that error.
+  @available(System 0.0.1, *)
   public func closeAfter<R>(_ body: () throws -> R) throws -> R {
     // No underscore helper, since the closure's throw isn't necessarily typed.
     let result: R
@@ -49,6 +50,7 @@ extension FileDescriptor {
   /// If `sequence` doesn't implement
   /// the <doc://com.apple.documentation/documentation/swift/sequence/3128824-withcontiguousstorageifavailable> method,
   /// temporary space will be allocated as needed.
+  @available(System 0.0.1, *)
   @_alwaysEmitIntoClient
   @discardableResult
   public func writeAll<S: Sequence>(
@@ -98,6 +100,7 @@ extension FileDescriptor {
   /// If `sequence` doesn't implement
   /// the <doc://com.apple.documentation/documentation/swift/sequence/3128824-withcontiguousstorageifavailable> method,
   /// temporary space will be allocated as needed.
+  @available(System 0.0.1, *)
   @_alwaysEmitIntoClient
   @discardableResult
   public func writeAll<S: Sequence>(
@@ -106,6 +109,7 @@ extension FileDescriptor {
     try _writeAll(toAbsoluteOffset: offset, sequence).get()
   }
 
+  @available(System 0.0.1, *)
   @usableFromInline
   internal func _writeAll<S: Sequence>(
     toAbsoluteOffset offset: Int64, _ sequence: S
@@ -115,6 +119,7 @@ extension FileDescriptor {
     }
   }
 
+  @available(System 0.0.1, *)
   @_alwaysEmitIntoClient
   internal func _writeAllBuffer(
     toAbsoluteOffset offset: Int64, _ buffer: UnsafeRawBufferPointer
@@ -134,6 +139,7 @@ extension FileDescriptor {
     return .success(buffer.count)
   }
 
+#if compiler(>=6.2)
   /// Writes the entire contents of a buffer, retrying on partial writes.
   ///
   /// - Parameters:
@@ -150,7 +156,7 @@ extension FileDescriptor {
   /// call the ``seek(offset:from:)`` method.
   ///
   /// The corresponding C function is `write`.
-  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @available(SystemWithSpan 0.0.1, *)
   @_alwaysEmitIntoClient
   public func writeAll(
     _ data: RawSpan,
@@ -177,7 +183,7 @@ extension FileDescriptor {
   /// this method leaves the file's existing offset unchanged.
   ///
   /// The corresponding C function is `pwrite`.
-  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @available(SystemWithSpan 0.0.1, *)
   @_alwaysEmitIntoClient
   public func writeAll(
     toAbsoluteOffset offset: Int64,
@@ -205,7 +211,7 @@ extension FileDescriptor {
   /// call the ``seek(offset:from:)`` method.
   ///
   /// The corresponding C function is `read`.
-  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @available(SystemWithSpan 0.0.1, *)
   @_alwaysEmitIntoClient
   @discardableResult
   public func read(
@@ -238,7 +244,7 @@ extension FileDescriptor {
   /// this method leaves the file's existing offset unchanged.
   ///
   /// The corresponding C function is `pread`.
-  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @available(SystemWithSpan 0.0.1, *)
   @_alwaysEmitIntoClient
   @discardableResult
   public func read(
@@ -257,4 +263,5 @@ extension FileDescriptor {
     }
     return originalCapacity - buffer.freeCapacity
   }
+#endif // swift(>=6.2)
 }

@@ -22,7 +22,7 @@ private struct SpanFileIOTests {
 
   // MARK: - Basic Functionality
 
-  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @available(SystemWithSpan 0.0.1, *)
   @Test func basicReadWriteOperations() async throws {
     try withTemporaryFilePath(basename: "basicReadWriteOperations") { path in
       let fd = try FileDescriptor.open(
@@ -95,7 +95,7 @@ private struct SpanFileIOTests {
     }
   }
 
-  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @available(SystemWithSpan 0.0.1, *)
   @Test func writeOperations() async throws {
     try withTemporaryFilePath(basename: "writeOperations") { path in
       let fd = try FileDescriptor.open(
@@ -131,7 +131,7 @@ private struct SpanFileIOTests {
     }
   }
 
-  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @available(macOS 10.14.4, iOS 12.2, watchOS 5.2, tvOS 12.2, visionOS 1, *)
   @Test func readOperations() async throws {
     try withTemporaryFilePath(basename: "readOperations") { path in
       let fd = try FileDescriptor.open(
@@ -162,7 +162,7 @@ private struct SpanFileIOTests {
     }
   }
 
-  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @available(SystemWithSpan 0.0.1, *)
   @Test func absoluteOffsetOperations() async throws {
     try withTemporaryFilePath(basename: "absoluteOffsetOperations") { path in
       let fd = try FileDescriptor.open(
@@ -198,7 +198,7 @@ private struct SpanFileIOTests {
 
   // MARK: - Semantic Behavior
 
-  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @available(SystemWithSpan 0.0.1, *)
   @Test func partialReadBehavior() async throws {
     try withTemporaryFilePath(basename: "partialReadBehavior") { path in
       let fd = try FileDescriptor.open(
@@ -232,7 +232,7 @@ private struct SpanFileIOTests {
     }
   }
 
-  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @available(SystemWithSpan 0.0.1, *)
   @Test func readFillingBehavior() async throws {
     try withTemporaryFilePath(basename: "readFillingBehavior") { path in
       let fd = try FileDescriptor.open(
@@ -271,7 +271,7 @@ private struct SpanFileIOTests {
 
   // MARK: - Edge Cases
 
-  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @available(SystemWithSpan 0.0.1, *)
   @Test func emptyIO() async throws {
     try withTemporaryFilePath(basename: "emptyIO") { path in
       let fd = try FileDescriptor.open(
@@ -308,7 +308,7 @@ private struct SpanFileIOTests {
     }
   }
 
-  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @available(SystemWithSpan 0.0.1, *)
   @Test func eofBehavior() async throws {
     try withTemporaryFilePath(basename: "eofBehavior") { path in
       let fd = try FileDescriptor.open(
@@ -348,7 +348,7 @@ private struct SpanFileIOTests {
     }
   }
 
-  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @available(SystemWithSpan 0.0.1, *)
   @Test func preInitializedSpan() async throws {
     try withTemporaryFilePath(basename: "preInitializedSpan") { path in
       let fd = try FileDescriptor.open(
@@ -384,7 +384,7 @@ private struct SpanFileIOTests {
     }
   }
 
-  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @available(SystemWithSpan 0.0.1, *)
   @Test func errorHandling() throws {
     // Test 1: Reading from closed FD
     let fd1 = try FileDescriptor.open(FilePath("/dev/null"), .readOnly)
@@ -436,7 +436,7 @@ private struct SpanFileIOTests {
 
   // MARK: - Regression/Examples
 
-  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @available(SystemWithSpan 0.0.1, *)
   @Test func proposalExample() async throws {
     // Example from the proposal
     try withTemporaryFilePath(basename: "proposalExample") { path in

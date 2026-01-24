@@ -12,63 +12,57 @@
 
 import PackageDescription
 
-struct Available {
+struct Availability {
   var name: String
   var version: String
   var osAvailability: String
-  var sourceAvailability: String
 
-  init(
-    _ version: String,
-    _ osAvailability: String
-  ) {
-    self.name = "System"
-    self.version = version
-    self.osAvailability = osAvailability
-    self.sourceAvailability = "macOS 10.10, iOS 8.0, watchOS 2.0, tvOS 9.0, visionOS 1.0"
+  var minOSVersions: String {
+    "macOS 10.10, iOS 8.0, watchOS 2.0, tvOS 9.0, visionOS 1.0"
+  }
+  var spanOSVersions: String {
+    "macOS 10.14.4, iOS 12.2, watchOS 5.2, tvOS 12.2, visionOS 1.0"
   }
 
-  var swiftSetting: SwiftSetting {
-    #if SYSTEM_ABI_STABLE
-    // Use availability matching Darwin API.
-    let availability = self.osAvailability
-    #else
-    // Use availability matching SwiftPM default.
-    let availability = self.sourceAvailability
-    #endif
-    return .enableExperimentalFeature(
-      "AvailabilityMacro=\(self.name) \(version):\(availability)")
-  }
+  var isStandardAvailability: Bool { name == "System" }
 }
 
-let availability: [Available] = [
-  Available("0.0.1", "macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0"),
+let availabilityMap: [(String, String)] = [
+  ("0.0.1", "macOS 11.0, iOS 14.0, watchOS 7.0, tvOS 14.0"),
+  ("0.0.2", "macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0"),
+  ("1.1.0", "macOS 12.3, iOS 15.4, watchOS 8.5, tvOS 15.4"),
+  ("1.2.0", "macOS 14.4, iOS 17.4, watchOS 10.4, tvOS 17.4"),
+  ("1.4.0", "macOS 14.4, iOS 17.4, watchOS 10.4, tvOS 17.4, visionOS 1.0"),
 
-  Available("0.0.2", "macOS 12.0, iOS 15.0, watchOS 8.0, tvOS 15.0"),
-
-  Available("0.0.3", "macOS 12.3, iOS 15.4, watchOS 8.5, tvOS 15.4"),
-  Available("1.1.0", "macOS 12.3, iOS 15.4, watchOS 8.5, tvOS 15.4"),
-
-  Available("1.1.1", "macOS 14.4, iOS 17.4, watchOS 10.4, tvOS 17.4"),
-  Available("1.2.0", "macOS 14.4, iOS 17.4, watchOS 10.4, tvOS 17.4"),
-
-  Available("1.2.1", "macOS 14.4, iOS 17.4, watchOS 10.4, tvOS 17.4"),
-  Available("1.3.0", "macOS 14.4, iOS 17.4, watchOS 10.4, tvOS 17.4"),
-
-  Available("1.3.1", "macOS 14.4, iOS 17.4, watchOS 10.4, tvOS 17.4, visionOS 1.0"),
-  Available("1.3.2", "macOS 14.4, iOS 17.4, watchOS 10.4, tvOS 17.4, visionOS 1.0"),
-  Available("1.4.0", "macOS 14.4, iOS 17.4, watchOS 10.4, tvOS 17.4, visionOS 1.0"),
-
-  Available("1.4.1", "macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, visionOS 9999"),
-  Available("1.4.2", "macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, visionOS 9999"),
-  Available("1.5.0", "macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, visionOS 9999"),
-  Available("1.6.0", "macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, visionOS 9999"),
-  Available("1.6.1", "macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, visionOS 9999"),
-
-  Available("99", "macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, visionOS 9999"),
+  ("99", "macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, visionOS 9999"),
 ]
 
-let swiftSettingsAvailability = availability.map(\.swiftSetting)
+let availabilities: [Availability] =
+  availabilityMap.map {
+    Availability(name: "System", version: $0.0, osAvailability: $0.1)
+  } + availabilityMap.prefix(5).map {
+    Availability(name: "SystemWithSpan", version: $0.0, osAvailability: $0.1)
+  }
+
+let swiftSettingsAvailability = availabilities.map {
+  availability -> SwiftSetting in
+  let osVersionList: String
+#if SYSTEM_ABI_STABLE
+  // Use availability matching Darwin API.
+  availability = availability.osAvailability
+#else
+  if availability.isStandardAvailability {
+    // Use availability matching SwiftPM minimum.
+    osVersionList = availability.minOSVersions
+  } else {
+    // Use availability matching Span deployment minimum.
+    osVersionList = availability.spanOSVersions
+  }
+#endif
+  return .enableExperimentalFeature(
+    "AvailabilityMacro=\(availability.name) \(availability.version):\(osVersionList)"
+  )
+}
 
 #if SYSTEM_CI
 let swiftSettingsCI: [SwiftSetting] = [

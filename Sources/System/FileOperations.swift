@@ -23,6 +23,7 @@ extension FileDescriptor {
   /// - Returns: A file descriptor for the open file
   ///
   /// The corresponding C function is `open`.
+  @available(System 0.0.1, *)
   @_alwaysEmitIntoClient
   public static func open(
     _ path: FilePath,
@@ -62,6 +63,7 @@ extension FileDescriptor {
   /// - Returns: A file descriptor for the open file
   ///
   /// The corresponding C function is `open`.
+  @available(System 0.0.1, *)
   @_alwaysEmitIntoClient
   public static func open(
     _ path: UnsafePointer<CChar>,
@@ -75,6 +77,7 @@ extension FileDescriptor {
     ).get()
   }
 
+  @available(System 0.0.1, *)
   @usableFromInline
   internal static func _open(
     _ path: UnsafePointer<CChar>,
@@ -148,6 +151,7 @@ extension FileDescriptor {
   /// the object will be deactivated.
   ///
   /// The corresponding C function is `close`.
+  @available(System 0.0.1, *)
   @_alwaysEmitIntoClient
   public func close() throws { try _close().get() }
 
@@ -165,6 +169,7 @@ extension FileDescriptor {
   ///   in bytes from the beginning of the file.
   ///
   /// The corresponding C function is `lseek`.
+  @available(System 0.0.1, *)
   @_alwaysEmitIntoClient
   @discardableResult
   public func seek(
@@ -173,6 +178,7 @@ extension FileDescriptor {
     try _seek(offset: offset, from: whence).get()
   }
 
+  @available(System 0.0.1, *)
   @usableFromInline
   internal func _seek(
     offset: Int64, from whence: FileDescriptor.SeekOrigin
@@ -210,6 +216,7 @@ extension FileDescriptor {
   /// call the ``seek(offset:from:)`` method.
   ///
   /// The corresponding C function is `read`.
+  @available(System 0.0.1, *)
   @_alwaysEmitIntoClient
   public func read(
     into buffer: UnsafeMutableRawBufferPointer,
@@ -218,6 +225,7 @@ extension FileDescriptor {
     try _read(into: buffer, retryOnInterrupt: retryOnInterrupt).get()
   }
 
+  @available(System 0.0.1, *)
   @usableFromInline
   internal func _read(
     into buffer: UnsafeMutableRawBufferPointer,
@@ -246,6 +254,7 @@ extension FileDescriptor {
   /// this method leaves the file's existing offset unchanged.
   ///
   /// The corresponding C function is `pread`.
+  @available(System 0.0.1, *)
   @_alwaysEmitIntoClient
   public func read(
     fromAbsoluteOffset offset: Int64,
@@ -259,6 +268,7 @@ extension FileDescriptor {
     ).get()
   }
 
+  @available(System 0.0.1, *)
   @usableFromInline
   internal func _read(
     fromAbsoluteOffset offset: Int64,
@@ -299,6 +309,7 @@ extension FileDescriptor {
   /// call the ``seek(offset:from:)`` method.
   ///
   /// The corresponding C function is `write`.
+  @available(System 0.0.1, *)
   @_alwaysEmitIntoClient
   public func write(
     _ buffer: UnsafeRawBufferPointer,
@@ -307,6 +318,7 @@ extension FileDescriptor {
     try _write(buffer, retryOnInterrupt: retryOnInterrupt).get()
   }
 
+  @available(System 0.0.1, *)
   @usableFromInline
   internal func _write(
     _ buffer: UnsafeRawBufferPointer,
@@ -332,6 +344,7 @@ extension FileDescriptor {
   /// this method leaves the file's existing offset unchanged.
   ///
   /// The corresponding C function is `pwrite`.
+  @available(System 0.0.1, *)
   @_alwaysEmitIntoClient
   public func write(
     toAbsoluteOffset offset: Int64,
@@ -341,6 +354,7 @@ extension FileDescriptor {
     try _write(toAbsoluteOffset: offset, buffer, retryOnInterrupt: retryOnInterrupt).get()
   }
 
+  @available(System 0.0.1, *)
   @usableFromInline
   internal func _write(
     toAbsoluteOffset offset: Int64,
@@ -366,6 +380,7 @@ extension FileDescriptor {
       retryOnInterrupt: retryOnInterrupt)
   }
 
+#if compiler(>=6.2)
   /// Writes the contents of a buffer at the current file offset.
   ///
   /// - Parameters:
@@ -382,7 +397,7 @@ extension FileDescriptor {
   /// call the ``seek(offset:from:)`` method.
   ///
   /// The corresponding C function is `write`.
-  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @available(SystemWithSpan 0.0.1, *)
   @_alwaysEmitIntoClient
   public func write(
     _ data: RawSpan,
@@ -408,7 +423,7 @@ extension FileDescriptor {
   /// this method leaves the file's existing offset unchanged.
   ///
   /// The corresponding C function is `pwrite`.
-  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @available(SystemWithSpan 0.0.1, *)
   @_alwaysEmitIntoClient
   public func write(
     toAbsoluteOffset offset: Int64,
@@ -420,7 +435,7 @@ extension FileDescriptor {
     }
   }
 
-  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @available(SystemWithSpan 0.0.1, *)
   @_alwaysEmitIntoClient
   internal func _readIntoOutputBuffer(
     _ buffer: UnsafeMutableRawBufferPointer,
@@ -459,7 +474,7 @@ extension FileDescriptor {
   /// call the ``seek(offset:from:)`` method.
   ///
   /// The corresponding C function is `read`.
-  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @available(SystemWithSpan 0.0.1, *)
   @_alwaysEmitIntoClient
   public func read(
     into buffer: inout OutputRawSpan,
@@ -485,7 +500,7 @@ extension FileDescriptor {
   /// this method leaves the file's existing offset unchanged.
   ///
   /// The corresponding C function is `pread`.
-  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @available(SystemWithSpan 0.0.1, *)
   @_alwaysEmitIntoClient
   public func read(
     fromAbsoluteOffset offset: Int64,
@@ -509,6 +524,7 @@ extension FileDescriptor {
       fatalError("Unexpected error type")
     }
   }
+#endif // compiler(>=6.2)
 }
 
 #if !os(WASI)
