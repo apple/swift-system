@@ -204,24 +204,6 @@ extension SocketDescriptor {
 
 @available(System 99, *)
 extension SocketDescriptor {
-  /// Sends data on the socket.
-  ///
-  /// - Parameters:
-  ///   - buffer: The data to send.
-  ///   - flags: Message flags.
-  ///   - retryOnInterrupt: Whether to retry if interrupted.
-  /// - Returns: The number of bytes sent.
-  ///
-  /// The corresponding C function is `send`.
-  @_alwaysEmitIntoClient
-  public func send(
-    _ buffer: UnsafeRawBufferPointer,
-    flags: MessageFlags = .none,
-    retryOnInterrupt: Bool = true
-  ) throws -> Int {
-    try _send(buffer, flags: flags, retryOnInterrupt: retryOnInterrupt).get()
-  }
-
   @usableFromInline
   internal func _send(
     _ buffer: UnsafeRawBufferPointer,
@@ -233,22 +215,25 @@ extension SocketDescriptor {
     }
   }
 
-  /// Receives data from the socket.
+  /// Sends data on the socket.
   ///
   /// - Parameters:
-  ///   - buffer: The buffer to receive data into.
+  ///   - data: The data to send.
   ///   - flags: Message flags.
   ///   - retryOnInterrupt: Whether to retry if interrupted.
-  /// - Returns: The number of bytes received.
+  /// - Returns: The number of bytes sent.
   ///
-  /// The corresponding C function is `recv`.
+  /// The corresponding C function is `send`.
+  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
   @_alwaysEmitIntoClient
-  public func receive(
-    into buffer: UnsafeMutableRawBufferPointer,
+  public func send(
+    _ data: RawSpan,
     flags: MessageFlags = .none,
     retryOnInterrupt: Bool = true
-  ) throws -> Int {
-    try _receive(into: buffer, flags: flags, retryOnInterrupt: retryOnInterrupt).get()
+  ) throws(Errno) -> Int {
+    try data.withUnsafeBytes { bytes throws(Errno) -> Int in
+      try _send(bytes, flags: flags, retryOnInterrupt: retryOnInterrupt).get()
+    }
   }
 
   @usableFromInline
@@ -262,24 +247,30 @@ extension SocketDescriptor {
     }
   }
 
-  /// Sends data to a specific address.
+  /// Receives data from the socket.
   ///
   /// - Parameters:
-  ///   - buffer: The data to send.
-  ///   - address: The destination address.
+  ///   - buffer: The buffer to receive data into.
   ///   - flags: Message flags.
   ///   - retryOnInterrupt: Whether to retry if interrupted.
-  /// - Returns: The number of bytes sent.
+  /// - Returns: The number of bytes received.
   ///
-  /// The corresponding C function is `sendto`.
+  /// After receiving,
+  /// this method sets the buffer's initialized count to the number of bytes received.
+  ///
+  /// The corresponding C function is `recv`.
+  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
   @_alwaysEmitIntoClient
-  public func send(
-    _ buffer: UnsafeRawBufferPointer,
-    to address: SocketAddress,
+  public func receive(
+    into buffer: inout OutputRawSpan,
     flags: MessageFlags = .none,
     retryOnInterrupt: Bool = true
-  ) throws -> Int {
-    try _send(buffer, to: address, flags: flags, retryOnInterrupt: retryOnInterrupt).get()
+  ) throws(Errno) -> Int {
+    try buffer.withUnsafeMutableBytes { buf, count throws(Errno) -> Int in
+      let bytesRead = try _receive(into: buf, flags: flags, retryOnInterrupt: retryOnInterrupt).get()
+      count = bytesRead
+      return bytesRead
+    }
   }
 
   @usableFromInline
@@ -303,24 +294,27 @@ extension SocketDescriptor {
     }
   }
 
-  /// Receives data and returns the sender's address.
+  /// Sends data to a specific address.
   ///
   /// - Parameters:
-  ///   - buffer: The buffer to receive data into.
-  ///   - sender: A buffer to receive the sender's address.
+  ///   - data: The data to send.
+  ///   - address: The destination address.
   ///   - flags: Message flags.
   ///   - retryOnInterrupt: Whether to retry if interrupted.
-  /// - Returns: The number of bytes received.
+  /// - Returns: The number of bytes sent.
   ///
-  /// The corresponding C function is `recvfrom`.
+  /// The corresponding C function is `sendto`.
+  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
   @_alwaysEmitIntoClient
-  public func receive(
-    into buffer: UnsafeMutableRawBufferPointer,
-    sender: inout SocketAddress,
+  public func send(
+    _ data: RawSpan,
+    to address: SocketAddress,
     flags: MessageFlags = .none,
     retryOnInterrupt: Bool = true
-  ) throws -> Int {
-    try _receive(into: buffer, sender: &sender, flags: flags, retryOnInterrupt: retryOnInterrupt).get()
+  ) throws(Errno) -> Int {
+    try data.withUnsafeBytes { bytes throws(Errno) -> Int in
+      try _send(bytes, to: address, flags: flags, retryOnInterrupt: retryOnInterrupt).get()
+    }
   }
 
   @usableFromInline
@@ -341,6 +335,34 @@ extension SocketDescriptor {
           &len
         )
       }
+    }
+  }
+
+  /// Receives data and returns the sender's address.
+  ///
+  /// - Parameters:
+  ///   - buffer: The buffer to receive data into.
+  ///   - sender: A buffer to receive the sender's address.
+  ///   - flags: Message flags.
+  ///   - retryOnInterrupt: Whether to retry if interrupted.
+  /// - Returns: The number of bytes received.
+  ///
+  /// After receiving,
+  /// this method sets the buffer's initialized count to the number of bytes received.
+  ///
+  /// The corresponding C function is `recvfrom`.
+  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @_alwaysEmitIntoClient
+  public func receive(
+    into buffer: inout OutputRawSpan,
+    sender: inout SocketAddress,
+    flags: MessageFlags = .none,
+    retryOnInterrupt: Bool = true
+  ) throws(Errno) -> Int {
+    try buffer.withUnsafeMutableBytes { buf, count throws(Errno) -> Int in
+      let bytesRead = try _receive(into: buf, sender: &sender, flags: flags, retryOnInterrupt: retryOnInterrupt).get()
+      count = bytesRead
+      return bytesRead
     }
   }
 }
@@ -397,42 +419,29 @@ extension SocketDescriptor {
     msg.msg_iov = withUnsafeMutablePointer(to: &iov) { $0 }
     msg.msg_iovlen = 1
 
-    // Helper to perform the actual syscall
-    func doSend() -> Result<Int, Errno> {
-      valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
-        system_sendmsg(self.rawValue, &msg, flags.rawValue)
-      }
-    }
-
-    // Set up ancillary data if provided
-    if let ancillary = ancillaryMessages {
-      return ancillary._withUnsafeBytes { controlBuffer in
-        msg.msg_control = UnsafeMutableRawPointer(mutating: controlBuffer.baseAddress)
-        msg.msg_controllen = CInterop.SockLen(controlBuffer.count)
-
-        // Set up destination address if provided
-        if let address = address {
-          return address.withUnsafePointer { addr, len in
-            msg.msg_name = UnsafeMutableRawPointer(mutating: addr)
-            msg.msg_namelen = len
-            return doSend()
-          }
-        } else {
-          return doSend()
-        }
-      }
-    } else {
-      // No ancillary messages - set up address if provided
+    func doSend(address: SocketAddress?) -> Result<Int, Errno> {
       if let address = address {
         return address.withUnsafePointer { addr, len in
           msg.msg_name = UnsafeMutableRawPointer(mutating: addr)
           msg.msg_namelen = len
-          return doSend()
+          return valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+            system_sendmsg(self.rawValue, &msg, flags.rawValue)
+          }
         }
-      } else {
-        return doSend()
+      }
+      return valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+        system_sendmsg(self.rawValue, &msg, flags.rawValue)
       }
     }
+
+    if let ancillary = ancillaryMessages {
+      return ancillary._withUnsafeBytes { controlBuffer in
+        msg.msg_control = UnsafeMutableRawPointer(mutating: controlBuffer.baseAddress)
+        msg.msg_controllen = CInterop.SockLen(controlBuffer.count)
+        return doSend(address: address)
+      }
+    }
+    return doSend(address: address)
   }
 
   /// Receives a message with optional ancillary data.
@@ -445,6 +454,9 @@ extension SocketDescriptor {
   ///   - flags: Message flags.
   ///   - retryOnInterrupt: Whether to retry if interrupted.
   /// - Returns: The number of bytes received.
+  ///
+  /// After receiving,
+  /// this method sets the buffer's initialized count to the number of bytes received.
   ///
   /// The corresponding C function is `recvmsg`.
   @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
@@ -486,12 +498,7 @@ extension SocketDescriptor {
     msg.msg_iov = withUnsafeMutablePointer(to: &iov) { $0 }
     msg.msg_iovlen = 1
 
-    return ancillaryMessages._withMutableCInterop(entireCapacity: true) {
-      controlPtr, controlLen in
-      msg.msg_control = controlPtr
-      msg.msg_controllen = controlLen
-
-      // Set up sender address if provided
+    func doRecv(sender: inout SocketAddress?) -> Result<Int, Errno> {
       if sender != nil {
         return sender!._withUnsafeMutablePointer { addr, len in
           msg.msg_name = UnsafeMutableRawPointer(addr)
@@ -500,11 +507,17 @@ extension SocketDescriptor {
             system_recvmsg(self.rawValue, &msg, flags.rawValue)
           }
         }
-      } else {
-        return valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
-          system_recvmsg(self.rawValue, &msg, flags.rawValue)
-        }
       }
+      return valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+        system_recvmsg(self.rawValue, &msg, flags.rawValue)
+      }
+    }
+
+    return ancillaryMessages._withMutableCInterop(entireCapacity: true) {
+      controlPtr, controlLen in
+      msg.msg_control = controlPtr
+      msg.msg_controllen = controlLen
+      return doRecv(sender: &sender)
     }
   }
 }

@@ -24,6 +24,7 @@ struct Connect: ParsableCommand {
   @Option(name: .shortAndLong, help: "Message to send")
   var message: String = "Hello from swift-system sockets!"
 
+  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
   func run() throws {
     print("Resolving \(host)...")
 
@@ -48,15 +49,17 @@ struct Connect: ParsableCommand {
 
     // Send message
     let messageBytes = Array(message.utf8)
-    let sent = try messageBytes.withUnsafeBytes { buffer in
-      try socket.send(UnsafeRawBufferPointer(buffer))
+    let sent = try messageBytes.withUnsafeBytes { bytes in
+      let span = RawSpan(_unsafeBytes: bytes)
+      return try socket.send(span)
     }
     print("Sent \(sent) bytes: \(message)")
 
     // Receive response
     var buffer = [UInt8](repeating: 0, count: 4096)
-    let received = try buffer.withUnsafeMutableBytes { buffer in
-      try socket.receive(into: buffer)
+    let received = try buffer.withUnsafeMutableBytes { buf in
+      var output = OutputRawSpan(buffer: buf, initializedCount: 0)
+      return try socket.receive(into: &output)
     }
 
     if received > 0 {

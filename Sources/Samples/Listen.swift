@@ -21,6 +21,7 @@ struct Listen: ParsableCommand {
   @Option(name: .shortAndLong, help: "Maximum number of connections to accept (0 for unlimited)")
   var maxConnections: Int = 0
 
+  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
   func run() throws {
     // Create socket
     let server = try SocketDescriptor.open(.ipv4, .stream, protocol: .tcp)
@@ -56,8 +57,9 @@ struct Listen: ParsableCommand {
       var buffer = [UInt8](repeating: 0, count: 4096)
 
       while true {
-        let received = try buffer.withUnsafeMutableBytes { buffer in
-          try client.receive(into: buffer)
+        let received = try buffer.withUnsafeMutableBytes { buf in
+          var output = OutputRawSpan(buffer: buf, initializedCount: 0)
+          return try client.receive(into: &output)
         }
         if received == 0 {
           print("[\(connectionCount)] Client disconnected")
@@ -68,8 +70,9 @@ struct Listen: ParsableCommand {
         print("[\(connectionCount)] Received \(received) bytes: \(message)")
 
         // Echo back
-        let sent = try buffer.prefix(received).withUnsafeBytes { buffer in
-          try client.send(UnsafeRawBufferPointer(buffer))
+        let sent = try buffer.prefix(received).withUnsafeBytes { bytes in
+          let span = RawSpan(_unsafeBytes: bytes)
+          return try client.send(span)
         }
         print("[\(connectionCount)] Echoed \(sent) bytes")
       }

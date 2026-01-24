@@ -168,10 +168,11 @@ private struct SocketMessagesTests {
       // Build ancillary message with SCM_RIGHTS
       var ancillary = SocketDescriptor.AncillaryMessageBuffer()
       withUnsafeBytes(of: fileToSend.rawValue) { bytes in
+        let span = RawSpan(_unsafeBytes: bytes)
         ancillary.appendMessage(
           level: SocketDescriptor.ProtocolID(rawValue: SOL_SOCKET),
           type: .init(rawValue: CInt(SCM_RIGHTS)),
-          bytes: bytes
+          bytes: span
         )
       }
 
@@ -278,12 +279,13 @@ private struct SocketMessagesTests {
 
       // Build ancillary message with three FDs
       var ancillary = SocketDescriptor.AncillaryMessageBuffer()
-      var fds = [fd1.rawValue, fd2.rawValue, fd3.rawValue]
+      let fds = [fd1.rawValue, fd2.rawValue, fd3.rawValue]
       fds.withUnsafeBytes { bytes in
+        let span = RawSpan(_unsafeBytes: bytes)
         ancillary.appendMessage(
           level: SocketDescriptor.ProtocolID(rawValue: SOL_SOCKET),
           type: .init(rawValue: CInt(SCM_RIGHTS)),
-          bytes: bytes
+          bytes: span
         )
       }
 

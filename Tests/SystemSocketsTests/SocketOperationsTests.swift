@@ -106,7 +106,7 @@ private struct SocketOperationsTests {
 
   // MARK: - Send and Receive Tests
 
-  @available(System 99, *)
+  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
   @Test func tcpSendReceive() throws {
     // Create server socket
     let server = try SocketDescriptor.open(.ipv4, .stream, protocol: .tcp)
@@ -131,18 +131,66 @@ private struct SocketOperationsTests {
     let acceptedSocket = try server.accept()
     defer { try? acceptedSocket.close() }
 
-    // Send data from client
+    // Send data from client using Span
     let message = "Hello, World!"
     let messageBytes = Array(message.utf8)
-    let sent = try messageBytes.withUnsafeBytes { buffer in
-      try client.send(UnsafeRawBufferPointer(buffer))
+    let sent = try messageBytes.withUnsafeBytes { bytes in
+      let span = RawSpan(_unsafeBytes: bytes)
+      return try client.send(span)
     }
     #expect(sent == messageBytes.count)
 
-    // Receive data on server
+    // Receive data on server using OutputRawSpan
     var buffer = [UInt8](repeating: 0, count: 1024)
-    let received = try buffer.withUnsafeMutableBytes { buffer in
-      try acceptedSocket.receive(into: buffer)
+    let received = try buffer.withUnsafeMutableBytes { buf in
+      var output = OutputRawSpan(buffer: buf, initializedCount: 0)
+      return try acceptedSocket.receive(into: &output)
+    }
+    #expect(received == messageBytes.count)
+
+    let receivedMessage = String(decoding: buffer.prefix(received), as: UTF8.self)
+    #expect(receivedMessage == message)
+  }
+
+  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @Test func tcpSendReceiveSpan() throws {
+    // Create server socket
+    let server = try SocketDescriptor.open(.ipv4, .stream, protocol: .tcp)
+    defer { try? server.close() }
+
+    let serverAddr = SocketAddress(ipv4: IPv4Address.loopback(port: 0))
+    try server.bind(to: serverAddr)
+    try server.listen(backlog: 1)
+
+    var boundAddr = SocketAddress()
+    try server.getLocalAddress(into: &boundAddr)
+    let port = boundAddr.ipv4!.port
+
+    // Create client socket and connect
+    let client = try SocketDescriptor.open(.ipv4, .stream, protocol: .tcp)
+    defer { try? client.close() }
+
+    let connectAddr = SocketAddress(ipv4: IPv4Address.loopback(port: port))
+    try client.connect(to: connectAddr)
+
+    // Accept connection
+    let acceptedSocket = try server.accept()
+    defer { try? acceptedSocket.close() }
+
+    // Send data from client using Span
+    let message = "Hello, Span World!"
+    let messageBytes = Array(message.utf8)
+    let sent = try messageBytes.withUnsafeBytes { bytes in
+      let span = RawSpan(_unsafeBytes: bytes)
+      return try client.send(span)
+    }
+    #expect(sent == messageBytes.count)
+
+    // Receive data on server using OutputRawSpan
+    var buffer = [UInt8](repeating: 0, count: 1024)
+    let received = try buffer.withUnsafeMutableBytes { buf in
+      var output = OutputRawSpan(buffer: buf, initializedCount: 0)
+      return try acceptedSocket.receive(into: &output)
     }
     #expect(received == messageBytes.count)
 
@@ -152,7 +200,7 @@ private struct SocketOperationsTests {
 
   // MARK: - UDP Tests
 
-  @available(System 99, *)
+  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
   @Test func udpSendReceive() throws {
     // Create receiver socket
     let receiver = try SocketDescriptor.open(.ipv4, .datagram, protocol: .udp)
@@ -169,20 +217,63 @@ private struct SocketOperationsTests {
     let sender = try SocketDescriptor.open(.ipv4, .datagram, protocol: .udp)
     defer { try? sender.close() }
 
-    // Send datagram
+    // Send datagram using Span
     let message = "UDP Message"
     let messageBytes = Array(message.utf8)
     let targetAddr = SocketAddress(ipv4: IPv4Address.loopback(port: port))
-    let sent = try messageBytes.withUnsafeBytes { buffer in
-      try sender.send(UnsafeRawBufferPointer(buffer), to: targetAddr)
+    let sent = try messageBytes.withUnsafeBytes { bytes in
+      let span = RawSpan(_unsafeBytes: bytes)
+      return try sender.send(span, to: targetAddr)
     }
     #expect(sent == messageBytes.count)
 
-    // Receive datagram
+    // Receive datagram using OutputRawSpan
     var buffer = [UInt8](repeating: 0, count: 1024)
     var fromAddr = SocketAddress()
-    let received = try buffer.withUnsafeMutableBytes { buffer in
-      try receiver.receive(into: buffer, sender: &fromAddr)
+    let received = try buffer.withUnsafeMutableBytes { buf in
+      var output = OutputRawSpan(buffer: buf, initializedCount: 0)
+      return try receiver.receive(into: &output, sender: &fromAddr)
+    }
+    #expect(received == messageBytes.count)
+    #expect(fromAddr.family == SocketDescriptor.Domain.ipv4)
+
+    let receivedMessage = String(decoding: buffer.prefix(received), as: UTF8.self)
+    #expect(receivedMessage == message)
+  }
+
+  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @Test func udpSendReceiveSpan() throws {
+    // Create receiver socket
+    let receiver = try SocketDescriptor.open(.ipv4, .datagram, protocol: .udp)
+    defer { try? receiver.close() }
+
+    let receiverAddr = SocketAddress(ipv4: IPv4Address.loopback(port: 0))
+    try receiver.bind(to: receiverAddr)
+
+    var boundAddr = SocketAddress()
+    try receiver.getLocalAddress(into: &boundAddr)
+    let port = boundAddr.ipv4!.port
+
+    // Create sender socket
+    let sender = try SocketDescriptor.open(.ipv4, .datagram, protocol: .udp)
+    defer { try? sender.close() }
+
+    // Send datagram using Span
+    let message = "UDP Span Message"
+    let messageBytes = Array(message.utf8)
+    let targetAddr = SocketAddress(ipv4: IPv4Address.loopback(port: port))
+    let sent = try messageBytes.withUnsafeBytes { bytes in
+      let span = RawSpan(_unsafeBytes: bytes)
+      return try sender.send(span, to: targetAddr)
+    }
+    #expect(sent == messageBytes.count)
+
+    // Receive datagram using OutputRawSpan
+    var buffer = [UInt8](repeating: 0, count: 1024)
+    var fromAddr = SocketAddress()
+    let received = try buffer.withUnsafeMutableBytes { buf in
+      var output = OutputRawSpan(buffer: buf, initializedCount: 0)
+      return try receiver.receive(into: &output, sender: &fromAddr)
     }
     #expect(received == messageBytes.count)
     #expect(fromAddr.family == SocketDescriptor.Domain.ipv4)

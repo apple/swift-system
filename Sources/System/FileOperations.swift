@@ -492,21 +492,15 @@ extension FileDescriptor {
     into buffer: inout OutputRawSpan,
     retryOnInterrupt: Bool = true
   ) throws(Errno) -> Int {
-    do {
-      return try buffer.withUnsafeMutableBytes { buf, count in
-        // Read into the uninitialized portion (starting at offset 'count')
-        let uninitializedPortion = UnsafeMutableRawBufferPointer(
-          start: buf.baseAddress?.advanced(by: count),
-          count: buf.count - count
-        )
-        let bytesRead = try read(fromAbsoluteOffset: offset, into: uninitializedPortion, retryOnInterrupt: retryOnInterrupt)
-        count += bytesRead  // Add to existing count, don't replace it!
-        return bytesRead
-      }
-    } catch let error as Errno {
-      throw error
-    } catch {
-      fatalError("Unexpected error type")
+    try buffer.withUnsafeMutableBytes { buf, count throws(Errno) -> Int in
+      // Read into the uninitialized portion (starting at offset 'count')
+      let uninitializedPortion = UnsafeMutableRawBufferPointer(
+        start: buf.baseAddress?.advanced(by: count),
+        count: buf.count - count
+      )
+      let bytesRead = try _read(fromAbsoluteOffset: offset, into: uninitializedPortion, retryOnInterrupt: retryOnInterrupt).get()
+      count += bytesRead  // Add to existing count, don't replace it!
+      return bytesRead
     }
   }
 }
