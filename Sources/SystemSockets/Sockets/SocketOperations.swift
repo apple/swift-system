@@ -345,6 +345,170 @@ extension SocketDescriptor {
   }
 }
 
+// MARK: - Message-based Send and Receive
+
+@available(System 99, *)
+extension SocketDescriptor {
+  /// Sends a message with optional ancillary data.
+  ///
+  /// - Parameters:
+  ///   - data: The data to send.
+  ///   - ancillaryMessages: Optional ancillary (control) messages to send.
+  ///   - address: Optional destination address (for datagram sockets).
+  ///   - flags: Message flags.
+  ///   - retryOnInterrupt: Whether to retry if interrupted.
+  /// - Returns: The number of bytes sent.
+  ///
+  /// The corresponding C function is `sendmsg`.
+  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @_alwaysEmitIntoClient
+  public func sendMessage(
+    _ data: RawSpan,
+    ancillaryMessages: AncillaryMessageBuffer? = nil,
+    to address: SocketAddress? = nil,
+    flags: MessageFlags = .none,
+    retryOnInterrupt: Bool = true
+  ) throws(Errno) -> Int {
+    try data.withUnsafeBytes { bytes throws(Errno) -> Int in
+      try _sendMessage(
+        bytes,
+        ancillaryMessages: ancillaryMessages,
+        to: address,
+        flags: flags,
+        retryOnInterrupt: retryOnInterrupt
+      ).get()
+    }
+  }
+
+  @usableFromInline
+  internal func _sendMessage(
+    _ buffer: UnsafeRawBufferPointer,
+    ancillaryMessages: AncillaryMessageBuffer?,
+    to address: SocketAddress?,
+    flags: MessageFlags,
+    retryOnInterrupt: Bool
+  ) -> Result<Int, Errno> {
+    var iov = CInterop.IOVec(
+      iov_base: UnsafeMutableRawPointer(mutating: buffer.baseAddress),
+      iov_len: buffer.count
+    )
+
+    var msg = CInterop.MsgHdr()
+    msg.msg_iov = withUnsafeMutablePointer(to: &iov) { $0 }
+    msg.msg_iovlen = 1
+
+    // Helper to perform the actual syscall
+    func doSend() -> Result<Int, Errno> {
+      valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+        system_sendmsg(self.rawValue, &msg, flags.rawValue)
+      }
+    }
+
+    // Set up ancillary data if provided
+    if let ancillary = ancillaryMessages {
+      return ancillary._withUnsafeBytes { controlBuffer in
+        msg.msg_control = UnsafeMutableRawPointer(mutating: controlBuffer.baseAddress)
+        msg.msg_controllen = CInterop.SockLen(controlBuffer.count)
+
+        // Set up destination address if provided
+        if let address = address {
+          return address.withUnsafePointer { addr, len in
+            msg.msg_name = UnsafeMutableRawPointer(mutating: addr)
+            msg.msg_namelen = len
+            return doSend()
+          }
+        } else {
+          return doSend()
+        }
+      }
+    } else {
+      // No ancillary messages - set up address if provided
+      if let address = address {
+        return address.withUnsafePointer { addr, len in
+          msg.msg_name = UnsafeMutableRawPointer(mutating: addr)
+          msg.msg_namelen = len
+          return doSend()
+        }
+      } else {
+        return doSend()
+      }
+    }
+  }
+
+  /// Receives a message with optional ancillary data.
+  ///
+  /// - Parameters:
+  ///   - buffer: The buffer to receive data into.
+  ///   - ancillaryMessages: Buffer to receive ancillary (control) messages.
+  ///                        Must have sufficient capacity pre-allocated.
+  ///   - sender: Optional buffer to receive the sender's address.
+  ///   - flags: Message flags.
+  ///   - retryOnInterrupt: Whether to retry if interrupted.
+  /// - Returns: The number of bytes received.
+  ///
+  /// The corresponding C function is `recvmsg`.
+  @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
+  @_alwaysEmitIntoClient
+  public func receiveMessage(
+    into buffer: inout OutputRawSpan,
+    ancillaryMessages: inout AncillaryMessageBuffer,
+    sender: inout SocketAddress?,
+    flags: MessageFlags = .none,
+    retryOnInterrupt: Bool = true
+  ) throws(Errno) -> Int {
+    try buffer.withUnsafeMutableBytes { buf, count throws(Errno) -> Int in
+      let bytesRead = try _receiveMessage(
+        into: buf,
+        ancillaryMessages: &ancillaryMessages,
+        sender: &sender,
+        flags: flags,
+        retryOnInterrupt: retryOnInterrupt
+      ).get()
+      count = bytesRead  // Set initialized count to bytes received
+      return bytesRead
+    }
+  }
+
+  @usableFromInline
+  internal func _receiveMessage(
+    into buffer: UnsafeMutableRawBufferPointer,
+    ancillaryMessages: inout AncillaryMessageBuffer,
+    sender: inout SocketAddress?,
+    flags: MessageFlags,
+    retryOnInterrupt: Bool
+  ) -> Result<Int, Errno> {
+    var iov = CInterop.IOVec(
+      iov_base: buffer.baseAddress,
+      iov_len: buffer.count
+    )
+
+    var msg = CInterop.MsgHdr()
+    msg.msg_iov = withUnsafeMutablePointer(to: &iov) { $0 }
+    msg.msg_iovlen = 1
+
+    return ancillaryMessages._withMutableCInterop(entireCapacity: true) {
+      controlPtr, controlLen in
+      msg.msg_control = controlPtr
+      msg.msg_controllen = controlLen
+
+      // Set up sender address if provided
+      if sender != nil {
+        return sender!._withUnsafeMutablePointer { addr, len in
+          msg.msg_name = UnsafeMutableRawPointer(addr)
+          msg.msg_namelen = len
+          return valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+            system_recvmsg(self.rawValue, &msg, flags.rawValue)
+          }
+        }
+      } else {
+        return valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+          system_recvmsg(self.rawValue, &msg, flags.rawValue)
+        }
+      }
+    }
+  }
+}
+
 // MARK: - Socket Information
 
 @available(System 99, *)
