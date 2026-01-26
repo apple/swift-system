@@ -17,10 +17,10 @@ struct Availability {
   var version: String
   var osAvailability: String
 
-  var minOSVersions: String {
+  var minSwiftPMVersions: String {
     "macOS 10.10, iOS 8.0, watchOS 2.0, tvOS 9.0, visionOS 1.0"
   }
-  var spanOSVersions: String {
+  var minSpanDeploymentVersions: String {
     "macOS 10.14.4, iOS 12.2, watchOS 5.2, tvOS 12.2, visionOS 1.0"
   }
 
@@ -53,10 +53,10 @@ let swiftSettingsAvailability = availabilities.map {
 #else
   if availability.isStandardAvailability {
     // Use availability matching SwiftPM minimum.
-    osVersionList = availability.minOSVersions
+    osVersionList = availability.minSwiftPMVersions
   } else {
     // Use availability matching Span deployment minimum.
-    osVersionList = availability.spanOSVersions
+    osVersionList = availability.minSpanDeploymentVersions
   }
 #endif
   return .enableExperimentalFeature(
