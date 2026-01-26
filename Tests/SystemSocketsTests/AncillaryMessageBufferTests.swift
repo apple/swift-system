@@ -13,6 +13,8 @@ import SystemPackage
 
 @Suite("Ancillary Message Buffer")
 struct AncillaryMessageBufferTests {
+
+  @available(System 99, *)
   @Test("Append and iterate messages")
   func testAppend() {
     // Create a buffer of 100 messages, with varying payload lengths.

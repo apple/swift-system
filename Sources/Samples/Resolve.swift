@@ -27,6 +27,7 @@ struct Resolve: ParsableCommand {
   @Flag(name: .long, help: "Show only IPv6 addresses")
   var ipv6Only: Bool = false
 
+  @available(System 99, *)
   func run() throws {
     let family: SocketDescriptor.Domain?
     if ipv4Only {
@@ -73,6 +74,7 @@ struct Resolve: ParsableCommand {
     }
   }
 
+  @available(System 99, *)
   private func familyName(_ domain: SocketDescriptor.Domain) -> String {
     switch domain {
     case .ipv4: return "IPv4"
@@ -82,6 +84,7 @@ struct Resolve: ParsableCommand {
     }
   }
 
+  @available(System 99, *)
   private func typeName(_ type: SocketDescriptor.ConnectionType) -> String {
     switch type {
     case .stream: return "Stream (TCP)"
@@ -91,6 +94,7 @@ struct Resolve: ParsableCommand {
     }
   }
 
+  @available(System 99, *)
   private func protocolName(_ proto: SocketDescriptor.ProtocolID) -> String {
     switch proto {
     case .tcp: return "TCP"

@@ -10,6 +10,8 @@
 import ArgumentParser
 
 struct SystemSamples: ParsableCommand {
+
+  @available(System 99, *)
   static var configuration = CommandConfiguration(
     commandName: "system-samples",
     abstract: "A collection of little programs exercising some System features.",

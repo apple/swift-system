@@ -36,6 +36,7 @@ internal func complain(_ message: String) {
   }
 }
 
+@available(System 99, *)
 extension SocketAddress.ResolvedAddress {
   var niceDescription: String {
     var proto = ""
@@ -48,6 +49,7 @@ extension SocketAddress.ResolvedAddress {
   }
 }
 
+@available(System 99, *)
 extension SocketAddress {
   var niceDescription: String {
     if let ipv4 = self.ipv4 { return ipv4.description }
@@ -57,6 +59,7 @@ extension SocketAddress {
   }
 }
 
+@available(System 99, *)
 extension SocketDescriptor.ConnectionType {
   var isConnectionless: Bool {
     self == .datagram || self == .reliablyDeliveredMessage

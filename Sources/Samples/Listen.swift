@@ -21,6 +21,7 @@ struct Listen: ParsableCommand {
   @Option(name: .shortAndLong, help: "Maximum number of connections to accept (0 for unlimited)")
   var maxConnections: Int = 0
 
+  @available(System 99, *)
   func run() throws {
     // Create socket
     let server = try SocketDescriptor.open(.ipv4, .stream, protocol: .tcp)
