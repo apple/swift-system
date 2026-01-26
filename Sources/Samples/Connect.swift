@@ -24,6 +24,7 @@ struct Connect: ParsableCommand {
   @Option(name: .shortAndLong, help: "Message to send")
   var message: String = "Hello from swift-system sockets!"
 
+  @available(System 99, *)
   func run() throws {
     print("Resolving \(host)...")
 

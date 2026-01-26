@@ -31,17 +31,20 @@ private struct SocketDescriptorTests {
 
   // MARK: - Type Tests
 
+  @available(System 99, *)
   @Test func domainValues() {
     #expect(SocketDescriptor.Domain.ipv4.rawValue == AF_INET)
     #expect(SocketDescriptor.Domain.ipv6.rawValue == AF_INET6)
     #expect(SocketDescriptor.Domain.local.rawValue == AF_UNIX)
   }
 
+  @available(System 99, *)
   @Test func connectionTypeValues() {
     #expect(SocketDescriptor.ConnectionType.stream.rawValue == SOCK_STREAM)
     #expect(SocketDescriptor.ConnectionType.datagram.rawValue == SOCK_DGRAM)
   }
 
+  @available(System 99, *)
   @Test func protocolValues() {
     #expect(SocketDescriptor.ProtocolID.tcp.rawValue == CInt(IPPROTO_TCP))
     #expect(SocketDescriptor.ProtocolID.udp.rawValue == CInt(IPPROTO_UDP))
@@ -79,6 +82,7 @@ private struct SocketDescriptorTests {
 
   // MARK: - Shutdown Tests
 
+  @available(System 99, *)
   @Test func shutdownKindValues() {
     #expect(SocketDescriptor.ShutdownKind.read.rawValue == SHUT_RD)
     #expect(SocketDescriptor.ShutdownKind.write.rawValue == SHUT_WR)
