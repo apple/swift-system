@@ -70,23 +70,26 @@ extension SocketDescriptor {
     /// - Complexity: Amortized O(`data.count`), when averaged over multiple
     ///    calls. This method reallocates the buffer if there isn't enough
     ///    capacity or if the storage is shared with another value.
+    @available(macOS 15, iOS 18, watchOS 11, tvOS 18, visionOS 2, *)
     public mutating func appendMessage(
       level: SocketDescriptor.ProtocolID,
       type: SocketDescriptor.Option,
-      bytes: UnsafeRawBufferPointer
+      bytes: RawSpan
     ) {
-      appendMessage(
-        level: level,
-        type: type,
-        unsafeUninitializedCapacity: bytes.count
-      ) { buffer in
-        assert(buffer.count >= bytes.count)
-        if bytes.count > 0 {
-          buffer.baseAddress!.copyMemory(
-            from: bytes.baseAddress!,
-            byteCount: bytes.count)
+      bytes.withUnsafeBytes { buffer in
+        appendMessage(
+          level: level,
+          type: type,
+          unsafeUninitializedCapacity: buffer.count
+        ) { dest in
+          assert(dest.count >= buffer.count)
+          if buffer.count > 0 {
+            dest.baseAddress!.copyMemory(
+              from: buffer.baseAddress!,
+              byteCount: buffer.count)
+          }
+          return buffer.count
         }
-        return bytes.count
       }
     }
 

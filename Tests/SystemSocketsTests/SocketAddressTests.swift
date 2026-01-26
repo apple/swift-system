@@ -32,11 +32,10 @@ private struct SocketAddressTests {
   // MARK: - IPv4 Address Tests
 
   @available(System 99, *)
-  @Test func ipv4BasicCreation() {
-    let addr = IPv4Address("127.0.0.1", port: 8080)
-    #expect(addr != nil)
-    #expect(addr?.port == 8080)
-    #expect(addr?.addressString == "127.0.0.1")
+  @Test func ipv4BasicCreation() throws {
+    let addr = try #require(IPv4Address("127.0.0.1", port: 8080))
+    #expect(addr.port == 8080)
+    #expect(addr.addressString == "127.0.0.1")
   }
 
   @available(System 99, *)
@@ -87,11 +86,10 @@ private struct SocketAddressTests {
   // MARK: - IPv6 Address Tests
 
   @available(System 99, *)
-  @Test func ipv6BasicCreation() {
-    let addr = IPv6Address("::1", port: 8080)
-    #expect(addr != nil)
-    #expect(addr?.port == 8080)
-    #expect(addr?.addressString == "::1")
+  @Test func ipv6BasicCreation() throws {
+    let addr = try #require(IPv6Address("::1", port: 8080))
+    #expect(addr.port == 8080)
+    #expect(addr.addressString == "::1")
   }
 
   @available(System 99, *)
@@ -130,10 +128,9 @@ private struct SocketAddressTests {
   // MARK: - Unix Address Tests
 
   @available(System 99, *)
-  @Test func unixBasicCreation() {
-    let addr = UnixAddress("/tmp/test.sock")
-    #expect(addr != nil)
-    #expect(addr?.path == "/tmp/test.sock")
+  @Test func unixBasicCreation() throws {
+    let addr = try #require(UnixAddress("/tmp/test.sock"))
+    #expect(addr.path == "/tmp/test.sock")
   }
 
   @available(System 99, *)
@@ -155,37 +152,37 @@ private struct SocketAddressTests {
   // MARK: - SocketAddress Container Tests
 
   @available(System 99, *)
-  @Test func socketAddressFromIPv4() {
+  @Test func socketAddressFromIPv4() throws {
     let ipv4 = IPv4Address.loopback(port: 8080)
     let sockAddr = SocketAddress(ipv4: ipv4)
 
     #expect(sockAddr.family == SocketDescriptor.Domain.ipv4)
-    #expect(sockAddr.ipv4 != nil)
-    #expect(sockAddr.ipv4?.port == 8080)
+    let sockIPv4 = try #require(sockAddr.ipv4)
+    #expect(sockIPv4.port == 8080)
     #expect(sockAddr.ipv6 == nil)
     #expect(sockAddr.unix == nil)
   }
 
   @available(System 99, *)
-  @Test func socketAddressFromIPv6() {
+  @Test func socketAddressFromIPv6() throws {
     let ipv6 = IPv6Address.loopback(port: 443)
     let sockAddr = SocketAddress(ipv6: ipv6)
 
     #expect(sockAddr.family == SocketDescriptor.Domain.ipv6)
-    #expect(sockAddr.ipv6 != nil)
-    #expect(sockAddr.ipv6?.port == 443)
+    let sockIPv6 = try #require(sockAddr.ipv6)
+    #expect(sockIPv6.port == 443)
     #expect(sockAddr.ipv4 == nil)
     #expect(sockAddr.unix == nil)
   }
 
   @available(System 99, *)
-  @Test func socketAddressFromUnix() {
+  @Test func socketAddressFromUnix() throws {
     let unix = UnixAddress("/tmp/test.sock")!
     let sockAddr = SocketAddress(unix: unix)
 
     #expect(sockAddr.family == SocketDescriptor.Domain.local)
-    #expect(sockAddr.unix != nil)
-    #expect(sockAddr.unix?.path == "/tmp/test.sock")
+    let sockUnix = try #require(sockAddr.unix)
+    #expect(sockUnix.path == "/tmp/test.sock")
     #expect(sockAddr.ipv4 == nil)
     #expect(sockAddr.ipv6 == nil)
   }
