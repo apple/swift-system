@@ -17,7 +17,7 @@
 // enabled in testing builds of System currently, to minimize runtime overhead of release builds.
 //
 
-#if ENABLE_MOCKING
+#if ENABLE_MOCKING && !$Embedded
 internal struct Trace {
   internal struct Entry {
 
@@ -115,12 +115,12 @@ extension MockingDriver {
   }
 }
 
-#endif // ENABLE_MOCKING
+#endif // ENABLE_MOCKING && !$Embedded
 
 @inline(__always)
 internal var mockingEnabled: Bool {
   // Fast constant-foldable check for release builds
-  #if ENABLE_MOCKING
+  #if ENABLE_MOCKING && !$Embedded
     return contextualMockingEnabled
   #else
     return false
@@ -129,15 +129,15 @@ internal var mockingEnabled: Bool {
 
 @inline(__always)
 internal var forceWindowsPaths: Bool? {
-  #if !ENABLE_MOCKING
-  return nil
-  #else
+  #if ENABLE_MOCKING && !$Embedded
   return MockingDriver.forceWindowsPaths
+  #else
+  return nil
   #endif
 }
 
 
-#if ENABLE_MOCKING
+#if ENABLE_MOCKING && !$Embedded
 // Strip the mock_system prefix and the arg list suffix
 private func originalSyscallName(_ function: String) -> String {
   // `function` must be of format `system_<name>(<parameters>)`
@@ -193,12 +193,12 @@ internal func _mockOffT(
 ) -> _COffT {
   _COffT(mockImpl(name: name, path: path, args))
 }
-#endif // ENABLE_MOCKING
+#endif // ENABLE_MOCKING && !$Embedded
 
 // Force paths to be treated as Windows syntactically if `enabled` is
 // true, and as POSIX syntactically if not.
 internal func _withWindowsPaths(enabled: Bool, _ body: () -> ()) {
-  #if ENABLE_MOCKING
+  #if ENABLE_MOCKING && !$Embedded
   MockingDriver.withMockingEnabled { driver in
     driver.forceWindowsSyntaxForPaths = enabled
     body()

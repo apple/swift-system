@@ -15,7 +15,7 @@
 /// in the same way as you manage a raw C file handle.
 @frozen
 @available(System 0.0.1, *)
-public struct FileDescriptor: RawRepresentable, Hashable, Codable {
+public struct FileDescriptor: RawRepresentable, Hashable {
   /// The raw C file handle.
   @_alwaysEmitIntoClient
   public let rawValue: CInt
@@ -46,7 +46,7 @@ extension FileDescriptor {
   /// The desired read and write access for a newly opened file.
   @frozen
   @available(System 0.0.1, *)
-  public struct AccessMode: RawRepresentable, Sendable, Hashable, Codable {
+  public struct AccessMode: RawRepresentable, Sendable, Hashable {
     /// The raw C access mode.
     @_alwaysEmitIntoClient
     public var rawValue: CInt
@@ -89,7 +89,7 @@ extension FileDescriptor {
   /// Options that specify behavior for a newly-opened file.
   @frozen
   @available(System 0.0.1, *)
-  public struct OpenOptions: OptionSet, Sendable, Hashable, Codable {
+  public struct OpenOptions: OptionSet, Sendable, Hashable {
     /// The raw C options.
     @_alwaysEmitIntoClient
     public var rawValue: CInt
@@ -327,7 +327,7 @@ extension FileDescriptor {
   /// Options for specifying what a file descriptor's offset is relative to.
   @frozen
   @available(System 0.0.1, *)
-  public struct SeekOrigin: RawRepresentable, Sendable, Hashable, Codable {
+  public struct SeekOrigin: RawRepresentable, Sendable, Hashable {
     /// The raw C value.
     @_alwaysEmitIntoClient
     public var rawValue: CInt
@@ -401,6 +401,22 @@ extension FileDescriptor {
 
   }
 }
+
+#if !$Embedded
+
+@available(System 0.0.1, *)
+extension FileDescriptor: Codable {}
+
+@available(System 0.0.1, *)
+extension FileDescriptor.AccessMode: Codable {}
+
+@available(System 0.0.1, *)
+extension FileDescriptor.OpenOptions: Codable {}
+
+@available(System 0.0.1, *)
+extension FileDescriptor.SeekOrigin: Codable {}
+
+#endif // !$Embedded
 
 @available(System 0.0.1, *)
 extension FileDescriptor.AccessMode

@@ -135,9 +135,9 @@ internal func system_memset(
 
 // Interop between String and platfrom string
 extension String {
-  internal func _withPlatformString<Result>(
-    _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
-  ) rethrows -> Result {
+  internal func _withPlatformString<Success, Failure: Error>(
+    _ body: (UnsafePointer<CInterop.PlatformChar>) throws(Failure) -> Success
+  ) throws(Failure) -> Success {
     // Need to #if because CChar may be signed
     #if os(Windows)
     return try withCString(encodedAs: CInterop.PlatformUnicodeEncoding.self, body)

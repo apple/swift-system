@@ -43,6 +43,8 @@ internal func nothingOrErrno<I: FixedWidthInteger>(
   valueOrErrno(retryOnInterrupt: retryOnInterrupt, f).map { _ in () }
 }
 
+#if !$Embedded
+
 // Run a precondition for debug client builds
 internal func _debugPrecondition(
   _ condition: @autoclosure () -> Bool,
@@ -55,6 +57,8 @@ internal func _debugPrecondition(
       condition(), String(describing: message), file: file, line: line)
   }
 }
+
+#endif // !$Embedded
 
 extension OpaquePointer {
   internal var _isNULL: Bool {

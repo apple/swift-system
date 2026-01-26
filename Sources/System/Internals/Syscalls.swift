@@ -31,7 +31,7 @@ import Android
 internal func system_open(
   _ path: UnsafePointer<CInterop.PlatformChar>, _ oflag: Int32
 ) -> CInt {
-#if ENABLE_MOCKING
+#if ENABLE_MOCKING && !$Embedded
   if mockingEnabled {
     return _mock(path: path, oflag)
   }
@@ -43,7 +43,7 @@ internal func system_open(
   _ path: UnsafePointer<CInterop.PlatformChar>,
   _ oflag: Int32, _ mode: CInterop.Mode
 ) -> CInt {
-#if ENABLE_MOCKING
+#if ENABLE_MOCKING && !$Embedded
   if mockingEnabled {
     return _mock(path: path, oflag, mode)
   }
@@ -53,7 +53,7 @@ internal func system_open(
 
 // close
 internal func system_close(_ fd: Int32) -> Int32 {
-#if ENABLE_MOCKING
+#if ENABLE_MOCKING && !$Embedded
   if mockingEnabled { return _mock(fd) }
 #endif
   return close(fd)
@@ -63,7 +63,7 @@ internal func system_close(_ fd: Int32) -> Int32 {
 internal func system_read(
   _ fd: Int32, _ buf: UnsafeMutableRawPointer?, _ nbyte: Int
 ) -> Int {
-#if ENABLE_MOCKING
+#if ENABLE_MOCKING && !$Embedded
   if mockingEnabled { return _mockInt(fd, buf, nbyte) }
 #endif
   return read(fd, buf, nbyte)
@@ -73,7 +73,7 @@ internal func system_read(
 internal func system_pread(
   _ fd: Int32, _ buf: UnsafeMutableRawPointer?, _ nbyte: Int, _ offset: off_t
 ) -> Int {
-#if ENABLE_MOCKING
+#if ENABLE_MOCKING && !$Embedded
   if mockingEnabled { return _mockInt(fd, buf, nbyte, offset) }
 #endif
 #if os(Android)
@@ -91,7 +91,7 @@ internal func system_pread(
 internal func system_lseek(
   _ fd: Int32, _ off: off_t, _ whence: Int32
 ) -> off_t {
-#if ENABLE_MOCKING
+#if ENABLE_MOCKING && !$Embedded
   if mockingEnabled { return _mockOffT(fd, off, whence) }
 #endif
   return lseek(fd, off, whence)
@@ -101,7 +101,7 @@ internal func system_lseek(
 internal func system_write(
   _ fd: Int32, _ buf: UnsafeRawPointer?, _ nbyte: Int
 ) -> Int {
-#if ENABLE_MOCKING
+#if ENABLE_MOCKING && !$Embedded
   if mockingEnabled { return _mockInt(fd, buf, nbyte) }
 #endif
   return write(fd, buf, nbyte)
@@ -111,7 +111,7 @@ internal func system_write(
 internal func system_pwrite(
   _ fd: Int32, _ buf: UnsafeRawPointer?, _ nbyte: Int, _ offset: off_t
 ) -> Int {
-#if ENABLE_MOCKING
+#if ENABLE_MOCKING && !$Embedded
   if mockingEnabled { return _mockInt(fd, buf, nbyte, offset) }
 #endif
 #if os(Android)
@@ -127,14 +127,14 @@ internal func system_pwrite(
 
 #if !os(WASI)
 internal func system_dup(_ fd: Int32) -> Int32 {
-  #if ENABLE_MOCKING
+#if ENABLE_MOCKING && !$Embedded
   if mockingEnabled { return _mock(fd) }
   #endif
   return dup(fd)
 }
 
 internal func system_dup2(_ fd: Int32, _ fd2: Int32) -> Int32 {
-  #if ENABLE_MOCKING
+#if ENABLE_MOCKING && !$Embedded
   if mockingEnabled { return _mock(fd, fd2) }
   #endif
   return dup2(fd, fd2)
@@ -143,7 +143,7 @@ internal func system_dup2(_ fd: Int32, _ fd2: Int32) -> Int32 {
 
 #if !os(WASI)
 internal func system_pipe(_ fds: UnsafeMutablePointer<Int32>) -> CInt {
-#if ENABLE_MOCKING
+#if ENABLE_MOCKING && !$Embedded
   if mockingEnabled { return _mock(fds) }
 #endif
   return pipe(fds)
@@ -151,7 +151,7 @@ internal func system_pipe(_ fds: UnsafeMutablePointer<Int32>) -> CInt {
 #endif
 
 internal func system_ftruncate(_ fd: Int32, _ length: off_t) -> Int32 {
-#if ENABLE_MOCKING
+#if ENABLE_MOCKING && !$Embedded
   if mockingEnabled { return _mock(fd, length) }
 #endif
   return ftruncate(fd, length)
@@ -161,7 +161,7 @@ internal func system_mkdir(
     _ path: UnsafePointer<CInterop.PlatformChar>,
     _ mode: CInterop.Mode
 ) -> CInt {
-#if ENABLE_MOCKING
+#if ENABLE_MOCKING && !$Embedded
   if mockingEnabled { return _mock(path: path, mode) }
 #endif
   return mkdir(path, mode)
@@ -170,7 +170,7 @@ internal func system_mkdir(
 internal func system_rmdir(
     _ path: UnsafePointer<CInterop.PlatformChar>
 ) -> CInt {
-#if ENABLE_MOCKING
+#if ENABLE_MOCKING && !$Embedded
   if mockingEnabled { return _mock(path: path) }
 #endif
   return rmdir(path)
@@ -208,7 +208,7 @@ internal func system_unlinkat(
   _ path: UnsafePointer<CInterop.PlatformChar>,
   _ flag: CInt
 ) -> CInt {
-#if ENABLE_MOCKING
+#if ENABLE_MOCKING && !$Embedded
   if mockingEnabled { return _mock(fd, path, flag) }
 #endif
 return unlinkat(fd, path, flag)
@@ -247,7 +247,7 @@ internal func system_openat(
   _ path: UnsafePointer<CInterop.PlatformChar>,
   _ oflag: Int32
 ) -> CInt {
-#if ENABLE_MOCKING
+#if ENABLE_MOCKING && !$Embedded
   if mockingEnabled {
     return _mock(fd, path, oflag)
   }

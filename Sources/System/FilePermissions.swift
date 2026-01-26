@@ -18,7 +18,7 @@
 ///     perms == [.ownerReadWrite, .groupRead, .otherRead] // true
 @frozen
 @available(System 0.0.1, *)
-public struct FilePermissions: OptionSet, Sendable, Hashable, Codable {
+public struct FilePermissions: OptionSet, Sendable, Hashable {
   /// The raw C file permissions.
   @_alwaysEmitIntoClient
   public let rawValue: CModeT
@@ -172,3 +172,8 @@ extension FilePermissions
   /// A textual representation of the file permissions, suitable for debugging.
   public var debugDescription: String { self.description }
 }
+
+#if !$Embedded
+@available(System 0.0.1, *)
+extension FilePermissions: Codable {}
+#endif
