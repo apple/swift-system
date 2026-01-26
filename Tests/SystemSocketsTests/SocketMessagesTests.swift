@@ -64,7 +64,7 @@ private struct SocketMessagesTests {
     // Receive message
     var buffer = [UInt8](repeating: 0, count: 1024)
     var recvAncillary = SocketDescriptor.AncillaryMessageBuffer(minimumCapacity: 256)
-    var sender: SocketAddress? = nil
+    var sender: SocketAddress? = SocketAddress()
 
     let received = try buffer.withUnsafeMutableBytes { buf in
       var recvOutput = OutputRawSpan(buffer: buf, initializedCount: 0)
@@ -75,6 +75,8 @@ private struct SocketMessagesTests {
       )
     }
     #expect(received == messageBytes.count)
+    // Note: For TCP connections, recvmsg doesn't populate msg_name with the peer address
+    // Use getpeername() instead for connection-oriented sockets
 
     let receivedMessage = String(decoding: buffer.prefix(received), as: UTF8.self)
     #expect(receivedMessage == message)
@@ -106,6 +108,10 @@ private struct SocketMessagesTests {
     }
     #expect(sent == messageBytes.count)
 
+    // Get sender's actual local address for verification
+    var senderLocalAddr = SocketAddress()
+    try sender.getLocalAddress(into: &senderLocalAddr)
+
     // Receive datagram
     var buffer = [UInt8](repeating: 0, count: 1024)
     var recvAncillary = SocketDescriptor.AncillaryMessageBuffer(minimumCapacity: 256)
@@ -120,7 +126,14 @@ private struct SocketMessagesTests {
       )
     }
     #expect(received == messageBytes.count)
+
+    // Verify the sender address was correctly populated by recvmsg
     #expect(fromAddr?.family == .ipv4)
+    let fromIPv4 = try #require(fromAddr?.ipv4, "Sender address should be populated for UDP")
+    let senderIPv4 = try #require(senderLocalAddr.ipv4, "Sender socket should have IPv4 address")
+
+    // Verify the port matches the sender's ephemeral port
+    #expect(fromIPv4.port == senderIPv4.port)
 
     let receivedMessage = String(decoding: buffer.prefix(received), as: UTF8.self)
     #expect(receivedMessage == message)
@@ -214,21 +227,18 @@ private struct SocketMessagesTests {
         }
       }
 
-      #expect(receivedFD != nil, "Should have received a file descriptor")
+      let receivedFd = try #require(receivedFD, "Should have received a file descriptor")
+      let receivedFile = FileDescriptor(rawValue: receivedFd)
+      defer { try? receivedFile.close() }
 
-      if let fd = receivedFD {
-        let receivedFile = FileDescriptor(rawValue: fd)
-        defer { try? receivedFile.close() }
-
-        // Verify we can read from the received file descriptor
-        var readBuffer = [UInt8](repeating: 0, count: 1024)
-        let bytesRead = try readBuffer.withUnsafeMutableBytes { buf in
-          try receivedFile.read(into: buf)
-        }
-
-        let fileContent = String(decoding: readBuffer.prefix(bytesRead), as: UTF8.self)
-        #expect(fileContent == testData, "File content should match")
+      // Verify we can read from the received file descriptor
+      var readBuffer = [UInt8](repeating: 0, count: 1024)
+      let bytesRead = try readBuffer.withUnsafeMutableBytes { buf in
+        try receivedFile.read(into: buf)
       }
+
+      let fileContent = String(decoding: readBuffer.prefix(bytesRead), as: UTF8.self)
+      #expect(fileContent == testData, "File content should match")
 
       try fileToSend.close()
     }
