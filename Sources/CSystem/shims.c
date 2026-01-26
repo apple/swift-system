@@ -11,6 +11,30 @@
 
 #include <CSystemLinux.h>
 
+// Terminal ioctl shims for Linux
+int _system_ioctl_TIOCGWINSZ(int fd, struct winsize *ws) {
+  return ioctl(fd, TIOCGWINSZ, ws);
+}
+
+int _system_ioctl_TIOCSWINSZ(int fd, const struct winsize *ws) {
+  return ioctl(fd, TIOCSWINSZ, ws);
+}
+
+#endif
+
+#if defined(__APPLE__)
+
+#include <CSystemDarwin.h>
+
+// Terminal ioctl shims for Darwin
+int _system_ioctl_TIOCGWINSZ(int fd, struct winsize *ws) {
+  return ioctl(fd, TIOCGWINSZ, ws);
+}
+
+int _system_ioctl_TIOCSWINSZ(int fd, const struct winsize *ws) {
+  return ioctl(fd, TIOCSWINSZ, ws);
+}
+
 #endif
 
 #if defined(_WIN32)

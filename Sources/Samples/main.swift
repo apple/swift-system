@@ -14,10 +14,15 @@ struct SystemSamples: ParsableCommand {
     commandName: "system-samples",
     abstract: "A collection of little programs exercising some System features.",
     subcommands: [
+      // Socket samples
       Resolve.self,
       ReverseResolve.self,
       Connect.self,
       Listen.self,
+      // Terminal samples
+      PasswordReader.self,
+      TerminalSize.self,
+      RawMode.self,
     ])
 }
 
