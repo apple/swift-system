@@ -118,7 +118,11 @@ private struct StatTests {
       #expect(targetStat.type == .regular)
       #expect(symlinkStat.type == .symbolicLink)
       #expect(symlinkStat.size < targetStat.size)
+      #if os(FreeBSD)
+      #expect(symlinkStat.sizeAllocated <= targetStat.sizeAllocated)
+      #else
       #expect(symlinkStat.sizeAllocated < targetStat.sizeAllocated)
+      #endif
 
       // Set each .st_atim back to its original value for comparison
 
@@ -368,14 +372,11 @@ private struct StatTests {
       ]
       #elseif os(FreeBSD)
       let userSettableFlags: FileFlags = [
-        .noDump, .userImmutable, .userAppend,
-        .opaque, .tracked, .hidden,
-        .userNoUnlink,
-        .offline,
-        .readOnly,
-        .reparse,
-        .sparse,
-        .system
+        .noDump, .hidden, .offline,
+        .readOnly, .sparse, .system
+        // The following flags throw EPERM on ZFS.
+        // .userImmutable, .userAppend, .opaque,
+        // .userNoUnlink, .reparse,
       ]
       #else // os(OpenBSD)
       let userSettableFlags: FileFlags = [
@@ -384,13 +385,13 @@ private struct StatTests {
       #endif
 
       flags.insert(userSettableFlags)
-      try #require(fchflags(fd.rawValue, flags.rawValue) == 0, "\(Errno.current)")
+      try #require(fchflags(fd.rawValue, UInt(flags.rawValue)) == 0, "\(Errno.current)")
 
       stat = try fd.stat()
       #expect(stat.flags == flags)
 
       flags.remove(userSettableFlags)
-      try #require(fchflags(fd.rawValue, flags.rawValue) == 0, "\(Errno.current)")
+      try #require(fchflags(fd.rawValue, UInt(flags.rawValue)) == 0, "\(Errno.current)")
 
       stat = try fd.stat()
       #expect(stat.flags == flags)
