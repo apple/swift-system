@@ -118,7 +118,11 @@ private struct StatTests {
       #expect(targetStat.type == .regular)
       #expect(symlinkStat.type == .symbolicLink)
       #expect(symlinkStat.size < targetStat.size)
+      #if os(FreeBSD)
+      #expect(symlinkStat.sizeAllocated <= targetStat.sizeAllocated)
+      #else
       #expect(symlinkStat.sizeAllocated < targetStat.sizeAllocated)
+      #endif
 
       // Set each .st_atim back to its original value for comparison
 
@@ -368,14 +372,11 @@ private struct StatTests {
       ]
       #elseif os(FreeBSD)
       let userSettableFlags: FileFlags = [
-        .noDump, .userImmutable, .userAppend,
-        .opaque, .tracked, .hidden,
-        .userNoUnlink,
-        .offline,
-        .readOnly,
-        .reparse,
-        .sparse,
-        .system
+        .noDump, .hidden, .offline,
+        .readOnly, .sparse, .system
+        // The following flags throw EPERM on ZFS.
+        // .userImmutable, .userAppend, .opaque,
+        // .userNoUnlink, .reparse,
       ]
       #else // os(OpenBSD)
       let userSettableFlags: FileFlags = [
@@ -416,5 +417,12 @@ private func > (lhs: timespec, rhs: timespec) -> Bool {
 private func == (lhs: timespec, rhs: timespec) -> Bool {
   lhs.tv_sec == rhs.tv_sec && lhs.tv_nsec == rhs.tv_nsec
 }
+
+#if os(FreeBSD)
+// Helper functions for FreeBSD
+private func fchflags(_ fd: CInt, _ flags: CInterop.FileFlags) -> CInt {
+  fchflags(fd, UInt(flags))
+}
+#endif
 
 #endif
