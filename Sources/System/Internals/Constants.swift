@@ -692,10 +692,8 @@ internal var _S_IFLNK: mode_t { S_IFLNK }
 @_alwaysEmitIntoClient
 internal var _S_IFSOCK: mode_t { S_IFSOCK }
 
-#if SYSTEM_PACKAGE_DARWIN
-@_alwaysEmitIntoClient
-internal var _S_IFWHT: mode_t { S_IFWHT }
-#elseif os(FreeBSD)
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
+// `S_IFWHT` is `Int32` on FreeBSD.
 @_alwaysEmitIntoClient
 internal var _S_IFWHT: mode_t { .init(S_IFWHT) }
 #endif
