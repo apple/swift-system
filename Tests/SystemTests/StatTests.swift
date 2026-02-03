@@ -381,13 +381,15 @@ private struct StatTests {
       #endif
 
       flags.insert(userSettableFlags)
-      try #require(fchflags(fd.rawValue, flags.rawValue) == 0, "\(Errno.current)")
+      // On FreeBSD, the second argument of `fchflags` requires `UInt` instead of`UInt32`.
+      try #require(fchflags(fd.rawValue, .init(flags.rawValue)) == 0, "\(Errno.current)")
 
       stat = try fd.stat()
       #expect(stat.flags == flags)
 
       flags.remove(userSettableFlags)
-      try #require(fchflags(fd.rawValue, flags.rawValue) == 0, "\(Errno.current)")
+      // On FreeBSD, the second argument of `fchflags` requires `UInt` instead of`UInt32`.
+      try #require(fchflags(fd.rawValue, .init(flags.rawValue)) == 0, "\(Errno.current)")
 
       stat = try fd.stat()
       #expect(stat.flags == flags)
@@ -413,12 +415,5 @@ private func > (lhs: timespec, rhs: timespec) -> Bool {
 private func == (lhs: timespec, rhs: timespec) -> Bool {
   lhs.tv_sec == rhs.tv_sec && lhs.tv_nsec == rhs.tv_nsec
 }
-
-#if os(FreeBSD)
-// Helper functions for FreeBSD
-private func fchflags(_ fd: CInt, _ flags: CInterop.FileFlags) -> CInt {
-  fchflags(fd, UInt(flags))
-}
-#endif
 
 #endif
