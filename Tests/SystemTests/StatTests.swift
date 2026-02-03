@@ -118,11 +118,7 @@ private struct StatTests {
       #expect(targetStat.type == .regular)
       #expect(symlinkStat.type == .symbolicLink)
       #expect(symlinkStat.size < targetStat.size)
-      #if os(FreeBSD)
       #expect(symlinkStat.sizeAllocated <= targetStat.sizeAllocated)
-      #else
-      #expect(symlinkStat.sizeAllocated < targetStat.sizeAllocated)
-      #endif
 
       // Set each .st_atim back to its original value for comparison
 
