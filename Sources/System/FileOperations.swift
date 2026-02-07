@@ -215,14 +215,23 @@ extension FileDescriptor {
     into buffer: UnsafeMutableRawBufferPointer,
     retryOnInterrupt: Bool = true
   ) throws -> Int {
-    try _read(into: buffer, retryOnInterrupt: retryOnInterrupt).get()
+    try _readNoThrow(into: buffer, retryOnInterrupt: retryOnInterrupt).get()
   }
 
+  // NOTE: This function (mistakenly marked as throws) is vestigial but remains to preserve ABI.
   @usableFromInline
   internal func _read(
     into buffer: UnsafeMutableRawBufferPointer,
     retryOnInterrupt: Bool
   ) throws -> Result<Int, Errno> {
+    _readNoThrow(into: buffer, retryOnInterrupt: retryOnInterrupt)
+  }
+
+  @usableFromInline
+  internal func _readNoThrow(
+    into buffer: UnsafeMutableRawBufferPointer,
+    retryOnInterrupt: Bool
+  ) -> Result<Int, Errno> {
     valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
       system_read(self.rawValue, buffer.baseAddress, buffer.count)
     }
