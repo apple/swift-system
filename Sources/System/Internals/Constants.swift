@@ -622,6 +622,15 @@ internal var _O_SYMLINK: CInt { O_SYMLINK }
 #if !os(Windows)
 @_alwaysEmitIntoClient
 internal var _O_CLOEXEC: CInt { O_CLOEXEC }
+
+@_alwaysEmitIntoClient
+internal var _O_CLOFORK: CInt {
+  #if !os(WASI) && !os(Linux) && !os(Android) && !canImport(Darwin)
+  O_CLOFORK
+  #else
+  0
+  #endif
+}
 #endif
 
 @_alwaysEmitIntoClient
