@@ -10,7 +10,7 @@
 #if !os(Windows)
 
 /// Get the path to the system temporary directory.
-internal func _getTemporaryDirectory() throws -> FilePath {
+internal func _getTemporaryDirectory() throws(SystemError) -> FilePath {
   guard let tmp = system_getenv("TMPDIR") else {
     return "/tmp"
   }
@@ -26,22 +26,22 @@ internal func _getTemporaryDirectory() throws -> FilePath {
 /// Removes a directory completely, including all of its contents.
 internal func _recursiveRemove(
   at path: FilePath
-) throws {
+) throws(SystemError) {
   let dirfd = try FileDescriptor.open(path, .readOnly, options: .directory)
   defer {
     try? dirfd.close()
   }
 
   let dot: (CInterop.PlatformChar, CInterop.PlatformChar) = (46, 0)
-  try withUnsafeBytes(of: dot) {
+  try withUnsafeBytes(of: dot) { (bytes) throws(SystemError) in
     try recursiveRemove(
       in: dirfd.rawValue,
-      name: $0.assumingMemoryBound(to: CInterop.PlatformChar.self).baseAddress!
+      name: bytes.assumingMemoryBound(to: CInterop.PlatformChar.self).baseAddress!
     )
   }
 
-  try path.withPlatformString {
-    if system_rmdir($0) != 0 {
+  try path.withPlatformString { (platformString) throws(SystemError) in
+    if system_rmdir(platformString) != 0 {
       throw Errno.current
     }
   }
@@ -81,8 +81,8 @@ fileprivate func impl_opendirat(
 fileprivate func forEachFile(
   in dirfd: CInt,
   subdir: UnsafePointer<CInterop.PlatformChar>,
-  _ body: (system_dirent) throws -> ()
-) throws {
+  _ body: (system_dirent) throws(SystemError) -> ()
+) throws(SystemError) {
   guard let dir = impl_opendirat(dirfd, subdir) else {
     throw Errno.current
   }
@@ -113,7 +113,7 @@ fileprivate func forEachFile(
 fileprivate func recursiveRemove(
   in dirfd: CInt,
   name: UnsafePointer<CInterop.PlatformChar>
-) throws {
+) throws(SystemError) {
   // First, deal with subdirectories
   try forEachFile(in: dirfd, subdir: name) { dirent in
     if dirent.d_type == SYSTEM_DT_DIR {

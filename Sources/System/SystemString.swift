@@ -9,7 +9,7 @@
 
 // A platform-native character representation, currently used for file paths
 internal struct SystemChar:
-  RawRepresentable, Sendable, Comparable, Hashable, Codable {
+  RawRepresentable, Sendable, Comparable, Hashable {
   internal typealias RawValue = CInterop.PlatformChar
 
   internal var rawValue: RawValue
@@ -22,6 +22,12 @@ internal struct SystemChar:
     lhs.rawValue < rhs.rawValue
   }
 }
+
+#if !$Embedded
+
+extension SystemChar: Codable {}
+
+#endif // !$Embedded
 
 extension SystemChar {
   internal init(ascii: Unicode.Scalar) {
@@ -104,7 +110,7 @@ extension SystemString {
     }
     return true
   }
-  
+
   fileprivate func _invariantCheck() {
     #if DEBUG
     precondition(_invariantsSatisfied())
@@ -173,10 +179,14 @@ extension SystemString: RangeReplaceableCollection {
   }
 }
 
-extension SystemString: Hashable, Codable {
+extension SystemString: Hashable {}
+
+#if !$Embedded
+
+extension SystemString: Codable {
   // Encoder is synthesized; it probably should have been explicit and used
   // a single-value container, but making that change now is somewhat risky.
-  
+
   // Decoder is written explicitly to ensure that we validate invariants on
   // untrusted input.
   public init(from decoder: any Decoder) throws {
@@ -194,6 +204,8 @@ extension SystemString: Hashable, Codable {
     }
   }
 }
+
+#endif // !$Embedded
 
 extension SystemString {
 

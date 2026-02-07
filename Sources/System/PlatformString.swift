@@ -158,8 +158,8 @@ extension String {
   /// only during the execution of this method.
   /// Don't try to store the pointer for later use.
   public func withPlatformString<Result>(
-    _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
-  ) rethrows -> Result {
+    _ body: (UnsafePointer<CInterop.PlatformChar>) throws(SystemError) -> Result
+  ) throws(SystemError) -> Result {
     try _withPlatformString(body)
   }
 
@@ -189,8 +189,8 @@ extension CInterop.PlatformUnicodeEncoding.CodeUnit {
 
 internal protocol _PlatformStringable {
   func _withPlatformString<Result>(
-    _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
-  ) rethrows -> Result
+    _ body: (UnsafePointer<CInterop.PlatformChar>) throws(SystemError) -> Result
+  ) throws(SystemError) -> Result
 
   init?(_platformString: UnsafePointer<CInterop.PlatformChar>)
 }
