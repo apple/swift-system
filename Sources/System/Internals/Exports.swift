@@ -91,7 +91,8 @@ internal func system_strlen(_ s: UnsafeMutablePointer<CChar>) -> Int {
 }
 
 #if !os(Windows)
-@available(System 99, *)
+@available(System 0.0.2, *)
+@_alwaysEmitIntoClient
 internal func system_stat(_ p: UnsafePointer<CChar>, _ s: inout CInterop.Stat) -> Int32 {
   stat(p, &s)
 }

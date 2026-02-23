@@ -81,9 +81,33 @@ public enum CInterop {
 }
 
 #if !os(Windows)
+@available(System 0.0.2, *) // Original availability of CInterop
+extension CInterop {
+  /// The C `stat` struct.
+  public typealias Stat = stat
+
+  /// Calls the C `stat()` function.
+  ///
+  /// This is a direct wrapper around the C `stat()` system call.
+  /// For a more ergonomic Swift API, use `Stat` instead.
+  ///
+  /// - Warning: This API is primarily intended for migration purposes when
+  ///   supporting older deployment targets. If your deployment target supports
+  ///   it, prefer using the `Stat` API introduced in SYS-0006, which provides
+  ///   type-safe, ergonomic access to file metadata in Swift.
+  ///
+  /// - Parameters:
+  ///   - path: A null-terminated C string representing the file path.
+  ///   - s: An `inout` reference to a `CInterop.Stat` struct to populate.
+  /// - Returns: 0 on success, -1 on error (check `Errno.current`).
+  @_alwaysEmitIntoClient
+  public static func stat(_ path: UnsafePointer<CChar>, _ s: inout CInterop.Stat) -> Int32 {
+    system_stat(path, &s)
+  }
+}
+
 @available(System 99, *)
 extension CInterop {
-  public typealias Stat = stat
   public typealias DeviceID = dev_t
   public typealias Inode = ino_t
   public typealias UserID = uid_t
