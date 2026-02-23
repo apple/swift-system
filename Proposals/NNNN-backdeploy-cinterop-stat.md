@@ -3,8 +3,8 @@
 * Proposal: SYS-NNNN
 * Author: [Jonathan Flat](https://github.com/jrflat)
 * Status: **Awaiting review**
-* Implementation:
-* Review: ([pitch](https://forums.swift.org))
+* Implementation: [apple/swift-system#299](https://github.com/apple/swift-system/pull/299)
+* Review: ([pitch](https://forums.swift.org/t/pitch-back-deploy-system-cinterop-stat-for-migration-compatibility/84930))
 
 ## Introduction
 
