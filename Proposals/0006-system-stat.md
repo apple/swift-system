@@ -417,7 +417,7 @@ public struct FileFlags: OptionSet, Sendable, Hashable, Codable {
 
 ### Stat
 
-`Stat` can be initialized from a `FilePath`, `UnsafePointer<CChar>`,  or `FileDescriptor`. This proposal also includes functions on `FileDescriptor` and `FilePath` for creating a `Stat` object, seen in the section below.
+`Stat` can be initialized from a `FilePath`, `UnsafePointer<CChar>`, or `FileDescriptor`. This proposal also includes functions on `FileDescriptor` and `FilePath` for creating a `Stat` object, seen in the section below.
 
 The initializer accepting a `FileDescriptor` corresponds to `fstat()`. If the file descriptor points to a symlink, this will return information about the symlink itself.
 
