@@ -1,14 +1,20 @@
 # Back-Deploy CInterop.stat for Migration Compatibility
 
-* Proposal: SYS-NNNN
+* Proposal: SYS-0008
 * Author: [Jonathan Flat](https://github.com/jrflat)
 * Status: **Awaiting review**
 * Implementation: [apple/swift-system#299](https://github.com/apple/swift-system/pull/299)
 * Review: ([pitch](https://forums.swift.org/t/pitch-back-deploy-system-cinterop-stat-for-migration-compatibility/84930))
 
+#### Revision history
+
+* **v1** Initial version
+* **v2** Clarify that `CInterop.stat(_:_:)` is a new function
+* **v3** Explain why this proposal should not set a precedence for future System APIs
+
 ## Introduction
 
-This proposal back-deploys `CInterop.stat(_:_:)` and `CInterop.Stat` from System to make them available on older OS versions, enabling a migration path for clients who may encounter naming conflicts with `FilePath.stat()` or `FileDescriptor.stat()` when System's new `Stat` API ships.
+This proposal introduces `CInterop.stat(_:_:)` and back-deploys the `CInterop.Stat` typealias from System to make them available on older OS versions, enabling a migration path for clients who may encounter naming conflicts with `FilePath.stat()` or `FileDescriptor.stat()` when System's new `Stat` API ships.
 
 ## Motivation
 
@@ -195,6 +201,15 @@ Once clients can raise their deployment targets to support the new `Stat` API in
 - Type-safe, ergonomic Swift interfaces
 - Strongly-typed wrappers (`FileType`, `FileMode`, `FilePermissions`, etc.)
 - Proper error handling with typed throws
+
+## Why this should not set a precedent for CInterop functions
+
+We should not expose `CInterop` functions for most, if not all, other methods that shadow a global function. `stat` is a special case for a few reasons:
+
+- Many other syscalls gain a more Swift-y API name, e.g. `dup/dup2` → `duplicate(as:)`, `ftruncate` → `resize(to:)`, `umask` → `FilePermissions.creationMask` if that becomes API, etc. Those renames mean user extensions are unlikely to collide with future System API. `stat` is one of the few syscalls whose C name is already clear and idiomatic enough to use directly as the Swift API name.
+- Many syscalls that do keep their C name (e.g. `open`, `close`, `read`, `write`) have been in System since the beginning, so there was never a window where someone would have needed to create their own extension for that functionality.
+- `stat` is both widely used and was missing from System for some time, which creates a better chance for migration friction.
+- Other syscalls that could be added to System naturally disambiguate through parameter labels. Names like `rename`, `link`, and `unlink` would require non-optional arguments (e.g. `rename(to:)`, `link(to:)`), so their Swift signatures wouldn't collide with the bare C functions. `stat` is unusual in that it works as a zero-argument call on `FilePath`/`FileDescriptor` and has the same shape as the global C `stat()` struct initializer.
 
 ## Alternatives considered
 
