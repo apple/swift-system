@@ -134,6 +134,8 @@ typedef struct __SWIFT_IORING_SQE_FALLBACK_STRUCT swift_io_uring_sqe;
 #define IORING_FEAT_RW_ATTR             (1U << 16)
 #define IORING_FEAT_NO_IOWAIT           (1U << 17)
 
+#define IORING_POLL_ADD_MULTI	        (1U << 0)
+
 #if !defined(_ASM_GENERIC_INT_LL64_H) && !defined(_ASM_GENERIC_INT_L64_H) && !defined(_UAPI_ASM_GENERIC_INT_LL64_H) && !defined(_UAPI_ASM_GENERIC_INT_L64_H)
 typedef uint8_t  __u8;
 typedef uint16_t __u16;
