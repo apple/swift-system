@@ -14,7 +14,6 @@ import Glibc
 #elseif canImport(Musl)
 import Musl
 #elseif canImport(WASILibc)
-import CSystem
 import WASILibc
 #elseif os(Windows)
 import ucrt
@@ -23,6 +22,8 @@ import Android
 #else
 #error("Unsupported Platform")
 #endif
+
+import CSystem
 
 // Interacting with the mocking system, tracing, etc., is a potentially significant
 // amount of code size, so we hand outline that code for every syscall
@@ -139,6 +140,13 @@ internal func system_dup2(_ fd: Int32, _ fd2: Int32) -> Int32 {
   #endif
   return dup2(fd, fd2)
 }
+
+internal func system_dup3(_ fd: Int32, _ fd2: Int32, _ oflag: Int32) -> Int32 {
+  #if ENABLE_MOCKING
+  if mockingEnabled { return _mock(fd, fd2, oflag) }
+  #endif
+  return csystem_posix_dup3(fd, fd2, oflag)
+}
 #endif
 
 #if !os(WASI)
@@ -147,6 +155,13 @@ internal func system_pipe(_ fds: UnsafeMutablePointer<Int32>) -> CInt {
   if mockingEnabled { return _mock(fds) }
 #endif
   return pipe(fds)
+}
+
+internal func system_pipe2(_ fds: UnsafeMutablePointer<Int32>, _ oflag: Int32) -> CInt {
+#if ENABLE_MOCKING
+  if mockingEnabled { return _mock(fds, oflag) }
+#endif
+  return csystem_posix_pipe2(fds, oflag)
 }
 #endif
 
