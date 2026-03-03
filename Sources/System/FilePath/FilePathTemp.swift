@@ -20,8 +20,8 @@
 /// deletes the directory and all of its contents before returning.
 internal func withTemporaryFilePath<R>(
   basename: FilePath.Component,
-  _ body: (FilePath) throws -> R
-) throws -> R {
+  _ body: (FilePath) throws(SystemError) -> R
+) throws(SystemError) -> R {
   let temporaryDir = try createUniqueTemporaryDirectory(basename: basename)
   defer {
     try? _recursiveRemove(at: temporaryDir)
@@ -44,9 +44,9 @@ fileprivate let base64 = Array<UInt8>(
 ///
 /// This function will throw if there is an error, except if the error
 /// is that the directory exists, in which case it returns `false`.
-fileprivate func makeLockedDownDirectory(at path: FilePath) throws -> Bool {
-  return try path.withPlatformString {
-    if system_mkdir($0, 0o700) == 0 {
+fileprivate func makeLockedDownDirectory(at path: FilePath) throws(SystemError) -> Bool {
+  return try path.withPlatformString { (platformString) throws(SystemError) in
+    if system_mkdir(platformString, 0o700) == 0 {
       return true
     }
     let err = system_errno
@@ -83,7 +83,7 @@ fileprivate func createRandomString(length: Int) -> String {
 /// string of characters.
 fileprivate func createUniqueTemporaryDirectory(
   basename: FilePath.Component
-) throws -> FilePath {
+) throws(SystemError) -> FilePath {
   var tempDir = try _getTemporaryDirectory()
   tempDir.append(basename)
 
