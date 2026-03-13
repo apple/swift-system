@@ -14,6 +14,7 @@ target_include_directories(CSystem INTERFACE
 
 install(FILES
   include/CSystemLinux.h
+  include/CSystemShared.h
   include/CSystemWindows.h
   include/module.modulemap
   DESTINATION include/CSystem)
