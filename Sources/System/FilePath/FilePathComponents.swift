@@ -128,6 +128,8 @@ extension SystemString {
   }
 }
 
+#if !$Embedded
+
 // Unifying protocol for common functionality between roots, components,
 // and views onto SystemString and FilePath.
 internal protocol _StrSlice: _PlatformStringable, Hashable, Codable {
@@ -138,6 +140,20 @@ internal protocol _StrSlice: _PlatformStringable, Hashable, Codable {
 
   func _invariantCheck()
 }
+
+#else
+
+internal protocol _StrSlice: _PlatformStringable, Hashable {
+  var _storage: SystemString { get }
+  var _range: Range<SystemString.Index> { get }
+
+  init?(_ str: SystemString)
+
+  func _invariantCheck()
+}
+
+#endif // !$Embedded
+
 extension _StrSlice {
   internal var _slice: Slice<SystemString> {
     Slice(base: _storage, bounds: _range)
