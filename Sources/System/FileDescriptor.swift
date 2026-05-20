@@ -347,11 +347,11 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_NONBLOCK`.
     @_alwaysEmitIntoClient
-    public static var nonBlocking: OpenOptions { .init(rawValue: _O_NONBLOCK) }
+    public static var nonBlocking: PipeOptions { .init(rawValue: _O_NONBLOCK) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "nonBlocking")
-    public static var O_NONBLOCK: OpenOptions { nonBlocking }
+    public static var O_NONBLOCK: PipeOptions { nonBlocking }
 
     /// Indicates that executing a program closes the file.
     ///
@@ -367,11 +367,11 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_CLOEXEC`.
     @_alwaysEmitIntoClient
-    public static var closeOnExec: OpenOptions { .init(rawValue: _O_CLOEXEC) }
+    public static var closeOnExec: PipeOptions { .init(rawValue: _O_CLOEXEC) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "closeOnExec")
-    public static var O_CLOEXEC: OpenOptions { closeOnExec }
+    public static var O_CLOEXEC: PipeOptions { closeOnExec }
 
 #if !os(WASI) && !os(Linux) && !os(Android)
     /// Indicates that forking a program closes the file.
@@ -388,11 +388,11 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_CLOFORK`.
     @_alwaysEmitIntoClient
-    public static var closeOnFork: OpenOptions { .init(rawValue: _O_CLOFORK) }
+    public static var closeOnFork: PipeOptions { .init(rawValue: _O_CLOFORK) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "closeOnFork")
-    public static var O_CLOFORK: OpenOptions { closeOnFork }
+    public static var O_CLOFORK: PipeOptions { closeOnFork }
 #endif
 #endif
   }
@@ -429,11 +429,11 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_CLOEXEC`.
     @_alwaysEmitIntoClient
-    public static var closeOnExec: OpenOptions { .init(rawValue: _O_CLOEXEC) }
+    public static var closeOnExec: DuplicateOptions { .init(rawValue: _O_CLOEXEC) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "closeOnExec")
-    public static var O_CLOEXEC: OpenOptions { closeOnExec }
+    public static var O_CLOEXEC: DuplicateOptions { closeOnExec }
 
 #if !os(WASI) && !os(Linux) && !os(Android)
     /// Indicates that forking a program closes the file.
@@ -450,11 +450,11 @@ extension FileDescriptor {
     ///
     /// The corresponding C constant is `O_CLOFORK`.
     @_alwaysEmitIntoClient
-    public static var closeOnFork: OpenOptions { .init(rawValue: _O_CLOFORK) }
+    public static var closeOnFork: DuplicateOptions { .init(rawValue: _O_CLOFORK) }
 
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "closeOnFork")
-    public static var O_CLOFORK: OpenOptions { closeOnFork }
+    public static var O_CLOFORK: DuplicateOptions { closeOnFork }
 #endif
 #endif
   }
