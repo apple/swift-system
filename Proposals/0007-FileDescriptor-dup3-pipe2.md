@@ -58,12 +58,12 @@ struct FileDescriptor {
     options: PipeOptions
   ) throws(Errno) -> (readEnd: FileDescriptor, writeEnd: FileDescriptor)
 
-  /// Duplicates this file descriptor and return the newly created copy.
+  /// Duplicate this file descriptor and return the newly created copy.
   ///
   /// - Parameters:
-  ///   - `target`: The desired target file descriptor.
-  ///   - `options`: The behavior for creating the target file descriptor.
-  ///   - retryOnInterrupt: Whether to retry the write operation
+  ///   - target: The desired target file descriptor.
+  ///   - options: The behavior for creating the target file descriptor.
+  ///   - retryOnInterrupt: Whether to retry the operation
   ///      if it throws ``Errno/interrupted``. The default is `true`.
   ///      Pass `false` to try only once and throw an error upon interruption.
   /// - Returns: The new file descriptor.
@@ -80,7 +80,8 @@ struct FileDescriptor {
   /// a different object reference to the file must be obtained by issuing an
   /// additional call to `open`.
   ///
-  /// However, each file descriptor maintains its own close-on-exec flag.
+  /// However, each file descriptor maintains its own close-on-exec and
+  /// close-on-fork flags.
   ///
   /// The corresponding C function is `dup3`.
   @discardableResult
@@ -102,7 +103,7 @@ struct FileDescriptor {
     /// on the pipe's file descriptors will be nonblocking.
     ///
     /// The corresponding C constant is `O_NONBLOCK`.
-    public static var nonBlocking: OpenOptions
+    public static var nonBlocking: PipeOptions
 
     /// Indicates that executing a program closes the file.
     ///
@@ -137,6 +138,8 @@ struct FileDescriptor {
     /// Create a strongly-typed options value from raw C options.
     public init(rawValue: CInt)
 
+    /// Indicates that executing a program closes the file.
+    ///
     /// Normally, file descriptors remain open across calls to the `exec(2)`
     /// family of functions. If you specify this option, the file descriptor
     /// is closed when replacing this process with another process.
