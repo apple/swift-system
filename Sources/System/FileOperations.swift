@@ -406,12 +406,12 @@ extension FileDescriptor {
     try _duplicate(as: target, options: 0, retryOnInterrupt: retryOnInterrupt).get()
   }
 
-  /// Duplicates this file descriptor and return the newly created copy.
+  /// Duplicate this file descriptor and return the newly created copy.
   ///
   /// - Parameters:
-  ///   - `target`: The desired target file descriptor.
-  ///   - `options`: The behavior for creating the target file descriptor.
-  ///   - retryOnInterrupt: Whether to retry the write operation
+  ///   - target: The desired target file descriptor.
+  ///   - options: The behavior for creating the target file descriptor.
+  ///   - retryOnInterrupt: Whether to retry the operation
   ///      if it throws ``Errno/interrupted``. The default is `true`.
   ///      Pass `false` to try only once and throw an error upon interruption.
   /// - Returns: The new file descriptor.
@@ -428,8 +428,8 @@ extension FileDescriptor {
   /// a different object reference to the file must be obtained by issuing an
   /// additional call to `open`.
   ///
-  /// However, each file descriptor maintains its own close-on-exec flag.
-  ///
+  /// However, each file descriptor maintains its own close-on-exec and
+  /// close-on-fork flags.
   ///
   /// The corresponding C function is `dup3`.
   @discardableResult
@@ -500,7 +500,8 @@ extension FileDescriptor {
     try _pipe(options: 0).get()
   }
 
-  /// Creates a unidirectional data channel, which can be used for interprocess communication.
+  /// Creates a unidirectional data channel, which can be used for
+  /// interprocess communication.
   ///
   /// - Parameters:
   ///   - options: The behavior for creating the pipe.
