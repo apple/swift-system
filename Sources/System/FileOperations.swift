@@ -432,6 +432,7 @@ extension FileDescriptor {
   ///
   ///
   /// The corresponding C function is `dup3`.
+  @discardableResult
   @_alwaysEmitIntoClient
   @available(Windows, unavailable)
   @available(macOS, unavailable)
@@ -443,7 +444,7 @@ extension FileDescriptor {
     as target: FileDescriptor,
     options: DuplicateOptions,
     retryOnInterrupt: Bool = true
-  ) throws -> FileDescriptor {
+  ) throws(Errno) -> FileDescriptor {
     try _duplicate(as: target, options: options.rawValue, retryOnInterrupt: retryOnInterrupt).get()
   }
 
@@ -514,7 +515,7 @@ extension FileDescriptor {
   @available(tvOS, unavailable)
   @available(watchOS, unavailable)
   @available(visionOS, unavailable)
-  public static func pipe(options: PipeOptions) throws -> (readEnd: FileDescriptor, writeEnd: FileDescriptor) {
+  public static func pipe(options: PipeOptions) throws(Errno) -> (readEnd: FileDescriptor, writeEnd: FileDescriptor) {
     try _pipe(options: options.rawValue).get()
   }
 
@@ -535,7 +536,7 @@ extension FileDescriptor {
 
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "pipe")
-  public func pipe2() throws -> FileDescriptor {
+  public static func pipe2() throws -> FileDescriptor {
     fatalError("Not implemented")
   }
 }
