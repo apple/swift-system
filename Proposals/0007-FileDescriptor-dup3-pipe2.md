@@ -108,10 +108,10 @@ struct FileDescriptor {
     /// Indicates that executing a program closes the file.
     ///
     /// Normally, file descriptors remain open across calls to the `exec(2)`
-    /// family of functions. If you specify this option, the file descriptor
-    /// is closed when replacing this process with another process.
+    /// family of functions. If you specify this option, the system closes the
+    /// file descriptor when replacing this process with another process.
     ///
-    /// The state of the file descriptor flags can be inspected using `F_GETFD`,
+    /// You can inspect the file descriptor flag state using `F_GETFD`,
     /// as described in the `fcntl(2)` man page.
     ///
     /// The corresponding C constant is `O_CLOEXEC`.
@@ -120,10 +120,10 @@ struct FileDescriptor {
     /// Indicates that forking a program closes the file.
     ///
     /// Normally, file descriptors remain open across calls to the `fork(2)`
-    /// function. If you specify this option, the file descriptor is closed
-    /// when forking this process into another process.
+    /// function. If you specify this option, the system closes the file
+    /// descriptor when forking this process into another process.
     ///
-    /// The state of the file descriptor flags can be inspected using `F_GETFD`,
+    /// You can inspect the file descriptor flag state using `F_GETFD`,
     /// as described in the `fcntl(2)` man page.
     ///
     /// The corresponding C constant is `O_CLOFORK`.
@@ -141,10 +141,10 @@ struct FileDescriptor {
     /// Indicates that executing a program closes the file.
     ///
     /// Normally, file descriptors remain open across calls to the `exec(2)`
-    /// family of functions. If you specify this option, the file descriptor
-    /// is closed when replacing this process with another process.
+    /// family of functions. If you specify this option, the system closes the
+    /// file descriptor when replacing this process with another process.
     ///
-    /// The state of the file descriptor flags can be inspected using `F_GETFD`,
+    /// You can inspect the file descriptor flag state using `F_GETFD`,
     /// as described in the `fcntl(2)` man page.
     ///
     /// The corresponding C constant is `O_CLOEXEC`.
@@ -153,10 +153,10 @@ struct FileDescriptor {
     /// Indicates that forking a program closes the file.
     ///
     /// Normally, file descriptors remain open across calls to the `fork(2)`
-    /// function. If you specify this option, the file descriptor is closed
-    /// when forking this process into another process.
+    /// function. If you specify this option, the system closes the file
+    /// descriptor when forking this process into another process.
     ///
-    /// The state of the file descriptor flags can be inspected using `F_GETFD`,
+    /// You can inspect the file descriptor flag state using `F_GETFD`,
     /// as described in the `fcntl(2)` man page.
     ///
     /// The corresponding C constant is `O_CLOFORK`.
