@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 - 2025 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2026 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -395,7 +395,6 @@ extension FileDescriptor {
   ///
   /// However, each file descriptor maintains its own close-on-exec flag.
   ///
-  ///
   /// The corresponding C functions are `dup` and `dup2`.
   @_alwaysEmitIntoClient
   @available(System 0.0.2, *)
@@ -403,7 +402,7 @@ extension FileDescriptor {
     as target: FileDescriptor? = nil,
     retryOnInterrupt: Bool = true
   ) throws -> FileDescriptor {
-    try _duplicate(as: target, options: 0, retryOnInterrupt: retryOnInterrupt).get()
+    try _duplicate(as: target, retryOnInterrupt: retryOnInterrupt).get()
   }
 
   /// Duplicate this file descriptor and return the newly created copy.
@@ -452,17 +451,31 @@ extension FileDescriptor {
   @usableFromInline
   internal func _duplicate(
     as target: FileDescriptor?,
+    retryOnInterrupt: Bool
+  ) -> Result<FileDescriptor, Errno> {
+    valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+      if let target {
+        system_dup2(self.rawValue, target.rawValue)
+      } else {
+        system_dup(self.rawValue)
+      }
+    }.map(FileDescriptor.init(rawValue:))
+  }
+
+  @available(Windows, unavailable)
+  @available(macOS, unavailable)
+  @available(iOS, unavailable)
+  @available(tvOS, unavailable)
+  @available(watchOS, unavailable)
+  @available(visionOS, unavailable)
+  @usableFromInline
+  internal func _duplicate(
+    as target: FileDescriptor,
     options: Int32,
     retryOnInterrupt: Bool
-  ) throws -> Result<FileDescriptor, Errno> {
+  ) -> Result<FileDescriptor, Errno> {
     valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
-      if let target = target {
-        if options != 0 {
-          return system_dup3(self.rawValue, target.rawValue, options)
-        }
-        return system_dup2(self.rawValue, target.rawValue)
-      }
-      return system_dup(self.rawValue)
+      system_dup3(self.rawValue, target.rawValue, options)
     }.map(FileDescriptor.init(rawValue:))
   }
 
@@ -496,8 +509,9 @@ extension FileDescriptor {
   /// The corresponding C function is `pipe`.
   @_alwaysEmitIntoClient
   @available(System 1.1.0, *)
-  public static func pipe() throws -> (readEnd: FileDescriptor, writeEnd: FileDescriptor) {
-    try _pipe(options: 0).get()
+  public static func pipe(
+  ) throws -> (readEnd: FileDescriptor, writeEnd: FileDescriptor) {
+    try _pipe().get()
   }
 
   /// Creates a unidirectional data channel, which can be used for
@@ -516,20 +530,41 @@ extension FileDescriptor {
   @available(tvOS, unavailable)
   @available(watchOS, unavailable)
   @available(visionOS, unavailable)
-  public static func pipe(options: PipeOptions) throws(Errno) -> (readEnd: FileDescriptor, writeEnd: FileDescriptor) {
+  public static func pipe(
+    options: PipeOptions
+  ) throws(Errno) -> (readEnd: FileDescriptor, writeEnd: FileDescriptor) {
     try _pipe(options: options.rawValue).get()
   }
 
+  @available(System 1.1.0, *)
   @usableFromInline
-  internal static func _pipe(options: Int32) -> Result<(readEnd: FileDescriptor, writeEnd: FileDescriptor), Errno> {
+  internal static func _pipe(
+  ) -> Result<(readEnd: FileDescriptor, writeEnd: FileDescriptor), Errno> {
     var fds: (Int32, Int32) = (-1, -1)
     return withUnsafeMutablePointer(to: &fds) { pointer in
       pointer.withMemoryRebound(to: Int32.self, capacity: 2) { fds in
         valueOrErrno(retryOnInterrupt: false) {
-          if options != 0 {
-            return system_pipe2(fds, options)
-          }
-          return system_pipe(fds)
+          system_pipe(fds)
+        }.map { _ in (.init(rawValue: fds[0]), .init(rawValue: fds[1])) }
+      }
+    }
+  }
+
+  @available(Windows, unavailable)
+  @available(macOS, unavailable)
+  @available(iOS, unavailable)
+  @available(tvOS, unavailable)
+  @available(watchOS, unavailable)
+  @available(visionOS, unavailable)
+  @usableFromInline
+  internal static func _pipe(
+    options: Int32,
+  ) -> Result<(readEnd: FileDescriptor, writeEnd: FileDescriptor), Errno> {
+    var fds: (Int32, Int32) = (-1, -1)
+    return withUnsafeMutablePointer(to: &fds) { pointer in
+      pointer.withMemoryRebound(to: Int32.self, capacity: 2) { fds in
+        valueOrErrno(retryOnInterrupt: false) {
+          system_pipe2(fds, options)
         }.map { _ in (.init(rawValue: fds[0]), .init(rawValue: fds[1])) }
       }
     }
