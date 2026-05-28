@@ -7,3 +7,6 @@ xcuserdata/
 .*.sw?
 /.swiftpm
 .docc-build
+
+# Ignore bazel symlinks
+/bazel-*

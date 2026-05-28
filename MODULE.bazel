@@ -1,0 +1,8 @@
+module(
+    name = "swift-system",
+    version = "0.0.0",
+    compatibility_level = 1,
+)
+
+bazel_dep(name = "rules_swift", version = "2.1.1")
+bazel_dep(name = "apple_support", version = "1.16.0")
