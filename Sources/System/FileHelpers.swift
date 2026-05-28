@@ -33,6 +33,78 @@ extension FileDescriptor {
     return result
   }
 
+  /// Reads bytes at the current file offset into a buffer until the buffer is filled or until EOF is reached.
+  ///
+  /// - Parameters:
+  ///   - buffer: The region of memory to read into.
+  /// - Returns: The number of bytes that were read, at most `buffer.count`.
+  ///
+  /// This method either reads until `buffer` is full, or throws an error if
+  /// only part of the buffer was filled.
+  ///
+  /// The <doc://com.apple.documentation/documentation/swift/unsafemutablerawbufferpointer/3019191-count> property of `buffer`
+  /// determines the number of bytes that are read into the buffer.
+  @_alwaysEmitIntoClient
+  @discardableResult
+  public func read(
+    filling buffer: UnsafeMutableRawBufferPointer
+  ) throws -> Int {
+    return try _read(filling: buffer).get()
+  }
+
+  /// Reads bytes at the given file offset into a buffer until the buffer is filled or until EOF is reached.
+  ///
+  /// - Parameters:
+  ///   - offset: The file offset where reading begins.
+  ///   - buffer: The region of memory to read into.
+  /// - Returns: The number of bytes that were read, at most `buffer.count`.
+  ///
+  /// This method either reads until `buffer` is full, or throws an error if
+  /// only part of the buffer was filled.
+  ///
+  /// Unlike ``read(filling:)``, this method preserves the file descriptor's existing offset.
+  ///
+  /// The <doc://com.apple.documentation/documentation/swift/unsafemutablerawbufferpointer/3019191-count> property of `buffer`
+  /// determines the number of bytes that are read into the buffer.
+  @_alwaysEmitIntoClient
+  @discardableResult
+  public func read(
+    fromAbsoluteOffset offset: Int64,
+    filling buffer: UnsafeMutableRawBufferPointer
+  ) throws -> Int {
+    return try _read(fromAbsoluteOffset: offset, filling: buffer).get()
+  }
+
+  @usableFromInline
+  internal func _read(
+    fromAbsoluteOffset offset: Int64? = nil,
+    filling buffer: UnsafeMutableRawBufferPointer
+  ) -> Result<Int, Errno> {
+    var idx = 0
+    loop: while idx < buffer.count {
+      let readResult: Result<Int, Errno>
+      if let offset = offset {
+        readResult = _read(
+          fromAbsoluteOffset: offset + Int64(idx),
+          into: UnsafeMutableRawBufferPointer(rebasing: buffer[idx...]),
+          retryOnInterrupt: true
+        )
+      } else {
+        readResult = _readNoThrow(
+          into: UnsafeMutableRawBufferPointer(rebasing: buffer[idx...]),
+          retryOnInterrupt: true
+        )
+      }
+      switch readResult {
+        case .success(let numBytes) where numBytes == 0: break loop  // EOF
+        case .success(let numBytes): idx += numBytes
+        case .failure(let err): return .failure(err)
+      }
+    }
+    assert(idx <= buffer.count)
+    return .success(idx)
+  }
+
   /// Writes a sequence of bytes to the current offset
   /// and then updates the offset.
   ///
@@ -45,6 +117,9 @@ extension FileDescriptor {
   /// Writes to the position associated with this file descriptor, and
   /// increments that position by the number of bytes written.
   /// See also ``seek(offset:from:)``.
+  ///
+  /// This method either writes the entire contents of `sequence`,
+  /// or throws an error if only part of the content was written.
   ///
   /// If `sequence` doesn't implement
   /// the <doc://com.apple.documentation/documentation/swift/sequence/3128824-withcontiguousstorageifavailable> method,
