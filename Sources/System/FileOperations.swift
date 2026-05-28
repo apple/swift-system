@@ -551,3 +551,73 @@ extension FilePermissions {
   }
 }
 #endif
+
+// (1)MARK:-file Removal Ops
+
+#if !os(Windows)
+@available(System 1.7.0,*)
+extension FilePath{
+  /// Removes the file at this path.
+  ///
+  /// - Parameters:
+  ///   - retryOnInterrupt: Whether to retry the operation
+  ///     if it throws ``Errno/interrupted``.
+  ///     The default is `true`.
+  ///     Pass `false` to try only once and throw an error upon interruption.
+  ///
+  /// The corresponding C function is `unlink`.
+  @_alwaysEmitIntoClient
+  public func remove(retryOnInterrupt: Bool=true) throws{
+    try withCString {try $0.remove(retryOnInterrupt: retryOnInterrupt)}
+  }
+
+  /// Removes the empty directory at this path.
+  ///
+  /// - Parameters:
+  ///   - retryOnInterrupt: Whether to retry the operation
+  ///     if it throws ``Errno/interrupted``.
+  ///     The default is `true`.
+  ///     Pass `false` to try only once and throw an error upon interruption.
+  ///
+  /// The corresponding C function is `rmdir`.
+  @_alwaysEmitIntoClient
+  public func removeDirectory(retryOnInterrupt: Bool=true) throws{
+    try withCString {try $0.removeDirectory(retryOnInterrupt: retryOnInterrupt)}
+  }
+}
+
+@available(System 1.7.0, *)
+extension UnsafePointer where Pointee == CChar {
+  /// Removes the file at this path.
+  ///
+  /// - Parameters:
+  ///   - retryOnInterrupt: Whether to retry the operation
+  ///     if it throws ``Errno/interrupted``.
+  ///     The default is `true`.
+  ///     Pass `false` to try only once and throw an error upon interruption.
+  ///
+  /// The corresponding C function is `unlink`.
+  @_alwaysEmitIntoClient
+  public func remove(retryOnInterrupt: Bool = true) throws {
+    try nothingOrErrno(retryOnInterrupt: retryOnInterrupt) {
+      system_unlink(self)
+    }.get()
+  }
+
+  /// Removes the empty directory at this path.
+  ///
+  /// - Parameters:
+  ///   - retryOnInterrupt: Whether to retry the operation
+  ///     if it throws ``Errno/interrupted``.
+  ///     The default is `true`.
+  ///     Pass `false` to try only once and throw an error upon interruption.
+  ///
+  /// The corresponding C function is `rmdir`.
+  @_alwaysEmitIntoClient
+  public func removeDirectory(retryOnInterrupt: Bool=true) throws {
+    try nothingOrErrno(retryOnInterrupt: retryOnInterrupt) {
+      system_rmdir(self)
+    }.get()
+  }
+}
+#endif
