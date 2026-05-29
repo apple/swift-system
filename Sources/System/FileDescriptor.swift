@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 - 2021 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2026 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -306,12 +306,10 @@ extension FileDescriptor {
     ///
     /// Normally, file descriptors remain open
     /// across calls to the `exec(2)` family of functions.
-    /// If you specify this option,
-    /// the file descriptor is closed when replacing this process
-    /// with another process.
+    /// If you specify this option, the system closes the file
+    /// descriptor when replacing this process with another process.
     ///
-    /// The state of the file
-    /// descriptor flags can be inspected using `F_GETFD`,
+    /// You can inspect the file descriptor flag state using `F_GETFD`,
     /// as described in the `fcntl(2)` man page.
     ///
     /// The corresponding C constant is `O_CLOEXEC`.
@@ -321,6 +319,133 @@ extension FileDescriptor {
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "closeOnExec")
     public static var O_CLOEXEC: OpenOptions { closeOnExec }
+#endif
+  }
+
+  /// Options that specify behavior for a newly-created pipe.
+  @frozen
+  @available(Windows, unavailable)
+  @available(macOS, unavailable)
+  @available(iOS, unavailable)
+  @available(tvOS, unavailable)
+  @available(watchOS, unavailable)
+  @available(visionOS, unavailable)
+  public struct PipeOptions: OptionSet, Sendable, Hashable, Codable {
+    /// The raw C options.
+    @_alwaysEmitIntoClient
+    public var rawValue: CInt
+
+    /// Create a strongly-typed options value from raw C options.
+    @_alwaysEmitIntoClient
+    public init(rawValue: CInt) { self.rawValue = rawValue }
+
+#if !os(Windows)
+    /// Indicates that all subsequent input and output operations
+    /// on the pipe's file descriptors will be nonblocking.
+    ///
+    /// The corresponding C constant is `O_NONBLOCK`.
+    @_alwaysEmitIntoClient
+    public static var nonBlocking: PipeOptions { .init(rawValue: _O_NONBLOCK) }
+
+    @_alwaysEmitIntoClient
+    @available(*, unavailable, renamed: "nonBlocking")
+    public static var O_NONBLOCK: PipeOptions { nonBlocking }
+
+    /// Indicates that executing a program closes the file.
+    ///
+    /// Normally, file descriptors remain open
+    /// across calls to the `exec(2)` family of functions.
+    /// If you specify this option, the system closes the file
+    /// descriptor when replacing this process with another process.
+    ///
+    /// You can inspect the file descriptor flag state using `F_GETFD`,
+    /// as described in the `fcntl(2)` man page.
+    ///
+    /// The corresponding C constant is `O_CLOEXEC`.
+    @_alwaysEmitIntoClient
+    public static var closeOnExec: PipeOptions { .init(rawValue: _O_CLOEXEC) }
+
+    @_alwaysEmitIntoClient
+    @available(*, unavailable, renamed: "closeOnExec")
+    public static var O_CLOEXEC: PipeOptions { closeOnExec }
+
+#if !os(WASI) && !os(Linux) && !os(Android)
+    /// Indicates that forking a program closes the file.
+    ///
+    /// Normally, file descriptors remain open
+    /// across calls to the `fork(2)` function.
+    /// If you specify this option, the system closes the file
+    /// descriptor when forking this process into another process.
+    ///
+    /// You can inspect the file descriptor flag state using `F_GETFD`,
+    /// as described in the `fcntl(2)` man page.
+    ///
+    /// The corresponding C constant is `O_CLOFORK`.
+    @_alwaysEmitIntoClient
+    public static var closeOnFork: PipeOptions { .init(rawValue: _O_CLOFORK) }
+
+    @_alwaysEmitIntoClient
+    @available(*, unavailable, renamed: "closeOnFork")
+    public static var O_CLOFORK: PipeOptions { closeOnFork }
+#endif
+#endif
+  }
+
+  /// Options that specify behavior for a duplicated file descriptor.
+  @frozen
+  @available(Windows, unavailable)
+  @available(macOS, unavailable)
+  @available(iOS, unavailable)
+  @available(tvOS, unavailable)
+  @available(watchOS, unavailable)
+  @available(visionOS, unavailable)
+  public struct DuplicateOptions: OptionSet, Sendable, Hashable, Codable {
+    /// The raw C options.
+    @_alwaysEmitIntoClient
+    public var rawValue: CInt
+
+    /// Create a strongly-typed options value from raw C options.
+    @_alwaysEmitIntoClient
+    public init(rawValue: CInt) { self.rawValue = rawValue }
+
+#if !os(Windows)
+    /// Indicates that executing a program closes the file.
+    ///
+    /// Normally, file descriptors remain open
+    /// across calls to the `exec(2)` family of functions.
+    /// If you specify this option, the system closes the file
+    /// descriptor when replacing this process with another process.
+    ///
+    /// You can inspect the file descriptor flag state using `F_GETFD`,
+    /// as described in the `fcntl(2)` man page.
+    ///
+    /// The corresponding C constant is `O_CLOEXEC`.
+    @_alwaysEmitIntoClient
+    public static var closeOnExec: DuplicateOptions { .init(rawValue: _O_CLOEXEC) }
+
+    @_alwaysEmitIntoClient
+    @available(*, unavailable, renamed: "closeOnExec")
+    public static var O_CLOEXEC: DuplicateOptions { closeOnExec }
+
+#if !os(WASI) && !os(Linux) && !os(Android)
+    /// Indicates that forking a program closes the file.
+    ///
+    /// Normally, file descriptors remain open
+    /// across calls to the `fork(2)` function.
+    /// If you specify this option, the system closes the file
+    /// descriptor when forking this process into another process.
+    ///
+    /// You can inspect the file descriptor flag state using `F_GETFD`,
+    /// as described in the `fcntl(2)` man page.
+    ///
+    /// The corresponding C constant is `O_CLOFORK`.
+    @_alwaysEmitIntoClient
+    public static var closeOnFork: DuplicateOptions { .init(rawValue: _O_CLOFORK) }
+
+    @_alwaysEmitIntoClient
+    @available(*, unavailable, renamed: "closeOnFork")
+    public static var O_CLOFORK: DuplicateOptions { closeOnFork }
+#endif
 #endif
   }
 

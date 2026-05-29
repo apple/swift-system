@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 - 2024 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2026 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -622,6 +622,15 @@ internal var _O_SYMLINK: CInt { O_SYMLINK }
 #if !os(Windows)
 @_alwaysEmitIntoClient
 internal var _O_CLOEXEC: CInt { O_CLOEXEC }
+
+@_alwaysEmitIntoClient
+internal var _O_CLOFORK: CInt {
+  #if !os(WASI) && !os(Linux) && !os(Android) && !canImport(Darwin)
+  O_CLOFORK
+  #else
+  0
+  #endif
+}
 #endif
 
 @_alwaysEmitIntoClient
