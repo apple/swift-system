@@ -72,7 +72,7 @@ final class FileOperationsTestWindows: XCTestCase {
     var psidEveryone: PSID? = nil
 
     XCTAssert(AllocateAndInitializeSid(&SIDAuthWorld, 1,
-                                       DWORD(SECURITY_WORLD_RID),
+                                       SECURITY_WORLD_RID,
                                        0, 0, 0, 0, 0, 0, 0,
                                        &psidEveryone))
     defer {
@@ -106,7 +106,7 @@ final class FileOperationsTestWindows: XCTestCase {
                        &psidGroup,
                        &pDacl,
                        nil,
-                       &pSD), DWORD(ERROR_SUCCESS))
+                       &pSD), ERROR_SUCCESS)
       defer {
         LocalFree(pSD)
       }
@@ -135,15 +135,15 @@ final class FileOperationsTestWindows: XCTestCase {
       XCTAssertEqual(GetEffectiveRightsFromAclW(
                        pDacl,
                        &owner,
-                       &ownerAccess), DWORD(ERROR_SUCCESS))
+                       &ownerAccess), ERROR_SUCCESS)
       XCTAssertEqual(GetEffectiveRightsFromAclW(
                        pDacl,
                        &group,
-                       &groupAccess), DWORD(ERROR_SUCCESS))
+                       &groupAccess), ERROR_SUCCESS)
       XCTAssertEqual(GetEffectiveRightsFromAclW(
                        pDacl,
                        &everyone,
-                       &otherAccess), DWORD(ERROR_SUCCESS))
+                       &otherAccess), ERROR_SUCCESS)
 
       return (ownerAccess, groupAccess, otherAccess)
     }
