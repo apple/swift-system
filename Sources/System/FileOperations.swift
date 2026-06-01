@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 - 2025 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2026 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -395,7 +395,6 @@ extension FileDescriptor {
   ///
   /// However, each file descriptor maintains its own close-on-exec flag.
   ///
-  ///
   /// The corresponding C functions are `dup` and `dup2`.
   @_alwaysEmitIntoClient
   @available(System 0.0.2, *)
@@ -406,17 +405,77 @@ extension FileDescriptor {
     try _duplicate(as: target, retryOnInterrupt: retryOnInterrupt).get()
   }
 
+  /// Duplicate this file descriptor and return the newly created copy.
+  ///
+  /// - Parameters:
+  ///   - target: The desired target file descriptor.
+  ///   - options: The behavior for creating the target file descriptor.
+  ///   - retryOnInterrupt: Whether to retry the operation
+  ///      if it throws ``Errno/interrupted``. The default is `true`.
+  ///      Pass `false` to try only once and throw an error upon interruption.
+  /// - Returns: The new file descriptor.
+  ///
+  /// If the `target` descriptor is already in use, then it is first
+  /// deallocated as if a close(2) call had been done first.
+  ///
+  /// File descriptors are merely references to some underlying system resource.
+  /// The system does not distinguish between the original and the new file
+  /// descriptor in any way. For example, read, write and seek operations on
+  /// one of them also affect the logical file position in the other, and
+  /// append mode, non-blocking I/O and asynchronous I/O options are shared
+  /// between the references. If a separate pointer into the file is desired,
+  /// a different object reference to the file must be obtained by issuing an
+  /// additional call to `open`.
+  ///
+  /// However, each file descriptor maintains its own close-on-exec and
+  /// close-on-fork flags.
+  ///
+  /// The corresponding C function is `dup3`.
+  @discardableResult
+  @_alwaysEmitIntoClient
+  @available(Windows, unavailable)
+  @available(macOS, unavailable)
+  @available(iOS, unavailable)
+  @available(tvOS, unavailable)
+  @available(watchOS, unavailable)
+  @available(visionOS, unavailable)
+  public func duplicate(
+    as target: FileDescriptor,
+    options: DuplicateOptions,
+    retryOnInterrupt: Bool = true
+  ) throws(Errno) -> FileDescriptor {
+    try _duplicate(as: target, options: options.rawValue, retryOnInterrupt: retryOnInterrupt).get()
+  }
+
   @available(System 0.0.2, *)
   @usableFromInline
   internal func _duplicate(
     as target: FileDescriptor?,
     retryOnInterrupt: Bool
-  ) throws -> Result<FileDescriptor, Errno> {
+  ) -> Result<FileDescriptor, Errno> {
     valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
-      if let target = target {
-        return system_dup2(self.rawValue, target.rawValue)
+      if let target {
+        system_dup2(self.rawValue, target.rawValue)
+      } else {
+        system_dup(self.rawValue)
       }
-      return system_dup(self.rawValue)
+    }.map(FileDescriptor.init(rawValue:))
+  }
+
+  @available(Windows, unavailable)
+  @available(macOS, unavailable)
+  @available(iOS, unavailable)
+  @available(tvOS, unavailable)
+  @available(watchOS, unavailable)
+  @available(visionOS, unavailable)
+  @usableFromInline
+  internal func _duplicate(
+    as target: FileDescriptor,
+    options: Int32,
+    retryOnInterrupt: Bool
+  ) -> Result<FileDescriptor, Errno> {
+    valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
+      system_dup3(self.rawValue, target.rawValue, options)
     }.map(FileDescriptor.init(rawValue:))
   }
 
@@ -429,6 +488,12 @@ extension FileDescriptor {
   @_alwaysEmitIntoClient
   @available(*, unavailable, renamed: "duplicate")
   public func dup2() throws -> FileDescriptor {
+    fatalError("Not implemented")
+  }
+
+  @_alwaysEmitIntoClient
+  @available(*, unavailable, renamed: "duplicate")
+  public func dup3() throws -> FileDescriptor {
     fatalError("Not implemented")
   }
 }
@@ -444,13 +509,37 @@ extension FileDescriptor {
   /// The corresponding C function is `pipe`.
   @_alwaysEmitIntoClient
   @available(System 1.1.0, *)
-  public static func pipe() throws -> (readEnd: FileDescriptor, writeEnd: FileDescriptor) {
+  public static func pipe(
+  ) throws -> (readEnd: FileDescriptor, writeEnd: FileDescriptor) {
     try _pipe().get()
+  }
+
+  /// Creates a unidirectional data channel, which can be used for
+  /// interprocess communication.
+  ///
+  /// - Parameters:
+  ///   - options: The behavior for creating the pipe.
+  ///
+  /// - Returns: The pair of file descriptors.
+  ///
+  /// The corresponding C function is `pipe2`.
+  @_alwaysEmitIntoClient
+  @available(Windows, unavailable)
+  @available(macOS, unavailable)
+  @available(iOS, unavailable)
+  @available(tvOS, unavailable)
+  @available(watchOS, unavailable)
+  @available(visionOS, unavailable)
+  public static func pipe(
+    options: PipeOptions
+  ) throws(Errno) -> (readEnd: FileDescriptor, writeEnd: FileDescriptor) {
+    try _pipe(options: options.rawValue).get()
   }
 
   @available(System 1.1.0, *)
   @usableFromInline
-  internal static func _pipe() -> Result<(readEnd: FileDescriptor, writeEnd: FileDescriptor), Errno> {
+  internal static func _pipe(
+  ) -> Result<(readEnd: FileDescriptor, writeEnd: FileDescriptor), Errno> {
     var fds: (Int32, Int32) = (-1, -1)
     return withUnsafeMutablePointer(to: &fds) { pointer in
       pointer.withMemoryRebound(to: Int32.self, capacity: 2) { fds in
@@ -459,6 +548,32 @@ extension FileDescriptor {
         }.map { _ in (.init(rawValue: fds[0]), .init(rawValue: fds[1])) }
       }
     }
+  }
+
+  @available(Windows, unavailable)
+  @available(macOS, unavailable)
+  @available(iOS, unavailable)
+  @available(tvOS, unavailable)
+  @available(watchOS, unavailable)
+  @available(visionOS, unavailable)
+  @usableFromInline
+  internal static func _pipe(
+    options: Int32,
+  ) -> Result<(readEnd: FileDescriptor, writeEnd: FileDescriptor), Errno> {
+    var fds: (Int32, Int32) = (-1, -1)
+    return withUnsafeMutablePointer(to: &fds) { pointer in
+      pointer.withMemoryRebound(to: Int32.self, capacity: 2) { fds in
+        valueOrErrno(retryOnInterrupt: false) {
+          system_pipe2(fds, options)
+        }.map { _ in (.init(rawValue: fds[0]), .init(rawValue: fds[1])) }
+      }
+    }
+  }
+
+  @_alwaysEmitIntoClient
+  @available(*, unavailable, renamed: "pipe")
+  public static func pipe2() throws -> FileDescriptor {
+    fatalError("Not implemented")
   }
 }
 #endif
