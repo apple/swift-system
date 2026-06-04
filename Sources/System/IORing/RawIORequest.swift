@@ -8,7 +8,6 @@ internal struct RawIORequest: ~Copyable {
     // swift_io_uring_sqe is a typedef of io_uring_sqe on platforms where
     // IORing is supported (currently requires kernel version >= 5.15).
     @usableFromInline var rawValue: swift_io_uring_sqe
-    @usableFromInline var path: FilePath? //buffer owner for the path pointer that the sqe may have
 
     @inlinable public init() {
         self.rawValue = swift_io_uring_sqe()

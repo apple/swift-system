@@ -41,6 +41,32 @@ extension UnsafeMutableRawBufferPointer {
     }
 }
 
+/// Owns the FilePaths whose interior pointers have been written into pending
+/// SQEs. The kernel copies SQE-referenced data out during io_uring_enter (due to
+/// IORING_FEAT_SUBMIT_STABLE), so the paths only need to live across the prepare->submit gap
+@usableFromInline
+internal final class PendingPathBuffers {
+    @usableFromInline
+    var paths: [FilePath] = []
+
+    init(reservedCapacity: Int) {
+        paths.reserveCapacity(reservedCapacity)
+    }
+
+    @usableFromInline
+    func pin(_ path: FilePath) -> UnsafePointer<CInterop.PlatformChar> {
+        paths.append(path)
+        // Safe to escape: `paths` keeps the FilePath (and its underlying
+        // [SystemChar] buffer) alive until clear() or class deinit.
+        return paths.last!.withPlatformString { $0 }
+    }
+
+    @usableFromInline
+    func clear() {
+        paths.removeAll(keepingCapacity: true)
+    }
+}
+
 // all pointers in this struct reference kernel-visible memory
 @usableFromInline struct SQRing: ~Copyable {
     @usableFromInline let kernelHead: UnsafePointer<Atomic<UInt32>>
@@ -200,7 +226,14 @@ private func setUpRing(
         throw err
     }
 
-    if params.features & IORing.Features.nonDroppingCompletions.rawValue == 0
+    // We require IORING_FEAT_SUBMIT_STABLE so the kernel copies SQE-referenced
+    // pathnames (and other inline data) out of userspace before io_uring_enter
+    // returns; the path-buffer side store on IORing relies on this to free
+    // path buffers as soon as a submission completes.
+    let requiredFeatures =
+        IORing.Features.nonDroppingCompletions.rawValue
+        | IORing.Features.stableSubmissions.rawValue
+    if params.features & requiredFeatures != requiredFeatures
     {
         close(ringDescriptor)
         throw Errno.invalidArgument
@@ -324,6 +357,8 @@ public struct IORing: ~Copyable {
     @usableFromInline var _registeredFiles: [UInt32]
     @usableFromInline var _registeredBuffers: [iovec]
 
+    @usableFromInline let _pendingPathBuffers: PendingPathBuffers
+
     var features = Features(rawValue: 0)
     
     /// RegisteredResource is used via its typealiases, RegisteredFile and RegisteredBuffer. Registering file descriptors and buffers with the IORing allows for more efficient access to them.
@@ -444,6 +479,7 @@ public struct IORing: ~Copyable {
         self.completionRingSize = tmpCQSize
         self._registeredFiles = []
         self._registeredBuffers = []
+        self._pendingPathBuffers = PendingPathBuffers(reservedCapacity: Int(params.sq_entries))
         self.submissionRing = submissionRing
         self.completionRing = completionRing
         self.submissionQueueEntries = submissionQueueEntries
@@ -765,6 +801,10 @@ public struct IORing: ~Copyable {
     @inlinable
     public func submitPreparedRequests() throws(Errno) {
         try _submitRequests(ring: submissionRing, ringDescriptor: ringDescriptor)
+        // IORING_FEAT_SUBMIT_STABLE guarantees the kernel has copied any
+        // SQE-referenced data (e.g. openat/unlinkAt pathnames) before
+        // io_uring_enter returns; safe to release path storage now.
+        _pendingPathBuffers.clear()
     }
 
     /// Sends all prepared requests to the kernel for processing, and then dequeues at least `minimumCount` completions, waiting up to `timeout` for them to become available. `consumer` is called to process each completed IO operation as it becomes available.
@@ -790,9 +830,14 @@ public struct IORing: ~Copyable {
     /// Attempts to prepare an IO request for submission to the kernel. Returns false if no space is available to enqueue the request
     @inlinable
     public mutating func prepare(request: __owned Request) -> Bool {
-        var raw: RawIORequest? = request.makeRawRequest()
-        return _tryWriteRequest(
+        guard _getRemainingSubmissionQueueCapacity(ring: submissionRing) >= 1 else {
+            return false
+        }
+        var raw: RawIORequest? = request.makeRawRequest(pathBuffers: _pendingPathBuffers)
+        let ok = _tryWriteRequest(
             raw.take()!, ring: &submissionRing, submissionQueueEntries: submissionQueueEntries)
+        assert(ok)
+        return ok
     }
 
     /// Attempts to prepare a chain of linked IO requests for submission to the kernel. Returns false if not enough space is available to enqueue the request. If any linked operation fails, subsequent operations will be canceled. Linked operations always execute in order.
@@ -806,18 +851,20 @@ public struct IORing: ~Copyable {
             return false
         }
         let last = linkedRequests.last!
+        var allAdded = true
         for req in linkedRequests.dropLast() {
-            var raw = req.makeRawRequest()
+            var raw = req.makeRawRequest(pathBuffers: _pendingPathBuffers)
             raw.linkToNextRequest()
             let successfullyAdded = _tryWriteRequest(
                 raw, ring: &submissionRing, submissionQueueEntries: submissionQueueEntries)
             assert(successfullyAdded)
+            allAdded = allAdded && successfullyAdded
         }
         let successfullyAdded = _tryWriteRequest(
-            last.makeRawRequest(), ring: &submissionRing,
+            last.makeRawRequest(pathBuffers: _pendingPathBuffers), ring: &submissionRing,
             submissionQueueEntries: submissionQueueEntries)
         assert(successfullyAdded)
-        return true
+        return allAdded && successfullyAdded
     }
 
     /// Prepares a sequence of requests for submission to the ring. Returns false if the submission queue doesn't have enough available space.
