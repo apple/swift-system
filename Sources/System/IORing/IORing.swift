@@ -44,6 +44,7 @@ extension UnsafeMutableRawBufferPointer {
 /// Owns the FilePaths whose interior pointers have been written into pending
 /// SQEs. The kernel copies SQE-referenced data out during io_uring_enter (due to
 /// IORING_FEAT_SUBMIT_STABLE), so the paths only need to live across the prepare->submit gap
+/// This is a class purely to avoid making methods calling `pin` mutating, which would be an API break
 @usableFromInline
 internal final class PendingPathBuffers {
     @usableFromInline
