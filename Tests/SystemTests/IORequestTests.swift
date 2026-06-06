@@ -22,7 +22,8 @@ func requestBytes(_ request: consuming RawIORequest) -> [UInt8] {
 // which are known to work correctly.
 final class IORequestTests: XCTestCase {
     func testNop() {
-        let req = IORing.Request.nop().makeRawRequest()
+        let req = IORing.Request.nop().makeRawRequest(
+            pathBuffers: PendingPathBuffers(reservedCapacity: 0))
         let sourceBytes = requestBytes(req)
         // convenient property of nop: it's all zeros!
         // for some unknown reason, liburing sets the fd field to -1.
