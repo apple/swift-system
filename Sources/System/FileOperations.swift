@@ -524,7 +524,6 @@ extension FileDescriptor {
   ///
   /// The corresponding C function is `pipe2`.
   @_alwaysEmitIntoClient
-  @available(Windows, unavailable)
   @available(macOS, unavailable)
   @available(iOS, unavailable)
   @available(tvOS, unavailable)
@@ -550,7 +549,6 @@ extension FileDescriptor {
     }
   }
 
-  @available(Windows, unavailable)
   @available(macOS, unavailable)
   @available(iOS, unavailable)
   @available(tvOS, unavailable)

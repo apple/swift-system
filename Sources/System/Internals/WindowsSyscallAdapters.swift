@@ -207,6 +207,13 @@ internal func pipe(
 }
 
 @inline(__always)
+internal func csystem_posix_pipe2(
+  _ fds: UnsafeMutablePointer<Int32>, bytesReserved: UInt32 = 0, _ oflag: Int32
+) -> CInt {
+  return _pipe(fds, bytesReserved, _O_BINARY | oflag)
+}
+
+@inline(__always)
 internal func ftruncate(_ fd: Int32, _ length: off_t) -> Int32 {
   let handle: intptr_t = _get_osfhandle(fd)
   if handle == /* INVALID_HANDLE_VALUE */ -1 { ucrt._set_errno(EBADF); return -1 }
