@@ -176,7 +176,30 @@ final class FileOperationsTest: XCTestCase {
       }
     }
   }
-  #endif
+
+  #if !SYSTEM_PACKAGE_DARWIN
+  func testAdHocPipeWithOptions() throws {
+    // Ad-hoc test testing `Pipe` functionality.
+    // We cannot test `Pipe` using `MockTestCase` because it calls `pipe` with a pointer to an array local to the `Pipe`, the address of which we do not know prior to invoking `Pipe`.
+    let options: FileDescriptor.PipeOptions = [.closeOnExec]
+    let pipe: (readEnd: FileDescriptor, writeEnd: FileDescriptor)
+    pipe = try FileDescriptor.pipe(options: options)
+    try pipe.readEnd.closeAfter {
+      try pipe.writeEnd.closeAfter {
+        var abc = "abc"
+        try abc.withUTF8 {
+          _ = try pipe.writeEnd.write(UnsafeRawBufferPointer($0))
+        }
+        let readLen = 3
+        let readBytes = try Array<UInt8>(unsafeUninitializedCapacity: readLen) { buf, count in
+          count = try pipe.readEnd.read(into: UnsafeMutableRawBufferPointer(buf))
+        }
+        XCTAssertEqual(readBytes, Array(abc.utf8))
+      }
+    }
+  }
+  #endif // !SYSTEM_PACKAGE_DARWIN
+  #endif // !os(WASI)
 
   func testAdHocDuplicate2() throws {
     try withTemporaryFilePath(basename: "test") {
