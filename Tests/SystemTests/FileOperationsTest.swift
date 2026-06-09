@@ -178,6 +178,79 @@ final class FileOperationsTest: XCTestCase {
   }
   #endif
 
+  func testAdHocDuplicate2() throws {
+    try withTemporaryFilePath(basename: "test") {
+      let path = $0.appending("foo2.txt")
+      let fd1 = try FileDescriptor.open(path, .readWrite,
+                                        options: [.create, .truncate],
+                                        permissions: .ownerReadWrite)
+
+      let fd2 = FileDescriptor(rawValue: 731)
+      let fd3 = try fd1.duplicate(as: fd2)
+      XCTAssertEqual(fd2, fd3)
+
+      try fd2.close()
+      do {
+        try fd3.close()
+        XCTFail("Should be unreachable")
+      } catch {
+        if let error = try? XCTUnwrap(error as? Errno) {
+          XCTAssertEqual(error, .badFileDescriptor)
+        }
+      }
+
+      // dup2() accepts two equal parameters.
+      let fd4 = try fd1.duplicate(as: fd1)
+      XCTAssertEqual(fd4, fd1)
+
+      try fd1.close()
+      do {
+        try fd4.close()
+        XCTFail("Should be unreachable")
+      } catch {
+        if let error = try? XCTUnwrap(error as? Errno) {
+          XCTAssertEqual(error, .badFileDescriptor)
+        }
+      }
+    }
+  }
+
+  #if !SYSTEM_PACKAGE_DARWIN && !os(Windows)
+  func testAdHocDuplicate3() throws {
+
+    try withTemporaryFilePath(basename: "test") {
+      let path = $0.appending("foo3.txt")
+
+      let fd1 = try FileDescriptor.open(path, .readWrite,
+                                        options: [.create, .truncate],
+                                        permissions: .ownerReadWrite)
+
+      let fd2 = FileDescriptor(rawValue: 731)
+      let fd3 = try fd1.duplicate(as: fd2, options: [.closeOnExec])
+      XCTAssertEqual(fd2, fd3)
+
+      try fd2.close()
+      do {
+        try fd3.close()
+      } catch {
+        if let error = try? XCTUnwrap(error as? Errno) {
+          XCTAssertEqual(error, .badFileDescriptor)
+        }
+      }
+
+      // dup3() does not accept two equal parameters.
+      do {
+        _ = try fd1.duplicate(as: fd1, options: [])
+        XCTFail("Should be unreachable")
+      } catch {
+        if let error = try? XCTUnwrap(error as? Errno) {
+          XCTAssertEqual(error, .invalidArgument)
+        }
+      }
+    }
+  }
+  #endif // !SYSTEM_PACKAGE_DARWIN && !os(Windows)
+
   func testAdHocOpen() {
     // Ad-hoc test touching a file system.
     do {
