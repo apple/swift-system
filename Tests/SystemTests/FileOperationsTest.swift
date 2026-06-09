@@ -201,6 +201,7 @@ final class FileOperationsTest: XCTestCase {
   #endif // !SYSTEM_PACKAGE_DARWIN
   #endif // !os(WASI)
 
+  #if !os(Windows)
   func testAdHocDuplicate2() throws {
     try withTemporaryFilePath(basename: "test") {
       let path = $0.appending("foo2.txt")
@@ -237,6 +238,7 @@ final class FileOperationsTest: XCTestCase {
       }
     }
   }
+  #endif // !os(Windows)
 
   #if !SYSTEM_PACKAGE_DARWIN && !os(Windows)
   func testAdHocDuplicate3() throws {
