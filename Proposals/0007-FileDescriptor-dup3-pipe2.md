@@ -9,6 +9,8 @@
 
 * **v1** Initial version
 
+- **v2** Add Windows version of `pipe(options:)`
+
 ## Introduction
 
 Swift System today provides `FileDescriptor.duplicate()`, `FileDescriptor.duplicate(as:)` and `FileDescriptor.pipe()` cover APIs for the POSIX `dup`, `dup2`, and `pipe` functions, respectively.
@@ -165,7 +167,9 @@ struct FileDescriptor {
 }
 ```
 
-These API additions are unavailable on Windows and Darwin, as the underlying `dup3` and `pipe2` APIs do not exist.
+These API additions are unavailable Darwin, as the underlying `dup3` and `pipe2` APIs do not exist.
+
+`pipe(options:)` is added for Windows with the option `.closeOnExec`, but `duplicate(as:options:)` is not added because the underlying API does not match `dup3`.
 
 `closeOnFork` is unavailable on Linux and Android, as the underlying `O_CLOFORK` constant does not exist.
 
