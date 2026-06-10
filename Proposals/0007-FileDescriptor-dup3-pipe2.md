@@ -167,7 +167,7 @@ struct FileDescriptor {
 }
 ```
 
-These API additions are unavailable Darwin, as the underlying `dup3` and `pipe2` APIs do not exist.
+These API additions are unavailable on Darwin, as the underlying `dup3` and `pipe2` APIs do not exist.
 
 `pipe(options:)` is added for Windows with the option `.closeOnExec`, but `duplicate(as:options:)` is not added because the underlying API does not match `dup3`.
 
