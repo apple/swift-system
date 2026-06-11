@@ -415,8 +415,13 @@ extension FileDescriptor {
   ///      Pass `false` to try only once and throw an error upon interruption.
   /// - Returns: The new file descriptor.
   ///
+  /// If the `target` descriptor the same as `self`, then EINVAL is thrown.
   /// If the `target` descriptor is already in use, then it is first
   /// deallocated as if a close(2) call had been done first.
+  ///
+  /// NOTE: This overload called with an empty option set is not necessarily
+  /// equivalent to calling the overload with no options, because `dup3` with
+  /// no set options is not required to behave identically to `dup2`.
   ///
   /// File descriptors are merely references to some underlying system resource.
   /// The system does not distinguish between the original and the new file
@@ -502,7 +507,8 @@ extension FileDescriptor {
 #if !os(WASI)
 @available(System 1.1.0, *)
 extension FileDescriptor {
-  /// Creates a unidirectional data channel, which can be used for interprocess communication.
+  /// Creates a unidirectional data channel, which can be used for
+  /// interprocess communication.
   ///
   /// - Returns: The pair of file descriptors.
   ///
@@ -516,6 +522,11 @@ extension FileDescriptor {
 
   /// Creates a unidirectional data channel, which can be used for
   /// interprocess communication.
+  ///
+  /// NOTE: This overload called with an empty option set is not necessarily
+  /// equivalent to calling the overload with no options. On Windows, this
+  /// overload with empty options disables the `closeOnExec` behaviour,
+  /// which is enabled by the overload without options.
   ///
   /// - Parameters:
   ///   - options: The behavior for creating the pipe.
