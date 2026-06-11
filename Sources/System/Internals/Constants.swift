@@ -619,10 +619,16 @@ internal var _O_DIRECTORY: CInt {
 internal var _O_SYMLINK: CInt { O_SYMLINK }
 #endif
 
-#if !os(Windows)
 @_alwaysEmitIntoClient
-internal var _O_CLOEXEC: CInt { O_CLOEXEC }
+internal var _O_CLOEXEC: CInt {
+  #if os(Windows)
+  O_NOINHERIT
+  #else
+  O_CLOEXEC
+  #endif
+}
 
+#if !os(Windows)
 @_alwaysEmitIntoClient
 internal var _O_CLOFORK: CInt {
   #if !os(WASI) && !os(Linux) && !os(Android) && !canImport(Darwin)

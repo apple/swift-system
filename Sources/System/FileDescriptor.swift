@@ -324,7 +324,6 @@ extension FileDescriptor {
 
   /// Options that specify behavior for a newly-created pipe.
   @frozen
-  @available(Windows, unavailable)
   @available(macOS, unavailable)
   @available(iOS, unavailable)
   @available(tvOS, unavailable)
@@ -350,6 +349,7 @@ extension FileDescriptor {
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "nonBlocking")
     public static var O_NONBLOCK: PipeOptions { nonBlocking }
+#endif // !os(Windows)
 
     /// Indicates that executing a program closes the file.
     ///
@@ -369,7 +369,13 @@ extension FileDescriptor {
     @available(*, unavailable, renamed: "closeOnExec")
     public static var O_CLOEXEC: PipeOptions { closeOnExec }
 
-#if !os(WASI) && !os(Linux) && !os(Android)
+#if os(Windows)
+    @_alwaysEmitIntoClient
+    @available(*, unavailable, renamed: "closeOnExec")
+    public static var O_NOINHERIT: PipeOptions { closeOnExec }
+#endif
+
+#if !os(Windows) && !os(WASI) && !os(Linux) && !os(Android)
     /// Indicates that forking a program closes the file.
     ///
     /// Normally, file descriptors remain open
@@ -387,7 +393,6 @@ extension FileDescriptor {
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "closeOnFork")
     public static var O_CLOFORK: PipeOptions { closeOnFork }
-#endif
 #endif
   }
 

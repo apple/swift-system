@@ -7,5 +7,8 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
+#if !defined(_WIN32)
 extern int csystem_posix_pipe2(int fildes[2], int flag);
+#endif
+
 extern int csystem_posix_dup3(int fildes, int fildes2, int flag);

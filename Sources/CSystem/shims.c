@@ -28,6 +28,8 @@
 #endif
 
 // Wrappers are required because _GNU_SOURCE causes a conflict with other imports when defined in CSystemLinux.h
+
+#if !defined(_WIN32)
 extern int csystem_posix_pipe2(int fildes[2], int flag) {
     #ifdef HAVE_PIPE2_DUP3
     return pipe2(fildes, flag);
@@ -36,6 +38,8 @@ extern int csystem_posix_pipe2(int fildes[2], int flag) {
     return -1;
     #endif
 }
+#endif // !defined(_WIN32)
+
 extern int csystem_posix_dup3(int fildes, int fildes2, int flag) {
     #ifdef HAVE_PIPE2_DUP3
     return dup3(fildes, fildes2, flag);
