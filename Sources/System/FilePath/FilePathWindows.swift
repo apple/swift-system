@@ -529,7 +529,7 @@ fileprivate func SUCCEEDED(_ hr: HRESULT) -> Bool {
 // an HRESULT to a Win32 error code.
 @inline(__always)
 fileprivate func WIN32_FROM_HRESULT(_ hr: HRESULT) -> DWORD {
-    if SUCCEEDED(hr) { return DWORD(ERROR_SUCCESS) }
+    if SUCCEEDED(hr) { return ERROR_SUCCESS }
     if HRESULT_FACILITY(hr) == FACILITY_WIN32 {
         return HRESULT_CODE(hr)
     }
