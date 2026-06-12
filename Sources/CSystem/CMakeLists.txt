@@ -16,6 +16,7 @@ install(FILES
   include/CSystemLinux.h
   include/CSystemShared.h
   include/CSystemWindows.h
+  include/CSystemFreeBSD.h
   include/module.modulemap
   DESTINATION include/CSystem)
 set_property(GLOBAL APPEND PROPERTY SWIFT_SYSTEM_EXPORTS CSystem)
