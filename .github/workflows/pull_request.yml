@@ -19,6 +19,7 @@ jobs:
         [
           {"swift_version": "5.9"},
           {"swift_version": "5.10"},
+          {"swift_version": "6.0"},
           {"os_version": "focal", "swift_version": "nightly-6.2"},
           {"os_version": "focal", "swift_version": "6.2"},
           {"os_version": "focal", "swift_version": "nightly-6.3"},
@@ -31,7 +32,8 @@ jobs:
       windows_exclude_swift_versions: |
         [
           {"swift_version": "5.9"},
-          {"swift_version": "5.10"}
+          {"swift_version": "5.10"},
+          {"swift_version": "6.0"},
         ]
       enable_linux_static_sdk_build: true
       linux_static_sdk_exclude_swift_versions: |

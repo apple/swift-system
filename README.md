@@ -32,7 +32,7 @@ To use the `SystemPackage` library in a SwiftPM project,
 add the following line to the dependencies in your `Package.swift` file:
 
 ```swift
-.package(url: "https://github.com/apple/swift-system", from: "1.6.1"),
+.package(url: "https://github.com/apple/swift-system", from: "1.7.1"),
 ```
 
 Finally, include `"SystemPackage"` as a dependency for your executable target:
@@ -41,7 +41,7 @@ Finally, include `"SystemPackage"` as a dependency for your executable target:
 let package = Package(
     // name, platforms, products, etc.
     dependencies: [
-        .package(url: "https://github.com/apple/swift-system", from: "1.6.1"),
+        .package(url: "https://github.com/apple/swift-system", from: "1.7.1"),
         // other dependencies
     ],
     targets: [
@@ -88,6 +88,7 @@ The following table maps existing package releases to their minimum required Swi
 | ----------------------- | --------------- | ------------- |
 | swift-system 1.3.x | >= Swift 5.8  | >= Xcode 14.3 |
 | swift-system 1.4.x through 1.6.x | >= Swift 5.9  | >= Xcode 15.0 |
+| swift-system 1.7.x | >= Swift 6.1 | >= Xcode 16.3 |
 
 We'd like this package to quickly embrace Swift language and toolchain improvements that are relevant to its mandate. Accordingly, from time to time, new versions of this package require clients to upgrade to a more recent Swift toolchain release. (This allows the package to make use of new language/stdlib features, build on compiler bug fixes, and adopt new package manager functionality as soon as they are available.) Patch (i.e., bugfix) releases will not increase the required toolchain version, but any minor (i.e., new feature) release may do so.
 
@@ -107,15 +108,16 @@ We maintain separate branches for each active minor version of the package:
 
 | Package version         | Branch      |
 | ----------------------- | ----------- |
-| swift-system 1.3.x | release/1.3 |
-| swift-system 1.4.x | release/1.4 |
-| swift-system 1.5.x | release/1.5 |
-| swift-system 1.6.x | release/1.6 |
-| swift-system 1.7.x (unreleased) | main |
+| swift-system 1.3.x | release/1.3.0 |
+| swift-system 1.4.x | release/1.4.0 |
+| swift-system 1.5.x | release/1.5.0 |
+| swift-system 1.6.x | release/1.6.0 |
+| swift-system 1.7.x | release/1.7.0 |
+| swift-system 1.8.x (unreleased) | main |
 
 Changes must land on the branch corresponding to the earliest release that they will need to ship on. They are periodically propagated to subsequent branches, in the following direction:
 
-`release/1.3` → `release/1.4` → `main`
+`release/1.6.0` → `release/1.7.0` → `main`
 
 For example, anything landing on `release/1.3` will eventually appear on `release/1.4` and then `main` too; there is no need to file standalone PRs for each release line. (Change propagation currently requires manual work -- it is performed by project maintainers.)
 

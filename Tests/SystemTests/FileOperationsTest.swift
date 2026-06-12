@@ -176,7 +176,105 @@ final class FileOperationsTest: XCTestCase {
       }
     }
   }
-  #endif
+
+  #if !SYSTEM_PACKAGE_DARWIN
+  func testAdHocPipeWithOptions() throws {
+    // Ad-hoc test testing `Pipe` functionality.
+    // We cannot test `Pipe` using `MockTestCase` because it calls `pipe` with a pointer to an array local to the `Pipe`, the address of which we do not know prior to invoking `Pipe`.
+    let options: FileDescriptor.PipeOptions = [.closeOnExec]
+    let pipe: (readEnd: FileDescriptor, writeEnd: FileDescriptor)
+    pipe = try FileDescriptor.pipe(options: options)
+    try pipe.readEnd.closeAfter {
+      try pipe.writeEnd.closeAfter {
+        var abc = "abc"
+        try abc.withUTF8 {
+          _ = try pipe.writeEnd.write(UnsafeRawBufferPointer($0))
+        }
+        let readLen = 3
+        let readBytes = try Array<UInt8>(unsafeUninitializedCapacity: readLen) { buf, count in
+          count = try pipe.readEnd.read(into: UnsafeMutableRawBufferPointer(buf))
+        }
+        XCTAssertEqual(readBytes, Array(abc.utf8))
+      }
+    }
+  }
+  #endif // !SYSTEM_PACKAGE_DARWIN
+  #endif // !os(WASI)
+
+  #if !os(Windows)
+  func testAdHocDuplicate2() throws {
+    try withTemporaryFilePath(basename: "test") {
+      let path = $0.appending("foo2.txt")
+      let fd1 = try FileDescriptor.open(path, .readWrite,
+                                        options: [.create, .truncate],
+                                        permissions: .ownerReadWrite)
+
+      let fd2 = FileDescriptor(rawValue: 731)
+      let fd3 = try fd1.duplicate(as: fd2)
+      XCTAssertEqual(fd2, fd3)
+
+      try fd2.close()
+      do {
+        try fd3.close()
+        XCTFail("Should be unreachable")
+      } catch {
+        if let error = try? XCTUnwrap(error as? Errno) {
+          XCTAssertEqual(error, .badFileDescriptor)
+        }
+      }
+
+      // dup2() accepts two equal parameters.
+      let fd4 = try fd1.duplicate(as: fd1)
+      XCTAssertEqual(fd4, fd1)
+
+      try fd1.close()
+      do {
+        try fd4.close()
+        XCTFail("Should be unreachable")
+      } catch {
+        if let error = try? XCTUnwrap(error as? Errno) {
+          XCTAssertEqual(error, .badFileDescriptor)
+        }
+      }
+    }
+  }
+  #endif // !os(Windows)
+
+  #if !SYSTEM_PACKAGE_DARWIN && !os(Windows)
+  func testAdHocDuplicate3() throws {
+
+    try withTemporaryFilePath(basename: "test") {
+      let path = $0.appending("foo3.txt")
+
+      let fd1 = try FileDescriptor.open(path, .readWrite,
+                                        options: [.create, .truncate],
+                                        permissions: .ownerReadWrite)
+
+      let fd2 = FileDescriptor(rawValue: 731)
+      let fd3 = try fd1.duplicate(as: fd2, options: [.closeOnExec])
+      XCTAssertEqual(fd2, fd3)
+
+      try fd2.close()
+      do {
+        try fd3.close()
+      } catch {
+        if let error = try? XCTUnwrap(error as? Errno) {
+          XCTAssertEqual(error, .badFileDescriptor)
+        }
+      }
+
+      // dup3() does not accept two equal parameters.
+      do {
+        _ = try fd1.duplicate(as: fd1, options: [])
+        XCTFail("Should be unreachable")
+      } catch {
+        if let error = try? XCTUnwrap(error as? Errno) {
+          XCTAssertEqual(error, .invalidArgument)
+        }
+      }
+    }
+  }
+  #endif // !SYSTEM_PACKAGE_DARWIN && !os(Windows)
 
   func testAdHocOpen() {
     // Ad-hoc test touching a file system.

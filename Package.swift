@@ -1,4 +1,4 @@
-// swift-tools-version:6.0
+// swift-tools-version:6.1
 //===----------------------------------------------------------------------===//
 //
 // This source file is part of the Swift System open source project
@@ -141,6 +141,12 @@ let package = Package(
       exclude: testsToExclude,
       cSettings: cSettings,
       swiftSettings: swiftSettings),
+    // Builds a SystemPackage consumer with MemberImportVisibility enabled.
+    // Fails if a C member of a vended type is attributed to the CSystem module.
+    .testTarget(
+      name: "MemberImportVisibility",
+      dependencies: ["SystemPackage"],
+      swiftSettings: [.enableUpcomingFeature("MemberImportVisibility")]),
   ],
-  swiftLanguageVersions: [.v5]
+  swiftLanguageModes: [.v5]
 )
