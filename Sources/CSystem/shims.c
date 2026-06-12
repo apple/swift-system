@@ -12,6 +12,10 @@
 #include <unistd.h>
 #endif
 
+#if defined(__FreeBSD__)
+#include <CSystemFreeBSD.h>
+#endif
+
 #ifdef __linux__
 #define _GNU_SOURCE
 #include <CSystemLinux.h>
