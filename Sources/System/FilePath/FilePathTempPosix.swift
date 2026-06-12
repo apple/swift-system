@@ -9,6 +9,23 @@
 
 #if !os(Windows)
 
+#if SYSTEM_PACKAGE_DARWIN
+import Darwin
+#elseif canImport(Glibc)
+import CSystem
+import Glibc
+#elseif canImport(Musl)
+import CSystem
+import Musl
+#elseif canImport(WASILibc)
+import WASILibc
+#elseif canImport(Android)
+import CSystem
+import Android
+#else
+#error("Unsupported Platform")
+#endif
+
 /// Get the path to the system temporary directory.
 internal func _getTemporaryDirectory() throws -> FilePath {
   guard let tmp = system_getenv("TMPDIR") else {
