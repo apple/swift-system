@@ -141,6 +141,12 @@ let package = Package(
       exclude: testsToExclude,
       cSettings: cSettings,
       swiftSettings: swiftSettings),
+    // Builds a SystemPackage consumer with MemberImportVisibility enabled.
+    // Fails if a C member of a vended type is attributed to the CSystem module.
+    .testTarget(
+      name: "MemberImportVisibility",
+      dependencies: ["SystemPackage"],
+      swiftSettings: [.enableUpcomingFeature("MemberImportVisibility")]),
   ],
   swiftLanguageModes: [.v5]
 )
