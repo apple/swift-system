@@ -15,8 +15,10 @@ target_include_directories(CSystem PUBLIC
 install(FILES
   include/CSystemLinux.h
   include/CSystemShared.h
+  include/CSystemWASI.h
   include/CSystemWindows.h
   include/CSystemFreeBSD.h
+  include/io_uring.h
   include/module.modulemap
   DESTINATION include/CSystem)
 set_property(GLOBAL APPEND PROPERTY SWIFT_SYSTEM_EXPORTS CSystem)
