@@ -127,6 +127,81 @@ final class IORingTests: XCTestCase {
         efdBuf.deallocate()
         rawBuffer.deallocate()
     }
+
+    // Prior to the fix this is testing, prepare() escaped a pointer obtained
+    // inside `path.withPlatformString { ... }` into the SQE and dropped the
+    // owning FilePath before submit, so io_uring_enter handed the kernel a
+    // dangling pointer. Here we deliberately let the FilePath go out of scope
+    // between prepare and submit, then churn the heap to make UAFs observable.
+    func testPathBufferLifetimeAcrossPrepareSubmit() throws {
+        guard try uringEnabled() else { return }
+        let (parent, _) = try makeHelloWorldFile()
+        var ring = try IORing(queueDepth: 6)
+
+        func enqueueOpen() {
+            let path: FilePath = "/tmp/IORingTests/test.txt"
+            let ok = ring.prepare(request: .open(path, in: parent, mode: .readOnly))
+            XCTAssertTrue(ok)
+        }
+        enqueueOpen()
+
+        var churn: [UnsafeMutableRawBufferPointer] = []
+        for _ in 0..<256 {
+            let buf = UnsafeMutableRawBufferPointer.allocate(byteCount: 64, alignment: 1)
+            memset(buf.baseAddress!, 0x41, 64)
+            churn.append(buf)
+        }
+        for buf in churn { buf.deallocate() }
+        churn.removeAll()
+
+        try ring.submitPreparedRequests()
+        let completion = try ring.blockingConsumeCompletion()
+        XCTAssertGreaterThanOrEqual(
+            completion.result, 0,
+            "open should succeed; got \(completion.result)")
+
+        if completion.result >= 0 {
+            let fd = FileDescriptor(rawValue: Int32(completion.result))
+            try fd.close()
+        }
+        try cleanUpHelloWorldFile(parent)
+    }
+  
+    func testPathBufferLifetimeAcrossLinkedRequests() throws {
+        guard try uringEnabled() else { return }
+        let (parent, _) = try makeHelloWorldFile()
+        let rawBuffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 13, alignment: 16)
+        var ring = try setupTestRing(depth: 6, fileSlots: 1, buffers: [rawBuffer])
+
+        func enqueueLinkedReadback() {
+            let path: FilePath = "/tmp/IORingTests/test.txt"
+            let ok = ring.prepare(linkedRequests:
+                .open(path, in: parent, into: ring.registeredFileSlots[0], mode: .readOnly),
+                .read(ring.registeredFileSlots[0], into: ring.registeredBuffers[0]),
+                .close(ring.registeredFileSlots[0]))
+            XCTAssertTrue(ok)
+        }
+        enqueueLinkedReadback()
+
+        var churn: [UnsafeMutableRawBufferPointer] = []
+        for _ in 0..<256 {
+            let buf = UnsafeMutableRawBufferPointer.allocate(byteCount: 64, alignment: 1)
+            memset(buf.baseAddress!, 0x41, 64)
+            churn.append(buf)
+        }
+        for buf in churn { buf.deallocate() }
+
+        try ring.submitPreparedRequests()
+        _ = try ring.blockingConsumeCompletion() // open
+        _ = try ring.blockingConsumeCompletion() // read
+        _ = try ring.blockingConsumeCompletion() // close
+
+        let result = String(cString: rawBuffer.assumingMemoryBound(to: CChar.self).baseAddress!)
+        XCTAssertEqual(result, "Hello, World!")
+
+        try cleanUpHelloWorldFile(parent)
+        rawBuffer.deallocate()
+    }
 }
 #endif // os(Linux)
 #endif // compiler(>=6.2) && $Lifetimes

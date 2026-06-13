@@ -388,7 +388,9 @@ extension IORing.Request {
     }
 
     @inline(__always) @inlinable
-    internal consuming func makeRawRequest() -> RawIORequest {
+    internal consuming func makeRawRequest(
+        pathBuffers: PendingPathBuffers
+    ) -> RawIORequest {
         var request = RawIORequest()
         switch extractCore() {
         case .nop:
@@ -400,27 +402,19 @@ extension IORing.Request {
             request.operation = .openAt
             request.fileDescriptor = atDirectory
             request.rawValue.addr = UInt64(
-                UInt(
-                    bitPattern: path.withPlatformString { ptr in
-                        ptr  //this is unsavory, but we keep it alive by storing path alongside it in the request
-                    }))
+                UInt(bitPattern: pathBuffers.pin(path)))
             request.rawValue.open_flags = UInt32(bitPattern: options.rawValue | mode.rawValue)
             request.rawValue.len = permissions?.rawValue ?? 0
             request.rawValue.file_index = UInt32(fileSlot.index + 1)
-            request.path = path
             request.rawValue.user_data = context
         case .openat(
             let atDirectory, let path, let mode, let options, let permissions, let context):
             request.operation = .openAt
             request.fileDescriptor = atDirectory
             request.rawValue.addr = UInt64(
-                UInt(
-                    bitPattern: path.withPlatformString { ptr in
-                        ptr  //this is unsavory, but we keep it alive by storing path alongside it in the request
-                    }))
+                UInt(bitPattern: pathBuffers.pin(path)))
             request.rawValue.open_flags = UInt32(bitPattern: options.rawValue | mode.rawValue)
             request.rawValue.len = permissions?.rawValue ?? 0
-            request.path = path
             request.rawValue.user_data = context
         case .write(let file, let buffer, let offset, let context):
             request.operation = .writeFixed
@@ -466,12 +460,7 @@ extension IORing.Request {
             request.operation = .unlinkAt
             request.fileDescriptor = atDirectory
             request.rawValue.addr = UInt64(
-                UInt(
-                    bitPattern: path.withPlatformString { ptr in
-                        ptr  //this is unsavory, but we keep it alive by storing path alongside it in the request
-                    })
-            )
-            request.path = path
+                UInt(bitPattern: pathBuffers.pin(path)))
             request.rawValue.user_data = context
         case .cancelContext(let flags, let targetContext):
             request.operation = .asyncCancel

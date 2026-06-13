@@ -1,6 +1,8 @@
 module CSystem {
+  header "CSystemShared.h"
   header "CSystemLinux.h"
   header "CSystemWASI.h"
   header "CSystemWindows.h"
+  header "CSystemFreeBSD.h"
   export *
 }
