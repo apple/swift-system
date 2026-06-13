@@ -235,7 +235,7 @@ static inline int io_uring_enter2(int fd, unsigned int to_submit, unsigned int m
 		   unsigned int flags, void *args, size_t sz)
 {
 	return syscall(__NR_io_uring_enter, fd, to_submit, min_complete,
-			flags, args, _NSIG / 8);
+			flags, args, sz);
 }
 
 static inline int io_uring_enter(int fd, unsigned int to_submit, unsigned int min_complete,
