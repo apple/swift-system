@@ -9,6 +9,7 @@ See https://swift.org/LICENSE.txt for license information
 
 add_library(SystemPackage
   Errno.swift
+  ErrnoWindows.swift
   FileDescriptor.swift
   FileHelpers.swift
   FileOperations.swift
@@ -18,9 +19,12 @@ add_library(SystemPackage
   SystemString.swift
   Util.swift
   Util+StringArray.swift
-  UtilConsumers.swift)
+  UtilConsumers.swift
+  WinSDK+Overlay.swift)
 set_target_properties(SystemPackage PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
+target_compile_options(SystemPackage PRIVATE
+  -enable-experimental-feature Lifetimes)
 target_sources(SystemPackage PRIVATE
   FilePath/FilePath.swift
   FilePath/FilePathComponents.swift
@@ -28,7 +32,23 @@ target_sources(SystemPackage PRIVATE
   FilePath/FilePathParsing.swift
   FilePath/FilePathString.swift
   FilePath/FilePathSyntax.swift
+  FilePath/FilePathTemp.swift
+  FilePath/FilePathTempPosix.swift
+  FilePath/FilePathTempWindows.swift
   FilePath/FilePathWindows.swift)
+target_sources(SystemPackage PRIVATE
+  FileSystem/FileFlags.swift
+  FileSystem/FileMode.swift
+  FileSystem/FileType.swift
+  FileSystem/Identifiers.swift
+  FileSystem/Stat.swift)
+if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+  target_sources(SystemPackage PRIVATE
+    IORing/IOCompletion.swift
+    IORing/IORequest.swift
+    IORing/IORing.swift
+    IORing/RawIORequest.swift)
+endif()
 target_sources(SystemPackage PRIVATE
   Internals/Backcompat.swift
   Internals/CInterop.swift
