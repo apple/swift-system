@@ -16,6 +16,8 @@ extension FileDescriptor {
   ///   - mode: The read and write access to use.
   ///   - options: The behavior for opening the file.
   ///   - permissions: The file permissions to use for created files.
+  ///     This value must not be `nil` when `options` contains `.create`;
+  ///     passing `nil` in that case is a programmer error and traps at runtime.
   ///   - retryOnInterrupt: Whether to retry the open operation
   ///     if it throws ``Errno/interrupted``.
   ///     The default is `true`.
@@ -55,6 +57,8 @@ extension FileDescriptor {
   ///   - mode: The read and write access to use.
   ///   - options: The behavior for opening the file.
   ///   - permissions: The file permissions to use for created files.
+  ///     This value must not be `nil` when `options` contains `.create`;
+  ///     passing `nil` in that case is a programmer error and traps at runtime.
   ///   - retryOnInterrupt: Whether to retry the open operation
   ///     if it throws ``Errno/interrupted``.
   ///     The default is `true`.
@@ -88,8 +92,10 @@ extension FileDescriptor {
       if let permissions = permissions {
         return system_open(path, oFlag, permissions.rawValue)
       }
-      precondition(!options.contains(.create),
-        "Create must be given permissions")
+      if options.contains(.create) {
+        fatalError(
+          "FileDescriptor.open: 'permissions' must not be nil when 'options' contains '.create'")
+      }
       return system_open(path, oFlag)
     }
     return descOrError.map { FileDescriptor(rawValue: $0) }
@@ -102,6 +108,8 @@ extension FileDescriptor {
   ///   - mode: The read and write access to use.
   ///   - options: The behavior for opening the file.
   ///   - permissions: The file permissions to use for created files.
+  ///     This value must not be `nil` when `options` contains `.create`;
+  ///     passing `nil` in that case is a programmer error and traps at runtime.
   ///   - retryOnInterrupt: Whether to retry the open operation
   ///     if it throws ``Errno/interrupted``.
   ///     The default is `true`.
