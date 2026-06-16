@@ -12,18 +12,20 @@
 // private CSystem module.
 //
 // For new type wrappers introduced to System, access their C members here:
-//  - Import the platform overlay (Glibc/Musl), as consumers do.
+//  - Import the platform overlay (Glibc/Musl/Android), as consumers do.
 //  - Access raw C members of vended types (e.g. CInterop.Stat) as a downstream
 //    consumer would. Don't go through the Swift (e.g. Stat) wrapper since its
 //    accesses happen inside System, where importing CSystem is fine.
 //  - Touch every direct member the public API exposes. One field is not always
 //    a safe proxy for the rest.
 
-#if canImport(Glibc) || canImport(Musl)
+#if canImport(Glibc) || canImport(Musl) || canImport(Android)
 #if canImport(Glibc)
 import Glibc
 #elseif canImport(Musl)
 import Musl
+#elseif canImport(Android)
+import Android
 #endif
 import SystemPackage
 
