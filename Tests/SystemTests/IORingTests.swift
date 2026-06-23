@@ -258,6 +258,32 @@ final class IORingTests: XCTestCase {
         try cleanUpHelloWorldFile(parent)
         rawBuffer.deallocate()
     }
+
+    // Timeout test for `blockingConsumeCompletion(timeout:)`:
+    func testBlockingConsumeCompletionWithTimeoutOnIdleRing() throws {
+        guard uringEnabled else { return }
+        let ring = try IORing(queueDepth: 4, flags: [])
+        guard ring.supportedFeatures.contains(.extendedArguments) else {
+            // Kernel < 5.11: timeouts in io_uring_enter aren't supported.
+            return
+        }
+
+        let clock = ContinuousClock()
+        let start = clock.now
+
+        var thrown: Errno? = nil
+        do throws(Errno) {
+            _ = try ring.blockingConsumeCompletion(timeout: .milliseconds(100))
+            XCTFail("expected timeout, got a completion on an idle ring")
+        } catch {
+            thrown = error
+        }
+
+        let elapsed = start.duration(to: clock.now)
+
+        XCTAssertEqual(thrown, .timeout)
+        XCTAssertGreaterThanOrEqual(elapsed, .milliseconds(50))
+    }
 }
 #endif // os(Linux)
 #endif // compiler(>=6.2) && $Lifetimes
