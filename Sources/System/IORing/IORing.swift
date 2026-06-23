@@ -517,14 +517,16 @@ public struct IORing: ~Copyable {
         if count < minimumCount {
             while count < minimumCount {
                 var sz = 0
+                var flags = IORING_ENTER_GETEVENTS
                 if extraArgs != nil {
                     sz = MemoryLayout<swift_io_uring_getevents_arg>.size
+                    flags |= IORING_ENTER_EXT_ARG
                 }
                 let res = io_uring_enter2(
                     ringDescriptor,
                     0,
                     minimumCount,
-                    IORING_ENTER_GETEVENTS,
+                    flags,
                     extraArgs,
                     sz
                 )
@@ -536,14 +538,30 @@ public struct IORing: ~Copyable {
                 //     EFAULT (bad address for argument from library, fatal)
                 //     EBUSY (not enough space for events; implies events filled
                 //            by kernel between kernelTail load and now)
-                if res >= 0 || res == -EBUSY {
+                //     ETIME (timeout from extraArgs.ts elapsed before
+                //            minimumCount completions arrived)
+                if res >= 0 {
                     break
-                } else if res == -EAGAIN || res == -EINTR {
+                }
+                let err: Errno
+                #if canImport(Glibc)
+                err = Errno(rawValue: Glibc.errno)
+                #elseif canImport(Musl)
+                err = Errno(rawValue: Musl.errno)
+                #endif
+                if err == .resourceBusy {
+                    break
+                }
+                if err == .resourceTemporarilyUnavailable || err == .interrupted {
                     continue
+                }
+                if err == .timeout {
+                    try consumer(nil, err, true)
+                    return
                 }
                 fatalError(
                     "fatal error in receiving requests: "
-                        + Errno(rawValue: -res).debugDescription
+                        + err.debugDescription
                 )
             }
             var count = 0

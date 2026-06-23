@@ -113,7 +113,8 @@ typedef struct __SWIFT_IORING_SQE_FALLBACK_STRUCT swift_io_uring_sqe;
 #define IORING_OFF_CQ_RING      0x8000000ULL
 #define IORING_OFF_SQES         0x10000000ULL
 
-#define IORING_ENTER_GETEVENTS  (1U << 0)
+#define IORING_ENTER_GETEVENTS          (1U << 0)
+#define IORING_ENTER_EXT_ARG            (1U << 3)
 
 #define IORING_FEAT_SINGLE_MMAP         (1U << 0)
 #define IORING_FEAT_NODROP              (1U << 1)
