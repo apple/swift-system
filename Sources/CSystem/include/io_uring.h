@@ -81,7 +81,7 @@
 #ifdef IORING_TIMEOUT_BOOTTIME
 // Kernel version >= 5.15, io_uring_sqe has file_index
 // and all current Swift operations are supported.
-#define __SWIFT_IORING_SUPPORTED true
+#define __SWIFT_IORING_SUPPORTED 1
 typedef struct io_uring_sqe swift_io_uring_sqe;
 #else
 // io_uring_sqe is missing properties that IORequest expects.
@@ -89,7 +89,7 @@ typedef struct io_uring_sqe swift_io_uring_sqe;
 //
 // Define a fallback struct to avoid build errors, but IORing
 // will throw ENOTSUP on initialization.
-#define __SWIFT_IORING_SUPPORTED false
+#define __SWIFT_IORING_SUPPORTED 0
 typedef struct __SWIFT_IORING_SQE_FALLBACK_STRUCT swift_io_uring_sqe;
 #endif
 
@@ -107,7 +107,7 @@ typedef struct __SWIFT_IORING_SQE_FALLBACK_STRUCT swift_io_uring_sqe;
 // Minimal fallback definitions when linux/io_uring.h is not available (e.g. static SDK)
 #include <stdint.h>
 
-#define __SWIFT_IORING_SUPPORTED false
+#define __SWIFT_IORING_SUPPORTED 0
 
 #define IORING_OFF_SQ_RING      0ULL
 #define IORING_OFF_CQ_RING      0x8000000ULL
