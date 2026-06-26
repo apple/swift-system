@@ -58,5 +58,22 @@ internal func _ioUringEnter(
   return try result.get()
 }
 
+/// Throwing wrapper around the `io_uring_register` shim.
+///
+/// On success returns the syscall's non-negative result. On failure, reads
+/// `errno` and throws the matching `Errno`. `EINTR` is retried automatically.
+@usableFromInline
+internal func _ioUringRegister(
+  ringDescriptor: Int32,
+  opcode: UInt32,
+  arg: UnsafeMutableRawPointer?,
+  nrArgs: UInt32
+) throws(Errno) -> Int32 {
+  let result = valueOrErrno(retryOnInterrupt: true) {
+    io_uring_register(ringDescriptor, opcode, arg, nrArgs)
+  }
+  return try result.get()
+}
+
 #endif // os(Linux)
 #endif // compiler(>=6.2) && $Lifetimes

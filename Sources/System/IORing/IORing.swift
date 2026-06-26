@@ -677,31 +677,22 @@ public struct IORing: ~Copyable {
     /// Registers an event monitoring file descriptor with the ring. The file descriptor becomes readable whenever completions are ready to be dequeued. See `man eventfd(2)` for additional information.
     public mutating func registerEventFD(_ descriptor: FileDescriptor) throws(Errno) {
         var rawfd = descriptor.rawValue
-        let result = withUnsafePointer(to: &rawfd) { fdptr in
-            let result = io_uring_register(
-                ringDescriptor,
-                RegistrationOps.registerEventFD.rawValue,
-                UnsafeMutableRawPointer(mutating: fdptr),
-                1
-            )
-            return result >= 0 ? nil : Errno(rawValue: -result)
-        }
-        if let result {
-            throw result
-        }
+        _ = try _ioUringRegister(
+            ringDescriptor: ringDescriptor,
+            opcode: RegistrationOps.registerEventFD.rawValue,
+            arg: &rawfd,
+            nrArgs: 1
+        )
     }
 
     /// Removes a registered event file descriptor from the ring
     public mutating func unregisterEventFD() throws(Errno) {
-        let result = io_uring_register(
-            ringDescriptor,
-            RegistrationOps.unregisterEventFD.rawValue,
-            nil,
-            0
+        _ = try _ioUringRegister(
+            ringDescriptor: ringDescriptor,
+            opcode: RegistrationOps.unregisterEventFD.rawValue,
+            arg: nil,
+            nrArgs: 0
         )
-        if result < 0 {
-            throw Errno(rawValue: -result)
-        }
     }
 
     /// Registers `count` files with the ring for later use in IO operations
@@ -710,18 +701,13 @@ public struct IORing: ~Copyable {
         precondition(count < UInt32.max)
         let files = [UInt32](repeating: UInt32.max, count: count)
 
-        let regResult = files.withUnsafeBufferPointer { bPtr in
-            let result = io_uring_register(
-                self.ringDescriptor,
-                RegistrationOps.registerFiles.rawValue,
-                UnsafeMutableRawPointer(mutating: bPtr.baseAddress!),
-                UInt32(truncatingIfNeeded: count)
+        try files.withUnsafeBufferPointer { bPtr throws(Errno) in
+            _ = try _ioUringRegister(
+                ringDescriptor: self.ringDescriptor,
+                opcode: RegistrationOps.registerFiles.rawValue,
+                arg: UnsafeMutableRawPointer(mutating: bPtr.baseAddress),
+                nrArgs: UInt32(truncatingIfNeeded: count)
             )
-            return result >= 0 ? nil : Errno(rawValue: -result)
-        } 
-
-        if let regResult {
-            throw regResult
         }
 
         _registeredFiles = files
@@ -730,15 +716,12 @@ public struct IORing: ~Copyable {
 
     /// Removes registered files from the ring
     public func unregisterFiles() throws {
-            let result = io_uring_register(
-            ringDescriptor,
-            RegistrationOps.unregisterFiles.rawValue,
-            nil,
-            0
+        _ = try _ioUringRegister(
+            ringDescriptor: ringDescriptor,
+            opcode: RegistrationOps.unregisterFiles.rawValue,
+            arg: nil,
+            nrArgs: 0
         )
-        if result < 0 {
-            throw Errno(rawValue: -result)
-        }
     }
 
     /// Allows access to registered files by index
@@ -754,18 +737,13 @@ public struct IORing: ~Copyable {
         precondition(buffers.count < UInt32.max)
         precondition(_registeredBuffers.isEmpty)
         let iovecs = buffers.map { $0.to_iovec() }
-        let regResult = iovecs.withUnsafeBufferPointer { bPtr in
-            let result = io_uring_register(
-                self.ringDescriptor,
-                RegistrationOps.registerBuffers.rawValue,
-                UnsafeMutableRawPointer(mutating: bPtr.baseAddress!),
-                UInt32(truncatingIfNeeded: buffers.count)
+        try iovecs.withUnsafeBufferPointer { bPtr throws(Errno) in
+            _ = try _ioUringRegister(
+                ringDescriptor: self.ringDescriptor,
+                opcode: RegistrationOps.registerBuffers.rawValue,
+                arg: UnsafeMutableRawPointer(mutating: bPtr.baseAddress),
+                nrArgs: UInt32(truncatingIfNeeded: buffers.count)
             )
-            return result >= 0 ? nil : Errno(rawValue: -result)
-        }
-
-        if let regResult {
-            throw regResult
         }
 
         _registeredBuffers = iovecs
@@ -804,15 +782,12 @@ public struct IORing: ~Copyable {
     }
 
     public func unregisterBuffers() throws {
-        let result = io_uring_register(
-            self.ringDescriptor,
-            RegistrationOps.unregisterBuffers.rawValue,
-            nil,
-            0
+        _ = try _ioUringRegister(
+            ringDescriptor: self.ringDescriptor,
+            opcode: RegistrationOps.unregisterBuffers.rawValue,
+            arg: nil,
+            nrArgs: 0
         )
-        guard result >= 0 else {
-            throw Errno(rawValue: -result)
-        }
     }
 
     /// Sends all prepared requests to the kernel for processing. Results will be delivered as completions, which can be dequeued from the ring.
