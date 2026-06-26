@@ -39,5 +39,24 @@ internal func _ioUringEnter2(
   return try result.get()
 }
 
+/// Throwing wrapper around the `io_uring_enter` shim.
+///
+/// On success returns the syscall's non-negative result (the number of SQEs
+/// consumed by the kernel). On failure, reads `errno` and throws the matching
+/// `Errno`. `EINTR` is retried automatically.
+@usableFromInline
+internal func _ioUringEnter(
+  ringDescriptor: Int32,
+  toSubmit: UInt32,
+  minComplete: UInt32,
+  flags: UInt32,
+  sig: UnsafeMutablePointer<sigset_t>?
+) throws(Errno) -> Int32 {
+  let result = valueOrErrno(retryOnInterrupt: true) {
+    io_uring_enter(ringDescriptor, toSubmit, minComplete, flags, sig)
+  }
+  return try result.get()
+}
+
 #endif // os(Linux)
 #endif // compiler(>=6.2) && $Lifetimes

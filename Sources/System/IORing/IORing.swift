@@ -128,23 +128,30 @@ internal func _enter(
     // Ring always needs enter right now;
     // TODO: support SQPOLL here
     while true {
-        let ret = io_uring_enter(ringDescriptor, numEvents, minCompletions, flags, nil)
+        do {
+            let ret = try _ioUringEnter(
+                ringDescriptor: ringDescriptor,
+                toSubmit: numEvents,
+                minComplete: minCompletions,
+                flags: flags,
+                sig: nil
+            )
+            if _getSubmissionQueueCount(ring: ring) > 0 {
+                // See https://github.com/axboe/liburing/issues/309,
+                // in some cases not all pending requests are submitted
+                continue
+            }
+            return ret
         // error handling:
-        //     EAGAIN / EINTR (try again),
+        //     EAGAIN (try again),
         //     EBADF / EBADFD / EOPNOTSUPP / ENXIO
         //     (failure in ring lifetime management, fatal),
         //     EINVAL (bad constant flag?, fatal),
         //     EFAULT (bad address for argument from library, fatal)
-        if ret == -EAGAIN || ret == -EINTR {
+        } catch Errno.resourceTemporarilyUnavailable {
             //TODO: should we wait a bit on AGAIN?
+            //alternatively we could treat EAGAIN the same as EINTR in the wrapper
             continue
-        } else if ret < 0 {
-            throw(Errno(rawValue: -ret))
-        } else if _getSubmissionQueueCount(ring: ring) > 0 {
-            // See https://github.com/axboe/liburing/issues/309, in some cases not all pending requests are submitted
-            continue
-        } else {
-            return ret
         }
     }
 }
