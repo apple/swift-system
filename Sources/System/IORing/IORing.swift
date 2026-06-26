@@ -522,16 +522,18 @@ public struct IORing: ~Copyable {
                     sz = MemoryLayout<swift_io_uring_getevents_arg>.size
                     flags |= IORING_ENTER_EXT_ARG
                 }
-                let res = io_uring_enter2(
-                    ringDescriptor,
-                    0,
-                    minimumCount,
-                    flags,
-                    extraArgs,
-                    sz
-                )
+                do {
+                    _ = try _ioUringEnter2(
+                        ringDescriptor: ringDescriptor,
+                        toSubmit: 0,
+                        minComplete: minimumCount,
+                        flags: flags,
+                        args: extraArgs,
+                        argsSize: sz
+                    )
+                    break
                 // error handling:
-                //     EAGAIN / EINTR (try again),
+                //     EAGAIN (try again),
                 //     EBADF / EBADFD / EOPNOTSUPP / ENXIO
                 //     (failure in ring lifetime management, fatal),
                 //     EINVAL (bad constant flag?, fatal),
@@ -540,29 +542,19 @@ public struct IORing: ~Copyable {
                 //            by kernel between kernelTail load and now)
                 //     ETIME (timeout from extraArgs.ts elapsed before
                 //            minimumCount completions arrived)
-                if res >= 0 {
+                } catch Errno.resourceBusy {
                     break
-                }
-                let err: Errno
-                #if canImport(Glibc)
-                err = Errno(rawValue: Glibc.errno)
-                #elseif canImport(Musl)
-                err = Errno(rawValue: Musl.errno)
-                #endif
-                if err == .resourceBusy {
-                    break
-                }
-                if err == .resourceTemporarilyUnavailable || err == .interrupted {
+                } catch Errno.resourceTemporarilyUnavailable {
                     continue
-                }
-                if err == .timeout {
-                    try consumer(nil, err, true)
+                } catch Errno.timeout {
+                    try consumer(nil, .timeout, true)
                     return
+                } catch {
+                    fatalError(
+                        "fatal error in receiving requests: "
+                            + error.debugDescription
+                    )
                 }
-                fatalError(
-                    "fatal error in receiving requests: "
-                        + err.debugDescription
-                )
             }
             var count = 0
             while let completion = _tryConsumeCompletion(ring: completionRing) {
