@@ -8,7 +8,9 @@
 */
 
 #if defined(__FreeBSD__) || defined(__OpenBSD__)
+#if defined(__FreeBSD__)
 #define __BSD_VISIBLE
+#endif
 #include <unistd.h>
 #endif
 
