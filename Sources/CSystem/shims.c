@@ -7,10 +7,10 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-#if defined(__FreeBSD__) || defined(__OpenBSD__)
 #if defined(__FreeBSD__)
 #define __BSD_VISIBLE
 #endif
+#if defined(__FreeBSD__) || defined(__OpenBSD__)
 #include <unistd.h>
 #endif
 
