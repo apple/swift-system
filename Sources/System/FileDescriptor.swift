@@ -301,7 +301,6 @@ extension FileDescriptor {
     public static var O_EVTONLY: OpenOptions { eventOnly }
 #endif
 
-#if !os(Windows)
     /// Indicates that executing a program closes the file.
     ///
     /// Normally, file descriptors remain open
@@ -319,6 +318,11 @@ extension FileDescriptor {
     @_alwaysEmitIntoClient
     @available(*, unavailable, renamed: "closeOnExec")
     public static var O_CLOEXEC: OpenOptions { closeOnExec }
+
+#if os(Windows)
+    @_alwaysEmitIntoClient
+    @available(*, unavailable, renamed: "closeOnExec")
+    public static var O_NOINHERIT: OpenOptions { closeOnExec }
 #endif
   }
 
