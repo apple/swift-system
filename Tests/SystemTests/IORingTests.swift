@@ -173,7 +173,6 @@ final class IORingTests: XCTestCase {
         _ = try ring.blockingConsumeCompletion() //close
         memset(rawBuffer.baseAddress!, 0, rawBuffer.count)
         //Verify using a non-ring IO method that what we wrote matches our expectations
-        print("about to open")
         let nonRingFD = try FileDescriptor.open(path, .readOnly)
         let bytesRead = try nonRingFD.read(into: rawBuffer)
         XCTAssert(bytesRead == 13)
