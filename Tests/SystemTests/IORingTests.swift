@@ -3,6 +3,11 @@
 
 import XCTest
 import CSystem //for eventfd
+#if canImport(Glibc)
+import Glibc // for errno
+#elseif canImport(Musl)
+import Musl  // for errno
+#endif
 
 #if SYSTEM_PACKAGE
 import SystemPackage
@@ -10,29 +15,80 @@ import SystemPackage
 import System
 #endif
 
-func uringEnabled() throws -> Bool {
+// Cache `isUringEnabled()`. The probe is complex and the answer doesn't change
+// during a test run.
+let uringEnabled: Bool = {
     do {
-        let procPath = FilePath("/proc/sys/kernel/io_uring_disabled")
-        let fd = try FileDescriptor.open(procPath, .readOnly)
-        let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 1024, alignment: 0)
-        _ = try fd.read(into: buffer)
-        if buffer.load(fromByteOffset: 0, as: Int.self) == 0 {
-            return true
-        }
-    } catch (_) {
+        return try isUringEnabled()
+    } catch {
         return false
     }
-    return false
+}()
+
+func isUringEnabled() throws -> Bool {
+    // Even if the kernel supports io_uring, the SystemPackage build may have
+    // been compiled against older kernel headers that lack features it needs
+    // (gated on IORING_TIMEOUT_BOOTTIME in CSystem); in that configuration
+    // IORing.init throws ENOTSUP. Treat that as disabled so tests skip cleanly
+    // instead of failing.
+    do throws(Errno) {
+        _ = try IORing(queueDepth: 1, flags: [])
+    } catch {
+        switch error {
+        case .notSupported, .noFunction, .invalidArgument,
+             .notPermitted, .permissionDenied:
+            return false
+        default:
+            throw error
+        }
+    }
+
+    // The ideal test uses /proc/sys/kernel/io_uring_disabled (Linux >= 6.6).
+    if let fd = try? FileDescriptor.open(
+        "/proc/sys/kernel/io_uring_disabled", .readOnly)
+    {
+        defer { try? fd.close() }
+        let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 1, alignment: 1)
+        defer { buffer.deallocate() }
+        let n = try fd.read(into: buffer)
+        return n == 1 && (buffer.load(as: UInt8.self) == UInt8(ascii: "0"))
+    }
+
+    // Fallback for older kernels: simply attempt io_uring_setup.
+    //   - ENOSYS  -> syscall doesn't exist (Linux < 5.1) -> disabled.
+    //   - EPERM or EACCES -> treat as disabled
+    //   - propagate any other error.
+    var params = io_uring_params()
+    let raw = io_uring_setup(1, &params)
+    if raw < 0 {
+        let err = Errno(rawValue: errno)
+        switch err {
+        case .noFunction, .notPermitted, .permissionDenied:
+            return false
+        default:
+            throw err
+        }
+    }
+    try? FileDescriptor(rawValue: raw).close()
+    return true
 }
 
 final class IORingTests: XCTestCase {
+    func testIsUringEnabled() throws {
+        // If `isUringEnabled()` throws, it is incomplete in some way.
+        let enabled = try isUringEnabled()
+        if !enabled {
+            print("IORing tests will be skipped.")
+        }
+    }
+
     func testInit() throws {
-        guard try uringEnabled() else { return }
+        guard uringEnabled else { return }
         _ = try IORing(queueDepth: 32, flags: [])
     }
 
     func testNop() throws {
-        guard try uringEnabled() else { return }
+        guard uringEnabled else { return }
         var ring = try IORing(queueDepth: 32, flags: [])
         _ = try ring.submit(linkedRequests: .nop())
         let completion = try ring.blockingConsumeCompletion()
@@ -68,7 +124,7 @@ final class IORingTests: XCTestCase {
     }
 
     func testUndersizedSubmissionQueue() throws {
-        guard try uringEnabled() else { return }
+        guard uringEnabled else { return }
         var ring: IORing = try IORing(queueDepth: 1)
         let enqueued = ring.prepare(linkedRequests: .nop(), .nop())
         XCTAssertFalse(enqueued)
@@ -76,7 +132,7 @@ final class IORingTests: XCTestCase {
 
     // Exercises opening, reading, closing, registered files, registered buffers, and eventfd
     func testOpenReadAndWriteFixedFile() throws {
-        guard try uringEnabled() else { return }
+        guard uringEnabled else { return }
         let (parent, path) = try makeHelloWorldFile()
         let rawBuffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 13, alignment: 16)
         var ring = try setupTestRing(depth: 6, fileSlots: 1, buffers: [rawBuffer])
@@ -117,7 +173,6 @@ final class IORingTests: XCTestCase {
         _ = try ring.blockingConsumeCompletion() //close
         memset(rawBuffer.baseAddress!, 0, rawBuffer.count)
         //Verify using a non-ring IO method that what we wrote matches our expectations
-        print("about to open")
         let nonRingFD = try FileDescriptor.open(path, .readOnly)
         let bytesRead = try nonRingFD.read(into: rawBuffer)
         XCTAssert(bytesRead == 13)
@@ -134,7 +189,7 @@ final class IORingTests: XCTestCase {
     // dangling pointer. Here we deliberately let the FilePath go out of scope
     // between prepare and submit, then churn the heap to make UAFs observable.
     func testPathBufferLifetimeAcrossPrepareSubmit() throws {
-        guard try uringEnabled() else { return }
+        guard uringEnabled else { return }
         let (parent, _) = try makeHelloWorldFile()
         var ring = try IORing(queueDepth: 6)
 
@@ -168,7 +223,7 @@ final class IORingTests: XCTestCase {
     }
   
     func testPathBufferLifetimeAcrossLinkedRequests() throws {
-        guard try uringEnabled() else { return }
+        guard uringEnabled else { return }
         let (parent, _) = try makeHelloWorldFile()
         let rawBuffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 13, alignment: 16)
         var ring = try setupTestRing(depth: 6, fileSlots: 1, buffers: [rawBuffer])
@@ -201,6 +256,32 @@ final class IORingTests: XCTestCase {
 
         try cleanUpHelloWorldFile(parent)
         rawBuffer.deallocate()
+    }
+
+    // Timeout test for `blockingConsumeCompletion(timeout:)`:
+    func testBlockingConsumeCompletionWithTimeoutOnIdleRing() throws {
+        guard uringEnabled else { return }
+        let ring = try IORing(queueDepth: 4, flags: [])
+        guard ring.supportedFeatures.contains(.extendedArguments) else {
+            // Kernel < 5.11: timeouts in io_uring_enter aren't supported.
+            return
+        }
+
+        let clock = ContinuousClock()
+        let start = clock.now
+
+        var thrown: Errno? = nil
+        do throws(Errno) {
+            _ = try ring.blockingConsumeCompletion(timeout: .milliseconds(100))
+            XCTFail("expected timeout, got a completion on an idle ring")
+        } catch {
+            thrown = error
+        }
+
+        let elapsed = start.duration(to: clock.now)
+
+        XCTAssertEqual(thrown, .timeout)
+        XCTAssertGreaterThanOrEqual(elapsed, .milliseconds(50))
     }
 }
 #endif // os(Linux)
