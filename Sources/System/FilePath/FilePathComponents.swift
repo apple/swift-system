@@ -55,6 +55,7 @@ extension FilePath {
   ///     file.kind == .regular           // true
   ///     file.extension                  // "txt"
   ///     path.append(file)               // path is "/tmp/foo.txt"
+#if false // PORT-CLOBBERED: superseded by stdlib copy
   @available(System 0.0.2, *)
   public struct Component: Sendable {
     internal var _path: FilePath
@@ -72,8 +73,10 @@ extension FilePath {
       self._invariantCheck()
     }
   }
+#endif
 }
 
+#if false // PORT-CLOBBERED: superseded by stdlib copy
 @available(System 0.0.2, *)
 extension FilePath.Component {
 
@@ -99,6 +102,7 @@ extension FilePath.Component {
     return .regular
   }
 }
+#endif
 
 @available(System 0.0.2, *)
 extension FilePath.Root {
@@ -107,6 +111,8 @@ extension FilePath.Root {
 
 // MARK: - Internals
 
+#if false // PORT-CLOBBERED: dead code; its callers died with the old
+// ComponentView, and the stdlib copy's ComponentView machinery supersedes it.
 extension SystemString {
   // TODO: take insertLeadingSlash: Bool
   // TODO: turn into an insert operation with slide
@@ -127,46 +133,57 @@ extension SystemString {
     }
   }
 }
+#endif
 
 // Unifying protocol for common functionality between roots, components,
 // and views onto SystemString and FilePath.
 internal protocol _StrSlice: _PlatformStringable, Hashable, Codable {
-  var _storage: SystemString { get }
-  var _range: Range<SystemString.Index> { get }
+  var _storage: _SystemString { get }
+  var _range: Range<_SystemString.Index> { get }
 
-  init?(_ str: SystemString)
+  init?(_ str: _SystemString)
 
   func _invariantCheck()
 }
 extension _StrSlice {
-  internal var _slice: Slice<SystemString> {
+  internal var _slice: Slice<_SystemString> {
     Slice(base: _storage, bounds: _range)
   }
 
   internal func _withSystemChars<T>(
-    _ f: (UnsafeBufferPointer<SystemChar>) throws -> T
+    _ f: (UnsafeBufferPointer<FilePath.CodeUnit>) throws -> T
   ) rethrows -> T {
-    try _storage.withNullTerminatedSystemChars {
+    try _storage.withNullTerminatedCodeUnits {
       try f(UnsafeBufferPointer(rebasing: $0[_range]))
     }
   }
   internal func _withCodeUnits<T>(
     _ f: (UnsafeBufferPointer<CInterop.PlatformUnicodeEncoding.CodeUnit>) throws -> T
   ) rethrows -> T {
-    try _slice.withCodeUnits(f)
+    try _slice.withCodeUnits {
+      try $0.withMemoryRebound(
+        to: CInterop.PlatformUnicodeEncoding.CodeUnit.self
+      ) { try f($0) }
+    }
   }
 
   internal init?(_platformString s: UnsafePointer<CInterop.PlatformChar>) {
-    self.init(SystemString(platformString: s))
+    self.init(_SystemString(SystemString(platformString: s)))
   }
 
   internal func _withPlatformString<Result>(
     _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
   ) rethrows -> Result {
-    try _slice.withPlatformString(body)
+    var copy = _SystemString()
+    copy.append(contentsOf: _slice)
+    return try copy.withPlatformString(body)
   }
 
-  internal var _systemString: SystemString { SystemString(_slice) }
+  internal var _systemString: SystemString {
+    var copy = _SystemString()
+    copy.append(contentsOf: _slice)
+    return SystemString(copy)
+  }
 }
 extension _StrSlice {
   public static func == (lhs: Self, rhs: Self) -> Bool {
@@ -183,7 +200,7 @@ internal protocol _PathSlice: _StrSlice {
   var _path: FilePath { get }
 }
 extension _PathSlice {
-  internal var _storage: SystemString { _path._storage }
+  internal var _storage: _SystemString { _path._storage }
 }
 
 @available(System 0.0.2, *)
@@ -191,7 +208,7 @@ extension FilePath.Component: _PathSlice {
 }
 @available(System 0.0.2, *)
 extension FilePath.Root: _PathSlice {
-  internal var _range: Range<SystemString.Index> {
+  internal var _range: Range<_SystemString.Index> {
     (..<_rootEnd).relative(to: _path._storage)
   }
 }
@@ -208,6 +225,7 @@ extension FilePath: _PlatformStringable {
 
 }
 
+#if false // PORT-CLOBBERED: superseded by stdlib copy
 @available(System 0.0.2, *)
 extension FilePath.Component {
   // The index of the `.` denoting an extension
@@ -229,6 +247,7 @@ extension FilePath.Component {
     _slice.startIndex ..< (_extensionIndex() ?? _slice.endIndex)
   }
 }
+#endif
 
 internal func _makeExtension(_ ext: String) -> SystemString {
   var result = SystemString()
@@ -239,9 +258,9 @@ internal func _makeExtension(_ ext: String) -> SystemString {
 
 @available(System 0.0.2, *)
 extension FilePath.Component {
-  internal init?(_ str: SystemString) {
+  internal init?(_ str: _SystemString) {
     // FIXME: explicit null root? Or something else?
-    let path = FilePath(str)
+    let path = FilePath(_normalizing: str)
     guard path.root == nil, path.components.count == 1 else {
       return nil
     }
@@ -252,9 +271,9 @@ extension FilePath.Component {
 
 @available(System 0.0.2, *)
 extension FilePath.Root {
-  internal init?(_ str: SystemString) {
+  internal init?(_ str: _SystemString) {
     // FIXME: explicit null root? Or something else?
-    let path = FilePath(str)
+    let path = FilePath(_normalizing: str)
     guard path.root != nil, path.components.isEmpty else {
       return nil
     }
@@ -271,8 +290,8 @@ extension FilePath.Component {
   internal func _invariantCheck() {
     #if DEBUG
     precondition(!_slice.isEmpty)
-    precondition(_slice.last != .null)
-    precondition(_slice.allSatisfy { !isSeparator($0) } )
+    precondition(_slice.last != ._null)
+    precondition(_slice.allSatisfy { !_isSeparator($0) } )
     precondition(_path._relativeStart <= _slice.startIndex)
     #endif // DEBUG
   }
