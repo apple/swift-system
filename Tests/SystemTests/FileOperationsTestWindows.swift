@@ -18,6 +18,7 @@ import XCTest
 #endif
 
 import WinSDK
+import ucrt
 
 private let FILE_APPEND_DATA = DWORD(WinSDK.FILE_APPEND_DATA)
 private let FILE_EXECUTE = DWORD(WinSDK.FILE_EXECUTE)
@@ -293,6 +294,38 @@ final class FileOperationsTestWindows: XCTestCase {
 
       // Verify that exactly DWORD.max works (if we had a buffer that large)
       // We can't easily test this without allocating 4GB, but the boundary is correct
+    }
+  }
+
+  func testCloseOnExecOpenOption() throws {
+    try withTemporaryFilePath(basename: "testCloseOnExec") { path in
+
+      func hasInheritFlag(of fd: FileDescriptor) throws -> Bool {
+        let osfHandle = _get_osfhandle(fd.rawValue)
+        let handle = try XCTUnwrap(HANDLE(bitPattern: osfHandle))
+        var flags: DWORD = 0
+        XCTAssertTrue(GetHandleInformation(handle, &flags))
+        return flags & DWORD(HANDLE_FLAG_INHERIT) == DWORD(HANDLE_FLAG_INHERIT)
+      }
+
+      var fd: FileDescriptor
+      fd = try FileDescriptor.open(
+        path.appending("wontinherit.txt"), .readWrite,
+        options: [.create, .truncate, .closeOnExec],
+        permissions: .ownerReadWrite
+      )
+      try fd.closeAfter {
+        XCTAssertEqual(try hasInheritFlag(of: fd), false)
+      }
+
+      fd = try FileDescriptor.open(
+        path.appending("inheritable.txt"), .readWrite,
+        options: [.create, .truncate],
+        permissions: .ownerReadWrite
+      )
+      try fd.closeAfter {
+        XCTAssertEqual(try hasInheritFlag(of: fd), true)
+      }
     }
   }
 }
