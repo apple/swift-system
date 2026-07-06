@@ -24,6 +24,8 @@ jobs:
           {"os_version": "focal", "swift_version": "6.2"},
           {"os_version": "focal", "swift_version": "nightly-6.3"},
           {"os_version": "focal", "swift_version": "6.3"},
+          {"os_version": "focal", "swift_version": "nightly-6.4.x"},
+          {"os_version": "focal", "swift_version": "6.4.x"},
           {"os_version": "focal", "swift_version": "nightly-main"},
         ]
       enable_macos_checks: true
@@ -42,6 +44,8 @@ jobs:
           {"os_version": "focal", "swift_version": "6.2"},
           {"os_version": "focal", "swift_version": "nightly-6.3"},
           {"os_version": "focal", "swift_version": "6.3"},
+          {"os_version": "focal", "swift_version": "nightly-6.4.x"},
+          {"os_version": "focal", "swift_version": "6.4.x"},
           {"os_version": "focal", "swift_version": "nightly-main"},
         ]
       enable_wasm_sdk_build: true
@@ -51,6 +55,8 @@ jobs:
           {"os_version": "focal", "swift_version": "6.2"},
           {"os_version": "focal", "swift_version": "nightly-6.3"},
           {"os_version": "focal", "swift_version": "6.3"},
+          {"os_version": "focal", "swift_version": "nightly-6.4.x"},
+          {"os_version": "focal", "swift_version": "6.4.x"},
           {"os_version": "focal", "swift_version": "nightly-main"},
         ]
       enable_android_sdk_build: true
