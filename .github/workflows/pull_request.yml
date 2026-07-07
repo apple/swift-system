@@ -10,7 +10,7 @@ on:
 jobs:
   tests:
     name: Test
-    uses: swiftlang/github-workflows/.github/workflows/swift_package_test.yml@0.0.10
+    uses: swiftlang/github-workflows/.github/workflows/swift_package_test.yml@0.0.12
     with:
       swift_flags: "-Xbuild-tools-swiftc -DSYSTEM_CI"
       enable_linux_checks: true
@@ -24,6 +24,8 @@ jobs:
           {"os_version": "focal", "swift_version": "6.2"},
           {"os_version": "focal", "swift_version": "nightly-6.3"},
           {"os_version": "focal", "swift_version": "6.3"},
+          {"os_version": "focal", "swift_version": "nightly-6.4.x"},
+          {"os_version": "focal", "swift_version": "6.4.x"},
           {"os_version": "focal", "swift_version": "nightly-main"},
         ]
       enable_macos_checks: true
@@ -42,6 +44,8 @@ jobs:
           {"os_version": "focal", "swift_version": "6.2"},
           {"os_version": "focal", "swift_version": "nightly-6.3"},
           {"os_version": "focal", "swift_version": "6.3"},
+          {"os_version": "focal", "swift_version": "nightly-6.4.x"},
+          {"os_version": "focal", "swift_version": "6.4.x"},
           {"os_version": "focal", "swift_version": "nightly-main"},
         ]
       enable_wasm_sdk_build: true
@@ -51,6 +55,8 @@ jobs:
           {"os_version": "focal", "swift_version": "6.2"},
           {"os_version": "focal", "swift_version": "nightly-6.3"},
           {"os_version": "focal", "swift_version": "6.3"},
+          {"os_version": "focal", "swift_version": "nightly-6.4.x"},
+          {"os_version": "focal", "swift_version": "6.4.x"},
           {"os_version": "focal", "swift_version": "nightly-main"},
         ]
       enable_android_sdk_build: true
@@ -59,7 +65,7 @@ jobs:
 
   build-abi-stable:
     name: Build ABI Stable
-    uses: swiftlang/github-workflows/.github/workflows/swift_package_test.yml@0.0.10
+    uses: swiftlang/github-workflows/.github/workflows/swift_package_test.yml@0.0.12
     with:
       enable_linux_checks: false
       enable_macos_checks: true
@@ -72,7 +78,7 @@ jobs:
 
   soundness:
     name: Soundness
-    uses: swiftlang/github-workflows/.github/workflows/soundness.yml@0.0.10
+    uses: swiftlang/github-workflows/.github/workflows/soundness.yml@0.0.12
     with:
       license_header_check_project_name: "Swift.org"
       # https://github.com/apple/swift-system/issues/224
