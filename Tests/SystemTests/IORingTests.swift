@@ -283,6 +283,33 @@ final class IORingTests: XCTestCase {
         XCTAssertEqual(thrown, .timeout)
         XCTAssertGreaterThanOrEqual(elapsed, .milliseconds(50))
     }
+
+    func testRegisterEventFDTwiceThrows() throws {
+        guard uringEnabled else { return }
+        var ring = try IORing(queueDepth: 4)
+        let efd = FileDescriptor(rawValue: eventfd(0, Int32(EFD_SEMAPHORE)))
+        defer { try? efd.close() }
+
+        try ring.registerEventFD(efd)
+        do throws(Errno) {
+            try ring.registerEventFD(efd) // second registration -> EBUSY
+            XCTFail("expected second registerEventFD to throw")
+        } catch {
+            XCTAssertEqual(error, .resourceBusy)
+        }
+    }
+
+    func testSubmitOnDisabledRingThrows() throws {
+        guard uringEnabled else { return }
+        var ring = try IORing(queueDepth: 4, flags: [.startDisabled])
+
+         do throws(Errno) {
+            _ = try ring.submit(linkedRequests: .nop())
+            XCTFail("expected submit on a disabled ring to throw")
+        } catch {
+            XCTAssertEqual(error, Errno(rawValue: EBADFD))
+        }
+    }
 }
 #endif // os(Linux)
 #endif // compiler(>=6.2) && $Lifetimes
