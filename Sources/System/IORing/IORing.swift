@@ -715,7 +715,7 @@ public struct IORing: ~Copyable {
     }
 
     /// Removes registered files from the ring
-    public func unregisterFiles() throws {
+    public func unregisterFiles() throws(Errno) {
         _ = try _ioUringRegister(
             ringDescriptor: ringDescriptor,
             opcode: RegistrationOps.unregisterFiles.rawValue,
@@ -781,7 +781,7 @@ public struct IORing: ~Copyable {
         RegisteredResources(resources: _registeredBuffers)
     }
 
-    public func unregisterBuffers() throws {
+    public func unregisterBuffers() throws(Errno) {
         _ = try _ioUringRegister(
             ringDescriptor: self.ringDescriptor,
             opcode: RegistrationOps.unregisterBuffers.rawValue,
