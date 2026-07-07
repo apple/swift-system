@@ -128,23 +128,30 @@ internal func _enter(
     // Ring always needs enter right now;
     // TODO: support SQPOLL here
     while true {
-        let ret = io_uring_enter(ringDescriptor, numEvents, minCompletions, flags, nil)
+        do {
+            let ret = try _ioUringEnter(
+                ringDescriptor: ringDescriptor,
+                toSubmit: numEvents,
+                minComplete: minCompletions,
+                flags: flags,
+                sig: nil
+            )
+            if _getSubmissionQueueCount(ring: ring) > 0 {
+                // See https://github.com/axboe/liburing/issues/309,
+                // in some cases not all pending requests are submitted
+                continue
+            }
+            return ret
         // error handling:
-        //     EAGAIN / EINTR (try again),
+        //     EAGAIN (try again),
         //     EBADF / EBADFD / EOPNOTSUPP / ENXIO
         //     (failure in ring lifetime management, fatal),
         //     EINVAL (bad constant flag?, fatal),
         //     EFAULT (bad address for argument from library, fatal)
-        if ret == -EAGAIN || ret == -EINTR {
+        } catch Errno.resourceTemporarilyUnavailable {
             //TODO: should we wait a bit on AGAIN?
+            //alternatively we could treat EAGAIN the same as EINTR in the wrapper
             continue
-        } else if ret < 0 {
-            throw(Errno(rawValue: -ret))
-        } else if _getSubmissionQueueCount(ring: ring) > 0 {
-            // See https://github.com/axboe/liburing/issues/309, in some cases not all pending requests are submitted
-            continue
-        } else {
-            return ret
         }
     }
 }
@@ -517,34 +524,44 @@ public struct IORing: ~Copyable {
         if count < minimumCount {
             while count < minimumCount {
                 var sz = 0
+                var flags = IORING_ENTER_GETEVENTS
                 if extraArgs != nil {
                     sz = MemoryLayout<swift_io_uring_getevents_arg>.size
+                    flags |= IORING_ENTER_EXT_ARG
                 }
-                let res = io_uring_enter2(
-                    ringDescriptor,
-                    0,
-                    minimumCount,
-                    IORING_ENTER_GETEVENTS,
-                    extraArgs,
-                    sz
-                )
+                do {
+                    _ = try _ioUringEnter2(
+                        ringDescriptor: ringDescriptor,
+                        toSubmit: 0,
+                        minComplete: minimumCount,
+                        flags: flags,
+                        args: extraArgs,
+                        argsSize: sz
+                    )
+                    break
                 // error handling:
-                //     EAGAIN / EINTR (try again),
+                //     EAGAIN (try again),
                 //     EBADF / EBADFD / EOPNOTSUPP / ENXIO
                 //     (failure in ring lifetime management, fatal),
                 //     EINVAL (bad constant flag?, fatal),
                 //     EFAULT (bad address for argument from library, fatal)
                 //     EBUSY (not enough space for events; implies events filled
                 //            by kernel between kernelTail load and now)
-                if res >= 0 || res == -EBUSY {
+                //     ETIME (timeout from extraArgs.ts elapsed before
+                //            minimumCount completions arrived)
+                } catch Errno.resourceBusy {
                     break
-                } else if res == -EAGAIN || res == -EINTR {
+                } catch Errno.resourceTemporarilyUnavailable {
                     continue
+                } catch Errno.timeout {
+                    try consumer(nil, .timeout, true)
+                    return
+                } catch {
+                    fatalError(
+                        "fatal error in receiving requests: "
+                            + error.debugDescription
+                    )
                 }
-                fatalError(
-                    "fatal error in receiving requests: "
-                        + Errno(rawValue: -res).debugDescription
-                )
             }
             var count = 0
             while let completion = _tryConsumeCompletion(ring: completionRing) {
@@ -660,31 +677,22 @@ public struct IORing: ~Copyable {
     /// Registers an event monitoring file descriptor with the ring. The file descriptor becomes readable whenever completions are ready to be dequeued. See `man eventfd(2)` for additional information.
     public mutating func registerEventFD(_ descriptor: FileDescriptor) throws(Errno) {
         var rawfd = descriptor.rawValue
-        let result = withUnsafePointer(to: &rawfd) { fdptr in
-            let result = io_uring_register(
-                ringDescriptor,
-                RegistrationOps.registerEventFD.rawValue,
-                UnsafeMutableRawPointer(mutating: fdptr),
-                1
-            )
-            return result >= 0 ? nil : Errno(rawValue: -result)
-        }
-        if let result {
-            throw result
-        }
+        _ = try _ioUringRegister(
+            ringDescriptor: ringDescriptor,
+            opcode: RegistrationOps.registerEventFD.rawValue,
+            arg: &rawfd,
+            nrArgs: 1
+        )
     }
 
     /// Removes a registered event file descriptor from the ring
     public mutating func unregisterEventFD() throws(Errno) {
-        let result = io_uring_register(
-            ringDescriptor,
-            RegistrationOps.unregisterEventFD.rawValue,
-            nil,
-            0
+        _ = try _ioUringRegister(
+            ringDescriptor: ringDescriptor,
+            opcode: RegistrationOps.unregisterEventFD.rawValue,
+            arg: nil,
+            nrArgs: 0
         )
-        if result < 0 {
-            throw Errno(rawValue: -result)
-        }
     }
 
     /// Registers `count` files with the ring for later use in IO operations
@@ -693,18 +701,13 @@ public struct IORing: ~Copyable {
         precondition(count < UInt32.max)
         let files = [UInt32](repeating: UInt32.max, count: count)
 
-        let regResult = files.withUnsafeBufferPointer { bPtr in
-            let result = io_uring_register(
-                self.ringDescriptor,
-                RegistrationOps.registerFiles.rawValue,
-                UnsafeMutableRawPointer(mutating: bPtr.baseAddress!),
-                UInt32(truncatingIfNeeded: count)
+        try files.withUnsafeBufferPointer { bPtr throws(Errno) in
+            _ = try _ioUringRegister(
+                ringDescriptor: self.ringDescriptor,
+                opcode: RegistrationOps.registerFiles.rawValue,
+                arg: UnsafeMutableRawPointer(mutating: bPtr.baseAddress),
+                nrArgs: UInt32(truncatingIfNeeded: count)
             )
-            return result >= 0 ? nil : Errno(rawValue: -result)
-        } 
-
-        if let regResult {
-            throw regResult
         }
 
         _registeredFiles = files
@@ -713,15 +716,12 @@ public struct IORing: ~Copyable {
 
     /// Removes registered files from the ring
     public func unregisterFiles() throws {
-            let result = io_uring_register(
-            ringDescriptor,
-            RegistrationOps.unregisterFiles.rawValue,
-            nil,
-            0
+        _ = try _ioUringRegister(
+            ringDescriptor: ringDescriptor,
+            opcode: RegistrationOps.unregisterFiles.rawValue,
+            arg: nil,
+            nrArgs: 0
         )
-        if result < 0 {
-            throw Errno(rawValue: -result)
-        }
     }
 
     /// Allows access to registered files by index
@@ -737,18 +737,13 @@ public struct IORing: ~Copyable {
         precondition(buffers.count < UInt32.max)
         precondition(_registeredBuffers.isEmpty)
         let iovecs = buffers.map { $0.to_iovec() }
-        let regResult = iovecs.withUnsafeBufferPointer { bPtr in
-            let result = io_uring_register(
-                self.ringDescriptor,
-                RegistrationOps.registerBuffers.rawValue,
-                UnsafeMutableRawPointer(mutating: bPtr.baseAddress!),
-                UInt32(truncatingIfNeeded: buffers.count)
+        try iovecs.withUnsafeBufferPointer { bPtr throws(Errno) in
+            _ = try _ioUringRegister(
+                ringDescriptor: self.ringDescriptor,
+                opcode: RegistrationOps.registerBuffers.rawValue,
+                arg: UnsafeMutableRawPointer(mutating: bPtr.baseAddress),
+                nrArgs: UInt32(truncatingIfNeeded: buffers.count)
             )
-            return result >= 0 ? nil : Errno(rawValue: -result)
-        }
-
-        if let regResult {
-            throw regResult
         }
 
         _registeredBuffers = iovecs
@@ -787,15 +782,12 @@ public struct IORing: ~Copyable {
     }
 
     public func unregisterBuffers() throws {
-        let result = io_uring_register(
-            self.ringDescriptor,
-            RegistrationOps.unregisterBuffers.rawValue,
-            nil,
-            0
+        _ = try _ioUringRegister(
+            ringDescriptor: self.ringDescriptor,
+            opcode: RegistrationOps.unregisterBuffers.rawValue,
+            arg: nil,
+            nrArgs: 0
         )
-        guard result >= 0 else {
-            throw Errno(rawValue: -result)
-        }
     }
 
     /// Sends all prepared requests to the kernel for processing. Results will be delivered as completions, which can be dequeued from the ring.
