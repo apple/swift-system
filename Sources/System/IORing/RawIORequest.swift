@@ -176,20 +176,20 @@ extension RawIORequest {
     }
 
     @inlinable
-    static func withTimeoutRequest<R>(
+    static func withTimeoutRequest<R, E: Error>(
         linkedTo opEntry: UnsafeMutablePointer<swift_io_uring_sqe>,
         in timeoutEntry: UnsafeMutablePointer<swift_io_uring_sqe>,
-        duration: Duration, 
-        flags: TimeOutFlags, 
-        work: () throws -> R) rethrows -> R {
+        duration: Duration,
+        flags: TimeOutFlags,
+        work: () throws(E) -> R) throws(E) -> R {
 
         opEntry.pointee.flags |= Flags.linkRequest.rawValue
         opEntry.pointee.off = 1
         var ts = timespec(
-            tv_sec: Int(duration.components.seconds), 
+            tv_sec: Int(duration.components.seconds),
             tv_nsec: Int(duration.components.attoseconds / 1_000_000_000)
         )
-        return try withUnsafePointer(to: &ts) { tsPtr in
+        return try withUnsafePointer(to: &ts) { tsPtr throws(E) -> R in
             var req: RawIORequest = RawIORequest()
             req.operation = .link_timeout
             req.rawValue.timeout_flags = flags.rawValue
