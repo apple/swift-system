@@ -99,11 +99,12 @@ jobs:
           jq '.targets[] | select(.name == "SystemPackage") | .sources[]' /tmp/swiftpm.json | sort > /tmp/swiftpm-list.txt
           jq '.sources[].path[15:]' /tmp/cmake.json | sort > /tmp/cmake-list.txt
           comm -23 /tmp/swiftpm-list.txt /tmp/cmake-list.txt > /tmp/missing.txt
-          test ! -s /tmp/missing.txt
-          exit_code=$?
-          test $exit_code -ne 0 && echo "::notice::SystemPackage CMakeLists.txt matches SwiftPM"
-          test $exit_code -eq 0 || echo "::error::SystemPackage CMakeLists.txt does not match SwiftPM"
-          exit $exit_code
+          if [ -s /tmp/missing.txt ]; then
+            echo "::error::SystemPackage CMakeLists.txt does not match SwiftPM. Missing sources:"
+            cat /tmp/missing.txt
+            exit 1
+          fi
+          echo "::notice::SystemPackage CMakeLists.txt matches SwiftPM"
       - name: Build Project with CMake
         shell: bash
         run: cmake --build build
