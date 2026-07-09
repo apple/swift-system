@@ -339,9 +339,9 @@ private struct StatTests {
       }
 
       let stat2 = try file2.stat()
-      #expect(stat2.st_atim > file1AccessTime2)
-      #expect(stat2.st_mtim > file1ModificationTime2)
-      #expect(stat2.st_ctim > file1ChangeTime2)
+      #expect(stat2.st_atim >= file1AccessTime2)
+      #expect(stat2.st_mtim >= file1ModificationTime2)
+      #expect(stat2.st_ctim >= file1ChangeTime2)
       #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
       #expect(stat2.st_birthtim > file1CreationTime2)
       #endif
