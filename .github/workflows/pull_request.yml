@@ -76,6 +76,40 @@ jobs:
       # Enable availability to match ABI stable verion of system.
       swift_flags: "-Xbuild-tools-swiftc -DSYSTEM_CI -Xbuild-tools-swiftc -DSYSTEM_ABI_STABLE"
 
+  cmake_build:
+    name: CMake Validation
+    runs-on: ubuntu-latest
+    container: swiftlang/swift:nightly-main-noble
+    steps:
+      - name: Copy Sources
+        uses: actions/checkout@v6
+      - name: Install Dependencies
+        shell: bash
+        run: apt update && apt install -y cmake ninja-build jq
+      - name: Configure Project
+        shell: bash
+        run: |
+          mkdir -p build/.cmake/api/v1/query
+          touch build/.cmake/api/v1/query/codemodel-v2
+          cmake -G 'Ninja' -B build -S . -DCMAKE_C_COMPILER=clang -DCMAKE_Swift_COMPILER=swiftc -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=YES
+      - name: Validate CMake File Lists
+        shell: bash
+        run: |
+          swift package describe --type json > /tmp/swiftpm.json
+          cat build/.cmake/api/v1/reply/target-SystemPackage-*.json > /tmp/cmake.json
+          jq '.targets[] | select(.name == "SystemPackage") | .sources[]' /tmp/swiftpm.json | sort > /tmp/swiftpm-list.txt
+          jq '.sources[].path[15:]' /tmp/cmake.json | sort > /tmp/cmake-list.txt
+          comm -23 /tmp/swiftpm-list.txt /tmp/cmake-list.txt > /tmp/missing.txt
+          if [ -s /tmp/missing.txt ]; then
+            echo "::error::SystemPackage CMakeLists.txt does not match SwiftPM. Missing sources:"
+            cat /tmp/missing.txt
+            exit 1
+          fi
+          echo "::notice::SystemPackage CMakeLists.txt matches SwiftPM"
+      - name: Build Project with CMake
+        shell: bash
+        run: cmake --build build
+
   soundness:
     name: Soundness
     uses: swiftlang/github-workflows/.github/workflows/soundness.yml@0.0.12
