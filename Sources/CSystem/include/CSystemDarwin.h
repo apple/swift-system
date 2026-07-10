@@ -7,7 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-#if defined(__FreeBSD__)
+#if defined(__APPLE__)
 
 #include <fcntl.h>
 
@@ -17,4 +17,4 @@
 #define COMPATIBILITY_O_CLOFORK 0
 #endif
 
-#endif // defined(__FreeBSD__)
+#endif // defined(__APPLE__)

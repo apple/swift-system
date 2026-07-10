@@ -370,13 +370,13 @@ extension FileDescriptor {
 #if !os(WASI)
 @available(System 0.0.2, *)
 extension FileDescriptor {
-  /// Duplicates this file descriptor and return the newly created copy.
+  /// Duplicates this file descriptor and returns the newly created copy.
   ///
   /// - Parameters:
   ///   - `target`: The desired target file descriptor, or `nil`, in which case
   ///      the copy is assigned to the file descriptor with the lowest raw value
   ///      that is not currently in use by the process.
-  ///   - retryOnInterrupt: Whether to retry the write operation
+  ///   - retryOnInterrupt: Whether to retry the duplicate operation
   ///      if it throws ``Errno/interrupted``. The default is `true`.
   ///      Pass `false` to try only once and throw an error upon interruption.
   /// - Returns: The new file descriptor.
@@ -436,20 +436,19 @@ extension FileDescriptor {
   /// close-on-fork flags.
   ///
   /// The corresponding C function is `dup3`.
-  @discardableResult
-  @_alwaysEmitIntoClient
   @available(Windows, unavailable)
-  @available(macOS, unavailable)
-  @available(iOS, unavailable)
-  @available(tvOS, unavailable)
-  @available(watchOS, unavailable)
-  @available(visionOS, unavailable)
+  @available(macOS 27.0, iOS 27.0, watchOS 27.0, tvOS 27.0, visionOS 27.0, *)
+  @_alwaysEmitIntoClient
+  @discardableResult
   public func duplicate(
     as target: FileDescriptor,
     options: DuplicateOptions,
     retryOnInterrupt: Bool = true
   ) throws(Errno) -> FileDescriptor {
-    try _duplicate(as: target, options: options.rawValue, retryOnInterrupt: retryOnInterrupt).get()
+    let result = _duplicate(
+      as: target, options: options.rawValue, retryOnInterrupt: retryOnInterrupt
+    )
+    return try result.get()
   }
 
   @available(System 0.0.2, *)
@@ -468,11 +467,7 @@ extension FileDescriptor {
   }
 
   @available(Windows, unavailable)
-  @available(macOS, unavailable)
-  @available(iOS, unavailable)
-  @available(tvOS, unavailable)
-  @available(watchOS, unavailable)
-  @available(visionOS, unavailable)
+  @available(macOS 27.0, iOS 27.0, watchOS 27.0, tvOS 27.0, visionOS 27.0, *)
   @usableFromInline
   internal func _duplicate(
     as target: FileDescriptor,
@@ -502,7 +497,7 @@ extension FileDescriptor {
     fatalError("Not implemented")
   }
 }
-#endif
+#endif // !os(WASI)
 
 #if !os(WASI)
 @available(System 1.1.0, *)
@@ -535,11 +530,7 @@ extension FileDescriptor {
   ///
   /// The corresponding C function is `pipe2`.
   @_alwaysEmitIntoClient
-  @available(macOS, unavailable)
-  @available(iOS, unavailable)
-  @available(tvOS, unavailable)
-  @available(watchOS, unavailable)
-  @available(visionOS, unavailable)
+  @available(macOS 27.0, iOS 27.0, watchOS 27.0, tvOS 27.0, visionOS 27.0, *)
   public static func pipe(
     options: PipeOptions
   ) throws(Errno) -> (readEnd: FileDescriptor, writeEnd: FileDescriptor) {
@@ -560,11 +551,7 @@ extension FileDescriptor {
     }
   }
 
-  @available(macOS, unavailable)
-  @available(iOS, unavailable)
-  @available(tvOS, unavailable)
-  @available(watchOS, unavailable)
-  @available(visionOS, unavailable)
+  @available(macOS 27.0, iOS 27.0, watchOS 27.0, tvOS 27.0, visionOS 27.0, *)
   @usableFromInline
   internal static func _pipe(
     options: Int32,
@@ -585,7 +572,7 @@ extension FileDescriptor {
     fatalError("Not implemented")
   }
 }
-#endif
+#endif // !os(WASI)
 
 @available(System 1.2.0, *)
 extension FileDescriptor {
@@ -674,4 +661,4 @@ extension FilePermissions {
     return system_umask(mode)
   }
 }
-#endif
+#endif // !os(WASI)
