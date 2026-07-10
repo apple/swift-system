@@ -2,7 +2,7 @@
 //
 // This source file is part of the Swift System open source project
 //
-// Copyright (c) 2025 Apple Inc. and the Swift System project authors
+// Copyright (c) 2025 - 2026 Apple Inc. and the Swift System project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
@@ -35,7 +35,7 @@ import Android
 ///
 /// - Note: Only available on Unix-like platforms.
 @frozen
-@available(System 99, *)
+@available(System 1.7.0, *)
 public struct Stat: RawRepresentable, Sendable {
 
   /// The raw C `stat` struct.
@@ -536,7 +536,7 @@ public struct Stat: RawRepresentable, Sendable {
 
 // MARK: - Equatable and Hashable
 
-@available(System 99, *)
+@available(System 1.7.0, *)
 extension Stat: Equatable {
   @_alwaysEmitIntoClient
   /// Compares the raw bytes of two `Stat` structs for equality.
@@ -549,7 +549,7 @@ extension Stat: Equatable {
   }
 }
 
-@available(System 99, *)
+@available(System 1.7.0, *)
 extension Stat: Hashable {
   @_alwaysEmitIntoClient
   /// Hashes the raw bytes of this `Stat` struct.
@@ -564,7 +564,7 @@ extension Stat: Hashable {
 
 // MARK: - FileDescriptor Extensions
 
-@available(System 99, *)
+@available(System 1.7.0, *)
 extension FileDescriptor {
 
   /// Creates a `Stat` struct for the file referenced by this `FileDescriptor`.
@@ -580,7 +580,7 @@ extension FileDescriptor {
 
 // MARK: - FilePath Extensions
 
-@available(System 99, *)
+@available(System 1.7.0, *)
 extension FilePath {
 
   /// Creates a `Stat` struct for the file referenced by this `FilePath`.
