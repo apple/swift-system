@@ -24,7 +24,8 @@ add_library(SystemPackage
 set_target_properties(SystemPackage PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
 target_compile_options(SystemPackage PRIVATE
-  -enable-experimental-feature Lifetimes)
+  -enable-experimental-feature Lifetimes
+  "SHELL:-package-name swift-system")
 target_sources(SystemPackage PRIVATE
   FilePath/FilePath.swift
   FilePath/FilePathComponents.swift
