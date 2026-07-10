@@ -2,7 +2,7 @@
 //
 // This source file is part of the Swift System open source project
 //
-// Copyright (c) 2025 Apple Inc. and the Swift System project authors
+// Copyright (c) 2025 - 2026 Apple Inc. and the Swift System project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
@@ -39,7 +39,7 @@ import Android
 @Suite("Stat")
 private struct StatTests {
 
-  @available(System 99, *)
+  @available(System 1.7.0, *)
   @Test func basics() async throws {
     try withTemporaryFilePath(basename: "Stat_basics") { tempDir in
       let dirStatFromFilePath = try tempDir.stat()
@@ -81,7 +81,7 @@ private struct StatTests {
     }
   }
 
-  @available(System 99, *)
+  @available(System 1.7.0, *)
   @Test func followSymlinkInits() async throws {
     try withTemporaryFilePath(basename: "Stat_followSymlinkInits") { tempDir in
       let targetFilePath = tempDir.appending("target.txt")
@@ -190,7 +190,7 @@ private struct StatTests {
     }
   }
 
-  @available(System 99, *)
+  @available(System 1.7.0, *)
   @Test func permissions() async throws {
     try withTemporaryFilePath(basename: "Stat_permissions") { tempDir in
       let testFile = tempDir.appending("test.txt")
@@ -220,7 +220,7 @@ private struct StatTests {
     }
   }
 
-  @available(System 99, *)
+  @available(System 1.7.0, *)
   @Test func times() async throws {
     var start = timespec()
     try #require(clock_gettime(CLOCK_REALTIME, &start) == 0, "\(Errno.current)")
@@ -349,7 +349,7 @@ private struct StatTests {
   }
 
   #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
-  @available(System 99, *)
+  @available(System 1.7.0, *)
   @Test func flags() async throws {
     try withTemporaryFilePath(basename: "Stat_flags") { tempDir in
       let filePath = tempDir.appending("test.txt")

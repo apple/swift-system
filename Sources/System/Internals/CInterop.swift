@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 - 2024 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2026 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -106,7 +106,7 @@ extension CInterop {
   }
 }
 
-@available(System 99, *)
+@available(System 1.7.0, *)
 extension CInterop {
   public typealias DeviceID = dev_t
   public typealias Inode = ino_t
