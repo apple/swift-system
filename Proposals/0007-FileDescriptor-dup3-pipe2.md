@@ -5,17 +5,17 @@
 
 * Other Reviews: [Swift Forums Pitch](https://forums.swift.org/t/82486)
 
-##### Revision history
+#### Revision history
 
 * **v1** Initial version
-
-- **v2** Add Windows version of `pipe(options:)`
+* **v2** Add Windows version of `pipe(options:)`
+* **v3** Add Darwin versions of `dup3` and `pipe2` wrappers
 
 ## Introduction
 
 Swift System today provides `FileDescriptor.duplicate()`, `FileDescriptor.duplicate(as:)` and `FileDescriptor.pipe()` cover APIs for the POSIX `dup`, `dup2`, and `pipe` functions, respectively.
 
-This proposal adds additional `FileDescriptor` overloads to cover new POSIX 2024 functions in this family of APIs. These overloads will be available on Linux, FreeBSD and Android.
+This proposal adds additional `FileDescriptor` overloads to cover new POSIX 2024 functions in this family of APIs. These overloads will be available on Linux, FreeBSD, Android, and the Apple operating systems based on Darwin 27.0 or newer.
 
 ## Motivation
 
@@ -166,8 +166,6 @@ struct FileDescriptor {
   }
 }
 ```
-
-These API additions are unavailable on Darwin, as the underlying `dup3` and `pipe2` APIs do not exist.
 
 `pipe(options:)` is added for Windows with the option `.closeOnExec`, but `duplicate(as:options:)` is not added because the underlying API does not match `dup3`.
 
