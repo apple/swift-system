@@ -111,14 +111,26 @@ internal func lseek(
 internal func read(
   _ fd: Int32, _ buf: UnsafeMutableRawPointer!, _ nbyte: Int
 ) -> Int {
-  Int(_read(fd, buf, numericCast(nbyte)))
+  // _read takes an unsigned int count; reject sizes that would overflow it so
+  // numericCast cannot trap (pread/pwrite apply the same guard).
+  if nbyte > Int(DWORD.max) {
+    ucrt._set_errno(EINVAL)
+    return -1
+  }
+  return Int(_read(fd, buf, numericCast(nbyte)))
 }
 
 @inline(__always)
 internal func write(
   _ fd: Int32, _ buf: UnsafeRawPointer!, _ nbyte: Int
 ) -> Int {
-  Int(_write(fd, buf, numericCast(nbyte)))
+  // _write takes an unsigned int count; reject sizes that would overflow it so
+  // numericCast cannot trap (pread/pwrite apply the same guard).
+  if nbyte > Int(DWORD.max) {
+    ucrt._set_errno(EINVAL)
+    return -1
+  }
+  return Int(_write(fd, buf, numericCast(nbyte)))
 }
 
 @inline(__always)
@@ -158,6 +170,18 @@ internal func pread(
   // NOTE: this is a non-owning handle, do *not* call CloseHandle on it
   let hFile: HANDLE = HANDLE(bitPattern: handle)!
 
+  // POSIX pread/pwrite leave the file offset unchanged, but issuing an
+  // OVERLAPPED read/write against a synchronous handle updates it. Save the
+  // current position and restore it afterwards (as ftruncate does).
+  var liCurrentOffset = LARGE_INTEGER(QuadPart: 0)
+  if !SetFilePointerEx(hFile, liCurrentOffset, &liCurrentOffset, FILE_CURRENT) {
+    ucrt._set_errno(_mapWindowsErrorToErrno(GetLastError()))
+    return -1
+  }
+  defer {
+    _ = SetFilePointerEx(hFile, liCurrentOffset, nil, FILE_BEGIN)
+  }
+
   var ovlOverlapped: OVERLAPPED = OVERLAPPED()
   ovlOverlapped.OffsetHigh = DWORD(UInt32(offset >> 32) & 0xffffffff)
   ovlOverlapped.Offset = DWORD(UInt32(offset >> 0) & 0xffffffff)
@@ -185,6 +209,18 @@ internal func pwrite(
 
   // NOTE: this is a non-owning handle, do *not* call CloseHandle on it
   let hFile: HANDLE = HANDLE(bitPattern: handle)!
+
+  // POSIX pread/pwrite leave the file offset unchanged, but issuing an
+  // OVERLAPPED read/write against a synchronous handle updates it. Save the
+  // current position and restore it afterwards (as ftruncate does).
+  var liCurrentOffset = LARGE_INTEGER(QuadPart: 0)
+  if !SetFilePointerEx(hFile, liCurrentOffset, &liCurrentOffset, FILE_CURRENT) {
+    ucrt._set_errno(_mapWindowsErrorToErrno(GetLastError()))
+    return -1
+  }
+  defer {
+    _ = SetFilePointerEx(hFile, liCurrentOffset, nil, FILE_BEGIN)
+  }
 
   var ovlOverlapped: OVERLAPPED = OVERLAPPED()
   ovlOverlapped.OffsetHigh = DWORD(UInt32(offset >> 32) & 0xffffffff)
