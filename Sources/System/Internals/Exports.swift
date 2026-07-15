@@ -32,7 +32,16 @@ import Android
 #error("Unsupported Platform")
 #endif
 
+#if os(Windows)
+// On Windows, C `off_t` is `long`, i.e. 32-bit, so it cannot represent file
+// offsets or sizes at or beyond 2 GiB. Use a 64-bit offset type so that
+// seeking, positioned I/O, and resizing work on large files, matching the
+// 64-bit `off_t` on Linux and Darwin. The Windows syscall adapters route
+// this through the 64-bit `_lseeki64` / `OVERLAPPED` / `LARGE_INTEGER` APIs.
+internal typealias _COffT = Int64
+#else
 internal typealias _COffT = off_t
+#endif
 
 // MARK: syscalls and variables
 
