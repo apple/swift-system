@@ -38,9 +38,9 @@ internal func open(
   guard let hFile = try? path.withCanonicalPathRepresentation({ path in
     CreateFileW(path,
                 decodedFlags.dwDesiredAccess,
-                DWORD(FILE_SHARE_DELETE
-                      | FILE_SHARE_READ
-                      | FILE_SHARE_WRITE),
+                FILE_SHARE_DELETE
+                  | FILE_SHARE_READ
+                  | FILE_SHARE_WRITE,
                 &saAttrs,
                 decodedFlags.dwCreationDisposition,
                 decodedFlags.dwFlagsAndAttributes,
@@ -80,9 +80,9 @@ internal func open(
   guard let hFile = try? path.withCanonicalPathRepresentation({ path in
     CreateFileW(path,
                 decodedFlags.dwDesiredAccess,
-                DWORD(FILE_SHARE_DELETE
-                      | FILE_SHARE_READ
-                      | FILE_SHARE_WRITE),
+                FILE_SHARE_DELETE
+                  | FILE_SHARE_READ
+                  | FILE_SHARE_WRITE,
                 &saAttrs,
                 decodedFlags.dwCreationDisposition,
                 decodedFlags.dwFlagsAndAttributes,
@@ -202,16 +202,16 @@ internal func ftruncate(_ fd: Int32, _ length: off_t) -> Int32 {
 
   // Save the current position and restore it when we're done
   if !SetFilePointerEx(hFile, liCurrentOffset, &liCurrentOffset,
-                       DWORD(FILE_CURRENT)) {
+                       FILE_CURRENT) {
     ucrt._set_errno(_mapWindowsErrorToErrno(GetLastError()))
     return -1
   }
   defer {
-    _ = SetFilePointerEx(hFile, liCurrentOffset, nil, DWORD(FILE_BEGIN));
+    _ = SetFilePointerEx(hFile, liCurrentOffset, nil, FILE_BEGIN);
   }
 
   // Truncate (or extend) the file
-  if !SetFilePointerEx(hFile, liDesiredLength, nil, DWORD(FILE_BEGIN))
+  if !SetFilePointerEx(hFile, liDesiredLength, nil, FILE_BEGIN)
        || !SetEndOfFile(hFile) {
     ucrt._set_errno(_mapWindowsErrorToErrno(GetLastError()))
     return -1
@@ -263,7 +263,7 @@ internal func rmdir(
 }
 
 internal func _mapWindowsErrorToErrno(_ errorCode: DWORD) -> CInt {
-  switch Int32(errorCode) {
+  switch errorCode {
   case ERROR_SUCCESS:
     return 0
   case ERROR_INVALID_FUNCTION,
@@ -342,28 +342,28 @@ fileprivate func rightsFromModeBits(
   var rights: DWORD = 0
 
   if (bits & 0o4) != 0 {
-    rights |= DWORD(FILE_READ_ATTRIBUTES
-                      | FILE_READ_DATA
-                      | FILE_READ_EA
-                      | STANDARD_RIGHTS_READ
-                      | SYNCHRONIZE)
+    rights |= (FILE_READ_ATTRIBUTES
+      | FILE_READ_DATA
+      | FILE_READ_EA
+      | STANDARD_RIGHTS_READ
+      | SYNCHRONIZE)
   }
   if (bits & 0o2) != 0 {
-    rights |= DWORD(FILE_APPEND_DATA
-                      | FILE_WRITE_ATTRIBUTES
-                      | FILE_WRITE_DATA
-                      | FILE_WRITE_EA
-                      | STANDARD_RIGHTS_WRITE
-                      | SYNCHRONIZE)
+    rights |= (FILE_APPEND_DATA
+      | FILE_WRITE_ATTRIBUTES
+      | FILE_WRITE_DATA
+      | FILE_WRITE_EA
+      | STANDARD_RIGHTS_WRITE
+      | SYNCHRONIZE)
     if fileOrDirectory == .directory && !sticky {
-      rights |= DWORD(FILE_DELETE_CHILD)
+      rights |= FILE_DELETE_CHILD
     }
   }
   if (bits & 0o1) != 0 {
-    rights |= DWORD(FILE_EXECUTE
-                      | FILE_READ_ATTRIBUTES
-                      | STANDARD_RIGHTS_EXECUTE
-                      | SYNCHRONIZE)
+    rights |= (FILE_EXECUTE
+      | FILE_READ_ATTRIBUTES
+      | STANDARD_RIGHTS_EXECUTE
+      | SYNCHRONIZE)
   }
 
   return rights
@@ -431,7 +431,7 @@ internal func _createSecurityDescriptor(from mode: CInterop.Mode,
   var everyone: PSID? = nil
 
   guard AllocateAndInitializeSid(&SIDAuthWorld, 1,
-                                 DWORD(SECURITY_WORLD_RID),
+                                 SECURITY_WORLD_RID,
                                  0, 0, 0, 0, 0, 0, 0,
                                  &everyone) else {
     return nil
@@ -472,7 +472,7 @@ internal func _createSecurityDescriptor(from mode: CInterop.Mode,
     EXPLICIT_ACCESS_W(
       grfAccessPermissions: ownerRights,
       grfAccessMode: GRANT_ACCESS,
-      grfInheritance: DWORD(NO_INHERITANCE),
+      grfInheritance: NO_INHERITANCE,
       Trustee: TRUSTEE_W(
         pMultipleTrustee: nil,
         MultipleTrusteeOperation: NO_MULTIPLE_TRUSTEE,
@@ -485,7 +485,7 @@ internal func _createSecurityDescriptor(from mode: CInterop.Mode,
     EXPLICIT_ACCESS_W(
       grfAccessPermissions: groupRights,
       grfAccessMode: GRANT_ACCESS,
-      grfInheritance: DWORD(NO_INHERITANCE),
+      grfInheritance: NO_INHERITANCE,
       Trustee: TRUSTEE_W(
         pMultipleTrustee: nil,
         MultipleTrusteeOperation: NO_MULTIPLE_TRUSTEE,
@@ -498,7 +498,7 @@ internal func _createSecurityDescriptor(from mode: CInterop.Mode,
     EXPLICIT_ACCESS_W(
       grfAccessPermissions: otherRights,
       grfAccessMode: GRANT_ACCESS,
-      grfInheritance: DWORD(NO_INHERITANCE),
+      grfInheritance: NO_INHERITANCE,
       Trustee: TRUSTEE_W(
         pMultipleTrustee: nil,
         MultipleTrusteeOperation: NO_MULTIPLE_TRUSTEE,
@@ -515,7 +515,7 @@ internal func _createSecurityDescriptor(from mode: CInterop.Mode,
       EXPLICIT_ACCESS_W(
         grfAccessPermissions: ownerDenyRights,
         grfAccessMode: DENY_ACCESS,
-        grfInheritance: DWORD(NO_INHERITANCE),
+        grfInheritance: NO_INHERITANCE,
         Trustee: TRUSTEE_W(
           pMultipleTrustee: nil,
           MultipleTrusteeOperation: NO_MULTIPLE_TRUSTEE,
@@ -533,7 +533,7 @@ internal func _createSecurityDescriptor(from mode: CInterop.Mode,
       EXPLICIT_ACCESS_W(
         grfAccessPermissions: groupDenyRights,
         grfAccessMode: DENY_ACCESS,
-        grfInheritance: DWORD(NO_INHERITANCE),
+        grfInheritance: NO_INHERITANCE,
         Trustee: TRUSTEE_W(
           pMultipleTrustee: nil,
           MultipleTrusteeOperation: NO_MULTIPLE_TRUSTEE,
@@ -562,13 +562,13 @@ internal func _createSecurityDescriptor(from mode: CInterop.Mode,
   var descriptor = SECURITY_DESCRIPTOR()
 
   guard InitializeSecurityDescriptor(&descriptor,
-                                     DWORD(SECURITY_DESCRIPTOR_REVISION)) else {
+                                     SECURITY_DESCRIPTOR_REVISION) else {
     return nil
   }
 
   guard SetSecurityDescriptorControl(&descriptor,
-                                     SECURITY_DESCRIPTOR_CONTROL(SE_DACL_PROTECTED),
-                                     SECURITY_DESCRIPTOR_CONTROL(SE_DACL_PROTECTED))
+                                     SE_DACL_PROTECTED,
+                                     SE_DACL_PROTECTED)
           && SetSecurityDescriptorOwner(&descriptor, user, false)
           && SetSecurityDescriptorGroup(&descriptor, group, false)
           && SetSecurityDescriptorDacl(&descriptor,
@@ -608,15 +608,15 @@ fileprivate struct DecodedOpenFlags {
   init(_ oflag: Int32) {
     switch oflag & (_O_CREAT | _O_EXCL | _O_TRUNC) {
     case _O_CREAT | _O_EXCL, _O_CREAT | _O_EXCL | _O_TRUNC:
-      dwCreationDisposition = DWORD(CREATE_NEW)
+      dwCreationDisposition = CREATE_NEW
     case _O_CREAT:
-      dwCreationDisposition = DWORD(OPEN_ALWAYS)
+      dwCreationDisposition = OPEN_ALWAYS
     case _O_CREAT | _O_TRUNC:
-      dwCreationDisposition = DWORD(CREATE_ALWAYS)
+      dwCreationDisposition = CREATE_ALWAYS
     case _O_TRUNC:
-      dwCreationDisposition = DWORD(TRUNCATE_EXISTING)
+      dwCreationDisposition = TRUNCATE_EXISTING
     default:
-      dwCreationDisposition = DWORD(OPEN_EXISTING)
+      dwCreationDisposition = OPEN_EXISTING
     }
 
     // The _O_RDONLY, _O_WRONLY and _O_RDWR flags are non-overlapping
@@ -625,11 +625,11 @@ fileprivate struct DecodedOpenFlags {
     dwDesiredAccess = 0
     switch (oflag & (_O_RDONLY|_O_WRONLY|_O_RDWR)) {
     case _O_RDONLY:
-      dwDesiredAccess |= DWORD(GENERIC_READ)
+      dwDesiredAccess |= GENERIC_READ
     case _O_WRONLY:
-      dwDesiredAccess |= DWORD(GENERIC_WRITE)
+      dwDesiredAccess |= GENERIC_WRITE
     case _O_RDWR:
-      dwDesiredAccess |= DWORD(GENERIC_READ) | DWORD(GENERIC_WRITE)
+      dwDesiredAccess |= GENERIC_READ | GENERIC_WRITE
     default:
       break
     }
@@ -638,19 +638,19 @@ fileprivate struct DecodedOpenFlags {
 
     dwFlagsAndAttributes = 0
     if (oflag & _O_SEQUENTIAL) != 0 {
-      dwFlagsAndAttributes |= DWORD(FILE_FLAG_SEQUENTIAL_SCAN)
+      dwFlagsAndAttributes |= FILE_FLAG_SEQUENTIAL_SCAN
     }
     if (oflag & _O_RANDOM) != 0 {
-      dwFlagsAndAttributes |= DWORD(FILE_FLAG_RANDOM_ACCESS)
+      dwFlagsAndAttributes |= FILE_FLAG_RANDOM_ACCESS
     }
     if (oflag & _O_TEMPORARY) != 0 {
-      dwFlagsAndAttributes |= DWORD(FILE_FLAG_DELETE_ON_CLOSE)
+      dwFlagsAndAttributes |= FILE_FLAG_DELETE_ON_CLOSE
     }
 
     if (oflag & _O_SHORT_LIVED) != 0 {
-      dwFlagsAndAttributes |= DWORD(FILE_ATTRIBUTE_TEMPORARY)
+      dwFlagsAndAttributes |= FILE_ATTRIBUTE_TEMPORARY
     } else {
-      dwFlagsAndAttributes |= DWORD(FILE_ATTRIBUTE_NORMAL)
+      dwFlagsAndAttributes |= FILE_ATTRIBUTE_NORMAL
     }
   }
 }
