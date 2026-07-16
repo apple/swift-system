@@ -19,6 +19,10 @@ import XCTest
 
 import WinSDK
 
+private let FILE_APPEND_DATA = DWORD(WinSDK.FILE_APPEND_DATA)
+private let FILE_EXECUTE = DWORD(WinSDK.FILE_EXECUTE)
+private let FILE_READ_ATTRIBUTES = DWORD(WinSDK.FILE_READ_ATTRIBUTES)
+
 @available(iOS 8, *)
 final class FileOperationsTestWindows: XCTestCase {
   private let r = ACCESS_MASK(
@@ -42,6 +46,8 @@ final class FileOperationsTestWindows: XCTestCase {
       | STANDARD_RIGHTS_EXECUTE
       | SYNCHRONIZE
   )
+
+  private let none = ACCESS_MASK(0)
 
   private struct Test {
     var permissions: CModeT
@@ -72,7 +78,7 @@ final class FileOperationsTestWindows: XCTestCase {
     var psidEveryone: PSID? = nil
 
     XCTAssert(AllocateAndInitializeSid(&SIDAuthWorld, 1,
-                                       DWORD(SECURITY_WORLD_RID),
+                                       SECURITY_WORLD_RID,
                                        0, 0, 0, 0, 0, 0, 0,
                                        &psidEveryone))
     defer {
@@ -106,7 +112,7 @@ final class FileOperationsTestWindows: XCTestCase {
                        &psidGroup,
                        &pDacl,
                        nil,
-                       &pSD), DWORD(ERROR_SUCCESS))
+                       &pSD), ERROR_SUCCESS)
       defer {
         LocalFree(pSD)
       }
@@ -135,15 +141,15 @@ final class FileOperationsTestWindows: XCTestCase {
       XCTAssertEqual(GetEffectiveRightsFromAclW(
                        pDacl,
                        &owner,
-                       &ownerAccess), DWORD(ERROR_SUCCESS))
+                       &ownerAccess), ERROR_SUCCESS)
       XCTAssertEqual(GetEffectiveRightsFromAclW(
                        pDacl,
                        &group,
-                       &groupAccess), DWORD(ERROR_SUCCESS))
+                       &groupAccess), ERROR_SUCCESS)
       XCTAssertEqual(GetEffectiveRightsFromAclW(
                        pDacl,
                        &everyone,
-                       &otherAccess), DWORD(ERROR_SUCCESS))
+                       &otherAccess), ERROR_SUCCESS)
 
       return (ownerAccess, groupAccess, otherAccess)
     }
@@ -182,9 +188,9 @@ final class FileOperationsTestWindows: XCTestCase {
 
     try withTemporaryFilePath(basename: "testUmask") { path in
       let tests = [
-        Test(0o000, 0, 0, 0),
-        Test(0o700, r|w|x, 0, 0),
-        Test(0o770, r|w|x, r|x, 0),
+        Test(0o000, none, none, none),
+        Test(0o700, r|w|x, none, none),
+        Test(0o770, r|w|x, r|x, none),
         Test(0o777, r|w|x, r|x, r|x)
       ]
 
@@ -195,9 +201,9 @@ final class FileOperationsTestWindows: XCTestCase {
                                           .otherWrite, .otherExecute]) {
       try withTemporaryFilePath(basename: "testUmask") { path in
         let tests = [
-          Test(0o000, 0, 0, 0),
-          Test(0o700, r|w|x, 0, 0),
-          Test(0o770, r|w|x, r, 0),
+          Test(0o000, none, none, none),
+          Test(0o700, r|w|x, none, none),
+          Test(0o770, r|w|x, r, none),
           Test(0o777, r|w|x, r, r)
         ]
 
@@ -214,28 +220,28 @@ final class FileOperationsTestWindows: XCTestCase {
     try FilePermissions.withCreationMask([]) {
       try withTemporaryFilePath(basename: "testPermissions") { path in
         let tests = [
-          Test(0o000, 0, 0, 0),
+          Test(0o000, none, none, none),
 
-          Test(0o400, r, 0, 0),
-          Test(0o200, w, 0, 0),
-          Test(0o100, x, 0, 0),
-          Test(0o040, 0, r, 0),
-          Test(0o020, 0, w, 0),
-          Test(0o010, 0, x, 0),
-          Test(0o004, 0, 0, r),
-          Test(0o002, 0, 0, w),
-          Test(0o001, 0, 0, x),
+          Test(0o400, r, none, none),
+          Test(0o200, w, none, none),
+          Test(0o100, x, none, none),
+          Test(0o040, none, r, none),
+          Test(0o020, none, w, none),
+          Test(0o010, none, x, none),
+          Test(0o004, none, none, r),
+          Test(0o002, none, none, w),
+          Test(0o001, none, none, x),
 
-          Test(0o700, r|w|x, 0, 0),
-          Test(0o770, r|w|x, r|w|x, 0),
+          Test(0o700, r|w|x, none, none),
+          Test(0o770, r|w|x, r|w|x, none),
           Test(0o777, r|w|x, r|w|x, r|w|x),
 
           Test(0o755, r|w|x, r|x, r|x),
           Test(0o644, r|w, r, r),
 
-          Test(0o007, 0, 0, r|w|x),
-          Test(0o070, 0, r|w|x, 0),
-          Test(0o077, 0, r|w|x, r|w|x),
+          Test(0o007, none, none, r|w|x),
+          Test(0o070, none, r|w|x, none),
+          Test(0o077, none, r|w|x, r|w|x),
         ]
 
         try runTests(tests, at: path)
