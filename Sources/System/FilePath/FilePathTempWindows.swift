@@ -73,7 +73,7 @@ internal func _recursiveRemove(
 ) throws {
   // First, deal with subdirectories
   try forEachFile(at: path) { findData in
-    if (findData.dwFileAttributes & DWORD(FILE_ATTRIBUTE_DIRECTORY)) != 0 {
+    if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 {
       let name = withUnsafeBytes(of: findData.cFileName) {
         return SystemString(platformString: $0.assumingMemoryBound(
                               to: CInterop.PlatformChar.self).baseAddress!)
@@ -94,7 +94,7 @@ internal func _recursiveRemove(
     let component = FilePath.Component(name)!
     let subpath = path.appending(component)
 
-    if (findData.dwFileAttributes & DWORD(FILE_ATTRIBUTE_DIRECTORY)) == 0 {
+    if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0 {
       try subpath.withPlatformString { subpath in
         if try !subpath.withCanonicalPathRepresentation({ DeleteFileW($0) }) {
           throw Errno(windowsError: GetLastError())
