@@ -578,15 +578,35 @@ extension Stat: Equatable {
 
 @available(System 1.7.0, *)
 extension Stat: Hashable {
-  /// Hashes a subset of `Stat` fields that identify a file: the device and
-  /// inode identity plus a couple of high-entropy discriminators (size and
-  /// modification time).
+  /// Hashes the meaningful file-metadata fields of a `Stat` struct.
+  ///
+  /// These are the same fields compared by `==`, fed in the same order.
+  /// Alignment padding and platform reserved/"spare" fields are not hashed.
   public func hash(into hasher: inout Hasher) {
     hasher.combine(rawValue.st_dev)
     hasher.combine(rawValue.st_ino)
+    hasher.combine(rawValue.st_mode)
+    hasher.combine(rawValue.st_nlink)
+    hasher.combine(rawValue.st_uid)
+    hasher.combine(rawValue.st_gid)
+    hasher.combine(rawValue.st_rdev)
     hasher.combine(rawValue.st_size)
+    hasher.combine(rawValue.st_blksize)
+    hasher.combine(rawValue.st_blocks)
+    hasher.combine(st_atim.tv_sec)
+    hasher.combine(st_atim.tv_nsec)
     hasher.combine(st_mtim.tv_sec)
     hasher.combine(st_mtim.tv_nsec)
+    hasher.combine(st_ctim.tv_sec)
+    hasher.combine(st_ctim.tv_nsec)
+    #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
+    hasher.combine(st_birthtim.tv_sec)
+    hasher.combine(st_birthtim.tv_nsec)
+    #endif
+    #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+    hasher.combine(rawValue.st_flags)
+    hasher.combine(rawValue.st_gen)
+    #endif
   }
 }
 

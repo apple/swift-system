@@ -712,7 +712,7 @@ extension Stat: Equatable {
 }
 
 extension Stat: Hashable {
-  /// Hashes a subset of the fields compared by `==` that identify a file.
+  /// Hashes the meaningful file-metadata fields of a `Stat` struct.
   public func hash(into hasher: inout Hasher)
 }
 ```
