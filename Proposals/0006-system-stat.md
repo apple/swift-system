@@ -79,7 +79,7 @@ These initializers use a typed `throws(Errno)` and require Swift 6.0 or later.
 
 See the **Appendix** section at the end of this proposal for a table view of Swift API to C mappings.
 
-All API are marked `@_alwaysEmitIntoClient` for performance and back-dating of availability.
+All API are marked `@_alwaysEmitIntoClient` for performance and back-dating of availability, except `Stat`'s `==` and `hash(into:)`, which are ordinary `public` API.
 
 ### FileType
 
@@ -705,12 +705,14 @@ public struct Stat: RawRepresentable, Sendable {
 // MARK: - Equatable and Hashable
 
 extension Stat: Equatable {
-  /// Compares the raw bytes of two `Stat` structs for equality.
+  /// Compares the meaningful file-metadata fields of two `Stat` values.
+  ///
+  /// Alignment padding and platform reserved/"spare" fields are not compared.
   public static func == (lhs: Self, rhs: Self) -> Bool
 }
 
 extension Stat: Hashable {
-  /// Hashes the raw bytes of this `Stat` struct.
+  /// Hashes the meaningful file-metadata fields of a `Stat` struct.
   public func hash(into hasher: inout Hasher)
 }
 ```

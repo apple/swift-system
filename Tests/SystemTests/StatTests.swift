@@ -397,6 +397,38 @@ private struct StatTests {
   }
   #endif
 
+  @available(System 1.7.0, *)
+  @Test func equalityAndHashing() async throws {
+    try withTemporaryFilePath(basename: "Stat_equality") { tempDir in
+      let file = tempDir.appending("test.txt")
+      let fd = try FileDescriptor.open(
+        file, .writeOnly, options: .create, permissions: .ownerReadWrite)
+      defer { try? fd.close() }
+
+      // Two stats of the same, unchanged file compare equal and hash equal,
+      // so they coalesce in a Set.
+      let stat1 = try file.stat()
+      var stat2 = try file.stat()
+      stat2.st_atim = stat1.st_atim // stat() can bump access time
+      #expect(stat1 == stat2)
+      #expect(stat1.hashValue == stat2.hashValue)
+      #expect(Set([stat1, stat2]).count == 1)
+
+      // Reserved/"spare" and padding bytes must not affect equality.
+      // Poke a reserved field and confirm equality/hashing are stable.
+      #if SYSTEM_PACKAGE_DARWIN
+      var stat3 = stat1
+      stat3.rawValue.st_lspare = stat1.rawValue.st_lspare &+ 1
+      #expect(stat1 == stat3)
+      #expect(stat1.hashValue == stat3.hashValue)
+      #endif
+
+      // A stat of a different file (the containing directory) is not equal.
+      let dirStat = try tempDir.stat()
+      #expect(stat1 != dirStat)
+    }
+  }
+
 }
 
 // Comparison operators for timespec until UTCClock.Instant properties are available

@@ -538,25 +538,75 @@ public struct Stat: RawRepresentable, Sendable {
 
 @available(System 1.7.0, *)
 extension Stat: Equatable {
-  @_alwaysEmitIntoClient
-  /// Compares the raw bytes of two `Stat` structs for equality.
+  /// Compares the meaningful file-metadata fields of two `Stat` values.
+  ///
+  /// Alignment padding and platform reserved/"spare" fields are not compared.
   public static func == (lhs: Self, rhs: Self) -> Bool {
-    return withUnsafeBytes(of: lhs.rawValue) { lhsBytes in
-      withUnsafeBytes(of: rhs.rawValue) { rhsBytes in
-        lhsBytes.elementsEqual(rhsBytes)
-      }
+    guard lhs.rawValue.st_dev == rhs.rawValue.st_dev,
+          lhs.rawValue.st_ino == rhs.rawValue.st_ino,
+          lhs.rawValue.st_mode == rhs.rawValue.st_mode,
+          lhs.rawValue.st_nlink == rhs.rawValue.st_nlink,
+          lhs.rawValue.st_uid == rhs.rawValue.st_uid,
+          lhs.rawValue.st_gid == rhs.rawValue.st_gid,
+          lhs.rawValue.st_rdev == rhs.rawValue.st_rdev,
+          lhs.rawValue.st_size == rhs.rawValue.st_size,
+          lhs.rawValue.st_blksize == rhs.rawValue.st_blksize,
+          lhs.rawValue.st_blocks == rhs.rawValue.st_blocks,
+          lhs.st_atim.tv_sec == rhs.st_atim.tv_sec,
+          lhs.st_atim.tv_nsec == rhs.st_atim.tv_nsec,
+          lhs.st_mtim.tv_sec == rhs.st_mtim.tv_sec,
+          lhs.st_mtim.tv_nsec == rhs.st_mtim.tv_nsec,
+          lhs.st_ctim.tv_sec == rhs.st_ctim.tv_sec,
+          lhs.st_ctim.tv_nsec == rhs.st_ctim.tv_nsec else {
+      return false
     }
+    #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
+    guard lhs.st_birthtim.tv_sec == rhs.st_birthtim.tv_sec,
+          lhs.st_birthtim.tv_nsec == rhs.st_birthtim.tv_nsec else {
+      return false
+    }
+    #endif
+    #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+    guard lhs.rawValue.st_flags == rhs.rawValue.st_flags,
+          lhs.rawValue.st_gen == rhs.rawValue.st_gen else {
+      return false
+    }
+    #endif
+    return true
   }
 }
 
 @available(System 1.7.0, *)
 extension Stat: Hashable {
-  @_alwaysEmitIntoClient
-  /// Hashes the raw bytes of this `Stat` struct.
+  /// Hashes the meaningful file-metadata fields of a `Stat` struct.
+  ///
+  /// These are the same fields compared by `==`, fed in the same order.
+  /// Alignment padding and platform reserved/"spare" fields are not hashed.
   public func hash(into hasher: inout Hasher) {
-    withUnsafeBytes(of: rawValue) { bytes in
-      hasher.combine(bytes: bytes)
-    }
+    hasher.combine(rawValue.st_dev)
+    hasher.combine(rawValue.st_ino)
+    hasher.combine(rawValue.st_mode)
+    hasher.combine(rawValue.st_nlink)
+    hasher.combine(rawValue.st_uid)
+    hasher.combine(rawValue.st_gid)
+    hasher.combine(rawValue.st_rdev)
+    hasher.combine(rawValue.st_size)
+    hasher.combine(rawValue.st_blksize)
+    hasher.combine(rawValue.st_blocks)
+    hasher.combine(st_atim.tv_sec)
+    hasher.combine(st_atim.tv_nsec)
+    hasher.combine(st_mtim.tv_sec)
+    hasher.combine(st_mtim.tv_nsec)
+    hasher.combine(st_ctim.tv_sec)
+    hasher.combine(st_ctim.tv_nsec)
+    #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
+    hasher.combine(st_birthtim.tv_sec)
+    hasher.combine(st_birthtim.tv_nsec)
+    #endif
+    #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+    hasher.combine(rawValue.st_flags)
+    hasher.combine(rawValue.st_gen)
+    #endif
   }
 }
 
