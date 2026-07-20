@@ -541,7 +541,6 @@ extension Stat: Equatable {
   /// Compares the meaningful file-metadata fields of two `Stat` values.
   ///
   /// Alignment padding and platform reserved/"spare" fields are not compared.
-  @_alwaysEmitIntoClient
   public static func == (lhs: Self, rhs: Self) -> Bool {
     guard lhs.rawValue.st_dev == rhs.rawValue.st_dev,
           lhs.rawValue.st_ino == rhs.rawValue.st_ino,
@@ -582,7 +581,6 @@ extension Stat: Hashable {
   /// Hashes a subset of `Stat` fields that identify a file: the device and
   /// inode identity plus a couple of high-entropy discriminators (size and
   /// modification time).
-  @_alwaysEmitIntoClient
   public func hash(into hasher: inout Hasher) {
     hasher.combine(rawValue.st_dev)
     hasher.combine(rawValue.st_ino)

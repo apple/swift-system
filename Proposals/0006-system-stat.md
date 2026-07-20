@@ -79,7 +79,7 @@ These initializers use a typed `throws(Errno)` and require Swift 6.0 or later.
 
 See the **Appendix** section at the end of this proposal for a table view of Swift API to C mappings.
 
-All API are marked `@_alwaysEmitIntoClient` for performance and back-dating of availability.
+All API are marked `@_alwaysEmitIntoClient` for performance and back-dating of availability, except `Stat`'s `==` and `hash(into:)`, which are ordinary `public` API.
 
 ### FileType
 
