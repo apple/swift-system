@@ -693,12 +693,13 @@ public struct Stat: RawRepresentable, Sendable {
 
   /// File generation number
   ///
-  /// The file generation number is used to distinguish between different files
-  /// that have used the same inode over time.
+  /// The file generation number may be used to distinguish between different
+  /// files that have used the same inode over time.
   ///
   /// The corresponding C property is `st_gen`.
-  /// - Note: Only available on Darwin, FreeBSD, and OpenBSD.
-  public var generationNumber: Int { get set }
+  /// - Note: Only available on Darwin, FreeBSD, and OpenBSD. The underlying C
+  ///   field is 32-bit on Darwin and OpenBSD, and 64-bit on FreeBSD.
+  public var generationNumber: UInt64 { get set }
   #endif
 }
 
