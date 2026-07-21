@@ -230,7 +230,7 @@ extension FileDescriptor {
   internal func _read(
     into buffer: UnsafeMutableRawBufferPointer,
     retryOnInterrupt: Bool
-  ) throws -> Result<Int, Errno> {
+  ) -> Result<Int, Errno> {
     valueOrErrno(retryOnInterrupt: retryOnInterrupt) {
       system_read(self.rawValue, buffer.baseAddress, buffer.count)
     }

@@ -2,7 +2,7 @@
 //
 // This source file is part of the Swift System open source project
 //
-// Copyright (c) 2025 Apple Inc. and the Swift System project authors
+// Copyright (c) 2025 - 2026 Apple Inc. and the Swift System project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
@@ -35,7 +35,7 @@ import Android
 ///
 /// - Note: Only available on Unix-like platforms.
 @frozen
-@available(System 99, *)
+@available(System 1.7.0, *)
 public struct Stat: RawRepresentable, Sendable {
 
   /// The raw C `stat` struct.
@@ -521,42 +521,93 @@ public struct Stat: RawRepresentable, Sendable {
 
   /// File generation number
   ///
-  /// The file generation number is used to distinguish between different files
-  /// that have used the same inode over time.
+  /// The file generation number may be used to distinguish between different
+  /// files that have used the same inode over time.
   ///
   /// The corresponding C property is `st_gen`.
-  /// - Note: Only available on Darwin, FreeBSD, and OpenBSD.
+  /// - Note: Only available on Darwin, FreeBSD, and OpenBSD. The underlying C
+  ///   field is 32-bit on Darwin and OpenBSD, and 64-bit on FreeBSD.
   @_alwaysEmitIntoClient
-  public var generationNumber: Int {
-    get { Int(rawValue.st_gen) }
-    set { rawValue.st_gen = numericCast(newValue)}
+  public var generationNumber: UInt64 {
+    get { UInt64(rawValue.st_gen) }
+    set { rawValue.st_gen = numericCast(newValue) }
   }
   #endif
 }
 
 // MARK: - Equatable and Hashable
 
-@available(System 99, *)
+@available(System 1.7.0, *)
 extension Stat: Equatable {
-  @_alwaysEmitIntoClient
-  /// Compares the raw bytes of two `Stat` structs for equality.
+  /// Compares the meaningful file-metadata fields of two `Stat` values.
+  ///
+  /// Alignment padding and platform reserved/"spare" fields are not compared.
   public static func == (lhs: Self, rhs: Self) -> Bool {
-    return withUnsafeBytes(of: lhs.rawValue) { lhsBytes in
-      withUnsafeBytes(of: rhs.rawValue) { rhsBytes in
-        lhsBytes.elementsEqual(rhsBytes)
-      }
+    guard lhs.rawValue.st_dev == rhs.rawValue.st_dev,
+          lhs.rawValue.st_ino == rhs.rawValue.st_ino,
+          lhs.rawValue.st_mode == rhs.rawValue.st_mode,
+          lhs.rawValue.st_nlink == rhs.rawValue.st_nlink,
+          lhs.rawValue.st_uid == rhs.rawValue.st_uid,
+          lhs.rawValue.st_gid == rhs.rawValue.st_gid,
+          lhs.rawValue.st_rdev == rhs.rawValue.st_rdev,
+          lhs.rawValue.st_size == rhs.rawValue.st_size,
+          lhs.rawValue.st_blksize == rhs.rawValue.st_blksize,
+          lhs.rawValue.st_blocks == rhs.rawValue.st_blocks,
+          lhs.st_atim.tv_sec == rhs.st_atim.tv_sec,
+          lhs.st_atim.tv_nsec == rhs.st_atim.tv_nsec,
+          lhs.st_mtim.tv_sec == rhs.st_mtim.tv_sec,
+          lhs.st_mtim.tv_nsec == rhs.st_mtim.tv_nsec,
+          lhs.st_ctim.tv_sec == rhs.st_ctim.tv_sec,
+          lhs.st_ctim.tv_nsec == rhs.st_ctim.tv_nsec else {
+      return false
     }
+    #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
+    guard lhs.st_birthtim.tv_sec == rhs.st_birthtim.tv_sec,
+          lhs.st_birthtim.tv_nsec == rhs.st_birthtim.tv_nsec else {
+      return false
+    }
+    #endif
+    #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+    guard lhs.rawValue.st_flags == rhs.rawValue.st_flags,
+          lhs.rawValue.st_gen == rhs.rawValue.st_gen else {
+      return false
+    }
+    #endif
+    return true
   }
 }
 
-@available(System 99, *)
+@available(System 1.7.0, *)
 extension Stat: Hashable {
-  @_alwaysEmitIntoClient
-  /// Hashes the raw bytes of this `Stat` struct.
+  /// Hashes the meaningful file-metadata fields of a `Stat` struct.
+  ///
+  /// These are the same fields compared by `==`, fed in the same order.
+  /// Alignment padding and platform reserved/"spare" fields are not hashed.
   public func hash(into hasher: inout Hasher) {
-    withUnsafeBytes(of: rawValue) { bytes in
-      hasher.combine(bytes: bytes)
-    }
+    hasher.combine(rawValue.st_dev)
+    hasher.combine(rawValue.st_ino)
+    hasher.combine(rawValue.st_mode)
+    hasher.combine(rawValue.st_nlink)
+    hasher.combine(rawValue.st_uid)
+    hasher.combine(rawValue.st_gid)
+    hasher.combine(rawValue.st_rdev)
+    hasher.combine(rawValue.st_size)
+    hasher.combine(rawValue.st_blksize)
+    hasher.combine(rawValue.st_blocks)
+    hasher.combine(st_atim.tv_sec)
+    hasher.combine(st_atim.tv_nsec)
+    hasher.combine(st_mtim.tv_sec)
+    hasher.combine(st_mtim.tv_nsec)
+    hasher.combine(st_ctim.tv_sec)
+    hasher.combine(st_ctim.tv_nsec)
+    #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
+    hasher.combine(st_birthtim.tv_sec)
+    hasher.combine(st_birthtim.tv_nsec)
+    #endif
+    #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+    hasher.combine(rawValue.st_flags)
+    hasher.combine(rawValue.st_gen)
+    #endif
   }
 }
 
@@ -564,7 +615,7 @@ extension Stat: Hashable {
 
 // MARK: - FileDescriptor Extensions
 
-@available(System 99, *)
+@available(System 1.7.0, *)
 extension FileDescriptor {
 
   /// Creates a `Stat` struct for the file referenced by this `FileDescriptor`.
@@ -580,7 +631,7 @@ extension FileDescriptor {
 
 // MARK: - FilePath Extensions
 
-@available(System 99, *)
+@available(System 1.7.0, *)
 extension FilePath {
 
   /// Creates a `Stat` struct for the file referenced by this `FilePath`.

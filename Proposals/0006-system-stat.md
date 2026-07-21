@@ -79,7 +79,7 @@ These initializers use a typed `throws(Errno)` and require Swift 6.0 or later.
 
 See the **Appendix** section at the end of this proposal for a table view of Swift API to C mappings.
 
-All API are marked `@_alwaysEmitIntoClient` for performance and back-dating of availability.
+All API are marked `@_alwaysEmitIntoClient` for performance and back-dating of availability, except `Stat`'s `==` and `hash(into:)`, which are ordinary `public` API.
 
 ### FileType
 
@@ -693,24 +693,27 @@ public struct Stat: RawRepresentable, Sendable {
 
   /// File generation number
   ///
-  /// The file generation number is used to distinguish between different files
-  /// that have used the same inode over time.
+  /// The file generation number may be used to distinguish between different
+  /// files that have used the same inode over time.
   ///
   /// The corresponding C property is `st_gen`.
-  /// - Note: Only available on Darwin, FreeBSD, and OpenBSD.
-  public var generationNumber: Int { get set }
+  /// - Note: Only available on Darwin, FreeBSD, and OpenBSD. The underlying C
+  ///   field is 32-bit on Darwin and OpenBSD, and 64-bit on FreeBSD.
+  public var generationNumber: UInt64 { get set }
   #endif
 }
 
 // MARK: - Equatable and Hashable
 
 extension Stat: Equatable {
-  /// Compares the raw bytes of two `Stat` structs for equality.
+  /// Compares the meaningful file-metadata fields of two `Stat` values.
+  ///
+  /// Alignment padding and platform reserved/"spare" fields are not compared.
   public static func == (lhs: Self, rhs: Self) -> Bool
 }
 
 extension Stat: Hashable {
-  /// Hashes the raw bytes of this `Stat` struct.
+  /// Hashes the meaningful file-metadata fields of a `Stat` struct.
   public func hash(into hasher: inout Hasher)
 }
 ```

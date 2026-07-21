@@ -2,7 +2,7 @@
 //
 // This source file is part of the Swift System open source project
 //
-// Copyright (c) 2025 Apple Inc. and the Swift System project authors
+// Copyright (c) 2025 - 2026 Apple Inc. and the Swift System project authors
 // Licensed under Apache License v2.0 with Runtime Library Exception
 //
 // See https://swift.org/LICENSE.txt for license information
@@ -36,7 +36,7 @@ import Android
 @Suite("FileMode")
 private struct FileModeTests {
 
-  @available(System 99, *)
+  @available(System 1.7.0, *)
   @Test func basics() async throws {
     var mode = FileMode(rawValue: S_IFREG | 0o644) // Regular file, rw-r--r--
     #expect(mode.type == .regular)
@@ -67,7 +67,7 @@ private struct FileModeTests {
     #expect(mode.type == mode2.type)
   }
 
-  @available(System 99, *)
+  @available(System 1.7.0, *)
   @Test func invalidInput() async throws {
     // No permissions, all other bits set
     var invalidMode = FileMode(rawValue: ~0o7777)
