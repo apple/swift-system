@@ -61,6 +61,7 @@ jobs:
         ]
       enable_android_sdk_build: true
       enable_android_sdk_checks: true
+      enable_freebsd_checks: true
 
   build-abi-stable:
     name: Build ABI Stable
