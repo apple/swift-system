@@ -153,6 +153,36 @@ final class FileOperationsTest: XCTestCase {
     }
   }
 
+  func testPositionedIODoesNotMoveFileOffset() throws {
+    try withTemporaryFilePath(basename: "testPositionedIO") { path in
+      let fd = try FileDescriptor.open(
+        path.appending("f.txt"), .readWrite,
+        options: [.create, .truncate], permissions: .ownerReadWrite)
+      defer { try? fd.close() }
+
+      try fd.writeAll("0123456789".utf8)
+
+      // Park the file offset at a known position.
+      XCTAssertEqual(try fd.seek(offset: 3, from: .start), 3)
+
+      // A positioned read must not move the file offset (POSIX pread).
+      var readBuf = [UInt8](repeating: 0, count: 2)
+      let n = try readBuf.withUnsafeMutableBytes {
+        try fd.read(fromAbsoluteOffset: 6, into: $0)
+      }
+      XCTAssertEqual(n, 2)
+      XCTAssertEqual(Array(readBuf), Array("67".utf8))
+      XCTAssertEqual(try fd.seek(offset: 0, from: .current), 3)
+
+      // A positioned write must not move the file offset either (POSIX pwrite).
+      let m = try Array("ab".utf8).withUnsafeBytes {
+        try fd.write(toAbsoluteOffset: 8, $0)
+      }
+      XCTAssertEqual(m, 2)
+      XCTAssertEqual(try fd.seek(offset: 0, from: .current), 3)
+    }
+  }
+
   func testHelpers() {
     // TODO: Test writeAll, writeAll(toAbsoluteOffset), closeAfter
   }
