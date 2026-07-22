@@ -222,6 +222,11 @@ private struct StatTests {
 
   @available(System 1.7.0, *)
   @Test func times() async throws {
+    // This test pauses with `usleep` between some measurements to ensure that
+    // the timestamp used by the filesystem will advance. On Linux and Android
+    // the granularity of that clock may be as much as 10ms. We use 50ms
+    // in order to have a comfortable margin.
+    let timestampSleep: useconds_t = 50_000
     var start = timespec()
     try #require(clock_gettime(CLOCK_REALTIME, &start) == 0, "\(Errno.current)")
     start.tv_sec -= 1 // A little wiggle room
@@ -247,8 +252,7 @@ private struct StatTests {
       #expect(dirCreationTime0 < startUpperBound)
       #endif
 
-      // Fails intermittently if less than 5ms
-      usleep(10000)
+      usleep(timestampSleep)
 
       let file1 = tempDir.appending("test1.txt")
       let fd1 = try FileDescriptor.open(file1, .writeOnly, options: .create, permissions: .ownerReadWrite)
@@ -274,7 +278,7 @@ private struct StatTests {
       #expect(dirCreationTime1 == dirCreationTime0)
       #endif
 
-      usleep(10000)
+      usleep(timestampSleep)
 
       // Changing permissions only updates directory change time
 
@@ -302,7 +306,7 @@ private struct StatTests {
       let file1CreationTime1 = stat1.st_birthtim
       #endif
 
-      usleep(10000)
+      usleep(timestampSleep)
 
       try fd1.writeAll("Hello, world!".utf8)
       stat1 = try file1.stat()
@@ -330,7 +334,7 @@ private struct StatTests {
       #expect(dirStat.st_birthtim == dirCreationTime1)
       #endif
 
-      usleep(10000)
+      usleep(timestampSleep)
 
       let file2 = tempDir.appending("test2.txt")
       let fd2 = try FileDescriptor.open(file2, .writeOnly, options: .create, permissions: .ownerReadWrite)
