@@ -121,11 +121,6 @@ where C.Element: Equatable {
 }
 
 extension MutableCollection where Element: Equatable {
-  mutating func _replaceAll(_ e: Element, with new: Element) {
-    for idx in self.indices {
-      if self[idx] == e { self[idx] = new }
-    }
-  }
 }
 
 internal func _withOptionalUnsafePointerOrNull<T, R>(

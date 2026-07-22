@@ -57,9 +57,11 @@ extension FilePath {
   @available(*, deprecated, message: "Use FilePath(_: String) to create a path from a String")
   public init(platformString: String) {
     if let nullLoc = platformString.firstIndex(of: "\0") {
-      self = FilePath(String(platformString[..<nullLoc]))
+      // TODO: NOTE: I had to add the !, I think we want system to have non-failable
+      // for source compat reasons
+      self = FilePath(String(platformString[..<nullLoc]))!
     } else {
-      self = FilePath(platformString)
+      self = FilePath(platformString)!
     }
   }
 
@@ -287,6 +289,7 @@ extension FilePath.Root {
 
 // MARK: - String literals
 
+#if false // PORT-CLOBBERED: superseded by stdlib copy
 @available(System 0.0.1, *)
 extension FilePath: ExpressibleByStringLiteral {
   /// Creates a file path from a string literal.
@@ -330,6 +333,7 @@ extension FilePath.Component: ExpressibleByStringLiteral {
     self.init(SystemString(string))
   }
 }
+#endif
 
 @available(System 0.0.2, *)
 extension FilePath.Root: ExpressibleByStringLiteral {
@@ -350,12 +354,15 @@ extension FilePath.Root: ExpressibleByStringLiteral {
   ///
   /// Returns `nil` if `string` is empty or is not a root.
   public init?(_ string: String) {
-    self.init(SystemString(string))
+    // Truncates at the first NUL, matching historical behavior, then
+    // converts to the copy's substrate.
+    self.init(_SystemString(SystemString(string)))
   }
 }
 
 // MARK: - Printing and dumping
 
+#if false // PORT-CLOBBERED: superseded by stdlib copy
 @available(System 0.0.1, *)
 extension FilePath: CustomStringConvertible, CustomDebugStringConvertible {
   /// A textual representation of the file path.
@@ -388,6 +395,7 @@ extension FilePath.Component: CustomStringConvertible, CustomDebugStringConverti
   /// this replaces invalid bytes with U+FFFD. See `String.init(decoding:)`.
   public var debugDescription: String { description.debugDescription }
 }
+#endif
 
 @available(System 0.0.2, *)
 extension FilePath.Root: CustomStringConvertible, CustomDebugStringConvertible {
@@ -445,6 +453,7 @@ extension FilePath.Root {
 
 // MARK: - Decoding and validating
 
+#if false // PORT-CLOBBERED: superseded by stdlib copy
 @available(System 0.0.1, *)
 extension String {
   /// Creates a string by interpreting the file path's content as UTF-8 on Unix
@@ -474,7 +483,9 @@ extension String {
     self.init(_validating: path)
   }
 }
+#endif
 
+#if false // PORT-CLOBBERED: superseded by stdlib copy
 @available(System 0.0.2, *)
 extension String {
   /// Creates a string by interpreting the path component's content as UTF-8 on
@@ -504,6 +515,7 @@ extension String {
     self.init(_validating: component)
   }
 }
+#endif
 
 @available(System 0.0.2, *)
 extension String {
