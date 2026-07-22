@@ -15,7 +15,7 @@
 
 Swift System today provides `FileDescriptor.duplicate()`, `FileDescriptor.duplicate(as:)` and `FileDescriptor.pipe()` cover APIs for the POSIX `dup`, `dup2`, and `pipe` functions, respectively.
 
-This proposal adds additional `FileDescriptor` overloads to cover new POSIX 2024 functions in this family of APIs. These overloads will be available on Linux, FreeBSD, Android, and the Apple operating systems based on Darwin 27.0 or newer.
+This proposal adds additional `FileDescriptor` overloads to cover new POSIX 2024 functions in this family of APIs. These overloads will be available on Linux, FreeBSD, Android, and the Apple operating systems based on Darwin 27.0 or newer; `pipe(options:)` will also be available on Windows.
 
 ## Motivation
 
@@ -50,6 +50,11 @@ struct FileDescriptor {
   /// Creates a unidirectional data channel, which can be used for
   /// interprocess communication.
   ///
+  /// NOTE: This overload called with an empty option set is not necessarily
+  /// equivalent to calling the overload with no options. On Windows, the
+  /// no-parameter `pipe()` overload enables the `.closeOnExec` behaviour,
+  /// but this overload disables it when called with an empty option set.
+  ///
   /// - Parameters:
   ///   - options: The behavior for creating the pipe.
   ///
@@ -72,6 +77,10 @@ struct FileDescriptor {
   ///
   /// If the `target` descriptor is already in use, then it is first
   /// deallocated as if a close(2) call had been done first.
+  ///
+  /// NOTE: This overload called with an empty option set is not necessarily
+  /// equivalent to calling the overload with no options, because `dup3` with
+  /// no set options is not required to behave identically to `dup2`.
   ///
   /// File descriptors are merely references to some underlying system resource.
   /// The system does not distinguish between the original and the new file
