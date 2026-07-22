@@ -36,6 +36,28 @@ target_sources(SystemPackage PRIVATE
   FilePath/FilePathDecomposition.swift
   FilePath/FilePathInternals.swift
   FilePath/FilePathParsing.swift
+<<<<<<< HEAD
+  FilePath/FilePathString.swift
+  FilePath/FilePathSyntax.swift
+  FilePath/FilePathTemp.swift
+  FilePath/FilePathTempPosix.swift
+  FilePath/FilePathTempWindows.swift
+  FilePath/FilePathWindows.swift)
+target_sources(SystemPackage PRIVATE
+  FileSystem/FileFlags.swift
+  FileSystem/FileMode.swift
+  FileSystem/FileType.swift
+  FileSystem/Identifiers.swift
+  FileSystem/Stat.swift)
+if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+  target_sources(SystemPackage PRIVATE
+    IORing/IOCompletion.swift
+    IORing/IORequest.swift
+    IORing/IORing.swift
+    IORing/IORing+Util.swift
+    IORing/RawIORequest.swift)
+endif()
+=======
   FilePath/FilePathResolve.swift
   FilePath/FilePathStringBridging.swift
   FilePath/FilePathSystemString.swift
@@ -52,20 +74,7 @@ target_sources(SystemPackage PRIVATE
   SystemFilePath/FilePathTempPosix.swift
   SystemFilePath/FilePathTempWindows.swift
   SystemFilePath/SystemStringShim.swift)
-target_sources(SystemPackage PRIVATE
-  FileSystem/FileFlags.swift
-  FileSystem/FileMode.swift
-  FileSystem/FileType.swift
-  FileSystem/Identifiers.swift
-  FileSystem/Stat.swift)
-if(CMAKE_SYSTEM_NAME STREQUAL Linux)
-  target_sources(SystemPackage PRIVATE
-    IORing/IOCompletion.swift
-    IORing/IORequest.swift
-    IORing/IORing.swift
-    IORing/IORing+Util.swift
-    IORing/RawIORequest.swift)
-endif()
+>>>>>>> d17277b (wip: port to system, same module separate folders)
 target_sources(SystemPackage PRIVATE
   Internals/Backcompat.swift
   Internals/CInterop.swift

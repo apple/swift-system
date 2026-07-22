@@ -77,17 +77,23 @@ final class FilePathParsingTest: XCTestCase {
       .unix("", normalized: ""),
       .unix("//", normalized: "/"),
       .unix("///", normalized: "/"),
-      .unix("/foo/bar/", normalized: "/foo/bar"),
+      .unix("/foo/bar/", normalized: "/foo/bar/"),
       .unix("foo//bar", normalized: "foo/bar"),
-      .unix("//foo/bar//baz/", normalized: "/foo/bar/baz"),
-      .unix("/foo/bar/baz//", normalized: "/foo/bar/baz"),
-      .unix("/foo/bar/baz///", normalized: "/foo/bar/baz"),
+      .unix("//foo/bar//baz/", normalized: "/foo/bar/baz/"),
+      .unix("/foo/bar/baz//", normalized: "/foo/bar/baz/"),
+      .unix("/foo/bar/baz///", normalized: "/foo/bar/baz/"),
     ]
 
+    // NOTE: SE-0529 preserves trailing separators, and there is no runtime
+    // path forcing — the base parses for the build's platform at compile time.
+    // These Windows cases only parse as Windows on a Windows build, so they are
+    // gated to `os(Windows)`. Their expected values are updated to SE-0529
+    // trailing-separator semantics but are NOT exercised on this (Darwin) host.
+#if os(Windows)
     let windowsPaths: Array<ParsingTestCase> = [
-      .windows(#"C:\\folder\file\"#, normalized: #"C:\folder\file"#),
-      .windows(#"C:folder\\\file\\\"#, normalized: #"C:folder\file"#),
-      .windows(#"C:/foo//bar/"#, normalized: #"C:\foo\bar"#),
+      .windows(#"C:\\folder\file\"#, normalized: #"C:\folder\file\"#),
+      .windows(#"C:folder\\\file\\\"#, normalized: #"C:folder\file\"#),
+      .windows(#"C:/foo//bar/"#, normalized: #"C:\foo\bar\"#),
 
       .windows(#"\\server\share\"#, normalized: #"\\server\share\"#),
       .windows(#"//server/share/"#, normalized: #"\\server\share\"#),
@@ -97,13 +103,16 @@ final class FilePathParsingTest: XCTestCase {
       .windows(#"C:\"#, normalized: #"C:\"#),
       .windows(#"\"#, normalized: #"\"#),
     ]
+#endif
 
     for test in unixPaths {
       test.runAllTests()
     }
+#if os(Windows)
     for test in windowsPaths {
       test.runAllTests()
     }
+#endif
   }
 }
 #endif // ENABLE_MOCKING
