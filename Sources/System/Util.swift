@@ -7,6 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
+
 // Results in errno if i == -1
 @available(System 0.0.1, *)
 private func valueOrErrno<I: FixedWidthInteger>(
@@ -121,11 +122,6 @@ where C.Element: Equatable {
 }
 
 extension MutableCollection where Element: Equatable {
-  mutating func _replaceAll(_ e: Element, with new: Element) {
-    for idx in self.indices {
-      if self[idx] == e { self[idx] = new }
-    }
-  }
 }
 
 internal func _withOptionalUnsafePointerOrNull<T, R>(

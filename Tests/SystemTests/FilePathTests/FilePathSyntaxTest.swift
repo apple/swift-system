@@ -152,6 +152,15 @@ extension SyntaxTestCase {
   func testComponents(_ path: FilePath, expected: [String]) {
     let expectedComponents = expected.map { FilePath.Component($0)! }
 
+    // SE-0529 preserves a trailing separator on parse, but reconstructing a
+    // path from its components cannot restore one (a ComponentView carries no
+    // trailing-separator bit). The reconstruction equality checks below
+    // therefore compare modulo the trailing separator; the separator itself is
+    // verified against `.description` in runAllTests ("normalized").
+    func _noTrailingSep(_ p: FilePath) -> FilePath {
+      var p = p; p.hasTrailingSeparator = false; return p
+    }
+
     expectEqualSequence(expectedComponents, Array(path.components),
                         "expected components")
     expectEqualSequence(expectedComponents, Array(path.removingRoot().components),
@@ -161,10 +170,10 @@ extension SyntaxTestCase {
     expectEqual(expectedComponents.first, path.components.first)
     expectEqual(expectedComponents.last, path.components.last)
 
-   expectEqual(path, FilePath(root: path.root, expectedComponents), "init<C>(root:components)")
-   expectEqual(path, FilePath(root: path.root, path.components), "init<C>(root:components)")
-    expectEqual(path, FilePath(
-                  root: path.root, path.components[...]),
+   expectEqual(_noTrailingSep(path), _noTrailingSep(FilePath(root: path.root, expectedComponents)), "init<C>(root:components)")
+   expectEqual(_noTrailingSep(path), _noTrailingSep(FilePath(root: path.root, path.components)), "init<C>(root:components)")
+    expectEqual(_noTrailingSep(path), _noTrailingSep(FilePath(
+                  root: path.root, path.components[...])),
                 "init(_ components: Slice)")
 
     let reversedPathComponents = path.components.reversed()
@@ -185,8 +194,8 @@ extension SyntaxTestCase {
 
     expectTrue(path.starts(with: path.removingLastComponent()),
                "starts(with: dirname)")
-    expectEqual(path.removingLastComponent(), FilePath(
-                  root: path.root, path.components.dropLast()),
+    expectEqual(_noTrailingSep(path.removingLastComponent()), _noTrailingSep(FilePath(
+                  root: path.root, path.components.dropLast())),
                 "ComponentView.dirname")
 
     var prefixComps = expectedComponents
@@ -199,7 +208,7 @@ extension SyntaxTestCase {
       expectTrue(path.starts(with: prefixBasenamePath), "startswith")
       expectTrue(path.starts(with: prefixPopLastPath), "startswith")
       expectEqual(prefixBasenamePath, prefixPopLastPath, "popLast/basename")
-      expectEqual(prefixBasenamePath, FilePath(root: path.root, compView),
+      expectEqual(_noTrailingSep(prefixBasenamePath), _noTrailingSep(FilePath(root: path.root, compView)),
                   "popLast/basename")
       prefixComps.removeLast()
       prefixBasenamePath = prefixBasenamePath.removingLastComponent()
@@ -231,6 +240,13 @@ extension SyntaxTestCase {
 
 
   func runAllTests() {
+    // SE-0529 removes runtime path forcing (the base parses for the build's
+    // platform at compile time), so Windows-shaped cases can only be validated
+    // on a Windows build. Skip them elsewhere. (Was: `withWindowsPaths` forced
+    // the Windows parser on any host.)
+  #if !os(Windows)
+    if isWindows { return }
+  #endif
     // Assert we were set up correctly if non-nil
     func assertNonEmpty<C: Collection>(_ c: C?) {
       assert(c == nil || !c!.isEmpty)
@@ -346,6 +362,7 @@ private struct WindowsRootTestCase: TestCase {
 @available(System 0.0.2, *)
 extension WindowsRootTestCase {
   func runAllTests() {
+  #if os(Windows)
     withWindowsPaths(enabled: true) {
       let path = FilePath(rootStr)
       expectEqual(expected, path.string)
@@ -355,6 +372,7 @@ extension WindowsRootTestCase {
       expectTrue(path.removingRoot().isEmpty)
       expectTrue(path.isLexicallyNormal)
     }
+  #endif // os(Windows) -- Windows-only cases; runtime path forcing is gone (SE-0529)
   }
 }
 
@@ -378,19 +396,24 @@ final class FilePathSyntaxTest: XCTestCase {
         lexicallyNormalized: "/"
       ),
 
+      // SE-0529: a `.` after a root is dropped (dot-normalization), so `/.` == `/`.
       .unix(
         "/.",
-        root: "/", relative: ".",
-        dirname: "/", basename: ".",
-        components: ["."],
+        normalized: "/",
+        root: "/", relative: "",
+        dirname: "/", basename: nil,
+        components: [],
         lexicallyNormalized: "/"
       ),
 
+      // SE-0529: `..` is preserved but the trailing `.` becomes a trailing
+      // separator, so `/../.` == `/../`.
       .unix(
         "/../.",
-        root: "/", relative: "../.",
-        dirname: "/..", basename: ".",
-        components: ["..", "."],
+        normalized: "/../",
+        root: "/", relative: "../",
+        dirname: "/", basename: "..",
+        components: [".."],
         lexicallyNormalized: "/"
       ),
 
@@ -408,17 +431,19 @@ final class FilePathSyntaxTest: XCTestCase {
         lexicallyNormalized: ".."
       ),
 
-      .unix(
-        "./..",
-        dirname: ".", basename: "..",
-        components: [".", ".."],
-        lexicallyNormalized: ".."
-      ),
+      // REMOVED (SE-0529): `./..` keeps its leading `.` (a rootless leading
+      // `.` is preserved), but component *reversal* moves that `.` to a
+      // non-leading position where it is dropped, so the harness's generic
+      // "doubly reversed" round-trip cannot hold for this shape. The
+      // leading-`.` behavior itself is still covered by the `.` / `./.` cases.
 
+      // SE-0529: leading `..` preserved, trailing `.` becomes a trailing
+      // separator, so `../.` == `../`.
       .unix(
         "../.",
-        dirname: "..", basename: ".",
-        components: ["..", "."],
+        normalized: "../",
+        dirname: "", basename: "..",
+        components: [".."],
         lexicallyNormalized: ".."
       ),
 
@@ -436,25 +461,31 @@ final class FilePathSyntaxTest: XCTestCase {
         lexicallyNormalized: ".."
       ),
 
+      // SE-0529: interior `.` components are dropped.
       .unix(
         "a/.././.././../b",
-        dirname: "a/.././.././..", basename: "b",
-        components: ["a", "..", ".", "..", ".", "..", "b"],
+        normalized: "a/../../../b",
+        dirname: "a/../../..", basename: "b",
+        components: ["a", "..", "..", "..", "b"],
         lexicallyNormalized: "../../b"
       ),
 
       .unix(
         "/a/.././.././../b",
-        root: "/", relative: "a/.././.././../b",
-        dirname: "/a/.././.././..", basename: "b",
-        components: ["a", "..", ".", "..", ".", "..", "b"],
+        normalized: "/a/../../../b",
+        root: "/", relative: "a/../../../b",
+        dirname: "/a/../../..", basename: "b",
+        components: ["a", "..", "..", "..", "b"],
         lexicallyNormalized: "/b"
       ),
 
+      // SE-0529: leading `.` kept, trailing `.` becomes a trailing separator,
+      // so `./.` == `./`.
       .unix(
         "./.",
-        dirname: ".", basename: ".",
-        components: [".", "."],
+        normalized: "./",
+        dirname: "", basename: ".",
+        components: ["."],
         lexicallyNormalized: ""
       ),
 
@@ -472,10 +503,12 @@ final class FilePathSyntaxTest: XCTestCase {
         lexicallyNormalized: "a"
       ),
 
+      // SE-0529: interior `.` dropped, trailing `.` becomes a trailing separator.
       .unix(
         "a/./foo/bar/.././../.",
-        dirname: "a/./foo/bar/.././..", basename: ".",
-        components: ["a", ".", "foo", "bar", "..", ".", "..", "."],
+        normalized: "a/foo/bar/../../",
+        dirname: "a/foo/bar/..", basename: "..",
+        components: ["a", "foo", "bar", "..", ".."],
         lexicallyNormalized: "a"
       ),
 
@@ -514,19 +547,24 @@ final class FilePathSyntaxTest: XCTestCase {
         components: ["~", "bar.app"]
       ),
 
+      // SE-0529: trailing separator preserved on parse, but lexical
+      // normalization strips a non-structural trailing separator.
       .unix(
         "~/bar.app.bak/",
-        normalized: "~/bar.app.bak",
+        normalized: "~/bar.app.bak/",
         dirname: "~", basename: "bar.app.bak",
         stem: "bar.app", extension: "bak",
-        components: ["~", "bar.app.bak"]
+        components: ["~", "bar.app.bak"],
+        lexicallyNormalized: "~/bar.app.bak"
       ),
 
+      // SE-0529: trailing `.` becomes a trailing separator, so `/tmp/.` == `/tmp/`.
       .unix(
         "/tmp/.",
-        root: "/", relative: "tmp/.",
-        dirname: "/tmp", basename: ".",
-        components: ["tmp", "."],
+        normalized: "/tmp/",
+        root: "/", relative: "tmp/",
+        dirname: "/", basename: "tmp",
+        components: ["tmp"],
         lexicallyNormalized: "/tmp"
       ),
 
@@ -538,20 +576,23 @@ final class FilePathSyntaxTest: XCTestCase {
         lexicallyNormalized: "/"
       ),
 
+      // SE-0529: trailing separator preserved.
       .unix(
         "/tmp/../",
-        normalized: "/tmp/..",
-        root: "/", relative: "tmp/..",
+        normalized: "/tmp/../",
+        root: "/", relative: "tmp/../",
         dirname: "/tmp", basename: "..",
         components: ["tmp", ".."],
         lexicallyNormalized: "/"
       ),
 
+      // SE-0529: interior `.` dropped.
       .unix(
         "/tmp/./a/../b",
-        root: "/", relative: "tmp/./a/../b",
-        dirname: "/tmp/./a/..", basename: "b",
-        components: ["tmp", ".", "a", "..", "b"],
+        normalized: "/tmp/a/../b",
+        root: "/", relative: "tmp/a/../b",
+        dirname: "/tmp/a/..", basename: "b",
+        components: ["tmp", "a", "..", "b"],
         lexicallyNormalized: "/tmp/b"
       ),
 
@@ -809,7 +850,6 @@ final class FilePathSyntaxTest: XCTestCase {
       ("/usr/bin/ls", "bin/ls"),
       ("/usr/bin/ls", "usr/bin/ls"),
       ("/usr/bin/ls", "/usr/bin/ls"),
-      ("/usr/bin/ls", "/usr/bin/ls///"),
       ("/usr/bin/ls", ""),
     ]
 
@@ -818,6 +858,13 @@ final class FilePathSyntaxTest: XCTestCase {
       ("/usr/bin/ls", "/bin/ls"),
       ("/usr/bin/ls", "/usr/bin"),
       ("/usr/bin/ls", "foo"),
+      // SE-0529 preserves trailing separators, so `/usr/bin/ls///` normalizes
+      // to `/usr/bin/ls/` (with a trailing separator) — a distinct path that
+      // `/usr/bin/ls` (no trailing separator) does not end with. (Old
+      // swift-system stripped the trailing separators, making it a suffix. The
+      // starts(with:) case above still holds: a prefix's trailing separator is
+      // not significant.)
+      ("/usr/bin/ls", "/usr/bin/ls///"),
     ]
 
     for (path, suf) in endswith {
@@ -923,14 +970,16 @@ final class FilePathSyntaxTest: XCTestCase {
       expect("/")
 
       path.append(".")
-      expect("/.")
-      XCTAssert(path.components.last!.kind == .currentDirectory)
+      // SE-0529: appending "." drops it (dot-normalization), so "/" stays "/"
+      // and no current-directory component is produced.
+      expect("/")
+      XCTAssert(path.components.isEmpty)
       path.lexicallyNormalize()
       expect("/")
 
       path.append("..")
       expect("/..")
-      XCTAssert(path.components.last!.kind == .parentDirectory)
+      XCTAssert(path.components.last?.kind == .parentDirectory)
       path.lexicallyNormalize()
       expect("/")
 
@@ -962,10 +1011,10 @@ final class FilePathSyntaxTest: XCTestCase {
     restoreAfter {
       path.append("..")
       expect("/usr/local/bin/..")
-      XCTAssert(path.components.last!.kind == .parentDirectory)
+      XCTAssert(path.components.last?.kind == .parentDirectory)
       path.extension = "txt"
       expect("/usr/local/bin/..")
-      XCTAssert(path.components.last!.kind == .parentDirectory)
+      XCTAssert(path.components.last?.kind == .parentDirectory)
       path.removeAll()
       expect("")
       path.extension = "txt"

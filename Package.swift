@@ -85,6 +85,26 @@ let swiftSettings = swiftSettingsAvailability + swiftSettingsCI + [
   .define("SYSTEM_PACKAGE"),
   .define("ENABLE_MOCKING", .when(configuration: .debug)),
   .enableExperimentalFeature("Lifetimes"),
+  // --- SE-0529 FilePath port ---
+  // Settings folded in for the base (Sources/System/FilePath) and the compat
+  // layer (Sources/System/SystemFilePath), mirroring the prep repo's separate
+  // FilePath + SystemFilePath targets now that they share one module.
+  //
+  // Defines the `SwiftStdlib 9999` availability token every base decl carries.
+  .enableExperimentalFeature(
+    "AvailabilityMacro=SwiftStdlib 9999:macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, visionOS 9999"),
+  // Selects the base's real per-platform resolve() syscall branch and its own
+  // _internalInvariant, instead of the stdlib SwiftShims stub branch.
+  .define("FILEPATH_PACKAGE"),
+  // swift-system historically ships a non-failable FilePath(_: String); the
+  // base's is failable and the two can't coexist on one type. This makes the
+  // base drop its public failable init?(_:) so the compat layer's non-failable
+  // init(_:) is the sole one (see FilePathStringBridging.swift / the compat
+  // FilePathString.swift PORT note).
+  .define("FILEPATH_SYSTEM_STRING_COMPAT"),
+  // The base is 9999-gated; the swift-system substrate that calls it is not.
+  // Disable enforcement (matches the prep's consumer targets).
+  .unsafeFlags(["-Xfrontend", "-disable-availability-checking"]),
 ]
 
 let cSettings: [CSetting] = [

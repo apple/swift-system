@@ -205,8 +205,13 @@ final class FilePathComponentsTest: XCTestCase {
 
       let slice = path.components.dropFirst().dropLast()
       let range = slice.startIndex ..< slice.endIndex
+      // NOTE: swift-system leniently stripped a trailing separator from a
+      // Component string literal (`"newMiddle4/"` -> `newMiddle4`). The SE-0529
+      // module's `Component` is strict and traps on any embedded separator, so
+      // the literal is spelled without the slash. The expected result already
+      // treats it as `newMiddle4`, so the assertion is unchanged.
       path.components.replaceSubrange(
-        range, with: ["newMiddle", "newMiddle2", "newMiddle3", "newMiddle4/"])
+        range, with: ["newMiddle", "newMiddle2", "newMiddle3", "newMiddle4"])
       expect("/usr/newMiddle/newMiddle2/newMiddle3/newMiddle4/bin")
     }
 
@@ -245,7 +250,11 @@ final class FilePathComponentsTest: XCTestCase {
       TestPathComponents("foo///bar/baz/", root: nil, ["foo", "bar", "baz"]),
       TestPathComponents("./", root: nil, ["."]),
       TestPathComponents("./..", root: nil, [".", ".."]),
-      TestPathComponents("/./..//", root: "/", [".", ".."]),
+      // NOTE: swift-system presented the leading `.` here. SE-0529 drops a
+      // `.` unless it is the first component of a ROOTLESS path, so this
+      // rooted path stores `/../` and yields `[..]`. (`./..` above is the
+      // same rule from the other side: rootless, so the `.` is kept.)
+      TestPathComponents("/./..//", root: "/", [".."]),
     ]
 #if !os(Windows)
     testPaths.append(contentsOf:[
@@ -282,7 +291,10 @@ final class FilePathComponentsTest: XCTestCase {
 
     for path in paths {
       var path = path
-      path._normalizeSeparators()
+      // The stdlib copy coalesces interior separator runs at construction, so
+      // the only residual separator normalization is dropping a trailing
+      // separator. (Was: `path._normalizeSeparators()`, a FilePath internal.)
+      path.hasTrailingSeparator = false
       XCTAssertEqual(path, "/a/b")
     }
   }

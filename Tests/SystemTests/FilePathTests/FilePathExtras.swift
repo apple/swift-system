@@ -5,15 +5,6 @@
 @testable import System
 #endif
 
-// Why can't I write this extension on `FilePath.ComponentView.SubSequence`?
-@available(System 0.0.2, *)
-extension Slice where Base == FilePath.ComponentView {
-  internal var _storageSlice: SystemString.SubSequence {
-    base._path._storage[self.startIndex._storage ..< self.endIndex._storage]
-  }
-}
-
-
 // Proposed API that didn't make the cut, but we stil want to keep our testing for
 @available(System 0.0.2, *)
 extension FilePath {
@@ -39,14 +30,16 @@ extension FilePath {
 
     let (tail, baseTail) = _dropCommonPrefix(components, base.components)
 
-    var prefix = SystemString()
+    // Re-expressed on public API: one `..` component per remaining base
+    // component, then the tail components. (Was: splice the tail's raw
+    // storage bytes behind a `../`-prefix SystemString via `_storageSlice`,
+    // which reached FilePath internals `_path` / `_storage`.)
+    var result = FilePath()
     for _ in 0..<baseTail.count {
-      prefix.append(.dot)
-      prefix.append(.dot)
-      prefix.append(platformSeparator)
+      result.append("..")
     }
-
-    return FilePath(prefix + tail._storageSlice)
+    result.append(tail)
+    return result
   }
 
   /// Whether a lexically-normalized `self` contains a lexically-normalized

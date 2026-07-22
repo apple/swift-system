@@ -23,12 +23,30 @@ set_target_properties(SystemPackage PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
 target_sources(SystemPackage PRIVATE
   FilePath/FilePath.swift
-  FilePath/FilePathComponents.swift
+  FilePath/FilePathAnchor.swift
+  FilePath/FilePathCodeUnits.swift
+  FilePath/FilePathComponent.swift
   FilePath/FilePathComponentView.swift
+  FilePath/FilePathDarwin.swift
+  FilePath/FilePathDecomposition.swift
+  FilePath/FilePathInternals.swift
   FilePath/FilePathParsing.swift
-  FilePath/FilePathString.swift
-  FilePath/FilePathSyntax.swift
+  FilePath/FilePathResolve.swift
+  FilePath/FilePathStringBridging.swift
+  FilePath/FilePathSystemString.swift
   FilePath/FilePathWindows.swift)
+target_sources(SystemPackage PRIVATE
+  SystemFilePath/FilePathCompatInternals.swift
+  SystemFilePath/FilePathCompatShims.swift
+  SystemFilePath/FilePathComponentCompat.swift
+  SystemFilePath/FilePathComponents.swift
+  SystemFilePath/FilePathConformances.swift
+  SystemFilePath/FilePathString.swift
+  SystemFilePath/FilePathSyntax.swift
+  SystemFilePath/FilePathTemp.swift
+  SystemFilePath/FilePathTempPosix.swift
+  SystemFilePath/FilePathTempWindows.swift
+  SystemFilePath/SystemStringShim.swift)
 target_sources(SystemPackage PRIVATE
   Internals/Backcompat.swift
   Internals/CInterop.swift

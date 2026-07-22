@@ -7,6 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
+
 // MARK: - Platform string
 
 @available(System 0.0.2, *)
@@ -287,6 +288,7 @@ extension FilePath.Root {
 
 // MARK: - String literals
 
+#if false // PORT-CLOBBERED: superseded by stdlib copy
 @available(System 0.0.1, *)
 extension FilePath: ExpressibleByStringLiteral {
   /// Creates a file path from a string literal.
@@ -330,6 +332,27 @@ extension FilePath.Component: ExpressibleByStringLiteral {
     self.init(SystemString(string))
   }
 }
+#endif
+
+// PORT: swift-system historically shipped a non-failable FilePath(_: String).
+// The stdlib copy's String init is failable, and the two cannot coexist on one
+// type (initializers ignore optionality for redeclaration/overload). With
+// FILEPATH_SYSTEM_STRING_COMPAT set, the copy drops its public failable init,
+// so this is the sole FilePath(_: String). It force-unwraps the validating
+// entry point: an embedded NUL traps here (the copy rejects NUL) where old
+// swift-system truncated at the first NUL.
+@available(System 0.0.1, *)
+extension FilePath {
+  /// Creates a file path from a string.
+  ///
+  /// - Parameter string: A string whose Unicode encoded contents to use as the
+  ///   contents of the path.
+  public init(_ string: String) {
+    // Route through the substrate (which truncates at an embedded NUL,
+    // matching historical swift-system) and the public `_normalizing` funnel.
+    self = FilePath(SystemString(string))
+  }
+}
 
 @available(System 0.0.2, *)
 extension FilePath.Root: ExpressibleByStringLiteral {
@@ -350,12 +373,14 @@ extension FilePath.Root: ExpressibleByStringLiteral {
   ///
   /// Returns `nil` if `string` is empty or is not a root.
   public init?(_ string: String) {
-    self.init(SystemString(string))
+    // Truncates at the first NUL, matching historical behavior.
+    self.init(SystemString(string).map { $0.rawValue })
   }
 }
 
 // MARK: - Printing and dumping
 
+#if false // PORT-CLOBBERED: superseded by stdlib copy
 @available(System 0.0.1, *)
 extension FilePath: CustomStringConvertible, CustomDebugStringConvertible {
   /// A textual representation of the file path.
@@ -388,6 +413,7 @@ extension FilePath.Component: CustomStringConvertible, CustomDebugStringConverti
   /// this replaces invalid bytes with U+FFFD. See `String.init(decoding:)`.
   public var debugDescription: String { description.debugDescription }
 }
+#endif
 
 @available(System 0.0.2, *)
 extension FilePath.Root: CustomStringConvertible, CustomDebugStringConvertible {
@@ -418,6 +444,11 @@ extension FilePath {
   public var string: String {
     String(decoding: self)
   }
+
+  /// The length of the file path, measured in platform code units and
+  /// excluding the null terminator. swift-system public API, re-expressed on
+  /// the stdlib copy's public code-unit access.
+  public var length: Int { _cuArray.count }
 }
 
 @available(System 0.0.2, *)
@@ -445,6 +476,7 @@ extension FilePath.Root {
 
 // MARK: - Decoding and validating
 
+#if false // PORT-CLOBBERED: superseded by stdlib copy
 @available(System 0.0.1, *)
 extension String {
   /// Creates a string by interpreting the file path's content as UTF-8 on Unix
@@ -474,7 +506,9 @@ extension String {
     self.init(_validating: path)
   }
 }
+#endif
 
+#if false // PORT-CLOBBERED: superseded by stdlib copy
 @available(System 0.0.2, *)
 extension String {
   /// Creates a string by interpreting the path component's content as UTF-8 on
@@ -504,6 +538,7 @@ extension String {
     self.init(_validating: component)
   }
 }
+#endif
 
 @available(System 0.0.2, *)
 extension String {

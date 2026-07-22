@@ -69,8 +69,11 @@ final class FilePathDecodableTest: XCTestCase {
        45, 49, 48, 48, 44, 45, 49, 48, 57, 44, 45, 53, 52, 44, 45, 51, 49, 44,
        45, 56, 57, 44, 48, 93,125,125,
     ]
-    
-    XCTAssertThrowsError(try JSONDecoder().decode(
+
+    // SE-0529 FilePath construction is total and coalescing: a non-normalized
+    // storage blob is normalized on decode rather than rejected. (Old
+    // swift-system validated normalization and threw here.) Decoding succeeds.
+    XCTAssertNoThrow(try JSONDecoder().decode(
       FilePath.self,
       from: Data(input)
     ))
@@ -106,8 +109,11 @@ final class FilePathDecodableTest: XCTestCase {
        45, 54, 48, 44, 54, 54, 44, 45, 52, 50, 44, 55, 55, 44, 45, 54, 44, 45,
        52, 50, 44, 45, 56, 56, 44, 52, 55, 44, 48, 93,125, 125
     ]
-    
-    XCTAssertThrowsError(try JSONDecoder().decode(
+
+    // SE-0529 FilePath construction is total and coalescing: a non-normalized
+    // storage blob is normalized on decode rather than rejected. (Old
+    // swift-system validated normalization and threw here.) Decoding succeeds.
+    XCTAssertNoThrow(try JSONDecoder().decode(
       FilePath.self,
       from: Data(input)
     ))

@@ -7,6 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
+
 // MARK: - Query API
 
 @available(System 0.0.2, *)
@@ -36,9 +37,11 @@ extension FilePath {
   ///   * `C:\Users\`
   ///   * `\\?\UNC\server\share\bar.exe`
   ///   * `\\server\share\bar.exe`
+#if false // PORT-CLOBBERED: superseded by stdlib copy
   public var isAbsolute: Bool {
     self.root?.isAbsolute ?? false
   }
+#endif
 
   /// Returns true if this path is not absolute (see `isAbsolute`).
   ///
@@ -95,7 +98,9 @@ extension FilePath {
   }
 
   /// Whether this path is empty
+#if false // PORT-CLOBBERED: superseded by stdlib copy
   public var isEmpty: Bool { _storage.isEmpty }
+#endif
 }
 
 // MARK: - Decompose a path
@@ -145,16 +150,12 @@ extension FilePath {
   ///     path.root = #"C:\"#     // path is #"C:\foo\bar"#
   public var root: FilePath.Root? {
     get {
-      guard _hasRoot else { return nil }
-      return Root(self, rootEnd: _relativeStart)
+      guard let anchor = anchor else { return nil }
+      return Root(anchor)
     }
     set {
       defer { _invariantCheck() }
-      guard let r = newValue else {
-        _storage.removeSubrange(..<_relativeStart)
-        return
-      }
-      _storage.replaceSubrange(..<_relativeStart, with: r._slice)
+      self.anchor = newValue?._anchor
     }
   }
 
@@ -245,9 +246,10 @@ extension FilePath {
   @discardableResult
   public mutating func removeLastComponent() -> Bool {
     defer { _invariantCheck() }
-    guard let lastRel = lastComponent else { return false }
-    _storage.removeSubrange(lastRel._slice.indices)
-    _removeTrailingSeparator()
+    guard !components.isEmpty else { return false }
+    // The component view's RRC handles the joining separator and any
+    // trailing-separator / resource-fork suffix.
+    self.components.removeLast()
     return true
   }
 }
@@ -266,8 +268,9 @@ extension FilePath.Component {
   ///   * `.hidden    => nil`
   ///   * `..         => nil`
   public var `extension`: String? {
-    guard let range = _extensionRange() else { return nil }
-    return _slice[range].string
+    let bytes = _codeUnits
+    guard let idx = _extensionIndex(bytes) else { return nil }
+    return Array(bytes[bytes.index(after: idx)...])._decodedString
   }
 
   /// The non-extension portion of this file or directory  component.
@@ -279,7 +282,9 @@ extension FilePath.Component {
   ///   * `.hidden => .hidden`
   ///   * `..      => ..`
   public var stem: String {
-    _slice[_stemRange()].string
+    let bytes = _codeUnits
+    let end = _extensionIndex(bytes) ?? bytes.endIndex
+    return Array(bytes[..<end])._decodedString
   }
 }
 
@@ -320,18 +325,20 @@ extension FilePath {
       defer { _invariantCheck() }
       guard let base = lastComponent, base.kind == .regular else { return }
 
-      let suffix: SystemString
+      // Rebuild the last component's bytes (stem + new extension), then
+      // reconstruct the path from anchor + components with the last replaced.
+      let baseBytes = base._codeUnits
+      let stemEnd = base._extensionIndex(baseBytes) ?? baseBytes.endIndex
+      var newComp = Array(baseBytes[..<stemEnd])
       if let ext = newValue {
-        suffix = _makeExtension(ext)
-      } else {
-        suffix = SystemString()
+        newComp.append(contentsOf: _makeExtension(ext).map { $0.rawValue })
       }
-
-      let extRange = (
-        base._extensionIndex() ?? base._slice.endIndex
-      ) ..< base._slice.endIndex
-
-      _storage.replaceSubrange(extRange, with: suffix)
+      guard let comp = FilePath.Component(newComp) else { return }
+      var comps = Array(components)
+      comps.removeLast()
+      comps.append(comp)
+      self = FilePath(
+        anchor: anchor, comps, hasTrailingSeparator: hasTrailingSeparator)
     }
   }
 
@@ -360,12 +367,18 @@ extension FilePath {
   /// * `"../local/bin".isLexicallyNormal   == true`
   /// * `"local/bin/..".isLexicallyNormal   == false`
   public var isLexicallyNormal: Bool {
+    // Must agree with `lexicallyNormalize()`: a path is lexically normal iff
+    // normalizing is a no-op. `lexicallyNormalize()` strips a trailing
+    // separator, so a path carrying one is not normal even when its component
+    // kinds are all fine, e.g. `/tmp/` -> `/tmp`.
+    //
     // `..` components are permitted at the front of a
     // relative path, otherwise there should be no special directories
     //
     // FIXME: Windows `C:..\foo\bar` should probably be lexically normal, but
     // `\..\foo\bar` should not.
-    components.drop(
+    if hasTrailingSeparator { return false }
+    return components.drop(
       while: { root == nil && $0.kind == .parentDirectory }
     ).allSatisfy { $0.kind == .regular }
   }
@@ -448,7 +461,8 @@ extension FilePath {
     guard root == prefix.root else { return false }
     let (tail, remainder) = _dropCommonPrefix(components, prefix.components)
     guard remainder.isEmpty else { return false }
-    self._storage.removeSubrange(..<tail.startIndex._storage)
+    // What remains is the tail components with no anchor.
+    self = FilePath(anchor: nil, Array(tail))
     return true
   }
 
@@ -465,7 +479,7 @@ extension FilePath {
   ///     // path is "/tmp/foo/bar/../baz"
   public mutating func append(_ component: __owned FilePath.Component) {
     defer { _invariantCheck() }
-    _append(unchecked: component._slice)
+    _append(unchecked: _copyToArray(component.codeUnits))
   }
 
   // TODO(Windows docs): example with roots
@@ -482,7 +496,7 @@ extension FilePath {
   ) where C.Element == FilePath.Component {
     defer { _invariantCheck() }
     for c in components {
-      _append(unchecked: c._slice)
+      _append(unchecked: _copyToArray(c.codeUnits))
     }
   }
 
@@ -502,11 +516,11 @@ extension FilePath {
     defer { _invariantCheck() }
     guard !other.utf8.isEmpty else { return }
     guard !isEmpty else {
-      self = FilePath(other)
+      self = FilePath(SystemString(other))
       return
     }
-    let otherPath = FilePath(other)
-    _append(unchecked: otherPath._storage[otherPath._relativeStart...])
+    let otherPath = FilePath(SystemString(other))
+    _append(unchecked: _copyToArray(otherPath.components.codeUnits))
   }
 
   // TODO(Windows docs): example with roots
@@ -557,7 +571,7 @@ extension FilePath {
       return
     }
     // FIXME: Windows drive-relative roots, etc?
-    _append(unchecked: other._storage[...])
+    _append(unchecked: other._cuArray)
   }
 
   // TODO(Windows docs): examples and docs with roots
@@ -571,14 +585,17 @@ extension FilePath {
   /// Remove the contents of the path, keeping the null terminator.
   public mutating func removeAll(keepingCapacity: Bool = false) {
     defer { _invariantCheck() }
-    _storage.removeAll(keepingCapacity: keepingCapacity)
+    // No public storage-capacity primitive across the module boundary, so
+    // `keepingCapacity` cannot be honored; reconstruct an empty path.
+    self = FilePath()
   }
 
   /// Reserve enough storage space to store `minimumCapacity` platform
   /// characters.
   public mutating func reserveCapacity(_ minimumCapacity: Int) {
-    defer { _invariantCheck() }
-    self._storage.reserveCapacity(minimumCapacity)
+    // No public storage-capacity primitive across the module boundary; this
+    // reservation hint is dropped. Correctness is unaffected.
+    _ = minimumCapacity
   }
 }
 

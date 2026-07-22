@@ -1,392 +1,259 @@
 /*
- This source file is part of the Swift System open source project
+ This source file is part of the Swift.org open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2026 Apple Inc. and the Swift project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
+ See https://swift.org/CONTRIBUTORS.txt for the list of Swift project authors
 */
 
-// FIXME: Need to rewrite and simplify this code now that SystemString
-// manages (and hides) the null terminator
-
-// The separator we use internally
-private var genericSeparator: SystemChar { .slash }
-
-// The platform preferred separator
+// MARK: - Platform predicates
 //
-// TODO: Make private
-internal var platformSeparator: SystemChar {
-  _windowsPaths ? .backslash : genericSeparator
+// Compile-time platform selection. This reference implementation builds for a
+// single platform at a time, so these fold to constants.
+#if os(Windows)
+internal var _isWindows: Bool { true }
+internal var _isDarwin:  Bool { false }
+internal var _isLinux:   Bool { false }
+#elseif os(anyAppleOS) || canImport(Darwin)
+internal var _isWindows: Bool { false }
+internal var _isDarwin:  Bool { true }
+internal var _isLinux:   Bool { false }
+#elseif os(Linux)
+internal var _isWindows: Bool { false }
+internal var _isDarwin:  Bool { false }
+internal var _isLinux:   Bool { true }
+#else
+#error("FilePath: unsupported platform")
+#endif
+
+// The separator we use for slash-based platforms
+@available(SwiftStdlib 9999, *)
+private var _genericSeparator: FilePath.CodeUnit { ._slash }
+
+@available(SwiftStdlib 9999, *)
+internal var _platformSeparator: FilePath.CodeUnit {
+  _isWindows ? ._backslash : _genericSeparator
 }
 
-// Whether the character is the canonical separator
-// TODO: Make private
-internal func isSeparator(_ c: SystemChar) -> Bool {
-  c == platformSeparator
+@available(SwiftStdlib 9999, *)
+internal func _isSeparator(_ c: FilePath.CodeUnit) -> Bool {
+  c == _platformSeparator
 }
 
-// Whether the character is a pre-normalized separator
-internal func isPrenormalSeparator(_ c: SystemChar) -> Bool {
-  c == genericSeparator || c == platformSeparator
+// MARK: - Anchor shape classification
+
+/// Returns `true` if the given anchor bytes are the Windows
+/// drive-relative form `<letter>:` (e.g. `C:`).
+///
+/// **Precondition: caller is on Windows.** Drive-relative is a
+/// Windows-specific concept; this function asserts `_isWindows` and
+/// must not be called from cross-platform code without a `_isWindows`
+/// gate. (See `_anchorNeedsGapSeparator` for the canonical example.)
+///
+/// The `:` IS the boundary in this anchor: `C:foo` is valid
+/// (drive-relative with one component); `C:\foo` is a different
+/// anchor (drive-absolute). Drive-relative is the *only* 2-byte
+/// anchor on Windows: UNC (`\\server\share`) and verbatim variants
+/// are all longer; other anchor shapes that happen to end in `:` —
+/// UNC with a colon-ending share name (`\\server\C:`), or volfs-style
+/// FILEIDs on hypothetical cross-platform code — are NOT 2 bytes
+/// and don't match.
+@available(SwiftStdlib 9999, *)
+internal func _isDriveRelativeAnchor(
+  _ anchorBytes: some BidirectionalCollection<FilePath.CodeUnit>
+) -> Bool {
+  _internalInvariant(_isWindows, "drive-relative anchor is Windows-specific")
+  return anchorBytes.count == 2 && anchorBytes.last == ._colon
 }
 
-// Separator normalization, checking, and root parsing is internally hosted
-// on SystemString for ease of unit testing.
+/// Returns `true` if a separator must be inserted between the given
+/// anchor bytes and the first component byte that follows them.
+///
+/// No separator is needed when:
+/// - the anchor's last byte is already a separator (most cases:
+///   `/`, `C:\`, `\\?\C:\`, `\\server\share\`, `/.nofollow/`, etc.), or
+/// - the anchor is the Windows drive-relative form `<letter>:`, where
+///   the `:` itself IS the boundary (`C:foo` is valid; `C:\foo` is a
+///   different anchor — drive-absolute).
+///
+/// A separator IS needed for the other shapes whose last byte is a
+/// name byte: `\\server\share`, `\\?\UNC\server\share`, `\\?\name`,
+/// `/.vol/FSID/FILEID` — including degenerate cases where one of
+/// those name bytes happens to be `:` (e.g. UNC share `\\server\C:`
+/// or volfs FILEID ending in `:`). Those are NOT 2 bytes, so they
+/// don't match the drive-relative shape.
+@available(SwiftStdlib 9999, *)
+internal func _anchorNeedsGapSeparator(
+  _ anchorBytes: some BidirectionalCollection<FilePath.CodeUnit>
+) -> Bool {
+  guard let last = anchorBytes.last else { return false }
+  if _isSeparator(last) { return false }
+  if _isWindows && _isDriveRelativeAnchor(anchorBytes) { return false }
+  return true
+}
 
-extension SystemString {
-  // For invariant enforcing/checking. Should always return false on
-  // a fully-formed path
-  fileprivate func _hasTrailingSeparator() -> Bool {
-    // Just a root: do nothing
-    guard _relativePathStart != endIndex else { return false }
-    assert(!isEmpty)
+// MARK: - Root parsing
 
-    return isSeparator(self.last!)
-  }
+@available(SwiftStdlib 9999, *)
+extension _SystemString {
+  internal func _parseRoot() -> (
+    rootEnd: Index, relativeBegin: Index
+  ) {
+    let result: (rootEnd: Index, relativeBegin: Index)
 
-  // Enforce invariants by removing a trailing separator.
-  //
-  // Precondition: There is exactly zero or one trailing slashes
-  //
-  // Postcondition: Path is root, or has no trailing separator
-  internal mutating func _removeTrailingSeparator() {
-    if _hasTrailingSeparator() {
-      self.removeLast()
-      assert(!_hasTrailingSeparator())
+    if isEmpty {
+      result = (startIndex, startIndex)
+    } else if _isWindows {
+      result = _parseWindowsRoot()
+    } else if !_isSeparator(self.first!) {
+      result = (startIndex, startIndex)
+    } else if _isDarwin, let darwinAnchor = _parseDarwinAnchor() {
+      result = (darwinAnchor.anchorEnd, darwinAnchor.relativeBegin)
+    } else {
+      let next = self.index(after: startIndex)
+      result = (next, next)
     }
-  }
 
-  // Enforce invariants by normalizing the internal separator representation.
-  //
-  // 1) Normalize all separators to platform-preferred separator
-  // 2) Drop redundant separators
-  // 3) Drop trailing separators
-  //
-  // On Windows, UNC and device paths are allowed to begin with two separators,
-  // and partial or mal-formed roots are completed.
-  //
-  // The POSIX standard does allow two leading separators to
-  // denote implementation-specific handling, but Darwin and Linux
-  // do not treat these differently.
-  //
+    _internalInvariant(result.rootEnd >= startIndex && result.rootEnd <= endIndex)
+    _internalInvariant(result.relativeBegin >= result.rootEnd)
+    _internalInvariant(result.relativeBegin <= endIndex)
+    // Gap between rootEnd and relativeBegin is at most one separator
+    _internalInvariant(distance(from: result.rootEnd, to: result.relativeBegin) <= 1)
+    return result
+  }
+}
+
+// MARK: - Separator normalization
+
+@available(SwiftStdlib 9999, *)
+extension _SystemString {
+  // Coalesce repeated separators in place. On Windows, also convert `/`
+  // to `\` (verbatim-aware) and prenormalize roots before coalescing.
+  // Trailing separators are preserved.
   internal mutating func _normalizeSeparators() {
     guard !isEmpty else { return }
     var (writeIdx, readIdx) = (startIndex, startIndex)
 
-    if _windowsPaths {
-      // Normalize forwards slashes to backslashes.
-      //
-      // NOTE: Ideally this would be done as part of separator coalescing
-      // below. However, prenormalizing roots such as UNC paths requires
-      // parsing and (potentially) fixing up semi-formed roots. This
-      // normalization reduces the complexity of the task by allowing us to
-      // use a read-only lexer.
-      self._replaceAll(genericSeparator, with: platformSeparator)
-
-      // Windows roots can have meaningful repeated backslashes or may
-      // need backslashes inserted for partially-formed roots. Delegate that to
-      // `_prenormalizeWindowsRoots` and resume.
+    if _isWindows {
+      // Detect exact \\?\ prefix on raw input before any conversion.
+      // Only exact backslashes trigger verbatim mode. Inside a verbatim
+      // anchor `/` is a legal component byte and we leave it alone; the
+      // anchor region itself is already all-backslash by definition.
+      if _findVerbatimAnchorEnd() == startIndex {
+        self._replaceAll(_genericSeparator, with: _platformSeparator)
+        // //?/ normalizes to \\?\ after conversion, but it's
+        // device-namespace, not verbatim. Demote ? → . sigil.
+        if _startsWithVerbatimPrefix() != nil {
+          self[index(startIndex, offsetBy: 2)] = ._dot
+        }
+      }
       readIdx = _prenormalizeWindowsRoots()
       writeIdx = readIdx
 
-      // Skip redundant separators
-      while readIdx < endIndex && isSeparator(self[readIdx]) {
-          self.formIndex(after: &readIdx)
+      while readIdx < endIndex && _isSeparator(self[readIdx]) {
+        self.formIndex(after: &readIdx)
       }
-    } else {
-      assert(genericSeparator == platformSeparator)
     }
 
     while readIdx < endIndex {
-      assert(writeIdx <= readIdx)
+      _internalInvariant(writeIdx <= readIdx)
 
-      // Swap and advance our indices.
-      let wasSeparator = isSeparator(self[readIdx])
+      let wasSeparator = _isSeparator(self[readIdx])
       self.swapAt(writeIdx, readIdx)
       self.formIndex(after: &writeIdx)
       self.formIndex(after: &readIdx)
 
-      while wasSeparator, readIdx < endIndex, isSeparator(self[readIdx]) {
+      while wasSeparator, readIdx < endIndex, _isSeparator(self[readIdx]) {
         self.formIndex(after: &readIdx)
       }
     }
+    _internalInvariant(readIdx == endIndex)
     self.removeLast(self.distance(from: writeIdx, to: readIdx))
-    self._removeTrailingSeparator()
   }
 }
 
-@available(System 0.0.1, *)
-extension FilePath {
-  internal mutating func _removeTrailingSeparator() {
-    _storage._removeTrailingSeparator()
-  }
+// MARK: - Dot normalization (new rules for SE-0529)
 
-  internal mutating func _normalizeSeparators() {
-    _storage._normalizeSeparators()
-  }
+@available(SwiftStdlib 9999, *)
+extension _SystemString {
+  // Append the dot-normalized form of `self[range]` to `result`. Rules:
+  // - `.` is dropped unless it is the leading component of an unrooted path
+  // - Trailing `.` becomes a trailing separator (foo/. -> foo/)
+  // - `..` is always preserved
+  //
+  // `range` is the relative portion to normalize — anchor and gap bytes,
+  // if any, must already be in `result`. Verbatim Windows paths (where
+  // `.` and `..` are regular component names) skip this entirely; the
+  // caller copies bytes verbatim instead.
+  //
+  // `isRooted` controls leading-dot behavior: a leading `.` is dropped
+  // when the path is rooted, kept when not.
+  //
+  // Returns `true` iff at least one component byte was appended. Callers
+  // use this to roll back a speculatively-inserted anchor/relative
+  // separator when the relative portion dot-normalizes to empty.
+  internal func _normalizeDots(
+    over range: Range<Index>,
+    isRooted: Bool,
+    into result: inout _SystemString
+  ) -> Bool {
+    // Precondition: the caller has already placed any anchor + gap bytes
+    // into `result`, so the range covers the relative portion only — never
+    // starts on a separator. (For Windows UNC, this is the difference
+    // between `rootEnd` and `relativeBegin`.)
+    _internalInvariant(
+      range.lowerBound >= startIndex && range.upperBound <= endIndex)
+    _internalInvariant(
+      range.isEmpty || !_isSeparator(self[range.lowerBound]),
+      "_normalizeDots range must start past any gap separator")
 
-  // Remove any `.` and `..` components
-  internal mutating func _normalizeSpecialDirectories() {
-    guard !isLexicallyNormal else { return }
-    defer { assert(isLexicallyNormal) }
+    var readIdx = range.lowerBound
+    let end = range.upperBound
+    var componentIndex = 0
+    var emittedAny = false
+    var lastDroppedADot = false
+    var sourceHadTrailingSep = false
 
-    let relStart = _relativeStart
-    let hasRoot = relStart != _storage.startIndex
-
-    // TODO: all this logic might be nicer if _parseComponent considered
-    // the null character index to be the next start...
-
-    var (writeIdx, readIdx) = (relStart, relStart)
-    while readIdx < _storage.endIndex {
-      let (compEnd, nextStart) = _parseComponent(startingAt: readIdx)
-      assert(readIdx < nextStart && compEnd <= nextStart)
-      let component = readIdx..<compEnd
-
-      // `.` is skipped over
-      if _isCurrentDirectory(component) {
-        readIdx = nextStart
+    while readIdx < end {
+      // Skip a separator. If it is the last byte of the range, remember
+      // that the source had a trailing separator.
+      if _isSeparator(self[readIdx]) {
+        let next = index(after: readIdx)
+        if next >= end {
+          sourceHadTrailingSep = true
+        }
+        readIdx = next
         continue
       }
+      // Read one component span.
+      let compStart = readIdx
+      while readIdx < end && !_isSeparator(self[readIdx]) {
+        readIdx = index(after: readIdx)
+      }
+      let compEnd = readIdx
+      let compLen = distance(from: compStart, to: compEnd)
+      let isDot = compLen == 1 && self[compStart] == ._dot
 
-      // `..`s are preserved at the very beginning of a relative path,
-      // otherwise parse-back a component to remove the parent (but stop at
-      // root).
-      if _isParentDirectory(component) {
-        // Skip over it if we're at the root
-        if hasRoot && writeIdx == relStart {
-          readIdx = nextStart
-          continue
+      // Drop a `.` unless it is the leading component of an unrooted path.
+      let drop = isDot && !(componentIndex == 0 && !isRooted)
+      if drop {
+        lastDroppedADot = true
+      } else {
+        if emittedAny {
+          result.append(_platformSeparator)
         }
-
-        // Drop the parent (unless we're preserving `..`s)
-        if writeIdx != relStart {
-          let priorComponent = _parseComponent(priorTo: writeIdx)
-
-          if !_isParentDirectory(priorComponent) {
-            writeIdx = priorComponent.lowerBound
-            readIdx = nextStart
-            continue
-          }
-          assert(self.root == nil && self.components.first!.kind == .parentDirectory)
-        }
+        result.append(contentsOf: self[compStart..<compEnd])
+        emittedAny = true
+        lastDroppedADot = false
       }
-
-      if readIdx == writeIdx {
-        (readIdx, writeIdx) = (nextStart, nextStart)
-        continue
-      }
-      while readIdx != nextStart {
-        _storage.swapAt(readIdx, writeIdx)
-        readIdx = _storage.index(after: readIdx)
-        writeIdx = _storage.index(after: writeIdx)
-      }
+      componentIndex += 1
     }
 
-    assert(readIdx == _storage.endIndex && readIdx >= writeIdx)
-    if readIdx != writeIdx {
-      _storage.removeSubrange(writeIdx...)
-      _removeTrailingSeparator()
+    if (sourceHadTrailingSep || lastDroppedADot) && emittedAny {
+      result.append(_platformSeparator)
     }
-  }
-}
-
-extension SystemString {
-  internal var _relativePathStart: Index {
-    _parseRoot().relativeBegin
-  }
-}
-
-@available(System 0.0.1, *)
-extension FilePath {
-  internal var _relativeStart: SystemString.Index {
-    _storage._relativePathStart
-  }
-  internal var _hasRoot: Bool {
-    _relativeStart != _storage.startIndex
-  }
-}
-
-// Parse separators
-
-@available(System 0.0.1, *)
-extension FilePath {
-  internal typealias _Index = SystemString.Index
-
-  // Parse a component that starts at `i`. Returns the end
-  // of the component and the start of the next. Parsing terminates
-  // at the index of the null byte.
-  internal func _parseComponent(
-    startingAt i: _Index
-  ) -> (componentEnd: _Index, nextStart: _Index) {
-    assert(i < _storage.endIndex)
-    // Parse the root
-    if i == _storage.startIndex {
-      let relativeStart = _relativeStart
-      if i != relativeStart {
-        return (relativeStart, relativeStart)
-      }
-    }
-
-    assert(!isSeparator(_storage[i]))
-    guard let nextSep = _storage[i...].firstIndex(where: isSeparator) else {
-      return (_storage.endIndex, _storage.endIndex)
-    }
-    return (nextSep, _storage.index(after: nextSep))
-  }
-
-  // Parse a component prior to the one that starts at `i`. Returns
-  // the start of the prior component. If `i` is the index of null,
-  // returns the last component.
-  internal func _parseComponent(
-    priorTo i: _Index
-  ) -> Range<_Index> {
-    precondition(i > _storage.startIndex)
-    let relStart = _relativeStart
-
-    if i == relStart { return _storage.startIndex..<relStart }
-    assert(i > relStart)
-
-    var slice = _storage[..<i]
-    if i != _storage.endIndex {
-      assert(isSeparator(slice.last!))
-      slice.removeLast()
-    }
-    let end = slice.endIndex
-    while slice.endIndex != relStart, let c = slice.last, !isSeparator(c) {
-      slice.removeLast()
-    }
-
-    return slice.endIndex ..< end
-  }
-
-  internal func _isCurrentDirectory(_ component: Range<_Index>) -> Bool {
-    _storage[component].elementsEqual([.dot])
-  }
-
-  internal func _isParentDirectory(_ component: Range<_Index>) -> Bool {
-    _storage[component].elementsEqual([.dot, .dot])
-  }
-
-  internal func _isSpecialDirectory(_ component: Range<_Index>) -> Bool {
-    _isCurrentDirectory(component) || _isParentDirectory(component)
-  }
-}
-
-@available(System 0.0.2, *)
-extension FilePath.ComponentView {
-  // TODO: Store this...
-  internal var _relativeStart: SystemString.Index {
-    _path._relativeStart
-  }
-}
-
-extension SystemString {
-  internal func _parseRoot() -> (
-    rootEnd: Index, relativeBegin: Index
-  ) {
-    guard !isEmpty else { return (startIndex, startIndex) }
-
-    // Windows roots are more complex
-    if _windowsPaths { return _parseWindowsRoot() }
-
-    // A leading `/` is a root
-    guard isSeparator(self.first!) else { return (startIndex, startIndex) }
-
-    let next = self.index(after: startIndex)
-    return (next, next)
-  }
-}
-
-@available(System 0.0.2, *)
-extension FilePath.Root {
-  // Asserting self is a root, returns whether this is an
-  // absolute root.
-  //
-  // On Unix, all roots are absolute. On Windows, `\` and `X:` are
-  // relative roots
-  //
-  // TODO: public
-  internal var isAbsolute: Bool {
-    assert(FilePath(SystemString(self._slice)).root == self, "not a root")
-
-    guard _windowsPaths else { return true }
-
-    // `\` or `C:` are the only form of relative roots, and all
-    // absolute roots are at least 3 chars long.
-    let slice = self._slice
-    guard slice.count < 3 else { return true }
-    assert(
-      (slice.count == 1 && slice.first == .backslash) ||
-        (slice.count == 2 && slice.last == .colon))
-    return false
-  }
-}
-
-@available(System 0.0.1, *)
-extension FilePath {
-  internal var _portableDescription: String {
-    guard _windowsPaths else { return description }
-    let utf8 = description.utf8.map { $0 == UInt8(ascii: #"\"#) ? UInt8(ascii: "/") : $0 }
-    return String(decoding: utf8, as: UTF8.self)
-  }
-}
-
-// Whether we are providing Windows paths
-@inline(__always)
-internal var _windowsPaths: Bool {
-  if let forceWindowsPaths = forceWindowsPaths {
-    return forceWindowsPaths
-  }
-  #if os(Windows)
-  return true
-  #else
-  return false
-  #endif
-}
-
-@available(System 0.0.1, *)
-extension FilePath {
-  // Whether we should add a separator when doing an append
-  internal var _needsSeparatorForAppend: Bool {
-    guard let last = _storage.last, !isSeparator(last) else { return false }
-
-    // On Windows, we can have a path of the form `C:` which is a root and
-    // does not need a separator after it
-    if _windowsPaths && _relativeStart == _storage.endIndex {
-      return false
-    }
-
-    return true
-  }
-
-  // Perform an append, inseting a separator if needed.
-  // Note that this will not check whether `content` is a root
-  internal mutating func _append(unchecked content: Slice<SystemString>) {
-    assert(FilePath(SystemString(content)).root == nil)
-    if content.isEmpty { return }
-    if _needsSeparatorForAppend {
-      _storage.append(platformSeparator)
-    }
-    _storage.append(contentsOf: content)
-  }
-}
-
-// MARK: - Invariants
-@available(System 0.0.1, *)
-extension FilePath {
-  internal func _invariantsSatisfied() -> Bool {
-    var normal = self
-    normal._normalizeSeparators()
-    guard self == normal else { return false }
-    guard !self._storage._hasTrailingSeparator() else { return false }
-    guard _hasRoot == (self.root != nil) else { return false }
-    return true
-  }
-  
-  internal func _invariantCheck() {
-    #if DEBUG
-    precondition(_invariantsSatisfied())
-    #endif // DEBUG
+    return emittedAny
   }
 }
