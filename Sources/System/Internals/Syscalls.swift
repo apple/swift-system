@@ -72,7 +72,7 @@ internal func system_read(
 
 // pread
 internal func system_pread(
-  _ fd: Int32, _ buf: UnsafeMutableRawPointer?, _ nbyte: Int, _ offset: off_t
+  _ fd: Int32, _ buf: UnsafeMutableRawPointer?, _ nbyte: Int, _ offset: _COffT
 ) -> Int {
 #if ENABLE_MOCKING
   if mockingEnabled { return _mockInt(fd, buf, nbyte, offset) }
@@ -90,8 +90,8 @@ internal func system_pread(
 
 // lseek
 internal func system_lseek(
-  _ fd: Int32, _ off: off_t, _ whence: Int32
-) -> off_t {
+  _ fd: Int32, _ off: _COffT, _ whence: Int32
+) -> _COffT {
 #if ENABLE_MOCKING
   if mockingEnabled { return _mockOffT(fd, off, whence) }
 #endif
@@ -110,7 +110,7 @@ internal func system_write(
 
 // pwrite
 internal func system_pwrite(
-  _ fd: Int32, _ buf: UnsafeRawPointer?, _ nbyte: Int, _ offset: off_t
+  _ fd: Int32, _ buf: UnsafeRawPointer?, _ nbyte: Int, _ offset: _COffT
 ) -> Int {
 #if ENABLE_MOCKING
   if mockingEnabled { return _mockInt(fd, buf, nbyte, offset) }
@@ -165,7 +165,7 @@ internal func system_pipe2(_ fds: UnsafeMutablePointer<Int32>, _ oflag: Int32) -
 }
 #endif
 
-internal func system_ftruncate(_ fd: Int32, _ length: off_t) -> Int32 {
+internal func system_ftruncate(_ fd: Int32, _ length: _COffT) -> Int32 {
 #if ENABLE_MOCKING
   if mockingEnabled { return _mock(fd, length) }
 #endif

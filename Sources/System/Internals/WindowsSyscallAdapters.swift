@@ -122,13 +122,6 @@ internal func write(
 }
 
 @inline(__always)
-internal func lseek(
-  _ fd: Int32, _ off: off_t, _ whence: Int32
-) -> off_t {
-  _lseek(fd, off, whence)
-}
-
-@inline(__always)
 internal func dup(_ fd: Int32) -> Int32 {
   _dup(fd)
 }
@@ -144,7 +137,7 @@ internal func dup2(_ fd: Int32, _ fd2: Int32) -> Int32 {
 
 @inline(__always)
 internal func pread(
-  _ fd: Int32, _ buf: UnsafeMutableRawPointer!, _ nbyte: Int, _ offset: off_t
+  _ fd: Int32, _ buf: UnsafeMutableRawPointer!, _ nbyte: Int, _ offset: Int64
 ) -> Int {
   let handle: intptr_t = _get_osfhandle(fd)
   if handle == /* INVALID_HANDLE_VALUE */ -1 { ucrt._set_errno(EBADF); return -1 }
@@ -159,8 +152,10 @@ internal func pread(
   let hFile: HANDLE = HANDLE(bitPattern: handle)!
 
   var ovlOverlapped: OVERLAPPED = OVERLAPPED()
-  ovlOverlapped.OffsetHigh = DWORD(UInt32(offset >> 32) & 0xffffffff)
-  ovlOverlapped.Offset = DWORD(UInt32(offset >> 0) & 0xffffffff)
+  // Split the 64-bit offset into high/low DWORDs. Use truncating conversions:
+  // `DWORD(UInt32(offset))` would trap for any offset >= 4 GiB.
+  ovlOverlapped.OffsetHigh = DWORD(truncatingIfNeeded: offset >> 32)
+  ovlOverlapped.Offset = DWORD(truncatingIfNeeded: offset)
 
   var nNumberOfBytesRead: DWORD = 0
   if !ReadFile(hFile, buf, DWORD(nbyte), &nNumberOfBytesRead, &ovlOverlapped) {
@@ -172,7 +167,7 @@ internal func pread(
 
 @inline(__always)
 internal func pwrite(
-  _ fd: Int32, _ buf: UnsafeRawPointer!, _ nbyte: Int, _ offset: off_t
+  _ fd: Int32, _ buf: UnsafeRawPointer!, _ nbyte: Int, _ offset: Int64
 ) -> Int {
   let handle: intptr_t = _get_osfhandle(fd)
   if handle == /* INVALID_HANDLE_VALUE */ -1 { ucrt._set_errno(EBADF); return -1 }
@@ -187,8 +182,10 @@ internal func pwrite(
   let hFile: HANDLE = HANDLE(bitPattern: handle)!
 
   var ovlOverlapped: OVERLAPPED = OVERLAPPED()
-  ovlOverlapped.OffsetHigh = DWORD(UInt32(offset >> 32) & 0xffffffff)
-  ovlOverlapped.Offset = DWORD(UInt32(offset >> 0) & 0xffffffff)
+  // Split the 64-bit offset into high/low DWORDs. Use truncating conversions:
+  // `DWORD(UInt32(offset))` would trap for any offset >= 4 GiB.
+  ovlOverlapped.OffsetHigh = DWORD(truncatingIfNeeded: offset >> 32)
+  ovlOverlapped.Offset = DWORD(truncatingIfNeeded: offset)
 
   var nNumberOfBytesWritten: DWORD = 0
   if !WriteFile(hFile, buf, DWORD(nbyte), &nNumberOfBytesWritten,
@@ -214,7 +211,7 @@ internal func csystem_posix_pipe2(
 }
 
 @inline(__always)
-internal func ftruncate(_ fd: Int32, _ length: off_t) -> Int32 {
+internal func ftruncate(_ fd: Int32, _ length: Int64) -> Int32 {
   let handle: intptr_t = _get_osfhandle(fd)
   if handle == /* INVALID_HANDLE_VALUE */ -1 { ucrt._set_errno(EBADF); return -1 }
 
