@@ -116,4 +116,27 @@ extension CInterop {
   public typealias FileFlags = UInt32
   #endif
 }
+
+@available(System 199, *)
+extension CInterop {
+  #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+  public typealias StatFS = statfs
+  #else
+  public typealias StatFS = statvfs
+  #endif
+
+  #if SYSTEM_PACKAGE_DARWIN || os(OpenBSD)
+  public typealias MountFlags = UInt32
+  #elseif os(FreeBSD)
+  public typealias MountFlags = UInt64
+  #else
+  public typealias MountFlags = CUnsignedLong
+  #endif
+
+  #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+  public typealias FileSystemID = fsid_t
+  #else
+  public typealias FileSystemID = CUnsignedLong
+  #endif
+}
 #endif
