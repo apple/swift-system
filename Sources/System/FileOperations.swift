@@ -415,7 +415,7 @@ extension FileDescriptor {
   ///      Pass `false` to try only once and throw an error upon interruption.
   /// - Returns: The new file descriptor.
   ///
-  /// If the `target` descriptor the same as `self`, then EINVAL is thrown.
+  /// If the `target` descriptor is the same as `self`, then EINVAL is thrown.
   /// If the `target` descriptor is already in use, then it is first
   /// deallocated as if a close(2) call had been done first.
   ///
@@ -524,9 +524,9 @@ extension FileDescriptor {
   /// interprocess communication.
   ///
   /// NOTE: This overload called with an empty option set is not necessarily
-  /// equivalent to calling the overload with no options. On Windows, this
-  /// overload with empty options disables the `closeOnExec` behaviour,
-  /// which is enabled by the overload without options.
+  /// equivalent to calling the overload with no options. On Windows, the
+  /// no-parameter `pipe()` overload enables the `.closeOnExec` behaviour,
+  /// but this overload disables it when called with an empty option set.
   ///
   /// - Parameters:
   ///   - options: The behavior for creating the pipe.

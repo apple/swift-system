@@ -75,6 +75,7 @@ struct FileDescriptor {
   ///      Pass `false` to try only once and throw an error upon interruption.
   /// - Returns: The new file descriptor.
   ///
+  /// If the `target` descriptor is the same as `self`, then EINVAL is thrown.
   /// If the `target` descriptor is already in use, then it is first
   /// deallocated as if a close(2) call had been done first.
   ///
