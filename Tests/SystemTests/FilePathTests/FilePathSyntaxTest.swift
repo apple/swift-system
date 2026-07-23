@@ -171,7 +171,7 @@ extension SyntaxTestCase {
     expectEqual(expectedComponents.last, path.components.last)
 
    expectEqual(_noTrailingSep(path), _noTrailingSep(FilePath(root: path.root, expectedComponents)), "init<C>(root:components)")
-   expectEqual(_noTrailingSep(path), _noTrailingSep(FilePath(root: path.root, path.components)), "init<C>(root:components)")
+   expectEqual(path, FilePath(root: path.root, path.components), "init<C>(root:components)")
     expectEqual(_noTrailingSep(path), _noTrailingSep(FilePath(
                   root: path.root, path.components[...])),
                 "init(_ components: Slice)")
