@@ -37,6 +37,13 @@ uint64_t _system_get_ST_MANDLOCK(void) { return ST_MANDLOCK; }
 uint64_t _system_get_ST_NOATIME(void) { return ST_NOATIME; }
 uint64_t _system_get_ST_NODIRATIME(void) { return ST_NODIRATIME; }
 uint64_t _system_get_ST_RELATIME(void) { return ST_RELATIME; }
+
+// ST_NOSYMFOLLOW was added to glibc's <sys/statvfs.h> in Linux 5.10. For
+// older versions, fall back to the fixed kernel UAPI bit (<linux/statfs.h>),
+// which is the same value a newer glibc header defines.
+#ifndef ST_NOSYMFOLLOW
+#define ST_NOSYMFOLLOW 0x2000
+#endif
 uint64_t _system_get_ST_NOSYMFOLLOW(void) { return ST_NOSYMFOLLOW; }
 
 #if !defined(__ANDROID__)
