@@ -19,6 +19,7 @@ import Glibc
 @_implementationOnly import CSystem
 import Musl
 #elseif canImport(WASILibc)
+import CSystem
 import WASILibc
 #elseif canImport(Bionic)
 import CSystem
