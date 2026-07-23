@@ -24,6 +24,7 @@ import Glibc
 import CSystem
 import Musl
 #elseif canImport(WASILibc)
+@_implementationOnly import CSystem
 import WASILibc
 #elseif canImport(Android)
 import CSystem

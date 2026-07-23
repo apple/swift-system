@@ -16,6 +16,10 @@
 #include <fcntl.h>
 #include <limits.h> // For NAME_MAX
 
+// wasi-libc ships <sys/statvfs.h>, but the Swift WASILibc module does not
+// surface it. Re-export them through CSystem here.
+#include <sys/statvfs.h>
+
 // wasi-libc defines the following constants in a way that Clang Importer can't
 // understand, so we need to expose them manually.
 static inline int32_t _getConst_O_ACCMODE(void) { return O_ACCMODE; }
