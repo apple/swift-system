@@ -24,6 +24,7 @@ import Glibc
 @_implementationOnly import CSystem
 import Musl
 #elseif canImport(WASILibc)
+@_implementationOnly import CSystem
 import WASILibc
 #elseif canImport(Android)
 @_implementationOnly import CSystem
@@ -108,6 +109,26 @@ internal func system_fstat(_ fd: CInt, _ s: inout CInterop.Stat) -> Int32 {
 internal func system_fstatat(_ fd: CInt, _ p: UnsafePointer<CChar>, _ s: inout CInterop.Stat, _ flags: CInt) -> Int32 {
   fstatat(fd, p, &s, flags)
 }
+
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+@available(System 199, *)
+internal func system_statfs(_ p: UnsafePointer<CChar>, _ s: inout CInterop.StatFS) -> Int32 {
+  statfs(p, &s)
+}
+@available(System 199, *)
+internal func system_fstatfs(_ fd: CInt, _ s: inout CInterop.StatFS) -> Int32 {
+  fstatfs(fd, &s)
+}
+#else
+@available(System 199, *)
+internal func system_statvfs(_ p: UnsafePointer<CChar>, _ s: inout CInterop.StatFS) -> Int32 {
+  statvfs(p, &s)
+}
+@available(System 199, *)
+internal func system_fstatvfs(_ fd: CInt, _ s: inout CInterop.StatFS) -> Int32 {
+  fstatvfs(fd, &s)
+}
+#endif
 #endif
 
 // Convention: `system_platform_foo` is a

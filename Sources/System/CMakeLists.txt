@@ -1,7 +1,7 @@
 #[[
 This source file is part of the Swift System open source project
 
-Copyright (c) 2020 Apple Inc. and the Swift System project authors
+Copyright (c) 2020 - 2026 Apple Inc. and the Swift System project authors
 Licensed under Apache License v2.0 with Runtime Library Exception
 
 See https://swift.org/LICENSE.txt for license information
@@ -42,7 +42,9 @@ target_sources(SystemPackage PRIVATE
   FileSystem/FileMode.swift
   FileSystem/FileType.swift
   FileSystem/Identifiers.swift
-  FileSystem/Stat.swift)
+  FileSystem/MountFlags.swift
+  FileSystem/Stat.swift
+  FileSystem/StatFS.swift)
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
   target_sources(SystemPackage PRIVATE
     IORing/IOCompletion.swift
