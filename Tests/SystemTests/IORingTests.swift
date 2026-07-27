@@ -25,6 +25,8 @@ let uringEnabled: Bool = {
     }
 }()
 
+let failureMessage = "Runtime environment does not support IORing."
+
 func isUringEnabled() throws -> Bool {
     // Even if the kernel supports io_uring, the SystemPackage build may have
     // been compiled against older kernel headers that lack features it needs
@@ -83,12 +85,12 @@ final class IORingTests: XCTestCase {
     }
 
     func testInit() throws {
-        guard uringEnabled else { return }
+        try XCTSkipIf(!uringEnabled, failureMessage)
         _ = try IORing(queueDepth: 32, flags: [])
     }
 
     func testNop() throws {
-        guard uringEnabled else { return }
+        try XCTSkipIf(!uringEnabled, failureMessage)
         var ring = try IORing(queueDepth: 32, flags: [])
         _ = try ring.submit(linkedRequests: .nop())
         let completion = try ring.blockingConsumeCompletion()
@@ -124,7 +126,7 @@ final class IORingTests: XCTestCase {
     }
 
     func testUndersizedSubmissionQueue() throws {
-        guard uringEnabled else { return }
+        try XCTSkipIf(!uringEnabled, failureMessage)
         var ring: IORing = try IORing(queueDepth: 1)
         let enqueued = ring.prepare(linkedRequests: .nop(), .nop())
         XCTAssertFalse(enqueued)
@@ -132,7 +134,7 @@ final class IORingTests: XCTestCase {
 
     // Exercises opening, reading, closing, registered files, registered buffers, and eventfd
     func testOpenReadAndWriteFixedFile() throws {
-        guard uringEnabled else { return }
+        try XCTSkipIf(!uringEnabled, failureMessage)
         let (parent, path) = try makeHelloWorldFile()
         let rawBuffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 13, alignment: 16)
         var ring = try setupTestRing(depth: 6, fileSlots: 1, buffers: [rawBuffer])
@@ -189,7 +191,7 @@ final class IORingTests: XCTestCase {
     // dangling pointer. Here we deliberately let the FilePath go out of scope
     // between prepare and submit, then churn the heap to make UAFs observable.
     func testPathBufferLifetimeAcrossPrepareSubmit() throws {
-        guard uringEnabled else { return }
+        try XCTSkipIf(!uringEnabled, failureMessage)
         let (parent, _) = try makeHelloWorldFile()
         var ring = try IORing(queueDepth: 6)
 
@@ -223,7 +225,7 @@ final class IORingTests: XCTestCase {
     }
   
     func testPathBufferLifetimeAcrossLinkedRequests() throws {
-        guard uringEnabled else { return }
+        try XCTSkipIf(!uringEnabled, failureMessage)
         let (parent, _) = try makeHelloWorldFile()
         let rawBuffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 13, alignment: 16)
         var ring = try setupTestRing(depth: 6, fileSlots: 1, buffers: [rawBuffer])
@@ -260,12 +262,12 @@ final class IORingTests: XCTestCase {
 
     // Timeout test for `blockingConsumeCompletion(timeout:)`:
     func testBlockingConsumeCompletionWithTimeoutOnIdleRing() throws {
-        guard uringEnabled else { return }
+        try XCTSkipIf(!uringEnabled, failureMessage)
         let ring = try IORing(queueDepth: 4, flags: [])
-        guard ring.supportedFeatures.contains(.extendedArguments) else {
-            // Kernel < 5.11: timeouts in io_uring_enter aren't supported.
-            return
-        }
+        try XCTSkipIf(
+            !ring.supportedFeatures.contains(.extendedArguments),
+            "Kernel < 5.11: timeouts in io_uring_enter aren't supported."
+        )
 
         let clock = ContinuousClock()
         let start = clock.now
@@ -285,7 +287,7 @@ final class IORingTests: XCTestCase {
     }
 
     func testRegisterEventFDTwiceThrows() throws {
-        guard uringEnabled else { return }
+        try XCTSkipIf(!uringEnabled, failureMessage)
         var ring = try IORing(queueDepth: 4)
         let efd = FileDescriptor(rawValue: eventfd(0, Int32(EFD_SEMAPHORE)))
         defer { try? efd.close() }
@@ -300,10 +302,10 @@ final class IORingTests: XCTestCase {
     }
 
     func testSubmitOnDisabledRingThrows() throws {
-        guard uringEnabled else { return }
+        try XCTSkipIf(!uringEnabled, failureMessage)
         var ring = try IORing(queueDepth: 4, flags: [.startDisabled])
 
-         do throws(Errno) {
+        do throws(Errno) {
             _ = try ring.submit(linkedRequests: .nop())
             XCTFail("expected submit on a disabled ring to throw")
         } catch {
@@ -312,7 +314,7 @@ final class IORingTests: XCTestCase {
     }
 
     func testPollAddPollIn() throws {
-        guard uringEnabled else { try XCTSkip("System does not support IOring") }
+        try XCTSkipIf(!uringEnabled, failureMessage)
         var ring = try IORing(queueDepth: 32, flags: [])
 
         // Test POLLIN: Create an eventfd to monitor for read readiness
@@ -341,7 +343,7 @@ final class IORingTests: XCTestCase {
     }
 
     func testPollAddPollOut() throws {
-        guard uringEnabled else { try XCTSkip("System does not support IOring") }
+        try XCTSkipIf(!uringEnabled, failureMessage)
         var ring = try IORing(queueDepth: 32, flags: [])
 
         // Test POLLOUT: Create a pipe to monitor for write readiness
