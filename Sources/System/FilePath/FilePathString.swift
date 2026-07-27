@@ -461,7 +461,10 @@ extension String {
   public init(decoding path: FilePath) {
     self.init(_decoding: path)
   }
+}
 
+@available(System 0.0.2, *)
+extension String {
   /// Creates a string from a file path, validating its contents as UTF-8 on
   /// Unix and UTF-16 on Windows.
   ///
@@ -470,6 +473,7 @@ extension String {
   ///
   /// If the contents of the file path isn't a well-formed Unicode string,
   /// this initializer returns `nil`.
+  @available(System 0.0.2, *)
   public init?(validating path: FilePath) {
     self.init(_validating: path)
   }
