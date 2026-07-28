@@ -317,7 +317,7 @@ final class IORingTests: XCTestCase {
         try XCTSkipIf(!uringEnabled, failureMessage)
         var ring = try IORing(queueDepth: 32, flags: [])
 
-      // We use the timeout feature below.
+        // This test case requires timeout support
         try XCTSkipIf(
             !ring.supportedFeatures.contains(.extendedArguments),
             "Kernel < 5.11: timeouts in io_uring_enter aren't supported."
@@ -356,7 +356,7 @@ final class IORingTests: XCTestCase {
         try XCTSkipIf(!uringEnabled, failureMessage)
         var ring = try IORing(queueDepth: 32, flags: [])
 
-        // We use the timeout feature below.
+        // This test case requires timeout support
         try XCTSkipIf(
             !ring.supportedFeatures.contains(.extendedArguments),
             "Kernel < 5.11: timeouts in io_uring_enter aren't supported."
@@ -399,8 +399,7 @@ final class IORingTests: XCTestCase {
         try XCTSkipIf(!uringEnabled, failureMessage)
         var ring = try IORing(queueDepth: 32, flags: [])
 
-        // Every wait below has a timeout, so that a poll that fails to fire
-        // causes a test failure.
+        // This test case requires timeout support
         try XCTSkipIf(
             !ring.supportedFeatures.contains(.extendedArguments),
             "Kernel < 5.11: timeouts in io_uring_enter aren't supported."
@@ -514,6 +513,7 @@ final class IORingTests: XCTestCase {
             try? writeFD.close()
         }
 
+        // This test case requires timeout support
         try XCTSkipIf(
             !ring.supportedFeatures.contains(.extendedArguments),
             "Kernel < 5.11: timeouts in io_uring_enter aren't supported."
@@ -549,6 +549,7 @@ final class IORingTests: XCTestCase {
             try? writeFD.close()
         }
 
+        // This test case requires timeout support
         try XCTSkipIf(
             !ring.supportedFeatures.contains(.extendedArguments),
             "Kernel < 5.11: timeouts in io_uring_enter aren't supported."
