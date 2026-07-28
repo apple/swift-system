@@ -317,6 +317,12 @@ final class IORingTests: XCTestCase {
         try XCTSkipIf(!uringEnabled, failureMessage)
         var ring = try IORing(queueDepth: 32, flags: [])
 
+      // We use the timeout feature below.
+        try XCTSkipIf(
+            !ring.supportedFeatures.contains(.extendedArguments),
+            "Kernel < 5.11: timeouts in io_uring_enter aren't supported."
+        )
+
         // Test POLLIN: Create an eventfd to monitor for read readiness
         let testEventFD = FileDescriptor(rawValue: eventfd(0, 0))
         defer {
@@ -336,7 +342,9 @@ final class IORingTests: XCTestCase {
         }
 
         // Consume the completion from the poll operation
-        let completion = try ring.blockingConsumeCompletion()
+        let completion = try ring.blockingConsumeCompletion(
+            timeout: .seconds(1)
+        )
         XCTAssertEqual(completion.context, pollInContext)
         let pollIn = Int32(IORing.Request.PollEvents.pollIn.rawValue)
         XCTAssertNotEqual(
@@ -347,6 +355,12 @@ final class IORingTests: XCTestCase {
     func testPollAddPollOut() throws {
         try XCTSkipIf(!uringEnabled, failureMessage)
         var ring = try IORing(queueDepth: 32, flags: [])
+
+        // We use the timeout feature below.
+        try XCTSkipIf(
+            !ring.supportedFeatures.contains(.extendedArguments),
+            "Kernel < 5.11: timeouts in io_uring_enter aren't supported."
+        )
 
         // Test POLLOUT: Create a pipe to monitor for write readiness
         var pipeFDs: [Int32] = [0, 0]
@@ -367,7 +381,9 @@ final class IORingTests: XCTestCase {
         XCTAssert(enqueuedOut)
 
         // Consume the completion from the poll operation
-        let completionOut = try ring.blockingConsumeCompletion()
+        let completionOut = try ring.blockingConsumeCompletion(
+            timeout: .seconds(1)
+        )
         XCTAssertEqual(completionOut.context, pollOutContext)
         let pollOut = Int32(IORing.Request.PollEvents.pollOut.rawValue)
         XCTAssertNotEqual(
