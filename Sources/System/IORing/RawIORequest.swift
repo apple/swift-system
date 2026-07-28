@@ -2,7 +2,12 @@
 #if os(Linux)
 
 import CSystem
-    
+#if canImport(Glibc)
+import Glibc
+#elseif canImport(Musl)
+import Musl
+#endif
+
 @usableFromInline
 internal struct RawIORequest: ~Copyable {
     // swift_io_uring_sqe is a typedef of io_uring_sqe on platforms where
