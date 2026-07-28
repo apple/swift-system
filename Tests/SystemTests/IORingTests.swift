@@ -370,6 +370,119 @@ final class IORingTests: XCTestCase {
         XCTAssertEqual(completionOut.context, pollOutContext)
         XCTAssertGreaterThan(completionOut.result, 0) // Poll should return mask of ready events
     }
+
+    // Similar to the multishot example in the documentation for
+    // `pollAdd(_:pollEvents:isMultiShot:context:)`: arm a multishot poll,
+    // then consume completions for as long as they carry `.moreCompletions`.
+    func testPollAddMultiShotRearmsAcrossEvents() throws {
+        try XCTSkipIf(!uringEnabled, failureMessage)
+        var ring = try IORing(queueDepth: 32, flags: [])
+
+        // Every wait below has a timeout, so that a poll that fails to fire
+        // causes a test failure.
+        try XCTSkipIf(
+            !ring.supportedFeatures.contains(.extendedArguments),
+            "Kernel < 5.11: timeouts in io_uring_enter aren't supported."
+        )
+
+        var pipeFDs: [Int32] = [0, 0]
+        XCTAssertEqual(pipe(&pipeFDs), 0)
+        let readFD = FileDescriptor(rawValue: pipeFDs[0])
+        let writeFD = FileDescriptor(rawValue: pipeFDs[1])
+        defer {
+            try? readFD.close()
+            try? writeFD.close()
+        }
+
+        func writeByte() throws {
+            var byte: UInt8 = 1
+            try withUnsafeBytes(of: &byte) {
+                try XCTAssertEqual(writeFD.write($0), 1)
+            }
+        }
+
+        func readByte() throws {
+            var scratch: UInt8 = 0
+            try withUnsafeMutableBytes(of: &scratch) {
+                try XCTAssertEqual(readFD.read(into: $0), 1)
+            }
+        }
+
+        let context: UInt64 = 44
+        let pollIn = Int32(IORing.Request.PollEvents.pollIn.rawValue)
+
+        let pollRequest = IORing.Request.pollAdd(
+            readFD, pollEvents: .pollIn, isMultiShot: true, context: context
+        )
+        let enqueued = try ring.submit(linkedRequests: pollRequest)
+        XCTAssert(enqueued)
+
+        try writeByte()
+        let first = try ring.blockingConsumeCompletion(timeout: .seconds(1))
+        // Kernels before 5.13 reject IORING_POLL_ADD_MULTI
+        try XCTSkipIf(
+            first.result == -EINVAL,
+            "Kernel < 5.13: multishot poll is unsupported."
+        )
+        XCTAssertEqual(first.context, context)
+        XCTAssertNotEqual(
+            first.result & pollIn, 0, "expected POLLIN in the result mask"
+        )
+        XCTAssert(first.flags.contains(.moreCompletions))
+
+        // Drain the pipe, then any extra completions.
+        try readByte()
+        while ring.tryConsumeCompletion() != nil {}
+
+        try writeByte()
+        // This written byte will only be reported by a re-armed poll.
+        let second = try ring.blockingConsumeCompletion(timeout: .seconds(1))
+        XCTAssertEqual(second.context, context)
+        XCTAssertNotEqual(
+            second.result & pollIn, 0, "expected POLLIN in the result mask"
+        )
+
+        // Drain again
+        try readByte()
+        while ring.tryConsumeCompletion() != nil {}
+
+        // Cancel to end the multishot poll.
+        try XCTAssert(
+            ring.submit(linkedRequests: .cancel(.all, matchingContext: context))
+        )
+        var terminal: (result: Int32, flags: IORing.Completion.Flags)? = nil
+        var observed: [(context: UInt64, result: Int32, flags: UInt32)] = []
+        // The cancel posts a completion of its own under a different context,
+        // and the two may land a moment apart, so retry briefly rather than
+        // draining exactly once.
+        for _ in 0..<100 where terminal == nil {
+            while let completion = ring.tryConsumeCompletion() {
+                observed.append(
+                    (
+                        completion.context,
+                        completion.result,
+                        completion.flags.rawValue
+                    )
+                )
+                if completion.context == context {
+                    terminal = (completion.result, completion.flags)
+                }
+            }
+            if terminal == nil { usleep(1000) }
+        }
+        XCTAssertNotNil(
+            terminal,
+            "no terminal completion for the cancelled poll; "
+                + "completions seen: \(observed)"
+        )
+        if let terminal {
+            XCTAssertEqual(terminal.result, -ECANCELED)
+            XCTAssertFalse(
+                terminal.flags.contains(.moreCompletions),
+                "poll kept its armed state after being cancelled"
+            )
+        }
+    }
 }
 #endif // os(Linux)
 #endif // compiler(>=6.2) && $Lifetimes
