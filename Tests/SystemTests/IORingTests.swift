@@ -504,6 +504,47 @@ final class IORingTests: XCTestCase {
             )
         }
     }
+
+    func testUnexpectedPollValue() throws {
+        try XCTSkipIf(!uringEnabled, failureMessage)
+        var ring = try IORing(queueDepth: 8)
+        let (readFD, writeFD) = try FileDescriptor.pipe()
+        defer {
+            try? readFD.close()
+            try? writeFD.close()
+        }
+
+        try XCTSkipIf(
+            !ring.supportedFeatures.contains(.extendedArguments),
+            "Kernel < 5.11: timeouts in io_uring_enter aren't supported."
+        )
+
+        let request = IORing.Request.pollAdd(
+            readFD, pollEvents: .pollIn, isMultiShot: false, context: 97
+        )
+        let success = try ring.submit(linkedRequests: request)
+        XCTAssertEqual(success, true)
+        try writeFD.close()
+
+        let dt = Duration.seconds(1)
+        let completion = try ring.blockingConsumeCompletion(timeout: dt)
+
+        let values = [ // This should be caseIterable.
+            IORing.Request.PollEvents.pollIn.rawValue,
+            IORing.Request.PollEvents.pollOut.rawValue
+        ]
+
+        for value in values {
+            if completion.result & Int32(value) != 0 {
+                // success!
+                return
+            }
+        }
+
+        let pollValue = completion.result & 0x10
+        XCTAssertEqual(pollValue, 0x10)
+        XCTFail("Unexpected poll event: 0x\(String(pollValue, radix: 16))")
+    }
 }
 #endif // os(Linux)
 #endif // compiler(>=6.2) && $Lifetimes
