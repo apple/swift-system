@@ -193,7 +193,18 @@ extension IORing.Request {
         .init(core: .nop)
     }
 
-    /// Adds a poll operation to monitor a file descriptor for specific I/O events.
+    // Poll
+
+    /// Multishot poll: the poll handler continues to report CQEs on behalf
+    /// of the same SQE, each flagged with
+    /// ``IORing/Completion/Flags/moreCompletions``.
+    ///
+    /// Corresponds to `IORING_POLL_ADD_MULTI`. Note that since
+    /// `sqe->poll_events` is the event space, the command flags for
+    /// `POLL_ADD` are stored in `sqe->len`.
+    @_alwaysEmitIntoClient
+    internal static var SWIFT_IORING_POLL_ADD_MULTI: UInt32 { 1 << 0 }
+
     /// Adds a poll operation to monitor a file descriptor for specific I/O
     /// events.
     ///
@@ -596,7 +607,7 @@ extension IORing.Request {
             request.fileDescriptor = file
             request.rawValue.user_data = context
             if isMultiShot {
-                request.rawValue.len = IORING_POLL_ADD_MULTI
+                request.rawValue.len = Self.SWIFT_IORING_POLL_ADD_MULTI
             }
             request.rawValue.poll32_events = pollEvents.rawValue
         }
