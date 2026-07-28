@@ -505,7 +505,7 @@ final class IORingTests: XCTestCase {
         }
     }
 
-    func testUnexpectedPollValue() throws {
+    func testPollHangup() throws {
         try XCTSkipIf(!uringEnabled, failureMessage)
         var ring = try IORing(queueDepth: 8)
         let (readFD, writeFD) = try FileDescriptor.pipe()
@@ -529,21 +529,15 @@ final class IORingTests: XCTestCase {
         let dt = Duration.seconds(1)
         let completion = try ring.blockingConsumeCompletion(timeout: dt)
 
-        let values = [ // This should be caseIterable.
-            IORing.Request.PollEvents.pollIn.rawValue,
-            IORing.Request.PollEvents.pollOut.rawValue
-        ]
-
-        for value in values {
-            if completion.result & Int32(value) != 0 {
-                // success!
+        for event in IORing.Request.PollEvents.allCases {
+            if completion.result & Int32(event.rawValue) != 0 {
+                XCTAssertEqual(event, .pollHup)
                 return
             }
         }
 
-        let pollValue = completion.result & 0x10
-        XCTAssertEqual(pollValue, 0x10)
-        XCTFail("Unexpected poll event: 0x\(String(pollValue, radix: 16))")
+        let unexpected = completion.result
+        XCTFail("Unexpected poll event: 0x\(String(unexpected, radix: 16))")
     }
 }
 #endif // os(Linux)
