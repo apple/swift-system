@@ -539,6 +539,44 @@ final class IORingTests: XCTestCase {
         let unexpected = completion.result
         XCTFail("Unexpected poll event: 0x\(String(unexpected, radix: 16))")
     }
+
+    func testPollError() throws {
+        try XCTSkipIf(!uringEnabled, failureMessage)
+        var ring = try IORing(queueDepth: 8)
+        let (readFD, writeFD) = try FileDescriptor.pipe(options: .nonBlocking)
+        defer {
+            try? readFD.close()
+            try? writeFD.close()
+        }
+
+        try XCTSkipIf(
+            !ring.supportedFeatures.contains(.extendedArguments),
+            "Kernel < 5.11: timeouts in io_uring_enter aren't supported."
+        )
+
+        let chunk = [UInt8](repeating: 0, count: 4096)
+        chunk.withUnsafeBytes {
+            // Fill the pipe by writing until an operation fails
+            while let written = try? writeFD.write($0), written > 0 {}
+        }
+
+        let request = IORing.Request.pollAdd(
+            writeFD, pollEvents: .pollOut, isMultiShot: false, context: 98
+        )
+        let success = try ring.submit(linkedRequests: request)
+        XCTAssertEqual(success, true)
+        try readFD.close()
+
+        let dt = Duration.seconds(1)
+        let completion = try ring.blockingConsumeCompletion(timeout: dt)
+        XCTAssertEqual(completion.context, 98)
+
+        let pollErr = IORing.Request.PollEvents.pollErr.rawValue
+        let result = completion.result & Int32(pollErr)
+        if result != pollErr {
+            XCTFail("expected POLLERR, got 0x\(String(result, radix: 16))")
+        }
+    }
 }
 #endif // os(Linux)
 #endif // compiler(>=6.2) && $Lifetimes
