@@ -609,7 +609,7 @@ extension IORing.Request {
             if isMultiShot {
                 request.rawValue.len = Self.SWIFT_IORING_POLL_ADD_MULTI
             }
-            request.rawValue.poll32_events = pollEvents.rawValue
+            request.pollEvents = pollEvents
         }
 
         return request

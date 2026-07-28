@@ -75,6 +75,27 @@ extension RawIORequest {
         set { rawValue.addr = newValue }
     }
 
+    /// The poll event mask, stored in `sqe->poll32_events`.
+    ///
+    /// Big-endian kernels swap the halfwords of this field before reading it.
+    /// Equivalent to liburing's `__io_uring_prep_poll_mask`.
+    @_alwaysEmitIntoClient var pollEvents: IORing.Request.PollEvents {
+        get { .init(rawValue: _applyPollMask(rawValue.poll32_events)) }
+        set { rawValue.poll32_events = _applyPollMask(newValue.rawValue) }
+    }
+
+    /// Converts a poll event mask between its in-memory and `sqe` encodings.
+    ///
+    /// This is a halfword rotate (`swahw32` from `<linux/swab.h>`), which keeps
+    /// the byte order within each half.
+    @_alwaysEmitIntoClient func _applyPollMask(_ mask: UInt32) -> UInt32 {
+        #if _endian(big)
+        return (mask &<< 16) | (mask &>> 16)
+        #else
+        return mask
+        #endif
+    }
+
     @inlinable public var flags: Flags {
         get { Flags(rawValue: rawValue.flags) }
         set { rawValue.flags = newValue.rawValue }
