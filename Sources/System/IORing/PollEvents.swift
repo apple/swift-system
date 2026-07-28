@@ -97,9 +97,15 @@ extension IORing.Request {
         @_alwaysEmitIntoClient
         public static var pollHup: PollEvents { PollEvents(.pollHup) }
 
-        /// An event indicating the file descriptor is not open.
+        /// An event indicating that the object a descriptor refers to is no
+        /// longer valid.
         ///
-        /// This usually means the descriptor was closed, or was never valid.
+        /// This arises when the descriptor itself resolves, but the thing it
+        /// refers to has since become invalid. For example, the disconnection
+        /// of a sound device could cause this event.
+        ///
+        /// Note that a descriptor which simply does not resolve would
+        /// return the EBADF error code (Errno.badFileDescriptor).
         ///
         /// The kernel reports this event whether or not it was requested, and
         /// requesting it explicitly has no effect. Corresponds to the POSIX

@@ -577,6 +577,38 @@ final class IORingTests: XCTestCase {
             XCTFail("expected POLLERR, got 0x\(String(result, radix: 16))")
         }
     }
+
+    // A completion's `result` is two things in one field: a non-negative
+    // value is an event mask, and a negative value is a negated errno. The
+    // sign is the only thing distinguishing them, so it has to be checked
+    // before the value is treated as anything else.
+    func testPollAddOnInvalidDescriptor() throws {
+        try XCTSkipIf(!uringEnabled, failureMessage)
+        var ring = try IORing(queueDepth: 8)
+
+        let request = IORing.Request.pollAdd(
+            FileDescriptor(rawValue: -1), pollEvents: .pollIn,
+            isMultiShot: false, context: 99
+        )
+        let success = try ring.submit(linkedRequests: request)
+        XCTAssertEqual(success, true)
+
+        guard let completion = ring.tryConsumeCompletion() else {
+            XCTFail("expected a completion for the failed poll")
+            return
+        }
+        XCTAssertEqual(completion.context, 99)
+
+        // A negative value for `result` marks the completion a a failure.
+        XCTAssertLessThan(completion.result, 0, "expected a failure")
+        // The negative value is the error code multiplied by -1.
+        XCTAssertEqual(Errno(rawValue: -completion.result), .badFileDescriptor)
+
+        // A negative result may look like another result code.
+        // Checking for the error must happen first.
+        let pollNval = Int32(IORing.Request.PollEvents.pollNval.rawValue)
+        XCTAssertNotEqual(completion.result & pollNval, 0)
+    }
 }
 #endif // os(Linux)
 #endif // compiler(>=6.2) && $Lifetimes

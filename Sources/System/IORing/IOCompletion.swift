@@ -54,6 +54,13 @@ public extension IORing.Completion {
         }
     }
 
+    /// The result of the completed operation.
+    ///
+    /// A non-negative value is the operation's success result: a byte count
+    /// for a read or a write, an event mask for a poll, and so on.
+    ///
+    /// A negative value is an `errno` code multiplied by -1. Recover the error
+    /// by negating it again: `Errno(rawValue: -completion.result)`.
     @inlinable var result: Int32 {
         get {
             rawValue.res
