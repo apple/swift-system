@@ -7,6 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
+import CSystem
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif canImport(Glibc)
@@ -22,8 +23,6 @@ import Android
 #else
 #error("Unsupported Platform")
 #endif
-
-import CSystem
 
 // Interacting with the mocking system, tracing, etc., is a potentially significant
 // amount of code size, so we hand outline that code for every syscall
