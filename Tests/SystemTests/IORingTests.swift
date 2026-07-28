@@ -338,7 +338,10 @@ final class IORingTests: XCTestCase {
         // Consume the completion from the poll operation
         let completion = try ring.blockingConsumeCompletion()
         XCTAssertEqual(completion.context, pollInContext)
-        XCTAssertGreaterThan(completion.result, 0) // Poll should return mask of ready events
+        let pollIn = Int32(IORing.Request.PollEvents.pollIn.rawValue)
+        XCTAssertNotEqual(
+            completion.result & pollIn, 0, "expected POLLIN in the result mask"
+        )
     }
 
     func testPollAddPollOut() throws {
@@ -366,7 +369,11 @@ final class IORingTests: XCTestCase {
         // Consume the completion from the poll operation
         let completionOut = try ring.blockingConsumeCompletion()
         XCTAssertEqual(completionOut.context, pollOutContext)
-        XCTAssertGreaterThan(completionOut.result, 0) // Poll should return mask of ready events
+        let pollOut = Int32(IORing.Request.PollEvents.pollOut.rawValue)
+        XCTAssertNotEqual(
+            completionOut.result & pollOut, 0,
+            "expected POLLOUT in the result mask"
+        )
     }
 
     // Similar to the multishot example in the documentation for
