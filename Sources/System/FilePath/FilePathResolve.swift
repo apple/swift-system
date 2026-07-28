@@ -13,8 +13,16 @@
 import WinSDK
 #elseif canImport(Darwin)
 import Darwin
-#elseif os(Linux) || os(Android) || os(FreeBSD) || os(OpenBSD) || os(WASI)
+#elseif canImport(Glibc)
 import Glibc
+#elseif canImport(Musl)
+import Musl
+#elseif canImport(WASILibc)
+import WASILibc
+#elseif canImport(Android)
+import Android
+#else
+#error("Unsupported Platform")
 #endif
 #else
 // Stdlib build: SwiftShims supplies `_swift_stdlib_FilePath_resolve` (the
@@ -51,6 +59,8 @@ extension FilePath {
     return try _resolveWindows()
 #elseif canImport(Darwin)
     return try _resolveDarwin()
+#elseif os(WASI)
+    return try _resolveWASI()
 #else
     return try _resolveLinux()
 #endif
@@ -261,6 +271,15 @@ extension FilePath {
 
     return unsafe FilePath(
       _normalizingRawCodeUnits: stringStart, count: storedLength - 1)
+  }
+}
+
+#elseif os(WASI)
+
+@available(SwiftStdlib 9999, *)
+extension FilePath {
+  fileprivate func _resolveWASI() throws -> FilePath {
+    throw _FilePathResolveError(code: ENOTSUP)
   }
 }
 

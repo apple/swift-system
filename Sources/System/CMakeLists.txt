@@ -26,6 +26,9 @@ set_target_properties(SystemPackage PROPERTIES
 target_compile_options(SystemPackage PRIVATE
   -enable-experimental-feature Lifetimes
   "SHELL:-package-name swift-system")
+target_compile_definitions(SystemPackage PRIVATE
+  FILEPATH_PACKAGE
+  FILEPATH_SYSTEM_STRING_COMPAT)
 target_sources(SystemPackage PRIVATE
   FilePath/FilePath.swift
   FilePath/FilePathAnchor.swift
