@@ -320,8 +320,7 @@ final class IORingTests: XCTestCase {
         // Test POLLIN: Create an eventfd to monitor for read readiness
         let testEventFD = FileDescriptor(rawValue: eventfd(0, 0))
         defer {
-            // Clean up
-            try! testEventFD.close()
+            try? testEventFD.close()
         }
         let pollInContext: UInt64 = 42
 
@@ -353,9 +352,8 @@ final class IORingTests: XCTestCase {
         let writeFD = FileDescriptor(rawValue: pipeFDs[1])
         let readFD = FileDescriptor(rawValue: pipeFDs[0])
         defer {
-            // Clean up
-            try! writeFD.close()
-            try! readFD.close()
+            try? writeFD.close()
+            try? readFD.close()
         }
         let pollOutContext: UInt64 = 43
 
