@@ -378,13 +378,13 @@ extension FileDescriptor {
 #if !os(WASI)
 @available(System 0.0.2, *)
 extension FileDescriptor {
-  /// Duplicates this file descriptor and return the newly created copy.
+  /// Duplicates this file descriptor and returns the newly created copy.
   ///
   /// - Parameters:
   ///   - `target`: The desired target file descriptor, or `nil`, in which case
   ///      the copy is assigned to the file descriptor with the lowest raw value
   ///      that is not currently in use by the process.
-  ///   - retryOnInterrupt: Whether to retry the write operation
+  ///   - retryOnInterrupt: Whether to retry the duplicate operation
   ///      if it throws ``Errno/interrupted``. The default is `true`.
   ///      Pass `false` to try only once and throw an error upon interruption.
   /// - Returns: The new file descriptor.

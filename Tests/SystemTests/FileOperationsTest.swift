@@ -158,6 +158,7 @@ final class FileOperationsTest: XCTestCase {
   }
 
   #if !os(WASI) // WASI has no pipe
+  @available(System 1.1.0, *)
   func testAdHocPipe() throws {
     // Ad-hoc test testing `Pipe` functionality.
     // We cannot test `Pipe` using `MockTestCase` because it calls `pipe` with a pointer to an array local to the `Pipe`, the address of which we do not know prior to invoking `Pipe`.
@@ -334,6 +335,7 @@ final class FileOperationsTest: XCTestCase {
   }
   #endif // ENABLE_MOCKING
 
+  @available(System 1.2.0, *)
   func testResizeFile() throws {
     try withTemporaryFilePath(basename: "testResizeFile") { path in 
       let fd = try FileDescriptor.open(path.appending("\(UUID().uuidString).txt"), .readWrite, options: [.create, .truncate], permissions: .ownerReadWrite)
