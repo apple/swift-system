@@ -144,5 +144,5 @@ let package = Package(
       dependencies: ["SystemPackage"],
       swiftSettings: [.enableUpcomingFeature("MemberImportVisibility")]),
   ],
-  swiftLanguageModes: [.v5]
+  swiftLanguageModes: [.v6]
 )
