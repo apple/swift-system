@@ -18,15 +18,15 @@ import Darwin
 import CSystem
 import ucrt
 #elseif canImport(Glibc)
-@_implementationOnly import CSystem
+import CSystem
 import Glibc
 #elseif canImport(Musl)
-@_implementationOnly import CSystem
+import CSystem
 import Musl
 #elseif canImport(WASILibc)
 import WASILibc
 #elseif canImport(Android)
-@_implementationOnly import CSystem
+import CSystem
 import Android
 #else
 #error("Unsupported Platform")
