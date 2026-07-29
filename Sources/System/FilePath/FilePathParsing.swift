@@ -12,6 +12,19 @@
 //
 // Compile-time platform selection. This reference implementation builds for a
 // single platform at a time, so these fold to constants.
+//
+// Path syntax falls into three families: Windows (backslash, drive letters,
+// UNC, \\?\ verbatim), Apple (slash, plus the /.vol/, /.nofollow/ and
+// /.resolve/ anchors), and plain POSIX. The last arm is a fallback rather
+// than an enumeration: a newly supported platform is almost certainly plain
+// POSIX, and should build without editing this chain.
+//
+// Cygwin is the one platform the fallback would get wrong. POSIX
+// (IEEE Std 1003.1 §4.13) lets a pathname beginning with exactly two slashes
+// be "interpreted in an implementation-defined manner", and Cygwin uses that
+// for UNC: //machine/share. Coalescing below is unconditional, so it would
+// silently rewrite that to /machine/share — a wrong path rather than a build
+// failure.
 #if os(Windows)
 internal var _isWindows: Bool { true }
 internal var _isDarwin:  Bool { false }
@@ -20,12 +33,14 @@ internal var _isLinux:   Bool { false }
 internal var _isWindows: Bool { false }
 internal var _isDarwin:  Bool { true }
 internal var _isLinux:   Bool { false }
-#elseif os(Linux)
+#elseif os(Cygwin)
+#error("FilePath: Cygwin's //machine/share UNC syntax is not modelled")
+#else
+// Generic POSIX. `_isLinux` keeps its name for continuity with
+// `_normalizeLinux`.
 internal var _isWindows: Bool { false }
 internal var _isDarwin:  Bool { false }
 internal var _isLinux:   Bool { true }
-#else
-#error("FilePath: unsupported platform")
 #endif
 
 // The separator we use for slash-based platforms
@@ -132,6 +147,11 @@ extension _SystemString {
   // Coalesce repeated separators in place. On Windows, also convert `/`
   // to `\` (verbatim-aware) and prenormalize roots before coalescing.
   // Trailing separators are preserved.
+  //
+  // Off Windows the coalescing is unconditional, including a leading `//`,
+  // which POSIX §4.13 permits treating as distinct. No platform selected by
+  // the fallback arm above does, and the one that does (Cygwin) is rejected
+  // there. Pinned by `.unix("//", normalized: "/")` in FilePathParsingTest.
   internal mutating func _normalizeSeparators() {
     guard !isEmpty else { return }
     var (writeIdx, readIdx) = (startIndex, startIndex)

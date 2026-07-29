@@ -7,12 +7,10 @@
  See https://swift.org/LICENSE.txt for license information
  */
 
-// Restored verbatim from the tail of the pre-SE-0529
-// Sources/System/FilePath/FilePathWindows.swift, which the vendored stdlib
-// FilePath copy replaced wholesale. Nothing here is FilePath API: it is an
-// internal helper on UnsafePointer used by Internals/WindowsSyscallAdapters.swift
-// and SystemFilePath/FilePathTempWindows.swift, so it lives in Internals/ now
-// rather than being tied to a FilePath file again.
+// An internal helper on UnsafePointer, not FilePath API, despite having once
+// lived at the tail of FilePath/FilePathWindows.swift. Its callers are
+// Internals/WindowsSyscallAdapters.swift and
+// SystemFilePath/FilePathTempWindows.swift, so it belongs here.
 
 #if os(Windows)
 import WinSDK

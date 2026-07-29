@@ -77,6 +77,7 @@ target_sources(SystemPackage PRIVATE
   Internals/Mocking.swift
   Internals/RawBuffer.swift
   Internals/Syscalls.swift
+  Internals/WindowsPathCanonicalization.swift
   Internals/WindowsSyscallAdapters.swift)
 target_link_libraries(SystemPackage PUBLIC
   CSystem)
