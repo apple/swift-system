@@ -11,16 +11,15 @@
 
 import ucrt
 import WinSDK
+import Synchronization
 
-fileprivate var _umask: CInterop.Mode = 0o22
+private let _umask = Atomic<CInterop.Mode>(0o22)
 
 @inline(__always)
 func umask(
   _ mode: CInterop.Mode
 ) -> CInterop.Mode {
-  let oldMask = _umask
-  _umask = mode
-  return oldMask
+  _umask.exchange(mode, ordering: .relaxed)
 }
 
 @inline(__always)
@@ -58,7 +57,7 @@ internal func open(
   _ path: UnsafePointer<CInterop.PlatformChar>, _ oflag: Int32,
   _ mode: CInterop.Mode
 ) -> CInt {
-  let actualMode = mode & ~_umask
+  let actualMode = mode & ~_umask.load(ordering: .relaxed)
 
   guard let pSD = _createSecurityDescriptor(from: actualMode, for: .file) else {
     ucrt._set_errno(_mapWindowsErrorToErrno(GetLastError()))
@@ -248,7 +247,7 @@ internal func mkdir(
   _ path: UnsafePointer<CInterop.PlatformChar>,
   _ mode: CInterop.Mode
 ) -> CInt {
-  let actualMode = mode & ~_umask
+  let actualMode = mode & ~_umask.load(ordering: .relaxed)
 
   guard let pSD = _createSecurityDescriptor(from: actualMode,
                                             for: .directory) else {
