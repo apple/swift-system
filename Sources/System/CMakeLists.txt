@@ -23,8 +23,27 @@ add_library(SystemPackage
   WinSDK+Overlay.swift)
 set_target_properties(SystemPackage PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
+
+# Availability macro definitions.
+# Should stay in sync with the `availability` array in Package.swift,
+# matching `sourceAvailability`, which is the minimum Swift availability.
+# Availability support for Darwin platforms is omitted.
+set(SWIFT_SYSTEM_AVAILABILITY_VERSIONS
+  0.0.1 0.0.2 0.0.3
+  1.1.0 1.1.1 1.2.0 1.2.1 1.3.0 1.3.1 1.3.2 1.4.0
+  1.7.0
+  199)
+set(SWIFT_SYSTEM_SOURCE_AVAILABILITY
+  "macOS 10.10, iOS 8.0, watchOS 2.0, tvOS 9.0, visionOS 1.0")
+set(SWIFT_SYSTEM_AVAILABILITY_MACRO)
+foreach(version IN LISTS SWIFT_SYSTEM_AVAILABILITY_VERSIONS)
+  list(APPEND SWIFT_SYSTEM_AVAILABILITY_MACRO
+    "SHELL:-enable-experimental-feature \"AvailabilityMacro=System ${version}:${SWIFT_SYSTEM_SOURCE_AVAILABILITY}\"")
+endforeach()
+
 target_compile_options(SystemPackage PRIVATE
   -enable-experimental-feature Lifetimes
+  ${SWIFT_SYSTEM_AVAILABILITY_MACRO}
   "SHELL:-package-name swift-system")
 target_sources(SystemPackage PRIVATE
   FilePath/FilePath.swift

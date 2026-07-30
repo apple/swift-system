@@ -18,15 +18,15 @@ import Darwin
 import CSystem
 import ucrt
 #elseif canImport(Glibc)
-@_implementationOnly import CSystem
+import CSystem
 import Glibc
 #elseif canImport(Musl)
-@_implementationOnly import CSystem
+import CSystem
 import Musl
 #elseif canImport(WASILibc)
 import WASILibc
 #elseif canImport(Android)
-@_implementationOnly import CSystem
+import CSystem
 import Android
 #else
 #error("Unsupported Platform")
@@ -185,8 +185,9 @@ extension String {
 #if os(Windows)
 internal typealias _PlatformTLSKey = DWORD
 #elseif os(WASI) && (swift(<6.1) || !_runtime(_multithreaded))
-// Mock TLS storage for single-threaded WASI
-internal final class _PlatformTLSKey {
+// Mock TLS storage for single-threaded WASI.
+// Carries no state of its own, and only used to index `sharedTLSStorage`.
+internal final class _PlatformTLSKey: @unchecked Sendable {
   fileprivate init() {}
 }
 private final class TLSStorage: @unchecked Sendable {
