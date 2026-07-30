@@ -13,6 +13,7 @@ target_include_directories(CSystem PUBLIC
   $<INSTALL_INTERFACE:include/CSystem>)
 
 install(FILES
+  include/CSystemDarwin.h
   include/CSystemLinux.h
   include/CSystemShared.h
   include/CSystemWASI.h

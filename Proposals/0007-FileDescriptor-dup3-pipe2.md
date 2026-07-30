@@ -1,31 +1,31 @@
 # Add support for `dup3` and `pipe2` POSIX API to `FileDescriptor`
 
 * Proposal: SYS-0007
-- Author(s): Jake Petroules <jake.petroules@apple.com>, Guillaume Lessard <guillaume.lessard@apple.com>
+* Authors: Jake Petroules <jake.petroules@apple.com>, Guillaume Lessard <guillaume.lessard@apple.com>
 
 * Other Reviews: [Swift Forums Pitch](https://forums.swift.org/t/82486)
 
-##### Revision history
+#### Revision history
 
 * **v1** Initial version
-
-- **v2** Add Windows version of `pipe(options:)`
+* **v2** Add Windows version of `pipe(options:)`
+* **v3** Add Darwin versions of `dup3` and `pipe2` wrappers
 
 ## Introduction
 
 Swift System today provides `FileDescriptor.duplicate()`, `FileDescriptor.duplicate(as:)` and `FileDescriptor.pipe()` cover APIs for the POSIX `dup`, `dup2`, and `pipe` functions, respectively.
 
-This proposal adds additional `FileDescriptor` overloads to cover new POSIX 2024 functions in this family of APIs. These overloads will be available on Linux, FreeBSD and Android.
+This proposal adds additional `FileDescriptor` overloads to cover new POSIX 2024 functions in this family of APIs. These overloads will be available on Linux, FreeBSD, Android, and the Apple operating systems based on Darwin 27.0 or newer; `pipe(options:)` will also be available on Windows.
 
 ## Motivation
 
 It is considered best practice to set the `O_CLOEXEC` (close-on-exec) bit on newly created file descriptors to prevent them from being inherited by subprocesses.
 
-Some POSIX functions such as `open` provide a "flags" parameter allowing this the close-on-exec bit to be set atomically on the newly created file descriptor. However, others provide no such flags parameter, and require the caller to use `fcntl` to set the close-on-exec bit after the fact. This can lead to race conditions and security bugs where file descriptors can be inherited between calling the function creating the file descriptor, and calling `fcntl`.
+Some POSIX functions such as `open` provide a "flags" parameter allowing the close-on-exec bit to be set atomically on the newly created file descriptor. However, others provide no such flags parameter, and require the caller to use `fcntl` to set the close-on-exec bit after the fact. This can lead to race conditions and security bugs where file descriptors can be inherited between calling the function creating the file descriptor, and calling `fcntl`.
 
 POSIX 2024 corrects this deficiency for `dup2` and `pipe` by introducing `dup3` and `pipe2` variants that allow the close-on-exec bit to be set atomically.
 
-While it's *also* considered best practice for subprocess spawning code to close all open file descriptors in the newly created subprocess (swiftlang/swift-subprocess does this for example), there is no guarantee that a user of Swift System is using a mechanism which does so throughout their entire process, and might be using process spawning code they don't control. Adding the proposed overloads will allow developers to write code which adopts a posture of defence in depth with respect to opened file descriptors.
+While it's *also* considered best practice for subprocess spawning code to close all open file descriptors in the newly created subprocess (swiftlang/swift-subprocess does this for example), there is no guarantee that a user of Swift System is using a mechanism which does so throughout their entire process, and might be using process spawning code they don't control. Adding the proposed overloads will allow developers to write code which adopts a posture of defense in depth with respect to opened file descriptors.
 
 ## Proposed solution
 
@@ -38,7 +38,7 @@ import System
 
 let fd0 = try FileDescriptor.open("/tmp/test.txt", .readOnly)
 let fd1 = FileDescriptor(rawValue: 731)
-let fd2 = fd0.duplicate(as: fd1, options: [.closeOnFork, .closeOnExec])
+let fd2 = try fd0.duplicate(as: fd1, options: [.closeOnFork, .closeOnExec])
 ```
 
 ## Detailed design
@@ -49,6 +49,11 @@ let fd2 = fd0.duplicate(as: fd1, options: [.closeOnFork, .closeOnExec])
 struct FileDescriptor {
   /// Creates a unidirectional data channel, which can be used for
   /// interprocess communication.
+  ///
+  /// NOTE: This overload called with an empty option set is not necessarily
+  /// equivalent to calling the overload with no options. On Windows, the
+  /// no-parameter `pipe()` overload enables the `.closeOnExec` behaviour,
+  /// but this overload disables it when called with an empty option set.
   ///
   /// - Parameters:
   ///   - options: The behavior for creating the pipe.
@@ -70,8 +75,13 @@ struct FileDescriptor {
   ///      Pass `false` to try only once and throw an error upon interruption.
   /// - Returns: The new file descriptor.
   ///
+  /// If the `target` descriptor is the same as `self`, then EINVAL is thrown.
   /// If the `target` descriptor is already in use, then it is first
   /// deallocated as if a close(2) call had been done first.
+  ///
+  /// NOTE: This overload called with an empty option set is not necessarily
+  /// equivalent to calling the overload with no options, because `dup3` with
+  /// no set options is not required to behave identically to `dup2`.
   ///
   /// File descriptors are merely references to some underlying system resource.
   /// The system does not distinguish between the original and the new file
@@ -166,8 +176,6 @@ struct FileDescriptor {
   }
 }
 ```
-
-These API additions are unavailable on Darwin, as the underlying `dup3` and `pipe2` APIs do not exist.
 
 `pipe(options:)` is added for Windows with the option `.closeOnExec`, but `duplicate(as:options:)` is not added because the underlying API does not match `dup3`.
 

@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 - 2025 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2026 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -157,7 +157,7 @@ final class FileOperationsTest: XCTestCase {
     // TODO: Test writeAll, writeAll(toAbsoluteOffset), closeAfter
   }
 
-  #if !os(WASI) // WASI has no pipe
+#if !os(WASI) // WASI has no pipe
   @available(System 1.1.0, *)
   func testAdHocPipe() throws {
     // Ad-hoc test testing `Pipe` functionality.
@@ -178,8 +178,10 @@ final class FileOperationsTest: XCTestCase {
     }
   }
 
-  #if !SYSTEM_PACKAGE_DARWIN
   func testAdHocPipeWithOptions() throws {
+    guard #available(macOS 27.0, iOS 27.0, watchOS 27.0, tvOS 27.0, visionOS 27.0, *) else {
+      throw XCTSkip("pipe2 and PipeOptions require Darwin 27 or newer")
+    }
     // Ad-hoc test testing `Pipe` functionality.
     // We cannot test `Pipe` using `MockTestCase` because it calls `pipe` with a pointer to an array local to the `Pipe`, the address of which we do not know prior to invoking `Pipe`.
     let options: FileDescriptor.PipeOptions = [.closeOnExec]
@@ -199,10 +201,9 @@ final class FileOperationsTest: XCTestCase {
       }
     }
   }
-  #endif // !SYSTEM_PACKAGE_DARWIN
-  #endif // !os(WASI)
+#endif // !os(WASI)
 
-  #if !os(Windows)
+#if !os(Windows)
   func testAdHocDuplicate2() throws {
     try withTemporaryFilePath(basename: "test") {
       let path = $0.appending("foo2.txt")
@@ -239,10 +240,11 @@ final class FileOperationsTest: XCTestCase {
       }
     }
   }
-  #endif // !os(Windows)
 
-  #if !SYSTEM_PACKAGE_DARWIN && !os(Windows)
   func testAdHocDuplicate3() throws {
+    guard #available(macOS 27.0, iOS 27.0, watchOS 27.0, tvOS 27.0, visionOS 27.0, *) else {
+      throw XCTSkip("dup3 and DuplicateOptions require Darwin 27 or newer")
+    }
 
     try withTemporaryFilePath(basename: "test") {
       let path = $0.appending("foo3.txt")
@@ -275,7 +277,7 @@ final class FileOperationsTest: XCTestCase {
       }
     }
   }
-  #endif // !SYSTEM_PACKAGE_DARWIN && !os(Windows)
+#endif // !os(Windows)
 
   func testAdHocOpen() {
     // Ad-hoc test touching a file system.

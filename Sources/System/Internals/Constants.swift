@@ -14,22 +14,20 @@
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif os(Windows)
-import CSystem
 import ucrt
 #elseif canImport(Glibc)
-import CSystem
 import Glibc
 #elseif canImport(Musl)
-import CSystem
 import Musl
 #elseif canImport(WASILibc)
-import CSystem
 import WASILibc
 #elseif canImport(Android)
 import Android
 #else
 #error("Unsupported Platform")
 #endif
+
+import CSystem
 
 // MARK: errno
 #if SYSTEM_PACKAGE_DARWIN
@@ -631,10 +629,10 @@ internal var _O_CLOEXEC: CInt {
 #if !os(Windows)
 @_alwaysEmitIntoClient
 internal var _O_CLOFORK: CInt {
-  #if !os(WASI) && !os(Linux) && !os(Android) && !canImport(Darwin) && !os(FreeBSD)
+  #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
+  COMPATIBILITY_O_CLOFORK
+  #elseif !os(WASI) && !os(Linux) && !os(Android)
   O_CLOFORK
-  #elseif os(FreeBSD)
-  FREEBSD_O_CLOFORK
   #else
   0
   #endif

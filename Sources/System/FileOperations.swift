@@ -423,7 +423,7 @@ extension FileDescriptor {
   ///      Pass `false` to try only once and throw an error upon interruption.
   /// - Returns: The new file descriptor.
   ///
-  /// If the `target` descriptor the same as `self`, then EINVAL is thrown.
+  /// If the `target` descriptor is the same as `self`, then EINVAL is thrown.
   /// If the `target` descriptor is already in use, then it is first
   /// deallocated as if a close(2) call had been done first.
   ///
@@ -444,20 +444,19 @@ extension FileDescriptor {
   /// close-on-fork flags.
   ///
   /// The corresponding C function is `dup3`.
-  @discardableResult
-  @_alwaysEmitIntoClient
   @available(Windows, unavailable)
-  @available(macOS, unavailable)
-  @available(iOS, unavailable)
-  @available(tvOS, unavailable)
-  @available(watchOS, unavailable)
-  @available(visionOS, unavailable)
+  @available(macOS 27.0, iOS 27.0, watchOS 27.0, tvOS 27.0, visionOS 27.0, *)
+  @_alwaysEmitIntoClient
+  @discardableResult
   public func duplicate(
     as target: FileDescriptor,
     options: DuplicateOptions,
     retryOnInterrupt: Bool = true
   ) throws(Errno) -> FileDescriptor {
-    try _duplicate(as: target, options: options.rawValue, retryOnInterrupt: retryOnInterrupt).get()
+    let result = _duplicate(
+      as: target, options: options.rawValue, retryOnInterrupt: retryOnInterrupt
+    )
+    return try result.get()
   }
 
   @available(System 0.0.2, *)
@@ -476,11 +475,7 @@ extension FileDescriptor {
   }
 
   @available(Windows, unavailable)
-  @available(macOS, unavailable)
-  @available(iOS, unavailable)
-  @available(tvOS, unavailable)
-  @available(watchOS, unavailable)
-  @available(visionOS, unavailable)
+  @available(macOS 27.0, iOS 27.0, watchOS 27.0, tvOS 27.0, visionOS 27.0, *)
   @usableFromInline
   internal func _duplicate(
     as target: FileDescriptor,
@@ -510,7 +505,7 @@ extension FileDescriptor {
     fatalError("Not implemented")
   }
 }
-#endif
+#endif // !os(WASI)
 
 #if !os(WASI)
 @available(System 1.1.0, *)
@@ -532,9 +527,9 @@ extension FileDescriptor {
   /// interprocess communication.
   ///
   /// NOTE: This overload called with an empty option set is not necessarily
-  /// equivalent to calling the overload with no options. On Windows, this
-  /// overload with empty options disables the `closeOnExec` behaviour,
-  /// which is enabled by the overload without options.
+  /// equivalent to calling the overload with no options. On Windows, the
+  /// no-parameter `pipe()` overload enables the `.closeOnExec` behaviour,
+  /// but this overload disables it when called with an empty option set.
   ///
   /// - Parameters:
   ///   - options: The behavior for creating the pipe.
@@ -543,11 +538,7 @@ extension FileDescriptor {
   ///
   /// The corresponding C function is `pipe2`.
   @_alwaysEmitIntoClient
-  @available(macOS, unavailable)
-  @available(iOS, unavailable)
-  @available(tvOS, unavailable)
-  @available(watchOS, unavailable)
-  @available(visionOS, unavailable)
+  @available(macOS 27.0, iOS 27.0, watchOS 27.0, tvOS 27.0, visionOS 27.0, *)
   public static func pipe(
     options: PipeOptions
   ) throws(Errno) -> (readEnd: FileDescriptor, writeEnd: FileDescriptor) {
@@ -568,11 +559,7 @@ extension FileDescriptor {
     }
   }
 
-  @available(macOS, unavailable)
-  @available(iOS, unavailable)
-  @available(tvOS, unavailable)
-  @available(watchOS, unavailable)
-  @available(visionOS, unavailable)
+  @available(macOS 27.0, iOS 27.0, watchOS 27.0, tvOS 27.0, visionOS 27.0, *)
   @usableFromInline
   internal static func _pipe(
     options: Int32,
@@ -593,7 +580,7 @@ extension FileDescriptor {
     fatalError("Not implemented")
   }
 }
-#endif
+#endif // !os(WASI)
 
 @available(System 1.2.0, *)
 extension FileDescriptor {
@@ -682,4 +669,4 @@ extension FilePermissions {
     return system_umask(mode)
   }
 }
-#endif
+#endif // !os(WASI)

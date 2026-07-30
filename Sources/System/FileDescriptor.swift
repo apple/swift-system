@@ -328,11 +328,7 @@ extension FileDescriptor {
 
   /// Options that specify behavior for a newly-created pipe.
   @frozen
-  @available(macOS, unavailable)
-  @available(iOS, unavailable)
-  @available(tvOS, unavailable)
-  @available(watchOS, unavailable)
-  @available(visionOS, unavailable)
+  @available(macOS 27.0, iOS 27.0, watchOS 27.0, tvOS 27.0, visionOS 27.0, *)
   public struct PipeOptions: OptionSet, Sendable, Hashable, Codable {
     /// The raw C options.
     @_alwaysEmitIntoClient
@@ -403,11 +399,7 @@ extension FileDescriptor {
   /// Options that specify behavior for a duplicated file descriptor.
   @frozen
   @available(Windows, unavailable)
-  @available(macOS, unavailable)
-  @available(iOS, unavailable)
-  @available(tvOS, unavailable)
-  @available(watchOS, unavailable)
-  @available(visionOS, unavailable)
+  @available(macOS 27.0, iOS 27.0, watchOS 27.0, tvOS 27.0, visionOS 27.0, *)
   public struct DuplicateOptions: OptionSet, Sendable, Hashable, Codable {
     /// The raw C options.
     @_alwaysEmitIntoClient
@@ -532,7 +524,6 @@ extension FileDescriptor {
     @available(*, unavailable, renamed: "nextData")
     public static var SEEK_DATA: SeekOrigin { nextData }
 #endif
-
   }
 }
 
