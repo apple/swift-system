@@ -242,3 +242,14 @@ internal func getTLS(_ key: _PlatformTLSKey) -> UnsafeMutableRawPointer? {
   return pthread_getspecific(key)
   #endif
 }
+
+// MARK: - Environment
+
+/// Whether the named environment variable is present, whatever its value.
+///
+/// Lives here because this is the one file that has already done the
+/// platform-import dance, and `getenv` needs it. Used by the `FilePath`
+/// wrapper's backing selection.
+internal func system_hasEnv(_ name: String) -> Bool {
+  getenv(name) != nil
+}

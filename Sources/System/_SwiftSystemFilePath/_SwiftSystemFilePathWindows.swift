@@ -7,7 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-internal struct _ParsedWindowsRoot {
+internal struct _SwiftSystemParsedWindowsRoot {
   var rootEnd: SystemString.Index
 
   // TODO: Remove when I normalize to always (except `C:`)
@@ -23,11 +23,11 @@ internal struct _ParsedWindowsRoot {
   var volume: Range<SystemString.Index>?
 }
 
-extension _ParsedWindowsRoot {
+extension _SwiftSystemParsedWindowsRoot {
   static func traditional(
     drive: SystemChar?, fullQualified: Bool, endingAt idx: SystemString.Index
-  ) -> _ParsedWindowsRoot {
-    _ParsedWindowsRoot(
+  ) -> _SwiftSystemParsedWindowsRoot {
+    _SwiftSystemParsedWindowsRoot(
       rootEnd: idx,
       relativeBegin: idx,
       drive: drive,
@@ -43,8 +43,8 @@ extension _ParsedWindowsRoot {
     share: Range<SystemString.Index>,
     endingAt end: SystemString.Index,
     relativeBegin relBegin: SystemString.Index
-  ) -> _ParsedWindowsRoot {
-    _ParsedWindowsRoot(
+  ) -> _SwiftSystemParsedWindowsRoot {
+    _SwiftSystemParsedWindowsRoot(
       rootEnd: end,
       relativeBegin: relBegin,
       drive: nil,
@@ -59,8 +59,8 @@ extension _ParsedWindowsRoot {
     volume: Range<SystemString.Index>,
     endingAt end: SystemString.Index,
     relativeBegin relBegin: SystemString.Index
-  ) -> _ParsedWindowsRoot {
-    _ParsedWindowsRoot(
+  ) -> _SwiftSystemParsedWindowsRoot {
+    _SwiftSystemParsedWindowsRoot(
       rootEnd: end,
       relativeBegin: relBegin,
       drive: nil,
@@ -71,7 +71,7 @@ extension _ParsedWindowsRoot {
   }
 }
 
-struct _Lexer {
+struct _SwiftSystemLexer {
   var slice: Slice<SystemString>
 
   init(_ str: SystemString) {
@@ -133,7 +133,7 @@ struct _Lexer {
 
   mutating func clear() {
     // TODO: Intern empty system string
-    self = _Lexer(SystemString())
+    self = _SwiftSystemLexer(SystemString())
   }
 
   mutating func reset(to: SystemString, at: SystemString.Index) {
@@ -208,7 +208,7 @@ internal struct WindowsRootInfo {
   }
 }
 
-extension _ParsedWindowsRoot {
+extension _SwiftSystemParsedWindowsRoot {
   fileprivate func volumeInfo(_ root: SystemString) -> WindowsRootInfo.Volume {
     if let d = self.drive {
       return .drive(Character(d.asciiScalar!))
@@ -223,7 +223,7 @@ extension _ParsedWindowsRoot {
 }
 
 extension WindowsRootInfo {
-  internal init(_ root: SystemString, _ parsed: _ParsedWindowsRoot) {
+  internal init(_ root: SystemString, _ parsed: _SwiftSystemParsedWindowsRoot) {
     self.volume = parsed.volumeInfo(root)
 
     if let host = parsed.host {
@@ -271,7 +271,7 @@ extension WindowsRootInfo {
   }
 
   // TODO: Should this be component?
-  func formPath() -> FilePath {
+  func formPath() -> _SwiftSystemFilePath {
     fatalError("Unimplemented")
   }
 
@@ -310,7 +310,7 @@ extension WindowsRootInfo {
 
 extension SystemString {
   // TODO: Or, should I always inline this to remove some of the bookeeping?
-  private func _parseWindowsRootInternal() -> _ParsedWindowsRoot? {
+  private func _parseWindowsRootInternal() -> _SwiftSystemParsedWindowsRoot? {
     assert(_windowsPaths)
 
     /*
@@ -331,10 +331,10 @@ extension SystemString {
      are deferred to the relevant syscalls.
     */
 
-    var lexer = _Lexer(self)
+    var lexer = _SwiftSystemLexer(self)
 
     // Helper to parse a UNC root
-    func parseUNC(deviceSigil: SystemChar?) -> _ParsedWindowsRoot {
+    func parseUNC(deviceSigil: SystemChar?) -> _SwiftSystemParsedWindowsRoot {
       let serverRange = lexer.eatComponent()
       guard lexer.eatBackslash() else {
         fatalError("expected normalized root to contain backslash")
@@ -413,7 +413,7 @@ extension SystemString {
     assert(_windowsPaths)
     assert(!self.contains(.slash), "only valid after separator conversion")
 
-    var lexer = _Lexer(self)
+    var lexer = _SwiftSystemLexer(self)
 
     // Only relevant for UNC or device paths
     guard lexer.eatBackslash(), lexer.eatBackslash() else {

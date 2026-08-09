@@ -7,6 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
+
 // MARK: - API
 
 /// Create a temporary path for the duration of the closure.
@@ -19,7 +20,7 @@
 /// executes `body`, passing in the path of the created directory, then
 /// deletes the directory and all of its contents before returning.
 internal func withTemporaryFilePath<R>(
-  basename: FilePath.Component,
+  basename: _StdlibFilePath.Component,
   _ body: (FilePath) throws -> R
 ) throws -> R {
   let temporaryDir = try createUniqueTemporaryDirectory(basename: basename)
@@ -27,7 +28,12 @@ internal func withTemporaryFilePath<R>(
     try? _recursiveRemove(at: temporaryDir)
   }
 
-  return try body(temporaryDir)
+  // The directory machinery below works on the stdlib backing, but callers get
+  // a `FilePath`, and it has to honor the process-wide backing selection rather
+  // than inherit this file's. Rebuilding it from the platform string routes it
+  // through the wrapper's normal construction funnel.
+  let handedOut = temporaryDir.withPlatformString { FilePath(platformString: $0) }
+  return try body(handedOut)
 }
 
 // MARK: - Internals
@@ -44,7 +50,7 @@ fileprivate let base64 = Array<UInt8>(
 ///
 /// This function will throw if there is an error, except if the error
 /// is that the directory exists, in which case it returns `false`.
-fileprivate func makeLockedDownDirectory(at path: FilePath) throws -> Bool {
+fileprivate func makeLockedDownDirectory(at path: _StdlibFilePath) throws -> Bool {
   return try path.withPlatformString {
     if system_mkdir($0, 0o700) == 0 {
       return true
@@ -82,8 +88,8 @@ fileprivate func createRandomString(length: Int) -> String {
 /// starts with `basename`, followed by a `.` and then a random
 /// string of characters.
 fileprivate func createUniqueTemporaryDirectory(
-  basename: FilePath.Component
-) throws -> FilePath {
+  basename: _StdlibFilePath.Component
+) throws -> _StdlibFilePath {
   var tempDir = try _getTemporaryDirectory()
   tempDir.append(basename)
 

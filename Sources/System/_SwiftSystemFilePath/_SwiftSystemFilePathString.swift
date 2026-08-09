@@ -7,11 +7,10 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-
 // MARK: - Platform string
 
 @available(System 0.0.2, *)
-extension _StdlibFilePath {
+extension _SwiftSystemFilePath {
   /// Creates a file path by copying bytes from a null-terminated platform
   /// string.
   ///
@@ -33,37 +32,34 @@ extension _StdlibFilePath {
   public init(platformString: [CInterop.PlatformChar]) {
     guard let _ = platformString.firstIndex(of: 0) else {
       fatalError(
-        "input of _StdlibFilePath.init(platformString:) must be null-terminated"
+        "input of _SwiftSystemFilePath.init(platformString:) must be null-terminated"
       )
     }
     self = platformString.withUnsafeBufferPointer {
-      _StdlibFilePath(platformString: $0.baseAddress!)
+      _SwiftSystemFilePath(platformString: $0.baseAddress!)
     }
   }
 
   @inlinable
   @_alwaysEmitIntoClient
-  @available(*, deprecated, message: "Use _StdlibFilePath.init(_ scalar: Unicode.Scalar)")
+  @available(*, deprecated, message: "Use _SwiftSystemFilePath.init(_ scalar: Unicode.Scalar)")
   public init(platformString: inout CInterop.PlatformChar) {
     guard platformString == 0 else {
       fatalError(
-        "input of _StdlibFilePath.init(platformString:) must be null-terminated"
+        "input of _SwiftSystemFilePath.init(platformString:) must be null-terminated"
       )
     }
-    self = _StdlibFilePath()
+    self = _SwiftSystemFilePath()
   }
 
   @inlinable
   @_alwaysEmitIntoClient
-  @available(*, deprecated, message: "Use _StdlibFilePath(_: String) to create a path from a String")
+  @available(*, deprecated, message: "Use _SwiftSystemFilePath(_: String) to create a path from a String")
   public init(platformString: String) {
-    // `_ssString:` is the parked spelling of swift-system's non-failable
-    // `_StdlibFilePath(_: String)`; see its declaration below for why. Bare
-    // `_StdlibFilePath(_:)` now resolves to the base's failable initializer.
     if let nullLoc = platformString.firstIndex(of: "\0") {
-      self = _StdlibFilePath(_ssString: String(platformString[..<nullLoc]))
+      self = _SwiftSystemFilePath(String(platformString[..<nullLoc]))
     } else {
-      self = _StdlibFilePath(_ssString: platformString)
+      self = _SwiftSystemFilePath(platformString)
     }
   }
 
@@ -114,7 +110,7 @@ extension _StdlibFilePath {
 }
 
 @available(System 0.0.2, *)
-extension _StdlibFilePath.Component {
+extension _SwiftSystemFilePath.Component {
   /// Creates a file path component by copying bytes from a null-terminated
   /// platform string.
   ///
@@ -143,11 +139,11 @@ extension _StdlibFilePath.Component {
   public init?(platformString: [CInterop.PlatformChar]) {
     guard let _ = platformString.firstIndex(of: 0) else {
       fatalError(
-        "input of _StdlibFilePath.Component.init?(platformString:) must be null-terminated"
+        "input of _SwiftSystemFilePath.Component.init?(platformString:) must be null-terminated"
       )
     }
     guard let component = platformString.withUnsafeBufferPointer({
-      _StdlibFilePath.Component(platformString: $0.baseAddress!)
+      _SwiftSystemFilePath.Component(platformString: $0.baseAddress!)
     }) else {
       return nil
     }
@@ -156,11 +152,11 @@ extension _StdlibFilePath.Component {
 
   @inlinable
   @_alwaysEmitIntoClient
-  @available(*, deprecated, message: "Use _StdlibFilePath.Component.init(_ scalar: Unicode.Scalar)")
+  @available(*, deprecated, message: "Use _SwiftSystemFilePath.Component.init(_ scalar: Unicode.Scalar)")
   public init?(platformString: inout CInterop.PlatformChar) {
     guard platformString == 0 else {
       fatalError(
-        "input of _StdlibFilePath.Component.init?(platformString:) must be null-terminated"
+        "input of _SwiftSystemFilePath.Component.init?(platformString:) must be null-terminated"
       )
     }
     return nil
@@ -168,7 +164,7 @@ extension _StdlibFilePath.Component {
 
   @inlinable
   @_alwaysEmitIntoClient
-  @available(*, deprecated, message: "Use _StdlibFilePath.Component.init(_: String)")
+  @available(*, deprecated, message: "Use _SwiftSystemFilePath.Component.init(_: String)")
   public init?(platformString: String) {
     let string: String
     if let nullLoc = platformString.firstIndex(of: "\0") {
@@ -176,7 +172,7 @@ extension _StdlibFilePath.Component {
     } else {
       string = platformString
     }
-    guard let component = _StdlibFilePath.Component(string) else { return nil }
+    guard let component = _SwiftSystemFilePath.Component(string) else { return nil }
     self = component
   }
 
@@ -203,7 +199,7 @@ extension _StdlibFilePath.Component {
 }
 
 @available(System 0.0.2, *)
-extension _StdlibFilePath.Root {
+extension _SwiftSystemFilePath.Root {
   /// Creates a file path root by copying bytes from a null-terminated platform
   /// string.
   ///
@@ -230,11 +226,11 @@ extension _StdlibFilePath.Root {
   public init?(platformString: [CInterop.PlatformChar]) {
     guard let _ = platformString.firstIndex(of: 0) else {
       fatalError(
-        "input of _StdlibFilePath.Root.init?(platformString:) must be null-terminated"
+        "input of _SwiftSystemFilePath.Root.init?(platformString:) must be null-terminated"
       )
     }
     guard let component = platformString.withUnsafeBufferPointer({
-      _StdlibFilePath.Root(platformString: $0.baseAddress!)
+      _SwiftSystemFilePath.Root(platformString: $0.baseAddress!)
     }) else {
       return nil
     }
@@ -243,11 +239,11 @@ extension _StdlibFilePath.Root {
 
   @inlinable
   @_alwaysEmitIntoClient
-  @available(*, deprecated, message: "Use _StdlibFilePath.Root.init(_ scalar: Unicode.Scalar)")
+  @available(*, deprecated, message: "Use _SwiftSystemFilePath.Root.init(_ scalar: Unicode.Scalar)")
   public init?(platformString: inout CInterop.PlatformChar) {
     guard platformString == 0 else {
       fatalError(
-        "input of _StdlibFilePath.Root.init?(platformString:) must be null-terminated"
+        "input of _SwiftSystemFilePath.Root.init?(platformString:) must be null-terminated"
       )
     }
     return nil
@@ -255,7 +251,7 @@ extension _StdlibFilePath.Root {
 
   @inlinable
   @_alwaysEmitIntoClient
-  @available(*, deprecated, message: "Use _StdlibFilePath.Root.init(_: String)")
+  @available(*, deprecated, message: "Use _SwiftSystemFilePath.Root.init(_: String)")
   public init?(platformString: String) {
     let string: String
     if let nullLoc = platformString.firstIndex(of: "\0") {
@@ -263,7 +259,7 @@ extension _StdlibFilePath.Root {
     } else {
       string = platformString
     }
-    guard let root = _StdlibFilePath.Root(string) else { return nil }
+    guard let root = _SwiftSystemFilePath.Root(string) else { return nil }
     self = root
   }
 
@@ -291,9 +287,8 @@ extension _StdlibFilePath.Root {
 
 // MARK: - String literals
 
-#if false // PORT-CLOBBERED: superseded by stdlib copy
 @available(System 0.0.1, *)
-extension _StdlibFilePath: ExpressibleByStringLiteral {
+extension _SwiftSystemFilePath: ExpressibleByStringLiteral {
   /// Creates a file path from a string literal.
   ///
   /// - Parameter stringLiteral: A string literal
@@ -312,16 +307,16 @@ extension _StdlibFilePath: ExpressibleByStringLiteral {
 }
 
 @available(System 0.0.2, *)
-extension _StdlibFilePath.Component: ExpressibleByStringLiteral {
+extension _SwiftSystemFilePath.Component: ExpressibleByStringLiteral {
   /// Create a file path component from a string literal.
   ///
   /// Precondition: `stringLiteral` is non-empty, is not a root,
   /// and has only one component in it.
   public init(stringLiteral: String) {
-    guard let s = _StdlibFilePath.Component(stringLiteral) else {
+    guard let s = _SwiftSystemFilePath.Component(stringLiteral) else {
       // TODO: static assert
       fatalError("""
-        _StdlibFilePath.Component must be created from exactly one non-root component
+        _SwiftSystemFilePath.Component must be created from exactly one non-root component
         """)
     }
     self = s
@@ -335,49 +330,17 @@ extension _StdlibFilePath.Component: ExpressibleByStringLiteral {
     self.init(SystemString(string))
   }
 }
-#endif
-
-// PORT: swift-system historically shipped a non-failable _StdlibFilePath(_: String).
-// The stdlib copy's String init is failable, and the two cannot coexist on one
-// type (initializers ignore optionality for redeclaration/overload). With
-// FILEPATH_SYSTEM_STRING_COMPAT set, the copy drops its public failable init,
-// so this is the sole _StdlibFilePath(_: String). It force-unwraps the validating
-// entry point: an embedded NUL traps here (the copy rejects NUL) where old
-// swift-system truncated at the first NUL.
-@available(System 0.0.1, *)
-extension _StdlibFilePath {
-  /// Creates a file path from a string.
-  ///
-  /// - Parameter string: A string whose Unicode encoded contents to use as the
-  ///   contents of the path.
-  ///
-  /// PARKED (`_ss` prefix) for the one-module merge. This is swift-system's
-  /// non-failable `_StdlibFilePath(_: String)`, which truncates at an embedded NUL.
-  /// The base declares a public *failable* `init?(_ String)` that rejects NUL
-  /// instead, and the two are the same signature, so they cannot both sit on
-  /// the type that `_StdlibFilePath` currently aliases. They are genuinely divergent,
-  /// so neither may be deduped into the other, and the base is sacrosanct.
-  /// Parking this one keeps the base's initializer intact and keeps base
-  /// consumers validating the base. The wrapper struct in the next task is the
-  /// real fix: it can host this spelling non-failably while the base keeps its
-  /// failable one, at which point the `_ss` label comes off.
-  public init(_ssString string: String) {
-    // Route through the substrate (which truncates at an embedded NUL,
-    // matching historical swift-system) and the public `_normalizing` funnel.
-    self = _StdlibFilePath(SystemString(string))
-  }
-}
 
 @available(System 0.0.2, *)
-extension _StdlibFilePath.Root: ExpressibleByStringLiteral {
+extension _SwiftSystemFilePath.Root: ExpressibleByStringLiteral {
   /// Create a file path root from a string literal.
   ///
   /// Precondition: `stringLiteral` is non-empty and is a root.
   public init(stringLiteral: String) {
-    guard let s = _StdlibFilePath.Root(stringLiteral) else {
+    guard let s = _SwiftSystemFilePath.Root(stringLiteral) else {
       // TODO: static assert
       fatalError("""
-        _StdlibFilePath.Root must be created from a root
+        _SwiftSystemFilePath.Root must be created from a root
         """)
     }
     self = s
@@ -387,16 +350,14 @@ extension _StdlibFilePath.Root: ExpressibleByStringLiteral {
   ///
   /// Returns `nil` if `string` is empty or is not a root.
   public init?(_ string: String) {
-    // Truncates at the first NUL, matching historical behavior.
-    self.init(SystemString(string).map { $0.rawValue })
+    self.init(SystemString(string))
   }
 }
 
 // MARK: - Printing and dumping
 
-#if false // PORT-CLOBBERED: superseded by stdlib copy
 @available(System 0.0.1, *)
-extension _StdlibFilePath: CustomStringConvertible, CustomDebugStringConvertible {
+extension _SwiftSystemFilePath: CustomStringConvertible, CustomDebugStringConvertible {
   /// A textual representation of the file path.
   ///
   /// If the content of the path isn't a well-formed Unicode string,
@@ -412,7 +373,7 @@ extension _StdlibFilePath: CustomStringConvertible, CustomDebugStringConvertible
 }
 
 @available(System 0.0.2, *)
-extension _StdlibFilePath.Component: CustomStringConvertible, CustomDebugStringConvertible {
+extension _SwiftSystemFilePath.Component: CustomStringConvertible, CustomDebugStringConvertible {
 
   /// A textual representation of the path component.
   ///
@@ -427,10 +388,9 @@ extension _StdlibFilePath.Component: CustomStringConvertible, CustomDebugStringC
   /// this replaces invalid bytes with U+FFFD. See `String.init(decoding:)`.
   public var debugDescription: String { description.debugDescription }
 }
-#endif
 
 @available(System 0.0.2, *)
-extension _StdlibFilePath.Root: CustomStringConvertible, CustomDebugStringConvertible {
+extension _SwiftSystemFilePath.Root: CustomStringConvertible, CustomDebugStringConvertible {
 
   /// A textual representation of the path root.
   ///
@@ -450,7 +410,7 @@ extension _StdlibFilePath.Root: CustomStringConvertible, CustomDebugStringConver
 
 // Convenience helpers
 @available(System 0.0.2, *)
-extension _StdlibFilePath {
+extension _SwiftSystemFilePath {
   /// Creates a string by interpreting the path’s content as UTF-8 on Unix
   /// and UTF-16 on Windows.
   ///
@@ -458,15 +418,10 @@ extension _StdlibFilePath {
   public var string: String {
     String(decoding: self)
   }
-
-  /// The length of the file path, measured in platform code units and
-  /// excluding the null terminator. swift-system public API, re-expressed on
-  /// the stdlib copy's public code-unit access.
-  public var length: Int { _cuArray.count }
 }
 
 @available(System 0.0.2, *)
-extension _StdlibFilePath.Component {
+extension _SwiftSystemFilePath.Component {
   /// Creates a string by interpreting the component’s content as UTF-8 on Unix
   /// and UTF-16 on Windows.
   ///
@@ -477,7 +432,7 @@ extension _StdlibFilePath.Component {
 }
 
 @available(System 0.0.2, *)
-extension _StdlibFilePath.Root {
+extension _SwiftSystemFilePath.Root {
   /// On Unix, this returns `"/"`.
   ///
   /// On Windows, interprets the root's content as UTF-16 on Windows.
@@ -490,7 +445,6 @@ extension _StdlibFilePath.Root {
 
 // MARK: - Decoding and validating
 
-#if false // PORT-CLOBBERED: superseded by stdlib copy
 @available(System 0.0.1, *)
 extension String {
   /// Creates a string by interpreting the file path's content as UTF-8 on Unix
@@ -504,10 +458,13 @@ extension String {
   /// This means that, depending on the semantics of the specific file system,
   /// conversion to a string and back to a path
   /// might result in a value that's different from the original path.
-  public init(decoding path: _StdlibFilePath) {
+  public init(decoding path: _SwiftSystemFilePath) {
     self.init(_decoding: path)
   }
+}
 
+@available(System 0.0.2, *)
+extension String {
   /// Creates a string from a file path, validating its contents as UTF-8 on
   /// Unix and UTF-16 on Windows.
   ///
@@ -516,13 +473,12 @@ extension String {
   ///
   /// If the contents of the file path isn't a well-formed Unicode string,
   /// this initializer returns `nil`.
-  public init?(validating path: _StdlibFilePath) {
+  @available(System 0.0.2, *)
+  public init?(validating path: _SwiftSystemFilePath) {
     self.init(_validating: path)
   }
 }
-#endif
 
-#if false // PORT-CLOBBERED: superseded by stdlib copy
 @available(System 0.0.2, *)
 extension String {
   /// Creates a string by interpreting the path component's content as UTF-8 on
@@ -536,7 +492,7 @@ extension String {
   /// This means that, depending on the semantics of the specific file system,
   /// conversion to a string and back to a path component
   /// might result in a value that's different from the original path component.
-  public init(decoding component: _StdlibFilePath.Component) {
+  public init(decoding component: _SwiftSystemFilePath.Component) {
     self.init(_decoding: component)
   }
 
@@ -548,11 +504,10 @@ extension String {
   ///
   /// If the contents of the path component isn't a well-formed Unicode string,
   /// this initializer returns `nil`.
-  public init?(validating component: _StdlibFilePath.Component) {
+  public init?(validating component: _SwiftSystemFilePath.Component) {
     self.init(_validating: component)
   }
 }
-#endif
 
 @available(System 0.0.2, *)
 extension String {
@@ -569,7 +524,7 @@ extension String {
   /// This means that on Windows,
   /// conversion to a string and back to a path root
   /// might result in a value that's different from the original path root.
-  public init(decoding root: _StdlibFilePath.Root) {
+  public init(decoding root: _SwiftSystemFilePath.Root) {
     self.init(_decoding: root)
   }
 
@@ -583,7 +538,7 @@ extension String {
   ///
   /// On Windows, if the contents of the path root isn't a well-formed Unicode
   /// string, this initializer returns `nil`.
-  public init?(validating root: _StdlibFilePath.Root) {
+  public init?(validating root: _SwiftSystemFilePath.Root) {
     self.init(_validating: root)
   }
 }
@@ -610,17 +565,17 @@ extension String {
 @available(System 0.0.1, *)
 extension String {
   @available(*, deprecated, renamed: "init(decoding:)")
-  public init(_ path: _StdlibFilePath) { self.init(decoding: path) }
+  public init(_ path: _SwiftSystemFilePath) { self.init(decoding: path) }
 
   @available(*, deprecated, renamed: "init(validating:)")
-  public init?(validatingUTF8 path: _StdlibFilePath) { self.init(validating: path) }
+  public init?(validatingUTF8 path: _SwiftSystemFilePath) { self.init(validating: path) }
 }
 
 #if !os(Windows)
 @available(System 0.0.1, *)
-extension _StdlibFilePath {
+extension _SwiftSystemFilePath {
   /// For backwards compatibility only. This initializer is equivalent to
-  /// the preferred `_StdlibFilePath(platformString:)`.
+  /// the preferred `_SwiftSystemFilePath(platformString:)`.
   @available(*, deprecated, renamed: "init(platformString:)")
   public init(cString: UnsafePointer<CChar>) {
     self.init(platformString: cString)
