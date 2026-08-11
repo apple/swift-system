@@ -1,12 +1,20 @@
-// PathTestCases.swift
-// Comprehensive test data for _StdlibFilePath parsing across Linux, Darwin, and Windows.
+/*
+ This source file is part of the Swift System open source project
+
+ Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Licensed under Apache License v2.0 with Runtime Library Exception
+
+ See https://swift.org/LICENSE.txt for license information
+*/
+
+// Test data for _StdlibFilePath parsing across Linux, Darwin, and Windows.
+// Each case gives the expected decomposition on all three platforms, and
+// DecompositionTests also reconstructs from that decomposition and checks the
+// result equals the original.
 //
-// Each test case specifies the expected decomposition on all three platforms.
-// Round-trip assertion: construct from input, decompose, reconstruct, check equality.
-//
-// Formatting: decomposition fields (anchor, components, hasTrailingSeparator,
-// isResourceFork) on one line. Derived fields (printed, isAbsolute, isRooted,
-// driveLetter, kinds) on the next.
+// Formatting: the decomposition fields (anchor, components,
+// hasTrailingSeparator, isResourceFork) go on one line, and the derived fields
+// (printed, isAbsolute, isRooted, driveLetter, kinds) on the next.
 
 extension Expected {
     /// Unix parses a backslash-containing path as a single component
@@ -66,7 +74,7 @@ let pathTestCases: [PathTestCase] = [
             anchor: "/", components: [],
             printed: "/", isAbsolute: true),
         windows: Expected(
-            // `///` -> `\\\`: 3+ leading backslashes are NOT a UNC/device
+            // `///` -> `\\\`: 3+ leading backslashes are not a UNC/device
             // path; reduce to a single current-drive root.
             anchor: #"\"#, components: [],
             printed: #"\"#, isAbsolute: false, isRooted: true)
@@ -560,7 +568,7 @@ let pathTestCases: [PathTestCase] = [
             printed: #"\.resolve\999999\foo"#, isAbsolute: false, isRooted: true)
     ),
 
-    // Without trailing slash: NOT a resolve prefix, regular component
+    // Without trailing slash: not a resolve prefix, regular component
     PathTestCase(
         input: "/.nofollow",
         unix: Expected(
@@ -571,7 +579,7 @@ let pathTestCases: [PathTestCase] = [
             printed: #"\.nofollow"#, isAbsolute: false, isRooted: true)
     ),
 
-    // Without trailing slash on resolve: NOT a prefix, regular components
+    // Without trailing slash on resolve: not a prefix, regular components
     PathTestCase(
         input: "/.resolve/0",
         unix: Expected(
@@ -756,7 +764,7 @@ let pathTestCases: [PathTestCase] = [
 
     // MARK: - Darwin combined anchors (resolve flag + volume identifier)
     //
-    // Per proposal line 111: an anchor may include resolve flags AND/OR
+    // An anchor may include resolve flags and/or
     // a volume identifier; resolve always precedes vol. The combined form
     // `[/.nofollow/ | /.resolve/N/].vol/FSID/FILEID` is a single anchor.
     // Both canonicalizations (`/.resolve/1/` -> `/.nofollow/`, `2` -> `@`)
@@ -835,7 +843,7 @@ let pathTestCases: [PathTestCase] = [
             printed: #"\.resolve\3\.vol\1234\5678"#, isAbsolute: false, isRooted: true)
     ),
 
-    // Combined resolve/3 + vol with FILEID canon — only the FILEID rule
+    // Combined resolve/3 + vol with FILEID canon: only the FILEID rule
     // fires; `.resolve/3/` is preserved as written.
     PathTestCase(
         input: "/.resolve/3/.vol/1234/2/",
@@ -853,8 +861,8 @@ let pathTestCases: [PathTestCase] = [
             printed: #"\.resolve\3\.vol\1234\2\"#, isAbsolute: false, isRooted: true)
     ),
 
-    // Combined resolve/1 + vol — BOTH canonicalizations fire:
-    // `/.resolve/1/` -> `/.nofollow/` AND FILEID `2` -> `@`.
+    // Combined resolve/1 + vol, where both canonicalizations fire:
+    // `/.resolve/1/` -> `/.nofollow/` and FILEID `2` -> `@`.
     PathTestCase(
         input: "/.resolve/1/.vol/1234/2/",
         linux: Expected(
@@ -871,7 +879,7 @@ let pathTestCases: [PathTestCase] = [
             printed: #"\.resolve\1\.vol\1234\2\"#, isAbsolute: false, isRooted: true)
     ),
 
-    // Combined resolve/1 + vol with relative content — both canons + relative.
+    // Combined resolve/1 + vol with relative content: both canons, plus relative.
     PathTestCase(
         input: "/.resolve/1/.vol/1234/2/foo/bar",
         linux: Expected(
@@ -1128,7 +1136,7 @@ let pathTestCases: [PathTestCase] = [
             printed: #"\\.\C:"#, isAbsolute: true, driveLetter: "C")
     ),
 
-    // Dot IS dropped on non-verbatim device paths
+    // Dot is dropped on non-verbatim device paths
     PathTestCase(
         input: #"\\.\C:\foo\.\bar"#,
         unix: .singleComponent(#"\\.\C:\foo\.\bar"#),
@@ -1157,7 +1165,7 @@ let pathTestCases: [PathTestCase] = [
             printed: #"\\?\C:"#, isAbsolute: true, driveLetter: "C")
     ),
 
-    // Dot NOT dropped in verbatim: treated as regular component
+    // Dot not dropped in verbatim: treated as regular component
     PathTestCase(
         input: #"\\?\C:\foo\.\bar"#,
         unix: .singleComponent(#"\\?\C:\foo\.\bar"#),
@@ -1167,7 +1175,7 @@ let pathTestCases: [PathTestCase] = [
             kinds: [.regular, .regular, .regular])
     ),
 
-    // Dotdot NOT special in verbatim: treated as regular component
+    // Dotdot not special in verbatim: treated as regular component
     PathTestCase(
         input: #"\\?\C:\foo\..\bar"#,
         unix: .singleComponent(#"\\?\C:\foo\..\bar"#),
@@ -1243,7 +1251,7 @@ let pathTestCases: [PathTestCase] = [
             printed: #"\\?\UNC\s\sh\a/b"#, isAbsolute: true)
     ),
 
-    // //?/ is NOT verbatim — it's device-namespace (same as //./). All / converted.
+    // //?/ is not verbatim; it is device-namespace (same as //./). All / converted.
     PathTestCase(
         input: "//?/C:/a/b",
         unix: Expected(
@@ -1439,7 +1447,7 @@ let pathTestCases: [PathTestCase] = [
 
     // MARK: - Trailing forward slash on backslash paths
 
-    // Unix: forward slash IS a separator, splits the backslash-blob from trailing sep
+    // Unix: forward slash is a separator, splits the backslash-blob from trailing sep
     PathTestCase(
         input: #"C:\foo/"#,
         unix: .singleComponent(#"C:\foo"#, hasTrailingSeparator: true),
@@ -1593,7 +1601,7 @@ let pathTestCases: [PathTestCase] = [
 
     // MARK: - Verbatim dot/dotdot at end
 
-    // In verbatim context, trailing dot is a regular component, NOT dropped
+    // In verbatim context, trailing dot is a regular component, not dropped
     PathTestCase(
         input: #"\\?\C:\foo\bar\."#,
         unix: .singleComponent(#"\\?\C:\foo\bar\."#),
@@ -1812,11 +1820,10 @@ let pathTestCases: [PathTestCase] = [
 
     // MARK: - Darwin double separators within anchor structures
     //
-    // _StdlibFilePath coalesces repeated separators and decomposes the coalesced
-    // form; the only input it rejects (returns nil) is one containing NUL.
-    // For .vol, the coalesced form yields the normal volfs anchor. The
-    // .resolve and resource-fork cases further below remain flagged as known
-    // issues pending a parser-vs-proposal decision (see README open questions).
+    // _StdlibFilePath coalesces repeated separators and decomposes the
+    // coalesced form; the only input it rejects (returns nil) is one
+    // containing NUL. For .vol, the coalesced form yields the normal volfs
+    // anchor.
 
     // Double slash after .vol coalesces to /.vol/1234/5678 (volfs anchor)
     PathTestCase(
@@ -1847,11 +1854,10 @@ let pathTestCases: [PathTestCase] = [
     ),
 
     // The resource-fork match is an emergent property of separator
-    // coalescing, consistent with the Darwin anchor cases: the whole
-    // string is coalesced before suffix detection, so the kernel only
-    // ever receives the coalesced form (/foo/..namedfork/rsrc) and there
-    // is no separate kernel-behavior question to confirm. See README
-    // "Design model: emergent semantics."
+    // coalescing, consistent with the Darwin anchor cases: the whole string is
+    // coalesced before suffix detection, so the kernel only ever receives the
+    // coalesced form (/foo/..namedfork/rsrc). There is no separate
+    // kernel-behavior question to confirm.
     PathTestCase(
         input: "/foo/..namedfork//rsrc",
         linux: Expected(
@@ -1865,7 +1871,7 @@ let pathTestCases: [PathTestCase] = [
             printed: #"\foo\..namedfork\rsrc"#, isAbsolute: false, isRooted: true)
     ),
 
-    // Double slash BEFORE resource fork suffix: suffix IS the last 17 bytes,
+    // Double slash before resource fork suffix: suffix is the last 17 bytes,
     // which are "/..namedfork/rsrc" regardless of earlier double slashes.
     PathTestCase(
         input: "/foo//..namedfork/rsrc",
@@ -2013,7 +2019,7 @@ let pathTestCases: [PathTestCase] = [
             printed: #"\\.\UNC\"#, isAbsolute: true)
     ),
 
-    // \\.\UNC\server: server is a component, NOT absorbed into anchor
+    // \\.\UNC\server: server is a component, not absorbed into anchor
     PathTestCase(
         input: #"\\.\UNC\server"#,
         unix: .singleComponent(#"\\.\UNC\server"#),
@@ -2084,7 +2090,7 @@ let pathTestCases: [PathTestCase] = [
             printed: #"\\?\PIPE\mypipe"#, isAbsolute: true)
     ),
 
-    // .. NOT special in verbatim plain: regular component
+    // .. not special in verbatim plain: regular component
     PathTestCase(
         input: #"\\?\GLOBALROOT\..\foo"#,
         unix: .singleComponent(#"\\?\GLOBALROOT\..\foo"#),
@@ -2094,7 +2100,7 @@ let pathTestCases: [PathTestCase] = [
             kinds: [.regular, .regular])
     ),
 
-    // . NOT special in verbatim plain: regular component (not dropped)
+    // . not special in verbatim plain: regular component (not dropped)
     PathTestCase(
         input: #"\\?\GLOBALROOT\.\foo"#,
         unix: .singleComponent(#"\\?\GLOBALROOT\.\foo"#),
@@ -2315,7 +2321,7 @@ let pathTestCases: [PathTestCase] = [
 
     PathTestCase(
         input: #"\\server\"#,
-        // Server with empty share — same final form as `\\server`.
+        // Server with empty share: same final form as `\\server`.
         unix: .singleComponent(#"\\server\"#),
         windows: Expected(
             anchor: #"\\server\"#, components: [],

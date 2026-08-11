@@ -1,7 +1,7 @@
 /*
- This source file is part of the SE-0529 reference implementation
+ This source file is part of the Swift System open source project
 
- Copyright (c) 2020 - 2026 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -21,9 +21,9 @@ import Testing
 //
 // These tests exercise the RangeReplaceableCollection surface
 // (replaceSubrange, append, insert, remove) and confirm the null
-// invariant is preserved across every flavor of mutation. Platform-
-// independent — never goes through the platform seam — hence a separate
-// top-level suite.
+// invariant is preserved across every flavor of mutation. These are
+// platform-independent and never go through the platform seam, hence a
+// separate top-level suite.
 
 @Suite
 struct SystemStringTests {
@@ -147,7 +147,7 @@ struct SystemStringTests {
 
   @Test
   func replaceSubrangeFullToEnd() {
-    // Range running to endIndex must NOT consume the null byte.
+    // Range running to endIndex must not consume the null byte.
     var s = _make([0x41, 0x42, 0x43])
     s.replaceSubrange(1..<3, with: [_StdlibFilePath.CodeUnit(0x58)])
     expectEqual(_checkAndExtract(s).map(Int.init), [0x41, 0x58])

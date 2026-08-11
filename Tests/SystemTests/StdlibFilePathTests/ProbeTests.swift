@@ -1,7 +1,7 @@
 /*
- This source file is part of the SE-0529 reference implementation
+ This source file is part of the Swift System open source project
 
- Copyright (c) 2020 - 2026 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -26,6 +26,11 @@ extension AllTests.DecompositionTests {
   /// Pin the four primary decomposition fields for `input` on `platform`.
   /// The default `#_sourceLocation` captures the *caller's* location, so a
   /// failure points at the assertion row rather than this helper.
+  ///
+  /// The `withPlatform` gate selects rows per platform for the one test here
+  /// that asserts on both Linux and Darwin. Single-platform tests carry a
+  /// `.darwinOnly` / `.windowsOnly` trait instead, so they report as skipped
+  /// rather than passing without asserting.
   private func expectDecomposition(
     _ input: String,
     platform: _Platform,
@@ -61,17 +66,17 @@ extension AllTests.DecompositionTests {
   //
   // `_normalizeDarwin` extracts the relative portion into a fresh string and
   // dot-normalizes it; that path re-runs `_parseRoot()` on the slice. This
-  // pins which token-shaped sequences AFTER a leading anchor extend the
+  // pins which token-shaped sequences after a leading anchor extend the
   // anchor and which fall back to plain components.
   //
-  // An anchor may include resolve flags AND/OR a volume identifier; resolve
+  // An anchor may include resolve flags and/or a volume identifier; resolve
   // always precedes vol. So:
   // - `.vol` after a leading vol/nofollow/resolve flag: the only valid
   //   continuation. `/.nofollow/.vol/N/M` is a single combined anchor.
   // - Anything else after a leading anchor (vol after vol, nofollow after
   //   anything, resolve after anything): the leading anchor stands and the
   //   token-named bytes remain plain components.
-  @Test
+  @Test(.darwinOnly)
   func darwinRelativeReparse() {
     // .vol token as a relative component under a volfs anchor.
     expectDecomposition("/.vol/1234/5678/.vol/x", platform: .darwin,
@@ -85,8 +90,8 @@ extension AllTests.DecompositionTests {
     expectDecomposition("/.vol/1234/5678/.resolve/3/x", platform: .darwin,
       anchor: "/.vol/1234/5678", components: [".resolve", "3", "x"],
       printed: "/.vol/1234/5678/.resolve/3/x")
-    // .vol AFTER .nofollow forms a combined anchor — proposal line 111:
-    // an anchor may include resolve flags AND/OR a volume identifier.
+    // .vol after .nofollow forms a combined anchor: an anchor may include
+    // resolve flags and/or a volume identifier.
     expectDecomposition("/.nofollow/.vol/1234/5678", platform: .darwin,
       anchor: "/.nofollow/.vol/1234/5678", components: [],
       printed: "/.nofollow/.vol/1234/5678")
@@ -94,7 +99,7 @@ extension AllTests.DecompositionTests {
     expectDecomposition("/.nofollow/.nofollow/x", platform: .darwin,
       anchor: "/.nofollow/", components: [".nofollow", "x"],
       printed: "/.nofollow/.nofollow/x")
-    // Inner `.resolve/1` is NOT canonicalized: canonicalization is anchor-only,
+    // Inner `.resolve/1` is not canonicalized: canonicalization is anchor-only,
     // and here `.resolve/1` is in component position under a `.resolve/3/`
     // anchor.
     expectDecomposition("/.resolve/3/.resolve/1/x", platform: .darwin,
@@ -106,36 +111,36 @@ extension AllTests.DecompositionTests {
   //
   // The parser treats volfs anchors and resolve/nofollow anchors
   // asymmetrically:
-  //   * `_parseVol` recognizes `/.vol/F/I` WITHOUT a trailing slash; the
+  //   * `_parseVol` recognizes `/.vol/F/I` without a trailing slash; the
   //     `2`->`@` canonicalization also fires without one.
-  //   * `_parseResolve`/`_parseNofollow` REQUIRE the trailing slash; bare
+  //   * `_parseResolve`/`_parseNofollow` require the trailing slash; bare
   //     `/.resolve/N` and `/.nofollow` fall through to a plain `/` root with
   //     the bytes as regular components, and `_canonicalizeDarwinAnchor` does
-  //     NOT fire on `/.resolve/1` (it matches the literal `/.resolve/1/`).
+  //     not fire on `/.resolve/1` (it matches the literal `/.resolve/1/`).
   //
-  // The asymmetry is principled per XNU — a volfs anchor is a complete inode
-  // reference, while resolve/nofollow are prefixes that modify a FOLLOWING
+  // The asymmetry is principled per XNU: a volfs anchor is a complete inode
+  // reference, while resolve/nofollow are prefixes that modify a following
   // path.
   //
-  // Already pinned in PathTestCases.swift (NOT re-asserted): `/.nofollow`,
+  // Already pinned in PathTestCases.swift (not re-asserted): `/.nofollow`,
   // `/.resolve/0`, `/.vol/1234/5678`, `/.vol/1234/2`.
-  @Test
+  @Test(.unixOnly)
   func bareResolveVolAnchors() {
-    // Bare `/.resolve/1` is NOT a resolve anchor — `_parseResolve` requires
+    // Bare `/.resolve/1` is not a resolve anchor, since `_parseResolve` requires
     // the trailing slash, so this falls through to a plain `/` root.
     expectDecomposition("/.resolve/1", platform: .darwin,
       anchor: "/", components: [".resolve", "1"],
       printed: "/.resolve/1")
-    // `/.resolve/1/` canonicalizes to `/.nofollow/`. Here with NO following
+    // `/.resolve/1/` canonicalizes to `/.nofollow/`. Here with no following
     // path -> anchor only, no components.
     expectDecomposition("/.resolve/1/", platform: .darwin,
       anchor: "/.nofollow/", components: [],
       printed: "/.nofollow/")
-    // Bare `/.resolve/3` (non-canonicalizing flag) — same fall-through.
+    // Bare `/.resolve/3` (non-canonicalizing flag): same fall-through.
     expectDecomposition("/.resolve/3", platform: .darwin,
       anchor: "/", components: [".resolve", "3"],
       printed: "/.resolve/3")
-    // `/.vol/1234/2/` — the `2`->`@` canonicalization fires, and the trailing
+    // `/.vol/1234/2/`: the `2`->`@` canonicalization fires, and the trailing
     // slash is a separator (the volfs anchor itself is not slash-terminated).
     expectDecomposition("/.vol/1234/2/", platform: .darwin,
       anchor: "/.vol/1234/@", components: [], trailingSeparator: true,
@@ -148,11 +153,11 @@ extension AllTests.DecompositionTests {
 
   // MARK: - Windows three-or-more leading backslashes
   //
-  // `_prenormalizeWindowsRoots` returns after the FIRST backslash for 3+
+  // `_prenormalizeWindowsRoots` returns after the first backslash for 3+
   // leading backslashes ("NOT a UNC/device path"), and separator coalescing
   // collapses the rest. Result: a single `\` current-drive root with the
   // remainder as components.
-  @Test
+  @Test(.windowsOnly)
   func windowsThreePlusBackslashes() {
     expectDecomposition(#"\\\server\share"#, platform: .windows,
       anchor: #"\"#, components: ["server", "share"],
@@ -167,13 +172,13 @@ extension AllTests.DecompositionTests {
 
   // MARK: - Windows degenerate device/sigil forms
   //
-  // A `\\.` or `\\?` with NO trailing backslash and NO device name gets a
-  // backslash SYNTHESIZED by `_prenormalizeWindowsRoots` (`expectBackslash`
+  // A `\\.` or `\\?` with no trailing backslash and no device name gets a
+  // backslash synthesized by `_prenormalizeWindowsRoots` (`expectBackslash`
   // inserts one), yielding the empty-device anchors `\\.\` / `\\?\`. Both
   // are absolute; `\\?` becomes verbatim-component. (The trailing-backslash
   // variants `\\.\` and `\\?\` already have rows in PathTestCases.swift and
   // are not re-asserted.)
-  @Test
+  @Test(.windowsOnly)
   func windowsDegenerateDeviceSigil() {
     expectDecomposition(#"\\."#, platform: .windows,
       anchor: #"\\.\"#, components: [],
@@ -186,27 +191,25 @@ extension AllTests.DecompositionTests {
     // Route through String-typed locals so the failable `init?(_:)` is
     // selected (a bare string literal would bind the non-failable
     // ExpressibleByStringLiteral `init`, which is not optional).
-    withPlatform(.windows) {
-      let dotInput: String = #"\\."#
-      let dot = _StdlibFilePath(dotInput)!
-      expectTrue(dot.isAbsolute, #"\\. is absolute"#)
-      expectFalse(dot.anchor?._isVerbatimComponent ?? true,
-        #"\\. is device-namespace, not verbatim"#)
+    let dotInput: String = #"\\."#
+    let dot = _StdlibFilePath(dotInput)!
+    expectTrue(dot.isAbsolute, #"\\. is absolute"#)
+    expectFalse(dot.anchor?._isVerbatimComponent ?? true,
+      #"\\. is device-namespace, not verbatim"#)
 
-      let qInput: String = #"\\?"#
-      let q = _StdlibFilePath(qInput)!
-      expectTrue(q.isAbsolute, #"\\? is absolute"#)
-      expectTrue(q.anchor?._isVerbatimComponent ?? false,
-        #"\\? is verbatim-component"#)
-    }
+    let qInput: String = #"\\?"#
+    let q = _StdlibFilePath(qInput)!
+    expectTrue(q.isAbsolute, #"\\? is absolute"#)
+    expectTrue(q.anchor?._isVerbatimComponent ?? false,
+      #"\\? is verbatim-component"#)
   }
 
   // MARK: - _matches* prefix pre-filter near-misses
   //
   // `_matchesNofollow`/`_matchesResolve`/`_matchesVol` are prefix
-  // PRE-FILTERS; the real validation (the required trailing `/` after the
+  // pre-filters; the real validation (the required trailing `/` after the
   // keyword, the FSID/FILEID slashes) lives in `_parseNofollow`/
-  // `_parseResolve`/`_parseVol`. A near-miss whose keyword is only a PREFIX
+  // `_parseResolve`/`_parseVol`. A near-miss whose keyword is only a prefix
   // of the component (`/.nofollowing`, `/.resolved`, `/.volume`,
   // `/.resolvex`) therefore fails the parser and falls through to a plain
   // `/` root with the bytes as regular components.
@@ -214,7 +217,7 @@ extension AllTests.DecompositionTests {
   // Analogous rows for inputs without prefix overlap (e.g. `/.hidden/foo`,
   // `/.Resolve/0/foo`) live in PathTestCases.swift; the prefix-overlap
   // near-misses are pinned here.
-  @Test
+  @Test(.darwinOnly)
   func matchesPrefixNearMisses() {
     expectDecomposition("/.nofollowing/bar", platform: .darwin,
       anchor: "/", components: [".nofollowing", "bar"],
