@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2026 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -58,7 +58,7 @@ extension AllTests.StringBridgingTests {
       expectTrue(String(validating: p) == s,
         "validating recovers \(s.debugDescription)")
     }
-}
+  }
 
   @Test
   func wellFormedRoundTripAnchor() {
@@ -155,7 +155,8 @@ extension AllTests.StringBridgingTests {
     // Per SE-0529, `String?(validating: component)` returns nil when the
     // content is not well-formed Unicode, so FilePathStringBridging.swift
     // implements it as a decode/re-encode/compare round-trip (matching the
-    // `_StdlibFilePath` overload) rather than off the lossy U+FFFD description.
+    // `_StdlibFilePath` overload) instead of reading the lossy U+FFFD
+    // description.
     //
     // The Anchor overload works the same way but is not directly reachable
     // from a test: Anchor has no public codeUnits initializer, so there is no

@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2026 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -80,7 +80,7 @@ extension AllTests.ValidationTests {
     expectNil(filePathFromCodeUnits(codeUnits("f\0o")))
     expectNil(filePathFromCodeUnits(codeUnits("\0")))
     expectNil(filePathFromCodeUnits(codeUnits("foo\0")))
-}
+  }
 
   @Test
   func filePathCodeUnitsEmpty() {
@@ -330,11 +330,12 @@ extension AllTests.ValidationTests {
 
     let volNul: String = "/.vol/1234\0/5678"
     expectNil(_StdlibFilePath.Anchor(volNul))
-}
+  }
 
-  // A Darwin anchor may include resolve flags and/or a volume identifier. The combined form `[/.nofollow/ | /.resolve/N/]
-  // .vol/FSID/FILEID` is one anchor, and `Anchor.init?` accepts it iff the
-  // combined form is complete (no missing FSID/FILEID).
+  // A Darwin anchor may include resolve flags and/or a volume identifier. The
+  // combined form `[/.nofollow/ | /.resolve/N/].vol/FSID/FILEID` is one
+  // anchor, and `Anchor.init?` accepts it iff the combined form is complete
+  // (no missing FSID/FILEID).
   @Test(.darwinOnly)
   func anchorInitDarwinAcceptsCombinedForms() {
     // String literals dispatch to the trapping `init(stringLiteral:)`;
@@ -353,7 +354,7 @@ extension AllTests.ValidationTests {
     let resolveOneVol2: String = "/.resolve/1/.vol/1234/2"
     expectNotNil(_StdlibFilePath.Anchor(resolveOneVol2),
       "/.resolve/1/.vol/1234/2 canonicalizes and is accepted")
-}
+  }
 
   // Incomplete combined forms (missing FSID or FILEID) fall back to the
   // leading flag as the anchor with the partial vol bytes as components.
@@ -372,7 +373,7 @@ extension AllTests.ValidationTests {
     let resolveVolNoFileid: String = "/.resolve/3/.vol/1234/"
     expectNil(_StdlibFilePath.Anchor(resolveVolNoFileid),
       "/.resolve/3/.vol/1234/ has no FILEID")
-}
+  }
 
   @Test(.windowsOnly)
   func anchorInitRejectsNULWindows() {
@@ -387,7 +388,7 @@ extension AllTests.ValidationTests {
 
     let uncNul: String = "\\\\\0server\\share"
     expectNil(_StdlibFilePath.Anchor(uncNul))
-}
+  }
 
   @Test
   func anchorInitRejectsInvalid() {
@@ -444,12 +445,13 @@ extension AllTests.ValidationTests {
       expectEqual(anchor?.description, printed,
         "Anchor \(input.debugDescription) printed form")
     }
-}
+  }
 
   @Test(.windowsOnly)
   func filePathStillCoalescesAnchorRejectedForms() {
-    // The inputs `Anchor.init?` rejects remain total under `_StdlibFilePath.init?`,
-    // which coalesces each into its degraded shape. This is the deliberate
+    // The inputs `Anchor.init?` rejects remain total under
+    // `_StdlibFilePath.init?`, which coalesces each into its degraded shape.
+    // This is the deliberate
     // divergence: _StdlibFilePath stays total, Anchor is strict.
 
     // Headline case: `\\\server\share` coalesces to a current-drive root
@@ -465,8 +467,9 @@ extension AllTests.ValidationTests {
     expectEqual(p?.components.map(\.description) ?? [], ["server", "share"],
       #"\\\server\share components"#)
 
-    // Every rejected anchor input still constructs a _StdlibFilePath whose anchor
-    // is the coalesced/degraded form, with no relative components, while
+    // Every rejected anchor input still constructs a _StdlibFilePath whose
+    // anchor is the coalesced/degraded form, with no relative components,
+    // while
     // `Anchor.init?` rejects that very input.
     let coalesced: [(input: String, anchor: String)] = [
       (#"\\"#,       #"\\\"#),       // -> degraded 3-backslash root
@@ -487,7 +490,7 @@ extension AllTests.ValidationTests {
       expectNil(_StdlibFilePath.Anchor(input),
         "Anchor.init? should reject \(input.debugDescription)")
     }
-}
+  }
 
   // MARK: - Verbatim-UNC trailing separator is not synthesized (Windows)
 
@@ -522,7 +525,7 @@ extension AllTests.ValidationTests {
     let c = _StdlibFilePath(fooInput)!
     expectEqual(c.anchor?.description, #"\\?\UNC\server\share"#)
     expectEqual(c.components.map(\.description), ["foo"])
-}
+  }
 
   // MARK: - isAbsolute (isRelative removed)
 
@@ -536,7 +539,7 @@ extension AllTests.ValidationTests {
 
     let rel: _StdlibFilePath = "foo"
     expectFalse(rel.isAbsolute)
-}
+  }
 
   // MARK: - withCodeUnits
 
@@ -552,7 +555,7 @@ extension AllTests.ValidationTests {
       // The count excludes the null terminator, which sits at [count].
       expectEqual(ptr[count], 0)
     }
-}
+  }
 
   @Test
   func withCodeUnitsEmpty() {
@@ -574,7 +577,7 @@ extension AllTests.ValidationTests {
       expectEqual(ptr[5], CChar(bitPattern: 0xA9))
       expectEqual(ptr[count], 0)
     }
-}
+  }
 
   @Test
   func withCodeUnitsReturnsValue() {

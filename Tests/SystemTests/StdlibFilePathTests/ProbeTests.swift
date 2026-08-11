@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2026 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -27,10 +27,10 @@ extension AllTests.DecompositionTests {
   /// The default `#_sourceLocation` captures the *caller's* location, so a
   /// failure points at the assertion row rather than this helper.
   ///
-  /// The `withPlatform` gate selects rows per platform for the one test here
-  /// that asserts on both Linux and Darwin. Single-platform tests carry a
-  /// `.darwinOnly` / `.windowsOnly` trait instead, so they report as skipped
-  /// rather than passing without asserting.
+  /// `platform` names whose expectations the row encodes, for the failure
+  /// message. It does not gate the assertion: the caller carries the matching
+  /// trait, so a row asserted on the wrong build fails rather than being
+  /// quietly skipped.
   private func expectDecomposition(
     _ input: String,
     platform: _Platform,
@@ -40,26 +40,24 @@ extension AllTests.DecompositionTests {
     printed: String,
     sourceLocation: SourceLocation = #_sourceLocation
   ) {
-    withPlatform(platform) {
-      guard let path = _StdlibFilePath(input) else {
-        expectNotNil(Optional<Int>.none,
-          "[\(platform)] \(input.debugDescription) _StdlibFilePath init returned nil",
-          sourceLocation: sourceLocation)
-        return
-      }
-      expectEqual(path.anchor?.description, anchor,
-        "[\(platform)] \(input.debugDescription) anchor: got \(path.anchor?.description.debugDescription ?? "nil")",
+    guard let path = _StdlibFilePath(input) else {
+      expectNotNil(Optional<Int>.none,
+        "[\(platform)] \(input.debugDescription) _StdlibFilePath init returned nil",
         sourceLocation: sourceLocation)
-      expectEqual(path.components.map(\.description), components,
-        "[\(platform)] \(input.debugDescription) components: got \(path.components.map(\.description))",
-        sourceLocation: sourceLocation)
-      expectEqual(path.hasTrailingSeparator, trailingSeparator,
-        "[\(platform)] \(input.debugDescription) trailingSeparator: got \(path.hasTrailingSeparator)",
-        sourceLocation: sourceLocation)
-      expectEqual(path.description, printed,
-        "[\(platform)] \(input.debugDescription) printed: got \(path.description.debugDescription)",
-        sourceLocation: sourceLocation)
+      return
     }
+    expectEqual(path.anchor?.description, anchor,
+      "[\(platform)] \(input.debugDescription) anchor: got \(path.anchor?.description.debugDescription ?? "nil")",
+      sourceLocation: sourceLocation)
+    expectEqual(path.components.map(\.description), components,
+      "[\(platform)] \(input.debugDescription) components: got \(path.components.map(\.description))",
+      sourceLocation: sourceLocation)
+    expectEqual(path.hasTrailingSeparator, trailingSeparator,
+      "[\(platform)] \(input.debugDescription) trailingSeparator: got \(path.hasTrailingSeparator)",
+      sourceLocation: sourceLocation)
+    expectEqual(path.description, printed,
+      "[\(platform)] \(input.debugDescription) printed: got \(path.description.debugDescription)",
+      sourceLocation: sourceLocation)
   }
 
   // MARK: - Darwin relative-portion re-parse vs combined anchors
@@ -124,10 +122,10 @@ extension AllTests.DecompositionTests {
   //
   // Already pinned in PathTestCases.swift (not re-asserted): `/.nofollow`,
   // `/.resolve/0`, `/.vol/1234/5678`, `/.vol/1234/2`.
-  @Test(.unixOnly)
+  @Test(.darwinOnly)
   func bareResolveVolAnchors() {
-    // Bare `/.resolve/1` is not a resolve anchor, since `_parseResolve` requires
-    // the trailing slash, so this falls through to a plain `/` root.
+    // Bare `/.resolve/1` is not a resolve anchor: `_parseResolve` requires the
+    // trailing slash, so this falls through to a plain `/` root.
     expectDecomposition("/.resolve/1", platform: .darwin,
       anchor: "/", components: [".resolve", "1"],
       printed: "/.resolve/1")
@@ -145,7 +143,11 @@ extension AllTests.DecompositionTests {
     expectDecomposition("/.vol/1234/2/", platform: .darwin,
       anchor: "/.vol/1234/@", components: [], trailingSeparator: true,
       printed: "/.vol/1234/@/")
-    // Linux contrast for the same bytes: no Darwin anchor magic at all.
+  }
+
+  /// Linux contrast for the same bytes: none of the Darwin anchor forms apply.
+  @Test(.linuxOnly)
+  func bareResolveVolAnchorsLinux() {
     expectDecomposition("/.resolve/1", platform: .linux,
       anchor: "/", components: [".resolve", "1"],
       printed: "/.resolve/1")
@@ -204,15 +206,14 @@ extension AllTests.DecompositionTests {
       #"\\? is verbatim-component"#)
   }
 
-  // MARK: - _matches* prefix pre-filter near-misses
+  // MARK: - Keyword near-misses
   //
-  // `_matchesNofollow`/`_matchesResolve`/`_matchesVol` are prefix
-  // pre-filters; the real validation (the required trailing `/` after the
-  // keyword, the FSID/FILEID slashes) lives in `_parseNofollow`/
-  // `_parseResolve`/`_parseVol`. A near-miss whose keyword is only a prefix
-  // of the component (`/.nofollowing`, `/.resolved`, `/.volume`,
-  // `/.resolvex`) therefore fails the parser and falls through to a plain
-  // `/` root with the bytes as regular components.
+  // `_parseNofollow` / `_parseResolve` / `_parseVol` each begin by eating the
+  // keyword together with its trailing slash (`".nofollow/"`, `".resolve/"`,
+  // `".vol/"`), so a component that merely starts with a keyword
+  // (`/.nofollowing`, `/.resolved`, `/.volume`, `/.resolvex`) fails the parse
+  // and falls through to a plain `/` root with the bytes as regular
+  // components.
   //
   // Analogous rows for inputs without prefix overlap (e.g. `/.hidden/foo`,
   // `/.Resolve/0/foo`) live in PathTestCases.swift; the prefix-overlap

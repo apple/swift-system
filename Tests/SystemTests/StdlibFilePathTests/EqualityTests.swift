@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2026 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -63,14 +63,14 @@ extension AllTests.EqualityTests {
     // the kernel, so it is significant for ==.
     expectNotEqual(_StdlibFilePath("/.nofollow/foo/bar"), _StdlibFilePath("/foo/bar"),
       "differing Darwin anchors")
-}
+  }
 
   @Test(.windowsOnly)
   func windowsAnchorIsSignificant() {
     // Device-namespace `\\.\C:\` vs drive `C:\` are different anchors.
     expectNotEqual(_StdlibFilePath(#"\\.\C:\foo\bar"#), _StdlibFilePath(#"C:\foo\bar"#),
       "differing Windows anchors")
-}
+  }
 
   // MARK: - Darwin canonicalization equality
 
@@ -82,9 +82,9 @@ extension AllTests.EqualityTests {
     // /.vol/NNNN/2/ canonicalizes to /.vol/NNNN/@/ (inode 2 is the root @).
     expectEqual(_StdlibFilePath("/.vol/1234/2/x"), _StdlibFilePath("/.vol/1234/@/x"),
       "/.vol/1234/2/x == /.vol/1234/@/x")
-    // Combined anchor: both canonicalizations fire on
-    // the same input: `/.resolve/1/.vol/N/2/` and `/.nofollow/.vol/N/@/`
-    // are two spellings of the same anchor.
+    // Combined anchor: both canonicalizations fire on the same input, so
+    // `/.resolve/1/.vol/N/2/` and `/.nofollow/.vol/N/@/` are two spellings
+    // of the same anchor.
     expectEqual(
       _StdlibFilePath("/.resolve/1/.vol/1234/2/x"),
       _StdlibFilePath("/.nofollow/.vol/1234/@/x"),
@@ -95,7 +95,7 @@ extension AllTests.EqualityTests {
       _StdlibFilePath("/.resolve/3/.vol/1234/2/x"),
       _StdlibFilePath("/.resolve/3/.vol/1234/@/x"),
       "/.resolve/3/.vol/1234/2/x == /.resolve/3/.vol/1234/@/x")
-}
+  }
 
   // MARK: - Hash agrees with equality (equal direction only)
 
@@ -135,7 +135,7 @@ extension AllTests.EqualityTests {
       "/.nofollow/foo < /foo")
     expectFalse(_StdlibFilePath("/foo") < _StdlibFilePath("/.nofollow/foo"),
       "not /foo < /.nofollow/foo")
-}
+  }
 
   @Test
   func orderingDistinguishesOnComponents() {
@@ -218,5 +218,5 @@ extension AllTests.EqualityTests {
     expectTrue(
       _StdlibFilePath.Anchor("/.nofollow/") < _StdlibFilePath.Anchor("/.vol/1234/5678"),
       "/.nofollow/ < /.vol/1234/5678")
-}
+  }
 }

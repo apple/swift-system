@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2026 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -44,7 +44,7 @@ extension AllTests.ComponentViewTests {
     let winRoot = _StdlibFilePath(#"C:\"#)
     expectTrue(winRoot.components.isEmpty)
     expectNotNil(winRoot.anchor)
-}
+  }
 
   @Test
   func indexTraversal() {
@@ -297,7 +297,7 @@ extension AllTests.ComponentViewTests {
 
     expectEqual(path.description, #"C:\Users\Admin"#)
     expectEqual(path.anchor?.description, #"C:\"#)
-}
+  }
 
   @Test(.windowsOnly)
   func windowsDriveRelativeAppend() {
@@ -309,7 +309,7 @@ extension AllTests.ComponentViewTests {
     // C: anchor (no backslash): components follow directly
     expectEqual(path.description, #"C:src\main.swift"#)
     expectEqual(path.anchor?.description, "C:")
-}
+  }
 
   @Test(.windowsOnly)
   func windowsRemoveComponent() {
@@ -317,7 +317,7 @@ extension AllTests.ComponentViewTests {
     path.components.removeLast()
 
     expectEqual(path.description, #"C:\Users\Admin"#)
-}
+  }
 
   @Test(.windowsOnly)
   func windowsUNCAppend() {
@@ -325,7 +325,7 @@ extension AllTests.ComponentViewTests {
     path.components.append("folder")
 
     expectEqual(path.description, #"\\server\share\folder"#)
-}
+  }
 
   @Test(.windowsOnly)
   func windowsReplaceComponents() {
@@ -335,7 +335,7 @@ extension AllTests.ComponentViewTests {
       with: ["new", "things"] as [_StdlibFilePath.Component])
 
     expectEqual(path.description, #"C:\new\things"#)
-}
+  }
 
   // MARK: - Anchor preservation
 
@@ -377,7 +377,7 @@ extension AllTests.ComponentViewTests {
 
     expectEqual(path.anchor, originalAnchor)
     expectEqual(path.description, #"\\server\share\new"#)
-}
+  }
 
   // MARK: - Hashable / Equatable
 
@@ -480,7 +480,7 @@ extension AllTests.ComponentViewTests {
     var path = _StdlibFilePath(#"C:\"#)
     path.components = cv
     expectEqual(path.description, #"C:\Users\Admin\Documents"#)
-}
+  }
 
   // MARK: - Edge cases
 
@@ -580,7 +580,7 @@ extension AllTests.ComponentViewTests {
 
     expectFalse(path.hasTrailingSeparator)
     expectEqual(path.description, #"C:\Users"#)
-}
+  }
 
   // -- Trailing separator: preserve when last unchanged --
 
@@ -649,7 +649,7 @@ extension AllTests.ComponentViewTests {
     path.components = cv
 
     expectTrue(path.hasTrailingSeparator)
-}
+  }
 
   // -- Trailing separator: strip on append --
 
@@ -687,7 +687,7 @@ extension AllTests.ComponentViewTests {
 
     expectFalse(path.isResourceFork)
     expectEqual(path.description, "/dir")
-}
+  }
 
   @Test(.darwinOnly)
   func resourceForkStrippedOnReplaceLast() {
@@ -701,7 +701,7 @@ extension AllTests.ComponentViewTests {
 
     expectFalse(path.isResourceFork)
     expectEqual(path.description, "/other")
-}
+  }
 
   @Test(.darwinOnly)
   func resourceForkStrippedOnRemoveAll() {
@@ -712,7 +712,7 @@ extension AllTests.ComponentViewTests {
 
     expectFalse(path.isResourceFork)
     expectEqual(path.description, "/")
-}
+  }
 
   // -- Resource fork: preserve when last unchanged --
 
@@ -726,7 +726,7 @@ extension AllTests.ComponentViewTests {
 
     expectTrue(path.isResourceFork)
     expectEqual(path.components.map(\.description), ["dir", "file"])
-}
+  }
 
   @Test(.darwinOnly)
   func resourceForkPreservedOnNoChange() {
@@ -737,7 +737,7 @@ extension AllTests.ComponentViewTests {
     path.components = cv
 
     expectTrue(path.isResourceFork)
-}
+  }
 
   // -- Resource fork: strip on append --
 
@@ -750,7 +750,7 @@ extension AllTests.ComponentViewTests {
 
     expectFalse(path.isResourceFork)
     expectEqual(path.description, "/file/extra")
-}
+  }
 
   // MARK: - Re-decomposition after component mutation
   //
@@ -787,7 +787,7 @@ extension AllTests.ComponentViewTests {
     path.components.removeAll()
     expectFalse(path.hasTrailingSeparator)
     expectEqual(path.description, #"\\server\share"#)
-}
+  }
 
   // MARK: - removeAll across all anchor shapes
   //
@@ -803,42 +803,42 @@ extension AllTests.ComponentViewTests {
     path.components.removeAll()
     expectEqual(path.description, #"\\server\share"#)
     expectFalse(path.hasTrailingSeparator)
-}
+  }
 
   @Test(.windowsOnly)
   func removeAllDriveAbsoluteKeepsAnchorSep() {
     var path = _StdlibFilePath(#"C:\foo\bar"#)
     path.components.removeAll()
     expectEqual(path.description, #"C:\"#)
-}
+  }
 
   @Test(.windowsOnly)
   func removeAllDriveRelativeKeepsColon() {
     var path = _StdlibFilePath(#"C:foo\bar"#)
     path.components.removeAll()
     expectEqual(path.description, "C:")
-}
+  }
 
   @Test(.windowsOnly)
   func removeAllVerbatimDriveKeepsAnchor() {
     var path = _StdlibFilePath(#"\\?\C:\foo\bar"#)
     path.components.removeAll()
     expectEqual(path.description, #"\\?\C:\"#)
-}
+  }
 
   @Test(.windowsOnly)
   func removeAllVerbatimUNCDropsGapSep() {
     var path = _StdlibFilePath(#"\\?\UNC\server\share\foo"#)
     path.components.removeAll()
     expectEqual(path.description, #"\\?\UNC\server\share"#)
-}
+  }
 
   @Test(.windowsOnly)
   func removeAllVerbatimDeviceDropsGapSep() {
     var path = _StdlibFilePath(#"\\?\name\foo"#)
     path.components.removeAll()
     expectEqual(path.description, #"\\?\name"#)
-}
+  }
 
   // MARK: - Colon-ending anchors: Windows drive-relative vs Darwin volfs
   //
@@ -857,7 +857,7 @@ extension AllTests.ComponentViewTests {
     expectEqual(path.description, "C:foo")
     expectEqual(path.anchor?.description, "C:")
     expectEqual(path.components.map(\.description), ["foo"])
-}
+  }
 
   @Test(.windowsOnly)
   func windowsDriveRelativeMultiAppendStaysDriveRelative() {
@@ -866,7 +866,7 @@ extension AllTests.ComponentViewTests {
     path.components.append("bar")
     expectEqual(path.description, #"C:foo\bar"#)
     expectEqual(path.anchor?.description, "C:")
-}
+  }
 
   @Test(.windowsOnly)
   func windowsDriveRelativeAssignKeepsAnchor() {
@@ -876,7 +876,7 @@ extension AllTests.ComponentViewTests {
     path.components = cv
     expectEqual(path.description, "C:foo")
     expectEqual(path.anchor?.description, "C:")
-}
+  }
 
   @Test(.darwinOnly)
   func darwinVolfsColonInFileIdGetsGapSeparator() {
@@ -889,7 +889,7 @@ extension AllTests.ComponentViewTests {
     expectEqual(path.description, "/.vol/12345/67890:/foo")
     expectEqual(path.anchor?.description, "/.vol/12345/67890:")
     expectEqual(path.components.map(\.description), ["foo"])
-}
+  }
 
   @Test(.darwinOnly)
   func darwinVolfsColonAssignKeepsAnchor() {
@@ -899,7 +899,7 @@ extension AllTests.ComponentViewTests {
     path.components = cv
     expectEqual(path.description, "/.vol/12345/67890:/foo")
     expectEqual(path.anchor?.description, "/.vol/12345/67890:")
-}
+  }
 
   @Test(.windowsOnly)
   func windowsUNCWithColonShareGetsGapSeparator() {
@@ -911,7 +911,7 @@ extension AllTests.ComponentViewTests {
     path.components.append("foo")
     expectEqual(path.description, #"\\server\C:\foo"#)
     expectEqual(path.anchor?.description, #"\\server\C:"#)
-}
+  }
 
   @Test(.windowsOnly)
   func windowsUNCWithColonShareAssignKeepsGap() {
@@ -920,7 +920,7 @@ extension AllTests.ComponentViewTests {
     cv.append("foo")
     path.components = cv
     expectEqual(path.description, #"\\server\C:\foo"#)
-}
+  }
 
   // MARK: - Suffix interactions with splice
 
@@ -954,7 +954,7 @@ extension AllTests.ComponentViewTests {
     expectEqual(path.description, "/foo/x/bar/..namedfork/rsrc")
     expectTrue(path.isResourceFork)
     expectEqual(path.components.map(\.description), ["foo", "x", "bar"])
-}
+  }
 
   // MARK: - Cross-anchor assignment
   //
@@ -972,7 +972,7 @@ extension AllTests.ComponentViewTests {
     let cv = _StdlibFilePath(#"C:\bar"#).components
     path.components = cv
     expectEqual(path.description, #"\bar"#)
-}
+  }
 
   @Test
   func assignAnchoredCvOntoAnchorlessKeepsAnchorless() {
@@ -1001,7 +1001,7 @@ extension AllTests.ComponentViewTests {
     assigned.components = cv
 
     expectEqual(assigned.description, inPlace.description)
-}
+  }
 
   // -- Darwin anchor hazards --
 
@@ -1021,7 +1021,7 @@ extension AllTests.ComponentViewTests {
     expectEqual(path.description, "/.nofollow/foo/bar")
     expectEqual(path.anchor?.description, "/.nofollow/")
     expectEqual(path.components.map(\.description), ["foo", "bar"])
-}
+  }
 
   @Test(.darwinOnly)
   func darwinInsertResolveAtFront() {
@@ -1040,7 +1040,7 @@ extension AllTests.ComponentViewTests {
     let newComps = path.components.map(\.description)
     expectEqual(newAnchor, "/.resolve/usr/")
     expectEqual(newComps, ["bin"])
-}
+  }
 
   @Test(.darwinOnly)
   func darwinInsertVolAtFront() {
@@ -1058,7 +1058,7 @@ extension AllTests.ComponentViewTests {
     let newComps = path.components.map(\.description)
     expectEqual(newAnchor, "/.vol/1234/5678")
     expectEqual(newComps, ["file"])
-}
+  }
 
   @Test(.darwinOnly)
   func darwinAppendsFormCombinedAnchor() {
@@ -1085,7 +1085,7 @@ extension AllTests.ComponentViewTests {
     // Absorption: components fold into the combined anchor.
     expectEqual(path.anchor?.description, "/.nofollow/.vol/1234/5678")
     expectEqual(path.components.map(\.description), [])
-}
+  }
 
   @Test(.darwinOnly)
   func darwinRemoveLastFromCombinedAnchorStaysWithLeading() {
@@ -1103,7 +1103,7 @@ extension AllTests.ComponentViewTests {
     expectEqual(path.anchor?.description, "/.nofollow/.vol/1234/5678")
     expectEqual(path.components.map(\.description), [])
     expectTrue(path.hasTrailingSeparator)
-}
+  }
 
   @Test(.darwinOnly)
   func darwinRemoveComponentExposesAnchor() {
@@ -1123,7 +1123,7 @@ extension AllTests.ComponentViewTests {
     let newComps = path.components.map(\.description)
     expectEqual(newAnchor, "/.nofollow/")
     expectEqual(newComps, ["foo"])
-}
+  }
 
   @Test(.darwinOnly)
   func darwinReplaceFirstExposesVol() {
@@ -1142,7 +1142,7 @@ extension AllTests.ComponentViewTests {
     let newComps = path.components.map(\.description)
     expectEqual(newAnchor, "/.vol/1234/5678")
     expectEqual(newComps, [])
-}
+  }
 
   @Test(.darwinOnly)
   func darwinNofollowOnRelativePathIsSafe() {
@@ -1156,7 +1156,7 @@ extension AllTests.ComponentViewTests {
     expectNil(path.anchor)
     expectEqual(path.components.map(\.description), [".nofollow", "a", "b"])
     expectEqual(path.description, ".nofollow/a/b")
-}
+  }
 
   @Test(.darwinOnly)
   func darwinNofollowNotFirstIsSafe() {
@@ -1169,7 +1169,7 @@ extension AllTests.ComponentViewTests {
     // .nofollow at end doesn't affect the anchor
     expectEqual(path.anchor?.description, "/")
     expectEqual(path.components.map(\.description), ["usr", "bin", ".nofollow"])
-}
+  }
 
   // -- Darwin resource fork hazards --
 
@@ -1191,7 +1191,7 @@ extension AllTests.ComponentViewTests {
     // The components no longer include ..namedfork and rsrc
     let newComps = path.components.map(\.description)
     expectEqual(newComps, ["file"])
-}
+  }
 
   @Test(.darwinOnly)
   func darwinInsertBeforeRsrcBreaksSuffix() {
@@ -1210,7 +1210,7 @@ extension AllTests.ComponentViewTests {
     // so we only have ["file"] + the new component, no resource fork.
     expectEqual(path.components.map(\.description), ["file", "oops"])
     expectFalse(path.isResourceFork)
-}
+  }
 
   @Test(.darwinOnly)
   func darwinRemoveLastCreatesResourceFork() {
@@ -1232,7 +1232,7 @@ extension AllTests.ComponentViewTests {
     expectTrue(path.isResourceFork)
     let newComps = path.components.map(\.description)
     expectEqual(newComps, ["dir", "file"])
-}
+  }
 
   @Test(.darwinOnly)
   func darwinReplaceCreatesResourceFork() {
@@ -1248,7 +1248,7 @@ extension AllTests.ComponentViewTests {
     expectEqual(path.description, "/data/..namedfork/rsrc")
     expectTrue(path.isResourceFork)
     expectEqual(path.components.map(\.description), ["data"])
-}
+  }
 
   @Test(.darwinOnly)
   func darwinResourceForkOnRelativeIsSafe() {
@@ -1261,7 +1261,7 @@ extension AllTests.ComponentViewTests {
     expectEqual(path.description, "file/..namedfork/rsrc")
     expectTrue(path.isResourceFork)
     expectEqual(path.components.map(\.description), ["file"])
-}
+  }
 
   // -- Windows reparse hazards --
 
@@ -1281,12 +1281,12 @@ extension AllTests.ComponentViewTests {
     expectEqual(path.anchor?.description, #"\\server\share"#)
     expectTrue(path.components.isEmpty)
     expectTrue(path.hasTrailingSeparator)
-}
+  }
 
   @Test(.windowsOnly)
   func windowsVerbatimDotPreserved() {
     // In verbatim paths (\\?\), dot and dotdot are regular components.
-    // Appending "." to a verbatim path should not be treated as currentDirectory.
+    // Appending "." to a verbatim path is not treated as currentDirectory.
     var path = _StdlibFilePath(#"\\?\C:\dir"#)
     var cv = path.components
     cv.append(".")
@@ -1296,7 +1296,7 @@ extension AllTests.ComponentViewTests {
     // In verbatim context the "." is a regular component name
     let lastComp = path.components.last!
     expectEqual(lastComp.kind, .regular)
-}
+  }
 
   @Test(.windowsOnly)
   func windowsVerbatimDotDotPreserved() {
@@ -1309,7 +1309,7 @@ extension AllTests.ComponentViewTests {
     expectEqual(path.description, #"\\?\C:\dir\.."#)
     let lastComp = path.components.last!
     expectEqual(lastComp.kind, .regular)
-}
+  }
 
   @Test(.windowsOnly)
   func windowsDevicePathAppend() {
@@ -1321,5 +1321,5 @@ extension AllTests.ComponentViewTests {
 
     expectEqual(path.description, #"\\.\COM1\extra"#)
     expectEqual(path.components.map(\.description), ["extra"])
-}
+  }
 }

@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2026 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -65,7 +65,7 @@ extension AllTests.ReconstructionTests {
     // Anchor ends in a separator, so no gap separator is inserted.
     expectEqual(p.description, #"C:\foo\bar"#, "C:\\ reconstruction")
     expectTrue(p.anchor?.description == #"C:\"#, "anchor is C:\\")
-}
+  }
 
   @Test(.windowsOnly)
   func reconstructWindowsDriveRelative() {
@@ -75,7 +75,7 @@ extension AllTests.ReconstructionTests {
     expectEqual(p.description, #"C:foo\bar"#, "C: (drive-relative) reconstruction")
     expectTrue(p.anchor?.description == "C:", "anchor is C:")
     expectFalse(p.isAbsolute, "C:foo\\bar is relative")
-}
+  }
 
   @Test(.darwinOnly)
   func reconstructDarwinNofollow() {
@@ -83,7 +83,7 @@ extension AllTests.ReconstructionTests {
     expectEqual(p.description, "/.nofollow/foo/bar", "/.nofollow/ reconstruction")
     expectTrue(p.anchor?.description == "/.nofollow/", "anchor is /.nofollow/")
     expectEqual(p.components.map(\.description), ["foo", "bar"])
-}
+  }
 
   @Test
   func reconstructTrailingSeparatorFlag() {
@@ -138,14 +138,14 @@ extension AllTests.ReconstructionTests {
     // The suffix is not presented as components.
     expectEqual(p.components.map(\.description), ["foo", "bar"],
       "suffix is not a component")
-}
+  }
 
   // MARK: - Emergent semantics under reconstruction
 
   // The reconstructed path normalizes as if the equivalent string literal were
-  // provided. Building `/` + [".nofollow", "foo"] yields the
-  // bytes `/.nofollow/foo`, which re-decompose so the `.nofollow` is absorbed
-  // into the anchor, exactly as _StdlibFilePath("/.nofollow/foo") would.
+  // provided. Building `/` + [".nofollow", "foo"] yields the bytes
+  // `/.nofollow/foo`, which re-decompose so the `.nofollow` is absorbed into
+  // the anchor, exactly as _StdlibFilePath("/.nofollow/foo") would.
   @Test(.darwinOnly)
   func reconstructDarwinAnchorAbsorption() {
     let p = _StdlibFilePath(anchor: _StdlibFilePath.Anchor("/"), comps(".nofollow", "foo"))
@@ -158,7 +158,7 @@ extension AllTests.ReconstructionTests {
     // Equivalent to constructing from the string literal.
     expectEqual(p, _StdlibFilePath("/.nofollow/foo"),
       "reconstruction == equivalent string literal")
-}
+  }
 
   // MARK: - hasTrailingSeparator setter + with/without
 
@@ -229,7 +229,7 @@ extension AllTests.ReconstructionTests {
     expectFalse(unforked.isResourceFork, "isResourceFork false")
     // withoutResourceFork on a plain path is a no-op.
     expectEqual(base.withoutResourceFork().description, "/foo", "no-op")
-}
+  }
 
   @Test(.darwinOnly)
   func suffixSwapTrailingToResourceFork() {
@@ -241,7 +241,7 @@ extension AllTests.ReconstructionTests {
     expectEqual(p.description, "/foo/..namedfork/rsrc", "separator -> resource fork")
     expectTrue(p.isResourceFork, "now a resource fork")
     expectFalse(p.hasTrailingSeparator, "no longer a trailing separator")
-}
+  }
 
   @Test(.darwinOnly)
   func suffixSwapResourceForkToTrailing() {
@@ -253,7 +253,7 @@ extension AllTests.ReconstructionTests {
     expectEqual(p.description, "/foo/", "resource fork -> separator")
     expectTrue(p.hasTrailingSeparator, "now a trailing separator")
     expectFalse(p.isResourceFork, "no longer a resource fork")
-}
+  }
 
   // MARK: - anchor get/set
 
@@ -268,7 +268,7 @@ extension AllTests.ReconstructionTests {
     expectEqual(p.description, #"\\?\C:\Users\dev\project"#, "transplanted to verbatim")
     expectTrue(p.anchor?._isVerbatimComponent == true, "now verbatim")
     expectTrue(p.anchor?._driveLetter == "C", "drive letter preserved")
-}
+  }
 
   @Test(.darwinOnly)
   func anchorStripDarwinToRoot() {
@@ -278,7 +278,7 @@ extension AllTests.ReconstructionTests {
     p.anchor = _StdlibFilePath.Anchor("/")
     expectEqual(p.description, "/etc/passwd", "stripped to /")
     expectTrue(p.anchor?.description == "/", "anchor now /")
-}
+  }
 
   @Test
   func anchorSetToNil() {

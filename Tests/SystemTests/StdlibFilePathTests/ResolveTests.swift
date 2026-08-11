@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2026 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -92,7 +92,7 @@ struct ResolveTests {
     let s = String(decoding: resolved)
     expectFalse(s.hasPrefix("/var/"),
       "resolve() did not follow /var symlink: \(s)")
-}
+  }
 
   // MARK: - Resolving through a symlink yields the link target
 
@@ -115,7 +115,7 @@ struct ResolveTests {
       "link should resolve to the same path as the target: "
       + "got link → \(String(decoding: resolvedLink)) "
       + "and target → \(String(decoding: resolvedTarget))")
-}
+  }
 
   // MARK: - Nonexistent path throws
 
@@ -125,7 +125,7 @@ struct ResolveTests {
     let p = _StdlibFilePath(
       "/this/path/does/not/exist/anywhere/\(UUID().uuidString)")!
     _expectThrowsResolveError { _ = try p.resolve() }
-}
+  }
 
   // MARK: - Firmlink check (go/no-go for the no-FSOPT approach)
   //
@@ -142,8 +142,8 @@ struct ResolveTests {
     let resolved = try _StdlibFilePath(home)!.resolve()
     let s = String(decoding: resolved)
     expectFalse(s.hasPrefix("/System/Volumes/Data/"),
-      "resolve(\(home)) returned the non-firmlinked underlay: \(s) "
-      + "the no-FSOPT default does not produce firmlinked paths on "
-      + "this build, so the no-SPI approach is invalid")
-}
+      "resolve(\(home)) returned the non-firmlinked underlay: \(s). "
+      + "The no-FSOPT default does not produce firmlinked paths on this "
+      + "build, so the no-SPI approach is invalid")
+  }
 }
