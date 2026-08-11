@@ -9,7 +9,7 @@
 
 #if SYSTEM_PACKAGE_DARWIN
 
-import Darwin.Mach
+@preconcurrency import Darwin.Mach
 
 @available(System 1.4.0, *)
 public protocol MachPortRight {}
