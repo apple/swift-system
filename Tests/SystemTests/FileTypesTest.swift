@@ -55,6 +55,15 @@ final class FileDescriptorTest: XCTestCase {
 #if SYSTEM_PACKAGE_DARWIN
     XCTAssertEqual(O_SYMLINK, FileDescriptor.OpenOptions.symlink.rawValue)
     XCTAssertEqual(O_EVTONLY, FileDescriptor.OpenOptions.eventOnly.rawValue)
+
+    if #available(macOS 27.0, iOS 27.0, watchOS 27.0, tvOS 27.0, visionOS 27.0, *) {
+      XCTAssertEqual(
+        O_CLOFORK, FileDescriptor.PipeOptions.closeOnFork.rawValue
+      )
+      XCTAssertEqual(
+        O_CLOFORK, FileDescriptor.DuplicateOptions.closeOnFork.rawValue
+      )
+    }
 #endif
 
 #if os(FreeBSD)

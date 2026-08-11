@@ -27,7 +27,11 @@ import Android
 #error("Unsupported Platform")
 #endif
 
-import CSystem
+#if os(FreeBSD)
+public import CSystem
+#else
+internal import CSystem
+#endif
 
 // MARK: errno
 #if SYSTEM_PACKAGE_DARWIN

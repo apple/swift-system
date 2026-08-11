@@ -7,7 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-import CSystem
+internal import CSystem
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif canImport(Glibc)

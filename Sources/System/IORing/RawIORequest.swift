@@ -1,7 +1,7 @@
 #if compiler(>=6.2) && $Lifetimes
 #if os(Linux)
 
-import CSystem
+internal import CSystem
 #if canImport(Glibc)
 import Glibc
 #elseif canImport(Musl)

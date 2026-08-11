@@ -10,18 +10,18 @@
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif os(Windows)
-import CSystem
+internal import CSystem
 import ucrt
 #elseif canImport(Glibc)
-import CSystem
+internal import CSystem
 import Glibc
 #elseif canImport(Musl)
-import CSystem
+internal import CSystem
 import Musl
 #elseif canImport(WASILibc)
 import WASILibc
 #elseif canImport(Bionic)
-import CSystem
+internal import CSystem
 import Bionic
 #else
 #error("Unsupported Platform")
