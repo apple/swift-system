@@ -184,7 +184,7 @@ extension String {
 // TLS
 #if os(Windows)
 internal typealias _PlatformTLSKey = DWORD
-#elseif os(WASI) && (swift(<6.1) || !_runtime(_multithreaded))
+#elseif os(WASI) && !_runtime(_multithreaded)
 // Mock TLS storage for single-threaded WASI.
 // Carries no state of its own, and only used to index `sharedTLSStorage`.
 internal final class _PlatformTLSKey: @unchecked Sendable {
@@ -214,7 +214,7 @@ internal func makeTLSKey() -> _PlatformTLSKey {
     fatalError("Unable to create key")
   }
   return raw
-  #elseif os(WASI) && (swift(<6.1) || !_runtime(_multithreaded))
+  #elseif os(WASI) && !_runtime(_multithreaded)
   return _PlatformTLSKey()
   #else
   var raw = pthread_key_t()
