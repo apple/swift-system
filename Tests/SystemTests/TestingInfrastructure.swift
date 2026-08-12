@@ -251,3 +251,15 @@ internal struct MockTestCase: TestCase {
 internal func withWindowsPaths(enabled: Bool, _ body: () -> ()) {
   _withWindowsPaths(enabled: enabled, body)
 }
+
+/// Whether the active `FilePath` backing is the SE-0529 implementation.
+///
+/// The one test-side name for the era switch. This suite is swift-system's own,
+/// so most of it encodes historical behavior; where SE-0529 legitimately
+/// changed an answer, the assertion selects on this rather than pinning one
+/// era. Keeping the reach for the module internal in this file alone means the
+/// other test files need no `@testable` import to be era-aware.
+@available(System 0.0.2, *)
+internal var usingStdlibFilePath: Bool {
+  _FilePathBackingSelection.useStdlib
+}

@@ -7,10 +7,11 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
+
 // MARK: - API
 
 @available(System 0.0.2, *)
-extension FilePath {
+extension _StdlibFilePath {
   /// Represents a root of a file path.
   ///
   /// On Unix, a root is simply the directory separator `/`.
@@ -30,13 +31,11 @@ extension FilePath {
   ///   * `\\?\Volume{12345678-abcd-1111-2222-123445789abc}\`
   @available(System 0.0.2, *)
   public struct Root: Sendable {
-    internal var _path: FilePath
-    internal var _rootEnd: SystemString.Index
+    // Root is a thin wrapper over the stdlib copy's public `Anchor`.
+    internal var _anchor: _StdlibFilePath.Anchor
 
-    internal init(_ path: FilePath, rootEnd: SystemString.Index) {
-      self._path = path
-      self._rootEnd = rootEnd
-      _invariantCheck()
+    internal init(_ anchor: _StdlibFilePath.Anchor) {
+      self._anchor = anchor
     }
     // TODO: Definitely want a small form for this on Windows,
     // and intern "/" for Unix.
@@ -50,32 +49,35 @@ extension FilePath {
   ///
   /// Example:
   ///
-  ///     var path: FilePath = "/tmp"
-  ///     let file: FilePath.Component = "foo.txt"
+  ///     var path: _StdlibFilePath = "/tmp"
+  ///     let file: _StdlibFilePath.Component = "foo.txt"
   ///     file.kind == .regular           // true
   ///     file.extension                  // "txt"
   ///     path.append(file)               // path is "/tmp/foo.txt"
+#if false // PORT-CLOBBERED: superseded by stdlib copy
   @available(System 0.0.2, *)
   public struct Component: Sendable {
-    internal var _path: FilePath
+    internal var _path: _StdlibFilePath
     internal var _range: Range<SystemString.Index>
 
     // TODO: Make a small-component form to save on ARC overhead when
     // extracted from a path, and especially to save on allocation overhead
     // when constructing one from a String literal.
 
-    internal init<RE: RangeExpression>(_ path: FilePath, _ range: RE)
+    internal init<RE: RangeExpression>(_ path: _StdlibFilePath, _ range: RE)
     where RE.Bound == SystemString.Index {
       self._path = path
       self._range = range.relative(to: path._storage)
-      precondition(!self._range.isEmpty, "FilePath components cannot be empty")
+      precondition(!self._range.isEmpty, "_StdlibFilePath components cannot be empty")
       self._invariantCheck()
     }
   }
+#endif
 }
 
+#if false // PORT-CLOBBERED: superseded by stdlib copy
 @available(System 0.0.2, *)
-extension FilePath.Component {
+extension _StdlibFilePath.Component {
 
   /// Whether a component is a regular file or directory name, or a special
   /// directory `.` or `..`
@@ -99,25 +101,55 @@ extension FilePath.Component {
     return .regular
   }
 }
+#endif
 
 @available(System 0.0.2, *)
-extension FilePath.Root {
+extension _StdlibFilePath.Root {
   // TODO: Windows analysis APIs
+}
+
+// Reconstruct a path from an optional root plus components. swift-system
+// public API. The `ComponentView` overload copies the view's contribution
+// verbatim via the public `components` setter, preserving a trailing separator
+// on the source path (matching swift-system); the generic-collection overload
+// rebuilds from discrete components, which carry no trailing separator.
+// `Root` is a thin wrapper over the copy's `Anchor`.
+@available(System 0.0.2, *)
+extension _StdlibFilePath {
+  /// Create a file path from an optional root and no components.
+  public init(root: _StdlibFilePath.Root?) {
+    self = _StdlibFilePath(anchor: root?._anchor, [])
+  }
+
+  /// Create a file path from an optional root and a component view.
+  public init(root: _StdlibFilePath.Root?, _ components: _StdlibFilePath.ComponentView) {
+    self.init(root: root)
+    self.components = components
+  }
+
+  /// Create a file path from an optional root and a collection of components.
+  public init<C: Collection>(
+    root: _StdlibFilePath.Root?, _ components: C
+  ) where C.Element == _StdlibFilePath.Component {
+    self = _StdlibFilePath(anchor: root?._anchor, Array(components))
+  }
 }
 
 // MARK: - Internals
 
+#if false // PORT-CLOBBERED: dead code; its callers died with the old
+// ComponentView, and the stdlib copy's ComponentView machinery supersedes it.
 extension SystemString {
   // TODO: take insertLeadingSlash: Bool
   // TODO: turn into an insert operation with slide
   internal mutating func appendComponents<C: Collection>(
     components: C
-  ) where C.Element == FilePath.Component {
+  ) where C.Element == _StdlibFilePath.Component {
     // TODO(perf): Consider pre-pass to count capacity, slide
 
     defer {
       _removeTrailingSeparator()
-      FilePath(self)._invariantCheck()
+      _StdlibFilePath(self)._invariantCheck()
     }
 
     for idx in components.indices {
@@ -127,89 +159,87 @@ extension SystemString {
     }
   }
 }
+#endif
 
-// Unifying protocol for common functionality between roots, components,
-// and views onto SystemString and FilePath.
-internal protocol _StrSlice: _PlatformStringable, Hashable, Codable {
-  var _storage: SystemString { get }
-  var _range: Range<SystemString.Index> { get }
+// Unifying protocol for common functionality between roots and components.
+// Reprovisioned over the stdlib copy's PUBLIC byte access: each conformer
+// exposes its code units (no NUL) via `_codeUnits` and can be rebuilt from a
+// code-unit array. No _StdlibFilePath internal (`_storage`, `_range`) is named.
+internal protocol _StrSlice: _PlatformStringable {
+  /// The slice's code units, excluding any null terminator.
+  var _codeUnits: [_StdlibFilePath.CodeUnit] { get }
 
-  init?(_ str: SystemString)
+  init?(_ codeUnits: [_StdlibFilePath.CodeUnit])
 
   func _invariantCheck()
 }
 extension _StrSlice {
-  internal var _slice: Slice<SystemString> {
-    Slice(base: _storage, bounds: _range)
-  }
-
   internal func _withSystemChars<T>(
-    _ f: (UnsafeBufferPointer<SystemChar>) throws -> T
+    _ f: (UnsafeBufferPointer<_StdlibFilePath.CodeUnit>) throws -> T
   ) rethrows -> T {
-    try _storage.withNullTerminatedSystemChars {
-      try f(UnsafeBufferPointer(rebasing: $0[_range]))
-    }
+    try _codeUnits.withUnsafeBufferPointer(f)
   }
   internal func _withCodeUnits<T>(
     _ f: (UnsafeBufferPointer<CInterop.PlatformUnicodeEncoding.CodeUnit>) throws -> T
   ) rethrows -> T {
-    try _slice.withCodeUnits(f)
+    try _codeUnits.withUnsafeBufferPointer { buf in
+      try buf.withMemoryRebound(
+        to: CInterop.PlatformUnicodeEncoding.CodeUnit.self
+      ) { try f($0) }
+    }
   }
 
   internal init?(_platformString s: UnsafePointer<CInterop.PlatformChar>) {
-    self.init(SystemString(platformString: s))
+    // Copy the C string's code units (up to the NUL) via the substrate, then
+    // validate. `SystemChar.rawValue` is `CInterop.PlatformChar`, which is
+    // `_StdlibFilePath.CodeUnit` on every platform.
+    self.init(SystemString(platformString: s).map { $0.rawValue })
   }
 
   internal func _withPlatformString<Result>(
     _ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result
   ) rethrows -> Result {
-    try _slice.withPlatformString(body)
-  }
-
-  internal var _systemString: SystemString { SystemString(_slice) }
-}
-extension _StrSlice {
-  public static func == (lhs: Self, rhs: Self) -> Bool {
-    lhs._slice.elementsEqual(rhs._slice)
-  }
-  public func hash(into hasher: inout Hasher) {
-    hasher.combine(_slice.count) // discriminator
-    for element in _slice {
-      hasher.combine(element)
+    var units = _codeUnits
+    units.append(._null)
+    return try units.withUnsafeBufferPointer { buf in
+      try buf.baseAddress!.withMemoryRebound(
+        to: CInterop.PlatformChar.self, capacity: buf.count
+      ) { try body($0) }
     }
   }
 }
-internal protocol _PathSlice: _StrSlice {
-  var _path: FilePath { get }
-}
-extension _PathSlice {
-  internal var _storage: SystemString { _path._storage }
-}
 
 @available(System 0.0.2, *)
-extension FilePath.Component: _PathSlice {
+extension _StdlibFilePath.Component: _StrSlice {
+  internal var _codeUnits: [_StdlibFilePath.CodeUnit] { _copyToArray(codeUnits) }
 }
 @available(System 0.0.2, *)
-extension FilePath.Root: _PathSlice {
-  internal var _range: Range<SystemString.Index> {
-    (..<_rootEnd).relative(to: _path._storage)
+extension _StdlibFilePath.Root: _StrSlice {
+  internal var _codeUnits: [_StdlibFilePath.CodeUnit] { _copyToArray(_anchor.codeUnits) }
+}
+
+// Root's currency conformances (Component's come from the stdlib copy).
+@available(System 0.0.2, *)
+extension _StdlibFilePath.Root: Equatable, Hashable {
+  public static func == (lhs: _StdlibFilePath.Root, rhs: _StdlibFilePath.Root) -> Bool {
+    lhs._anchor == rhs._anchor
+  }
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(_anchor)
   }
 }
 
 @available(System 0.0.1, *)
-extension FilePath: _PlatformStringable {
-  func _withPlatformString<Result>(_ body: (UnsafePointer<CInterop.PlatformChar>) throws -> Result) rethrows -> Result {
-    try _storage.withPlatformString(body)
-  }
-
+extension _StdlibFilePath: _PlatformStringable {
+  // `_withPlatformString` is provided in FilePathCompatShims.swift.
   init(_platformString: UnsafePointer<CInterop.PlatformChar>) {
     self.init(SystemString(platformString: _platformString))
   }
-
 }
 
+#if false // PORT-CLOBBERED: superseded by stdlib copy
 @available(System 0.0.2, *)
-extension FilePath.Component {
+extension _StdlibFilePath.Component {
   // The index of the `.` denoting an extension
   internal func _extensionIndex() -> SystemString.Index? {
     guard kind == .regular,
@@ -229,6 +259,7 @@ extension FilePath.Component {
     _slice.startIndex ..< (_extensionIndex() ?? _slice.endIndex)
   }
 }
+#endif
 
 internal func _makeExtension(_ ext: String) -> SystemString {
   var result = SystemString()
@@ -238,27 +269,46 @@ internal func _makeExtension(_ ext: String) -> SystemString {
 }
 
 @available(System 0.0.2, *)
-extension FilePath.Component {
-  internal init?(_ str: SystemString) {
-    // FIXME: explicit null root? Or something else?
-    let path = FilePath(str)
-    guard path.root == nil, path.components.count == 1 else {
+extension _StdlibFilePath.Component {
+  internal init?(_ codeUnits: [_StdlibFilePath.CodeUnit]) {
+    let path = _StdlibFilePath(_normalizing: codeUnits)
+    guard path.anchor == nil, path.components.count == 1 else {
       return nil
     }
     self = path.components.first!
     self._invariantCheck()
   }
+
+  /// Creates a component from substrate string storage.
+  ///
+  /// The `SystemString` spelling of `init?(_ codeUnits:)`, reprovisioned
+  /// because swift-system's own test suite constructs components that way.
+  internal init?(_ str: SystemString) {
+    self.init(str.map { $0.rawValue })
+  }
+
+  /// This component's containing storage, as substrate string storage.
+  ///
+  /// Spelled `_slice.base` by swift-system's test suite, which reads it to
+  /// check that a component points into the path's bytes rather than a copy.
+  /// The SE-0529 `Component` slices `_SystemString`, so this restates that
+  /// base in the substrate's type. O(n).
+  internal var _sliceBase: SystemString {
+    SystemString(
+      nullTerminated: _path._storage.nullTerminatedStorage.map {
+        SystemChar(rawValue: $0)
+      })
+  }
 }
 
 @available(System 0.0.2, *)
-extension FilePath.Root {
-  internal init?(_ str: SystemString) {
-    // FIXME: explicit null root? Or something else?
-    let path = FilePath(str)
-    guard path.root != nil, path.components.isEmpty else {
+extension _StdlibFilePath.Root {
+  internal init?(_ codeUnits: [_StdlibFilePath.CodeUnit]) {
+    let path = _StdlibFilePath(_normalizing: codeUnits)
+    guard let anchor = path.anchor, path.components.isEmpty else {
       return nil
     }
-    self = path.root!
+    self = _StdlibFilePath.Root(anchor)
     self._invariantCheck()
   }
 }
@@ -266,24 +316,23 @@ extension FilePath.Root {
 // MARK: - Invariants
 
 @available(System 0.0.2, *)
-extension FilePath.Component {
+extension _StdlibFilePath.Component {
   // TODO: ensure this all gets easily optimized away in release...
   internal func _invariantCheck() {
     #if DEBUG
-    precondition(!_slice.isEmpty)
-    precondition(_slice.last != .null)
-    precondition(_slice.allSatisfy { !isSeparator($0) } )
-    precondition(_path._relativeStart <= _slice.startIndex)
+    let bytes = _codeUnits
+    precondition(!bytes.isEmpty)
+    precondition(bytes.last != ._null)
+    precondition(bytes.allSatisfy { !_isSeparator($0) } )
     #endif // DEBUG
   }
 }
 
 @available(System 0.0.2, *)
-extension FilePath.Root {
+extension _StdlibFilePath.Root {
   internal func _invariantCheck() {
     #if DEBUG
-    precondition(self._rootEnd > _path._storage.startIndex)
-
+    precondition(!_anchor.codeUnits.isEmpty)
     // TODO: Windows root invariants
     #endif
   }

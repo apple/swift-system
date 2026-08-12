@@ -10,7 +10,7 @@
 // MARK: - API
 
 @available(System 0.0.2, *)
-extension FilePath {
+extension _SwiftSystemFilePath {
   /// A bidirectional, range replaceable collection of the non-root components
   /// that make up a file path.
   ///
@@ -21,7 +21,7 @@ extension FilePath {
   ///
   /// Example:
   ///
-  ///     var path: FilePath = "/./home/./username/scripts/./tree"
+  ///     var path: _SwiftSystemFilePath = "/./home/./username/scripts/./tree"
   ///     let scriptIdx = path.components.lastIndex(of: "scripts")!
   ///     path.components.insert("bin", at: scriptIdx)
   ///     // path is "/./home/./username/bin/scripts/./tree"
@@ -30,10 +30,10 @@ extension FilePath {
   ///     // path is "/home/username/bin/scripts/tree"
   @available(System 0.0.2, *)
   public struct ComponentView: Sendable {
-    internal var _path: FilePath
+    internal var _path: _SwiftSystemFilePath
     internal var _start: SystemString.Index
 
-    internal init(_ path: FilePath) {
+    internal init(_ path: _SwiftSystemFilePath) {
       self._path = path
       self._start = path._relativeStart
       _invariantCheck()
@@ -52,7 +52,7 @@ extension FilePath {
       // not needlessly sliding values around or triggering a COW
       let rootStr = self.root?._systemString ?? SystemString()
       var comp = ComponentView(self)
-      self = FilePath()
+      self = _SwiftSystemFilePath()
       defer {
         self = comp._path
         if root?._slice.elementsEqual(rootStr) != true {
@@ -65,8 +65,8 @@ extension FilePath {
 }
 
 @available(System 0.0.2, *)
-extension FilePath.ComponentView: BidirectionalCollection {
-  public typealias Element = FilePath.Component
+extension _SwiftSystemFilePath.ComponentView: BidirectionalCollection {
+  public typealias Element = _SwiftSystemFilePath.Component
 
   @available(System 0.0.2, *)
   public struct Index: Sendable, Comparable, Hashable {
@@ -94,16 +94,16 @@ extension FilePath.ComponentView: BidirectionalCollection {
     Index(_path._parseComponent(priorTo: i._storage).lowerBound)
   }
 
-  public subscript(position: Index) -> FilePath.Component {
+  public subscript(position: Index) -> _SwiftSystemFilePath.Component {
     let end = _path._parseComponent(startingAt: position._storage).componentEnd
-    return FilePath.Component(_path, position._storage ..< end)
+    return _SwiftSystemFilePath.Component(_path, position._storage ..< end)
   }
 }
 
 @available(System 0.0.2, *)
-extension FilePath.ComponentView: RangeReplaceableCollection {
+extension _SwiftSystemFilePath.ComponentView: RangeReplaceableCollection {
   public init() {
-    self.init(FilePath())
+    self.init(_SwiftSystemFilePath())
   }
 
   // TODO(perf): We probably want to have concrete overrides or generic
@@ -120,7 +120,7 @@ extension FilePath.ComponentView: RangeReplaceableCollection {
       _invariantCheck()
     }
     if isEmpty {
-      _path = FilePath(root: _path.root, newElements)
+      _path = _SwiftSystemFilePath(root: _path.root, newElements)
       return
     }
     let range = subrange.lowerBound._storage ..< subrange.upperBound._storage
@@ -151,7 +151,7 @@ extension FilePath.ComponentView: RangeReplaceableCollection {
 }
 
 @available(System 0.0.2, *)
-extension FilePath {
+extension _SwiftSystemFilePath {
   /// Create a file path from a root and a collection of components.
   public init<C: Collection>(
     root: Root?, _ components: C
@@ -180,7 +180,7 @@ extension FilePath {
 // MARK: - Internals
 
 @available(System 0.0.2, *)
-extension FilePath.ComponentView: _PathSlice {
+extension _SwiftSystemFilePath.ComponentView: _PathSlice {
   internal var _range: Range<SystemString.Index> {
     _start ..< _path._storage.endIndex
   }
@@ -193,7 +193,7 @@ extension FilePath.ComponentView: _PathSlice {
 // MARK: - Invariants
 
 @available(System 0.0.2, *)
-extension FilePath.ComponentView {
+extension _SwiftSystemFilePath.ComponentView {
   internal func _invariantCheck() {
     #if DEBUG
     if isEmpty {
@@ -213,7 +213,7 @@ extension FilePath.ComponentView {
       precondition(base._slice.endIndex == _path._storage.endIndex)
     }
 
-    precondition(FilePath(root: _path.root, self) == _path)
+    precondition(_SwiftSystemFilePath(root: _path.root, self) == _path)
     #endif // DEBUG
   }
 }

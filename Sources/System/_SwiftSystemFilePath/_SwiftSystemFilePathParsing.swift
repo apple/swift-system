@@ -117,7 +117,7 @@ extension SystemString {
 }
 
 @available(System 0.0.1, *)
-extension FilePath {
+extension _SwiftSystemFilePath {
   internal mutating func _removeTrailingSeparator() {
     _storage._removeTrailingSeparator()
   }
@@ -198,7 +198,7 @@ extension SystemString {
 }
 
 @available(System 0.0.1, *)
-extension FilePath {
+extension _SwiftSystemFilePath {
   internal var _relativeStart: SystemString.Index {
     _storage._relativePathStart
   }
@@ -210,7 +210,7 @@ extension FilePath {
 // Parse separators
 
 @available(System 0.0.1, *)
-extension FilePath {
+extension _SwiftSystemFilePath {
   internal typealias _Index = SystemString.Index
 
   // Parse a component that starts at `i`. Returns the end
@@ -274,7 +274,7 @@ extension FilePath {
 }
 
 @available(System 0.0.2, *)
-extension FilePath.ComponentView {
+extension _SwiftSystemFilePath.ComponentView {
   // TODO: Store this...
   internal var _relativeStart: SystemString.Index {
     _path._relativeStart
@@ -299,7 +299,7 @@ extension SystemString {
 }
 
 @available(System 0.0.2, *)
-extension FilePath.Root {
+extension _SwiftSystemFilePath.Root {
   // Asserting self is a root, returns whether this is an
   // absolute root.
   //
@@ -308,7 +308,7 @@ extension FilePath.Root {
   //
   // TODO: public
   internal var isAbsolute: Bool {
-    assert(FilePath(SystemString(self._slice)).root == self, "not a root")
+    assert(_SwiftSystemFilePath(SystemString(self._slice)).root == self, "not a root")
 
     guard _windowsPaths else { return true }
 
@@ -324,7 +324,7 @@ extension FilePath.Root {
 }
 
 @available(System 0.0.1, *)
-extension FilePath {
+extension _SwiftSystemFilePath {
   internal var _portableDescription: String {
     guard _windowsPaths else { return description }
     let utf8 = description.utf8.map { $0 == UInt8(ascii: #"\"#) ? UInt8(ascii: "/") : $0 }
@@ -346,7 +346,7 @@ internal var _windowsPaths: Bool {
 }
 
 @available(System 0.0.1, *)
-extension FilePath {
+extension _SwiftSystemFilePath {
   // Whether we should add a separator when doing an append
   internal var _needsSeparatorForAppend: Bool {
     guard let last = _storage.last, !isSeparator(last) else { return false }
@@ -363,7 +363,7 @@ extension FilePath {
   // Perform an append, inseting a separator if needed.
   // Note that this will not check whether `content` is a root
   internal mutating func _append(unchecked content: Slice<SystemString>) {
-    assert(FilePath(SystemString(content)).root == nil)
+    assert(_SwiftSystemFilePath(SystemString(content)).root == nil)
     if content.isEmpty { return }
     if _needsSeparatorForAppend {
       _storage.append(platformSeparator)
@@ -374,7 +374,7 @@ extension FilePath {
 
 // MARK: - Invariants
 @available(System 0.0.1, *)
-extension FilePath {
+extension _SwiftSystemFilePath {
   internal func _invariantsSatisfied() -> Bool {
     var normal = self
     normal._normalizeSeparators()

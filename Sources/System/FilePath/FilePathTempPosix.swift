@@ -7,6 +7,7 @@
  See https://swift.org/LICENSE.txt for license information
  */
 
+
 #if !os(Windows)
 
 #if SYSTEM_PACKAGE_DARWIN
@@ -27,12 +28,12 @@ import Android
 #endif
 
 /// Get the path to the system temporary directory.
-internal func _getTemporaryDirectory() throws -> FilePath {
+internal func _getTemporaryDirectory() throws -> _StdlibFilePath {
   guard let tmp = system_getenv("TMPDIR") else {
     return "/tmp"
   }
 
-  return FilePath(SystemString(platformString: tmp))
+  return _StdlibFilePath(SystemString(platformString: tmp))
 }
 
 /// Delete the entire contents of a directory, including its subdirectories.
@@ -42,9 +43,16 @@ internal func _getTemporaryDirectory() throws -> FilePath {
 ///
 /// Removes a directory completely, including all of its contents.
 internal func _recursiveRemove(
-  at path: FilePath
+  at path: _StdlibFilePath
 ) throws {
-  let dirfd = try FileDescriptor.open(path, .readOnly, options: .directory)
+  // Opened through the platform-string overload rather than the `FilePath`
+  // one: `FilePath` is now the wrapper, and this helper works on the stdlib
+  // backing directly. Going through the C-string overload keeps that plain
+  // instead of building a wrapper whose backing would not honor the
+  // process-wide selection.
+  let dirfd = try path.withPlatformString {
+    try FileDescriptor.open($0, .readOnly, options: .directory)
+  }
   defer {
     try? dirfd.close()
   }

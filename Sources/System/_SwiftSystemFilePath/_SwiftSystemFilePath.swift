@@ -15,16 +15,16 @@
 /// defines how the content is interpreted; for example, by its choice of string
 /// encoding.
 ///
-/// On construction, `FilePath` will normalize separators by removing
+/// On construction, `_SwiftSystemFilePath` will normalize separators by removing
 /// redundant intermediary separators and stripping any trailing separators.
-/// On Windows, `FilePath` will also normalize forward slashes `/` into
+/// On Windows, `_SwiftSystemFilePath` will also normalize forward slashes `/` into
 /// backslashes `\`, as preferred by the platform.
 ///
 /// The code below creates a file path from a string literal,
 /// and then uses it to open and append to a log file:
 ///
 ///     let message: String = "This is a log message."
-///     let path: FilePath = "/tmp/log"
+///     let path: _SwiftSystemFilePath = "/tmp/log"
 ///     let fd = try FileDescriptor.open(path, .writeOnly, options: .append)
 ///     try fd.closeAfter { try fd.writeAll(message.utf8) }
 ///
@@ -38,7 +38,7 @@
 /// are file-system–specific and have additional considerations
 /// like case insensitivity, Unicode normalization, and symbolic links.
 @available(System 0.0.1, *)
-public struct FilePath: Sendable {
+public struct _SwiftSystemFilePath: Sendable {
   // TODO(docs): Section on all the new syntactic operations, lexical normalization, decomposition,
   // components, etc.
   internal var _storage: SystemString
@@ -60,16 +60,16 @@ public struct FilePath: Sendable {
 }
 
 @available(System 0.0.1, *)
-extension FilePath {
+extension _SwiftSystemFilePath {
   /// The length of the file path, excluding the null terminator.
   public var length: Int { _storage.length }
 }
 
 @available(System 0.0.1, *)
-extension FilePath: Hashable {}
+extension _SwiftSystemFilePath: Hashable {}
 
 @available(System 0.0.1, *)
-extension FilePath: Codable {
+extension _SwiftSystemFilePath: Codable {
   // Encoder is synthesized; it probably should have been explicit and used
   // a single-value container, but making that change now is somewhat risky.
 
@@ -83,7 +83,7 @@ extension FilePath: Codable {
         forKey: ._storage,
         in: container,
         debugDescription:
-          "Encoding does not satisfy the invariants of FilePath"
+          "Encoding does not satisfy the invariants of _SwiftSystemFilePath"
       )
     }
   }

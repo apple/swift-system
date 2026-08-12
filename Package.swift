@@ -12,6 +12,10 @@
 
 import PackageDescription
 
+/// The availability floor every `System` macro maps to in the SwiftPM build.
+let systemSourceAvailability =
+  "macOS 10.10, iOS 8.0, watchOS 2.0, tvOS 9.0, visionOS 1.0"
+
 struct Available {
   var name: String
   var version: String
@@ -25,7 +29,7 @@ struct Available {
     self.name = "System"
     self.version = version
     self.osAvailability = osAvailability
-    self.sourceAvailability = "macOS 10.10, iOS 8.0, watchOS 2.0, tvOS 9.0, visionOS 1.0"
+    self.sourceAvailability = systemSourceAvailability
   }
 
   var swiftSetting: SwiftSetting {
@@ -81,6 +85,31 @@ let swiftSettings = swiftSettingsAvailability + swiftSettingsCI + [
   .define("SYSTEM_PACKAGE"),
   .define("ENABLE_MOCKING", .when(configuration: .debug)),
   .enableExperimentalFeature("Lifetimes"),
+
+  // MARK: - Dual-backing FilePath (testing branch)
+  //
+  // FilePath is a wrapper over two backings: the classic swift-system
+  // implementation (_SwiftSystemFilePath, the default) and the SE-0529 one
+  // (_StdlibFilePath), selected by _SWIFT_SYSTEM_NEW_FILEPATH. The settings
+  // below are what that transplanted code was validated with.
+
+  // The SE-0529 core carries @available(SwiftStdlib 9999, *) throughout. That
+  // is a stdlib-build spelling for "a future release". Map it to 26, the floor
+  // where `Span` (which the core's code-unit views vend) became available.
+  //
+  // Deliberately NOT mapped to 9999 with -disable-availability-checking, which
+  // is how the prototype built it: that flag also folds `#available` queries to
+  // true, so runtime-gated tests (the macOS 27 dup3/pipe2 skips in
+  // FileOperationsTest) would stop skipping and fail with ENOSYS. 26 is also
+  // strictly below those 27 gates, so they still skip.
+  .enableExperimentalFeature(
+    "AvailabilityMacro=SwiftStdlib 9999:macOS 26, iOS 26, watchOS 26, tvOS 26, visionOS 26"),
+  // Selects the package flavor of the SE-0529 core: its own
+  // _internalInvariant, and a libc resolve() instead of the SwiftShims one.
+  .define("FILEPATH_PACKAGE"),
+  // The transplanted code was validated in the Swift 5 language mode; match it
+  // so Swift 6 concurrency diagnostics do not masquerade as real errors.
+  .swiftLanguageMode(.v5),
 ]
 
 let cSettings: [CSetting] = [
@@ -95,8 +124,20 @@ let platforms: [SupportedPlatform] = [
   .tvOS("26"),
   .visionOS("26"),
 ]
-#else 
-let platforms: [SupportedPlatform]? = nil
+#else
+// Dual-backing FilePath (testing branch): the SE-0529 core vends `Span`, which
+// needs a 26 floor, and its `@available(SwiftStdlib 9999, *)` is mapped to 26
+// above. A nil (SwiftPM-default, 10.13-era) deployment target would make every
+// use of those decls "only available in macOS 26 or newer". Upstream this is
+// nil; the 27 runtime gates in FileOperationsTest still evaluate normally
+// because 26 is below them.
+let platforms: [SupportedPlatform]? = [
+  .macOS("26"),
+  .iOS("26"),
+  .watchOS("26"),
+  .tvOS("26"),
+  .visionOS("26"),
+]
 #endif
 
 #if os(Linux)

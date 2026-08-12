@@ -7,12 +7,13 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
+
 #if os(Windows)
 
 import WinSDK
 
 /// Get the path to the system temporary directory.
-internal func _getTemporaryDirectory() throws -> FilePath {
+internal func _getTemporaryDirectory() throws -> _StdlibFilePath {
   return try withUnsafeTemporaryAllocation(of: CInterop.PlatformChar.self,
                                            capacity: Int(MAX_PATH) + 1) {
     buffer in
@@ -21,7 +22,7 @@ internal func _getTemporaryDirectory() throws -> FilePath {
       throw Errno(windowsError: GetLastError())
     }
 
-    return FilePath(SystemString(platformString: buffer.baseAddress!))
+    return _StdlibFilePath(SystemString(platformString: buffer.baseAddress!))
   }
 }
 
@@ -33,7 +34,7 @@ internal func _getTemporaryDirectory() throws -> FilePath {
 ///
 /// We skip the `.` and `..` pseudo-entries.
 fileprivate func forEachFile(
-  at path: FilePath,
+  at path: _StdlibFilePath,
   _ body: (WIN32_FIND_DATAW) throws -> ()
 ) rethrows {
   let searchPath = path.appending("\\*")
@@ -69,7 +70,7 @@ fileprivate func forEachFile(
 ///
 /// Removes a directory completely, including all of its contents.
 internal func _recursiveRemove(
-  at path: FilePath
+  at path: _StdlibFilePath
 ) throws {
   // First, deal with subdirectories
   try forEachFile(at: path) { findData in
@@ -78,7 +79,7 @@ internal func _recursiveRemove(
         return SystemString(platformString: $0.assumingMemoryBound(
                               to: CInterop.PlatformChar.self).baseAddress!)
       }
-      let component = FilePath.Component(name)!
+      let component = _StdlibFilePath.Component(name)!
       let subpath = path.appending(component)
 
       try _recursiveRemove(at: subpath)
@@ -91,7 +92,7 @@ internal func _recursiveRemove(
       return SystemString(platformString: $0.assumingMemoryBound(
                             to: CInterop.PlatformChar.self).baseAddress!)
     }
-    let component = FilePath.Component(name)!
+    let component = _StdlibFilePath.Component(name)!
     let subpath = path.appending(component)
 
     if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0 {

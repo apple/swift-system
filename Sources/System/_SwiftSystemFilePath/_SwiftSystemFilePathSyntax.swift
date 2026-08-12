@@ -7,11 +7,10 @@
  See https://swift.org/LICENSE.txt for license information
 */
 
-
 // MARK: - Query API
 
 @available(System 0.0.2, *)
-extension _StdlibFilePath {
+extension _SwiftSystemFilePath {
   /// Returns true if this path uniquely identifies the location of
   /// a file without reference to an additional starting location.
   ///
@@ -37,11 +36,9 @@ extension _StdlibFilePath {
   ///   * `C:\Users\`
   ///   * `\\?\UNC\server\share\bar.exe`
   ///   * `\\server\share\bar.exe`
-#if false // PORT-CLOBBERED: superseded by stdlib copy
   public var isAbsolute: Bool {
     self.root?.isAbsolute ?? false
   }
-#endif
 
   /// Returns true if this path is not absolute (see `isAbsolute`).
   ///
@@ -62,13 +59,13 @@ extension _StdlibFilePath {
   ///
   /// Example:
   ///
-  ///     let path: _StdlibFilePath = "/usr/bin/ls"
+  ///     let path: _SwiftSystemFilePath = "/usr/bin/ls"
   ///     path.starts(with: "/")              // true
   ///     path.starts(with: "/usr/bin")       // true
   ///     path.starts(with: "/usr/bin/ls")    // true
   ///     path.starts(with: "/usr/bin/ls///") // true
   ///     path.starts(with: "/us")            // false
-  public func starts(with other: _StdlibFilePath) -> Bool {
+  public func starts(with other: _SwiftSystemFilePath) -> Bool {
     guard !other.isEmpty else { return true }
     return self.root == other.root && components.starts(
       with: other.components)
@@ -81,13 +78,13 @@ extension _StdlibFilePath {
   ///
   /// Example:
   ///
-  ///     let path: _StdlibFilePath = "/usr/bin/ls"
+  ///     let path: _SwiftSystemFilePath = "/usr/bin/ls"
   ///     path.ends(with: "ls")             // true
   ///     path.ends(with: "bin/ls")         // true
   ///     path.ends(with: "usr/bin/ls")     // true
   ///     path.ends(with: "/usr/bin/ls///") // true
   ///     path.ends(with: "/ls")            // false
-  public func ends(with other: _StdlibFilePath) -> Bool {
+  public func ends(with other: _SwiftSystemFilePath) -> Bool {
     if other.root != nil {
       // TODO: anything tricky here for Windows?
       return self == other
@@ -98,14 +95,12 @@ extension _StdlibFilePath {
   }
 
   /// Whether this path is empty
-#if false // PORT-CLOBBERED: superseded by stdlib copy
   public var isEmpty: Bool { _storage.isEmpty }
-#endif
 }
 
 // MARK: - Decompose a path
 @available(System 0.0.2, *)
-extension _StdlibFilePath {
+extension _SwiftSystemFilePath {
   /// Returns the root of a path if there is one, otherwise `nil`.
   ///
   /// On Unix, this will return the leading `/` if the path is absolute
@@ -138,24 +133,28 @@ extension _StdlibFilePath {
   ///
   /// Example:
   ///
-  ///     var path: _StdlibFilePath = "/foo/bar"
+  ///     var path: _SwiftSystemFilePath = "/foo/bar"
   ///     path.root = nil // path is "foo/bar"
   ///     path.root = "/" // path is "/foo/bar"
   ///
   /// Example (Windows):
   ///
-  ///     var path: _StdlibFilePath = #"\foo\bar"#
+  ///     var path: _SwiftSystemFilePath = #"\foo\bar"#
   ///     path.root = nil         // path is #"foo\bar"#
   ///     path.root = "C:"        // path is #"C:foo\bar"#
   ///     path.root = #"C:\"#     // path is #"C:\foo\bar"#
-  public var root: _StdlibFilePath.Root? {
+  public var root: _SwiftSystemFilePath.Root? {
     get {
-      guard let anchor = anchor else { return nil }
-      return Root(anchor)
+      guard _hasRoot else { return nil }
+      return Root(self, rootEnd: _relativeStart)
     }
     set {
       defer { _invariantCheck() }
-      self.anchor = newValue?._anchor
+      guard let r = newValue else {
+        _storage.removeSubrange(..<_relativeStart)
+        return
+      }
+      _storage.replaceSubrange(..<_relativeStart, with: r._slice)
     }
   }
 
@@ -176,7 +175,7 @@ extension _StdlibFilePath {
   ///   * `\\?\device\folder\file.exe  => folder\file.exe`
   ///   * `\\server\share\file         => file`
   ///   * `\                           => ""`
-  public __consuming func removingRoot() -> _StdlibFilePath {
+  public __consuming func removingRoot() -> _SwiftSystemFilePath {
     var copy = self
     copy.root = nil
     return copy
@@ -184,7 +183,7 @@ extension _StdlibFilePath {
 }
 
 @available(System 0.0.2, *)
-extension _StdlibFilePath {
+extension _SwiftSystemFilePath {
   /// Returns the final component of the path.
   /// Returns `nil` if the path is empty or only contains a root.
   ///
@@ -213,7 +212,7 @@ extension _StdlibFilePath {
   ///
   /// If the path only contains a root, returns `self`.
   /// If the path has no root and only includes a single component,
-  /// returns an empty _StdlibFilePath.
+  /// returns an empty _SwiftSystemFilePath.
   ///
   /// Examples:
   /// * Unix:
@@ -226,7 +225,7 @@ extension _StdlibFilePath {
   ///   * `C:\                            => C:\`
   ///   * `\\server\share\folder\file.txt => \\server\share\folder`
   ///   * `\\server\share\                => \\server\share\`
-  public __consuming func removingLastComponent() -> _StdlibFilePath {
+  public __consuming func removingLastComponent() -> _SwiftSystemFilePath {
     var copy = self
     copy.removeLastComponent()
     return copy
@@ -246,16 +245,15 @@ extension _StdlibFilePath {
   @discardableResult
   public mutating func removeLastComponent() -> Bool {
     defer { _invariantCheck() }
-    guard !components.isEmpty else { return false }
-    // The component view's RRC handles the joining separator and any
-    // trailing-separator / resource-fork suffix.
-    self.components.removeLast()
+    guard let lastRel = lastComponent else { return false }
+    _storage.removeSubrange(lastRel._slice.indices)
+    _removeTrailingSeparator()
     return true
   }
 }
 
 @available(System 0.0.2, *)
-extension _StdlibFilePath.Component {
+extension _SwiftSystemFilePath.Component {
   /// The extension of this file or directory component.
   ///
   /// If `self` does not contain a `.` anywhere, or only
@@ -268,9 +266,8 @@ extension _StdlibFilePath.Component {
   ///   * `.hidden    => nil`
   ///   * `..         => nil`
   public var `extension`: String? {
-    let bytes = _codeUnits
-    guard let idx = _extensionIndex(bytes) else { return nil }
-    return Array(bytes[bytes.index(after: idx)...])._decodedString
+    guard let range = _extensionRange() else { return nil }
+    return _slice[range].string
   }
 
   /// The non-extension portion of this file or directory  component.
@@ -282,14 +279,12 @@ extension _StdlibFilePath.Component {
   ///   * `.hidden => .hidden`
   ///   * `..      => ..`
   public var stem: String {
-    let bytes = _codeUnits
-    let end = _extensionIndex(bytes) ?? bytes.endIndex
-    return Array(bytes[..<end])._decodedString
+    _slice[_stemRange()].string
   }
 }
 
 @available(System 0.0.2, *)
-extension _StdlibFilePath {
+extension _SwiftSystemFilePath {
 
   /// The extension of the file or directory last component.
   ///
@@ -325,20 +320,18 @@ extension _StdlibFilePath {
       defer { _invariantCheck() }
       guard let base = lastComponent, base.kind == .regular else { return }
 
-      // Rebuild the last component's bytes (stem + new extension), then
-      // reconstruct the path from anchor + components with the last replaced.
-      let baseBytes = base._codeUnits
-      let stemEnd = base._extensionIndex(baseBytes) ?? baseBytes.endIndex
-      var newComp = Array(baseBytes[..<stemEnd])
+      let suffix: SystemString
       if let ext = newValue {
-        newComp.append(contentsOf: _makeExtension(ext).map { $0.rawValue })
+        suffix = _makeExtension(ext)
+      } else {
+        suffix = SystemString()
       }
-      guard let comp = _StdlibFilePath.Component(newComp) else { return }
-      var comps = Array(components)
-      comps.removeLast()
-      comps.append(comp)
-      self = _StdlibFilePath(
-        anchor: anchor, comps, hasTrailingSeparator: hasTrailingSeparator)
+
+      let extRange = (
+        base._extensionIndex() ?? base._slice.endIndex
+      ) ..< base._slice.endIndex
+
+      _storage.replaceSubrange(extRange, with: suffix)
     }
   }
 
@@ -357,7 +350,7 @@ extension _StdlibFilePath {
 }
 
 @available(System 0.0.2, *)
-extension _StdlibFilePath {
+extension _SwiftSystemFilePath {
   /// Whether the path is in lexical-normal form, that is `.` and `..`
   /// components have been collapsed lexically (i.e. without following
   /// symlinks).
@@ -367,18 +360,12 @@ extension _StdlibFilePath {
   /// * `"../local/bin".isLexicallyNormal   == true`
   /// * `"local/bin/..".isLexicallyNormal   == false`
   public var isLexicallyNormal: Bool {
-    // Must agree with `lexicallyNormalize()`: a path is lexically normal iff
-    // normalizing is a no-op. `lexicallyNormalize()` strips a trailing
-    // separator, so a path carrying one is not normal even when its component
-    // kinds are all fine, e.g. `/tmp/` -> `/tmp`.
-    //
     // `..` components are permitted at the front of a
     // relative path, otherwise there should be no special directories
     //
     // FIXME: Windows `C:..\foo\bar` should probably be lexically normal, but
     // `\..\foo\bar` should not.
-    if hasTrailingSeparator { return false }
-    return components.drop(
+    components.drop(
       while: { root == nil && $0.kind == .parentDirectory }
     ).allSatisfy { $0.kind == .regular }
   }
@@ -398,13 +385,13 @@ extension _StdlibFilePath {
   /// Returns a copy of `self` in lexical-normal form, that is `.` and `..`
   /// components have been collapsed lexically (i.e. without following
   /// symlinks). See `lexicallyNormalize`
-  public __consuming func lexicallyNormalized() -> _StdlibFilePath {
+  public __consuming func lexicallyNormalized() -> _SwiftSystemFilePath {
     var copy = self
     copy.lexicallyNormalize()
     return copy
   }
 
-  /// Create a new `_StdlibFilePath` by resolving `subpath` relative to `self`,
+  /// Create a new `_SwiftSystemFilePath` by resolving `subpath` relative to `self`,
   /// ensuring that the result is lexically contained within `self`.
   ///
   /// `subpath` will be lexically normalized (see `lexicallyNormalize`) as
@@ -423,16 +410,16 @@ extension _StdlibFilePath {
   ///
   /// Example:
   ///
-  ///     let staticContent: _StdlibFilePath = "/var/www/my-website/static"
-  ///     let links: [_StdlibFilePath] =
+  ///     let staticContent: _SwiftSystemFilePath = "/var/www/my-website/static"
+  ///     let links: [_SwiftSystemFilePath] =
   ///       ["index.html", "/assets/main.css", "../../../../etc/passwd"]
   ///     links.map { staticContent.lexicallyResolving($0) }
   ///       // ["/var/www/my-website/static/index.html",
   ///       //  "/var/www/my-website/static/assets/main.css",
   ///       //  nil]
   public __consuming func lexicallyResolving(
-    _ subpath: __owned _StdlibFilePath
-  ) -> _StdlibFilePath? {
+    _ subpath: __owned _SwiftSystemFilePath
+  ) -> _SwiftSystemFilePath? {
     let subpath = subpath.removingRoot().lexicallyNormalized()
     guard !subpath.isEmpty else { return self }
     guard subpath.components.first?.kind != .parentDirectory else {
@@ -444,25 +431,24 @@ extension _StdlibFilePath {
 
 // Modification and concatenation API
 @available(System 0.0.2, *)
-extension _StdlibFilePath {
+extension _SwiftSystemFilePath {
   // TODO(Windows docs): example with roots
   /// If `prefix` is a prefix of `self`, removes it and returns `true`.
   /// Otherwise returns `false`.
   ///
   /// Example:
   ///
-  ///     var path: _StdlibFilePath = "/usr/local/bin"
+  ///     var path: _SwiftSystemFilePath = "/usr/local/bin"
   ///     path.removePrefix("/usr/bin")   // false
   ///     path.removePrefix("/us")        // false
   ///     path.removePrefix("/usr/local") // true, path is "bin"
-  public mutating func removePrefix(_ prefix: _StdlibFilePath) -> Bool {
+  public mutating func removePrefix(_ prefix: _SwiftSystemFilePath) -> Bool {
     defer { _invariantCheck() }
     // FIXME: Should Windows have more nuanced semantics?
     guard root == prefix.root else { return false }
     let (tail, remainder) = _dropCommonPrefix(components, prefix.components)
     guard remainder.isEmpty else { return false }
-    // What remains is the tail components with no anchor.
-    self = _StdlibFilePath(anchor: nil, Array(tail))
+    self._storage.removeSubrange(..<tail.startIndex._storage)
     return true
   }
 
@@ -471,15 +457,15 @@ extension _StdlibFilePath {
   ///
   /// Example:
   ///
-  ///     var path: _StdlibFilePath = "/tmp"
-  ///     let sub: _StdlibFilePath = "foo/./bar/../baz/."
+  ///     var path: _SwiftSystemFilePath = "/tmp"
+  ///     let sub: _SwiftSystemFilePath = "foo/./bar/../baz/."
   ///     for comp in sub.components.filter({ $0.kind != .currentDirectory }) {
   ///       path.append(comp)
   ///     }
   ///     // path is "/tmp/foo/bar/../baz"
-  public mutating func append(_ component: __owned _StdlibFilePath.Component) {
+  public mutating func append(_ component: __owned _SwiftSystemFilePath.Component) {
     defer { _invariantCheck() }
-    _append(unchecked: _copyToArray(component.codeUnits))
+    _append(unchecked: component._slice)
   }
 
   // TODO(Windows docs): example with roots
@@ -487,16 +473,16 @@ extension _StdlibFilePath {
   ///
   /// Example:
   ///
-  ///     var path: _StdlibFilePath = "/"
+  ///     var path: _SwiftSystemFilePath = "/"
   ///     path.append(["usr", "local"])     // path is "/usr/local"
-  ///     let otherPath: _StdlibFilePath = "/bin/ls"
+  ///     let otherPath: _SwiftSystemFilePath = "/bin/ls"
   ///     path.append(otherPath.components) // path is "/usr/local/bin/ls"
   public mutating func append<C: Collection>(
     _ components: __owned C
-  ) where C.Element == _StdlibFilePath.Component {
+  ) where C.Element == _SwiftSystemFilePath.Component {
     defer { _invariantCheck() }
     for c in components {
-      _append(unchecked: _copyToArray(c.codeUnits))
+      _append(unchecked: c._slice)
     }
   }
 
@@ -508,7 +494,7 @@ extension _StdlibFilePath {
   ///
   /// Example:
   ///
-  ///     var path: _StdlibFilePath = ""
+  ///     var path: _SwiftSystemFilePath = ""
   ///     path.append("/var/www/website") // "/var/www/website"
   ///     path.append("static/assets") // "/var/www/website/static/assets"
   ///     path.append("/main.css") // "/var/www/website/static/assets/main.css"
@@ -516,16 +502,16 @@ extension _StdlibFilePath {
     defer { _invariantCheck() }
     guard !other.utf8.isEmpty else { return }
     guard !isEmpty else {
-      self = _StdlibFilePath(SystemString(other))
+      self = _SwiftSystemFilePath(other)
       return
     }
-    let otherPath = _StdlibFilePath(SystemString(other))
-    _append(unchecked: _copyToArray(otherPath.components.codeUnits))
+    let otherPath = _SwiftSystemFilePath(other)
+    _append(unchecked: otherPath._storage[otherPath._relativeStart...])
   }
 
   // TODO(Windows docs): example with roots
   /// Non-mutating version of `append(_:Component)`.
-  public __consuming func appending(_ other: __owned Component) -> _StdlibFilePath {
+  public __consuming func appending(_ other: __owned Component) -> _SwiftSystemFilePath {
     var copy = self
     copy.append(other)
     return copy
@@ -535,7 +521,7 @@ extension _StdlibFilePath {
   /// Non-mutating version of `append(_:C)`.
   public __consuming func appending<C: Collection>(
     _ components: __owned C
-  ) -> _StdlibFilePath where C.Element == _StdlibFilePath.Component {
+  ) -> _SwiftSystemFilePath where C.Element == _SwiftSystemFilePath.Component {
     var copy = self
     copy.append(components)
     return copy
@@ -543,7 +529,7 @@ extension _StdlibFilePath {
 
   // TODO(Windows docs): example with roots
   /// Non-mutating version of `append(_:String)`.
-  public __consuming func appending(_ other: __owned String) -> _StdlibFilePath {
+  public __consuming func appending(_ other: __owned String) -> _SwiftSystemFilePath {
     var copy = self
     copy.append(other)
     return copy
@@ -561,22 +547,22 @@ extension _StdlibFilePath {
   ///
   /// Example:
   ///
-  ///     var path: _StdlibFilePath = "/tmp"
+  ///     var path: _SwiftSystemFilePath = "/tmp"
   ///     path.push("dir/file.txt") // path is "/tmp/dir/file.txt"
   ///     path.push("/bin")         // path is "/bin"
-  public mutating func push(_ other: __owned _StdlibFilePath) {
+  public mutating func push(_ other: __owned _SwiftSystemFilePath) {
     defer { _invariantCheck() }
     guard other.root == nil else {
       self = other
       return
     }
     // FIXME: Windows drive-relative roots, etc?
-    _append(unchecked: other._cuArray)
+    _append(unchecked: other._storage[...])
   }
 
   // TODO(Windows docs): examples and docs with roots
   /// Non-mutating version of `push()`.
-  public __consuming func pushing(_ other: __owned _StdlibFilePath) -> _StdlibFilePath {
+  public __consuming func pushing(_ other: __owned _SwiftSystemFilePath) -> _SwiftSystemFilePath {
     var copy = self
     copy.push(other)
     return copy
@@ -585,25 +571,22 @@ extension _StdlibFilePath {
   /// Remove the contents of the path, keeping the null terminator.
   public mutating func removeAll(keepingCapacity: Bool = false) {
     defer { _invariantCheck() }
-    // No public storage-capacity primitive across the module boundary, so
-    // `keepingCapacity` cannot be honored; reconstruct an empty path.
-    self = _StdlibFilePath()
+    _storage.removeAll(keepingCapacity: keepingCapacity)
   }
 
   /// Reserve enough storage space to store `minimumCapacity` platform
   /// characters.
   public mutating func reserveCapacity(_ minimumCapacity: Int) {
-    // No public storage-capacity primitive across the module boundary; this
-    // reservation hint is dropped. Correctness is unaffected.
-    _ = minimumCapacity
+    defer { _invariantCheck() }
+    self._storage.reserveCapacity(minimumCapacity)
   }
 }
 
 // MARK - Renamed
 @available(System 0.0.2, *)
-extension _StdlibFilePath {
+extension _SwiftSystemFilePath {
   @available(*, unavailable, renamed: "removingLastComponent()")
-  public var dirname: _StdlibFilePath { removingLastComponent() }
+  public var dirname: _SwiftSystemFilePath { removingLastComponent() }
 
   @available(*, unavailable, renamed: "lastComponent")
   public var basename: Component? { lastComponent }

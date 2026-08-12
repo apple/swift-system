@@ -120,13 +120,8 @@ where C.Element: Equatable {
   return (lhs, rhs)
 }
 
-extension MutableCollection where Element: Equatable {
-  mutating func _replaceAll(_ e: Element, with new: Element) {
-    for idx in self.indices {
-      if self[idx] == e { self[idx] = new }
-    }
-  }
-}
+// `_replaceAll` now lives in _StdlibFilePath/FilePathInternals.swift, which
+// compiles into this same module. Redeclaring it here would be ambiguous.
 
 internal func _withOptionalUnsafePointerOrNull<T, R>(
   to value: T?,
