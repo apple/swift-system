@@ -9,7 +9,11 @@
 
 #if SYSTEM_PACKAGE_DARWIN
 
+#if canImport(Darwin, _version: 310)
+import Darwin.Mach
+#else
 @preconcurrency import Darwin.Mach
+#endif
 
 @available(System 1.4.0, *)
 public protocol MachPortRight {}
