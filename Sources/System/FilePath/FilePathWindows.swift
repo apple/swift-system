@@ -1,124 +1,122 @@
 /*
- This source file is part of the Swift System open source project
+ This source file is part of the Swift.org open source project
 
- Copyright (c) 2020 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2026 Apple Inc. and the Swift project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
+ See https://swift.org/CONTRIBUTORS.txt for the list of Swift project authors
 */
 
+// MARK: - Parsed Windows root
+
+@available(SwiftStdlib 9999, *)
 internal struct _ParsedWindowsRoot {
-  var rootEnd: SystemString.Index
-
-  // TODO: Remove when I normalize to always (except `C:`)
-  // have trailing separator
-  var relativeBegin: SystemString.Index
-
-  var drive: SystemChar?
-  var fullyQualified: Bool
-
-  var deviceSigil: SystemChar?
-
-  var host: Range<SystemString.Index>?
-  var volume: Range<SystemString.Index>?
+  var rootEnd: _SystemString.Index
+  var relativeBegin: _SystemString.Index
+  var drive: FilePath.CodeUnit?
+  var deviceSigil: FilePath.CodeUnit?
 }
 
+@available(SwiftStdlib 9999, *)
 extension _ParsedWindowsRoot {
   static func traditional(
-    drive: SystemChar?, fullQualified: Bool, endingAt idx: SystemString.Index
+    drive: FilePath.CodeUnit?,
+    endingAt idx: _SystemString.Index
   ) -> _ParsedWindowsRoot {
     _ParsedWindowsRoot(
       rootEnd: idx,
       relativeBegin: idx,
       drive: drive,
-      fullyQualified: fullQualified,
-      deviceSigil: nil,
-      host: nil,
-      volume: nil)
+      deviceSigil: nil)
   }
 
   static func unc(
-    deviceSigil: SystemChar?,
-    server: Range<SystemString.Index>,
-    share: Range<SystemString.Index>,
-    endingAt end: SystemString.Index,
-    relativeBegin relBegin: SystemString.Index
+    deviceSigil: FilePath.CodeUnit?,
+    endingAt end: _SystemString.Index,
+    relativeBegin relBegin: _SystemString.Index
   ) -> _ParsedWindowsRoot {
     _ParsedWindowsRoot(
       rootEnd: end,
       relativeBegin: relBegin,
       drive: nil,
-      fullyQualified: true,
-      deviceSigil: deviceSigil,
-      host: server,
-      volume: share)
+      deviceSigil: deviceSigil)
   }
 
   static func device(
-    deviceSigil: SystemChar,
-    volume: Range<SystemString.Index>,
-    endingAt end: SystemString.Index,
-    relativeBegin relBegin: SystemString.Index
+    deviceSigil: FilePath.CodeUnit,
+    drive: FilePath.CodeUnit?,
+    endingAt end: _SystemString.Index,
+    relativeBegin relBegin: _SystemString.Index
   ) -> _ParsedWindowsRoot {
     _ParsedWindowsRoot(
       rootEnd: end,
       relativeBegin: relBegin,
-      drive: nil,
-      fullyQualified: true,
-      deviceSigil: deviceSigil,
-      host: nil,
-      volume: volume)
+      drive: drive,
+      deviceSigil: deviceSigil)
+  }
+
+  var isVerbatimComponent: Bool {
+    deviceSigil == ._question
   }
 }
 
-struct _Lexer {
-  var slice: Slice<SystemString>
+// MARK: - Lexer
 
-  init(_ str: SystemString) {
+@available(SwiftStdlib 9999, *)
+struct _Lexer {
+  var slice: Slice<_SystemString>
+
+  init(_ str: _SystemString) {
     self.slice = str[...]
   }
 
-  var backslash: SystemChar { .backslash }
+  var backslash: FilePath.CodeUnit { ._backslash }
 
-  // Try to eat a backslash, returns false if nothing happened
   mutating func eatBackslash() -> Bool {
-    slice._eat(.backslash) != nil
+    slice._eat(._backslash) != nil
   }
 
-  // Try to consume a drive letter and subsequent `:`.
-  mutating func eatDrive() -> SystemChar? {
+  // A drive letter is any single non-separator code unit immediately
+  // followed by a colon. This matches Windows' own
+  // RtlDetermineDosPathNameType_U, which keys on the second character
+  // being a colon and does not validate the first: `1:`, `::`, etc. are
+  // all drives. (A colon is itself a non-separator, so `::foo` parses as
+  // drive `:` — the documented basis for the `=::` environment variable
+  // Windows creates.)
+  //
+  // The non-separator requirement is what keeps leading-separator paths
+  // out: `\:x` (and `/:x`, which `_normalizeSeparators` has already
+  // rewritten to `\:x` by this point) are classified as rooted/UNC, not
+  // drives. Because `/`→`\` conversion has already run, `isSeparator`
+  // — which tests `\` only — is exactly the right predicate here.
+  mutating func eatDrive() -> FilePath.CodeUnit? {
     let copy = slice
-    if let d = slice._eat(if: { $0.isLetter }), slice._eat(.colon) != nil {
+    if let d = slice._eat(if: { !_isSeparator($0) }),
+       slice._eat(._colon) != nil {
       return d
     }
-    // Restore slice
     slice = copy
     return nil
   }
 
-  // Try to consume a device sigil (stand-alone . or ?)
-  mutating func eatSigil() -> SystemChar? {
+  mutating func eatSigil() -> FilePath.CodeUnit? {
     let copy = slice
-    guard let sigil = slice._eat(.question) ?? slice._eat(.dot) else {
+    guard let sigil = slice._eat(._question) ?? slice._eat(._dot) else {
       return nil
     }
-
-    // Check for something like .hidden or ?question
     guard isEmpty || slice.first == backslash else {
       slice = copy
       return nil
     }
-
     return sigil
   }
 
-  // Try to consume an explicit "UNC" directory
   mutating func eatUNC() -> Bool {
-    slice._eatSequence("UNC".unicodeScalars.lazy.map { SystemChar(ascii: $0) }) != nil
+    slice._eatSequence("UNC"._asciiBytes) != nil
   }
 
-  // Eat everything up to but not including a backslash or null
-  mutating func eatComponent() -> Range<SystemString.Index> {
+  mutating func eatComponent() -> Range<_SystemString.Index> {
     let backslash = self.backslash
     let component = slice._eatWhile({ $0 != backslash })
       ?? slice[slice.startIndex ..< slice.startIndex]
@@ -129,272 +127,175 @@ struct _Lexer {
     return slice.isEmpty
   }
 
-  var current: SystemString.Index { slice.startIndex }
+  var current: _SystemString.Index { slice.startIndex }
 
   mutating func clear() {
-    // TODO: Intern empty system string
-    self = _Lexer(SystemString())
+    self = _Lexer(_SystemString())
   }
 
-  mutating func reset(to: SystemString, at: SystemString.Index) {
-    self.slice = to[at...]
-  }
-}
-
-internal struct WindowsRootInfo {
-  // The "volume" of a root. For UNC paths, this is also known as the "share".
-  internal enum Volume: Equatable {
-    /// No volume specified
-    ///
-    /// * Traditional root relative to the current drive: `\`,
-    /// * Omitted volume from other forms: `\\.\`, `\\.\UNC\server\\`, `\\server\\`
-    case empty
-
-    // TODO: NT paths? Admin paths using `$`?
-    /// A specified drive.
-    ///
-    /// * Traditional disk: `C:\`, `C:`
-    /// * Device disk: `\\.\C:\`, `\\?\C:\`
-    /// * UNC: `\\server\e:\`, `\\?\UNC\server\e:\`
-    case drive(Character)
-
-    // TODO: GUID type?
-    /// A volume with a GUID in a non-traditional path
-    ///
-    /// * UNC: `\\host\Volume{0000-...}\`, `\\.\UNC\host\Volume{0000-...}\`
-    /// * Device roots: `\\.\Volume{0000-...}\`, `\\?\Volume{000-...}\`
-    case guid(String)
-
-    // TODO: Legacy DOS devices, such as COM1?
-
-    /// Device object or share name
-    ///
-    /// * Device roots: `\\.\BootPartition\`
-    /// * UNC: `\\host\volume\`
-    case volume(String)
-
-    // TODO: Should legacy DOS devices be detected and/or converted at construction time?
-    // TODO: What about NT paths: `\??\`
-  }
-
-  /// Represents the syntactic form of the path
-  internal enum Form: Equatable {
-    /// Traditional DOS roots: `C:\`, `C:`, and `\`
-    case traditional(fullyQualified: Bool) // `C:\`, `C:`, `\`
-
-    /// UNC syntactic form: `\\server\share\`
-    case unc
-
-    /// DOS device syntactic form: `\\?\BootPartition`, `\\.\C:\`, `\\?\UNC\server\share`
-    case device(sigil: Character)
-
-    // TODO: NT?
-  }
-
-  /// The host for UNC paths, else `nil`.
-  internal var host: String?
-
-  /// The specified volume (or UNC share) for the root
-  internal var volume: Volume
-
-  /// The syntactic form the root is in
-  internal var form: Form
-
-  init(host: String?, volume: Volume, form: Form) {
-    self.host = host
-    self.volume = volume
-    self.form = form
-    checkInvariants()
+  mutating func reset(to str: _SystemString, at idx: _SystemString.Index) {
+    self.slice = str[idx...]
   }
 }
 
-extension _ParsedWindowsRoot {
-  fileprivate func volumeInfo(_ root: SystemString) -> WindowsRootInfo.Volume {
-    if let d = self.drive {
-      return .drive(Character(d.asciiScalar!))
+// MARK: - Verbatim prefix detection (pre-normalization)
+
+@available(SwiftStdlib 9999, *)
+extension _SystemString {
+  // Check if this string starts with the exact verbatim prefix \\?\
+  // (four backslashes — no forward slashes). Returns the index past
+  // the prefix, or nil.
+  internal func _startsWithVerbatimPrefix() -> Index? {
+    var s = self[...]
+    guard s._eatSequence(#"\\?\"#._asciiBytes) != nil else { return nil }
+    return s.startIndex
+  }
+
+  // For a verbatim path (exact \\?\ prefix), find where the anchor
+  // ends. Only backslash is a separator in verbatim context.
+  // Returns the index where component content begins.
+  internal func _findVerbatimAnchorEnd() -> Index {
+    guard let afterPrefix = _startsWithVerbatimPrefix() else {
+      return startIndex
     }
 
-    guard let vol = self.volume, !vol.isEmpty else { return .empty }
-
-    // TODO: check for GUID
-    // TODO: check for drive
-    return .volume(root[vol].string)
-  }
-}
-
-extension WindowsRootInfo {
-  internal init(_ root: SystemString, _ parsed: _ParsedWindowsRoot) {
-    self.volume = parsed.volumeInfo(root)
-
-    if let host = parsed.host {
-      self.host = root[host].string
-    } else {
-      self.host = nil
-    }
-
-    if let sig = parsed.deviceSigil {
-      self.form = .device(sigil: Character(sig.asciiScalar!))
-    } else if parsed.host != nil {
-      assert(parsed.volume != nil)
-      self.form = .unc
-    } else {
-      self.form = .traditional(fullyQualified: parsed.fullyQualified)
-    }
-  }
-}
-
-extension WindowsRootInfo {
-  /// NOT `\foo\bar` nor `C:foo\bar`
-  internal var isFullyQualified: Bool {
-    return form != .traditional(fullyQualified: false)
-  }
-
-  ///
-  /// `\\server\share\foo\bar.exe`, `\\.\UNC\server\share\foo\bar.exe`
-  internal var isUNC: Bool {
-    host != nil
-  }
-
-  ///
-  /// `\foo\bar.exe`
-  internal var isTraditionalRooted: Bool {
-    form == .traditional(fullyQualified: false) && volume == .empty
-  }
-
-  ///
-  /// `C:foo\bar.exe`
-  internal var isTraditionalDriveRelative: Bool {
-    switch (form, volume) {
-    case (.traditional(fullyQualified: false), .drive(_)): return true
-    default: return false
-    }
-  }
-
-  // TODO: Should this be component?
-  func formPath() -> FilePath {
-    fatalError("Unimplemented")
-  }
-
-  //    static func traditional(
-  //      drive: Character?, fullyQualified: Bool
-  //    ) -> WindowsRootInfo {
-  //      let vol: Volume
-  //      if let d = Character {
-  //        vol = .drive(d)
-  //      } else {
-  //        vol = .relative
-  //      }
-  //
-  //      return WindowsRootInfo(
-  //        volume: .relative, form: .traditional(fullyQualified: false))
-  //    }
-
-  internal func checkInvariants() {
-    switch form {
-    case .traditional(let qual):
-      precondition(host == nil)
-      switch volume {
-      case .empty:
-        precondition(!qual)
-        break
-      case .drive(_): break
-      default: preconditionFailure()
+    func skipToSep(from start: Index) -> Index {
+      var i = start
+      while i < endIndex && !_isSeparator(self[i]) {
+        formIndex(after: &i)
       }
-    case .unc:
-      precondition(host != nil)
-    case .device(_): break
+      return i
     }
-  }
 
+    func skipPastSep(from idx: Index) -> Index {
+      idx < endIndex && _isSeparator(self[idx]) ? index(after: idx) : idx
+    }
+
+    // \\?\UNC\server\share[\]
+    var s = self[afterPrefix...]
+    if s._eatSequence("UNC"._asciiBytes) != nil,
+       s._eat(._backslash) != nil {
+      let serverEnd = skipToSep(from: s.startIndex)
+      let shareStart = skipPastSep(from: serverEnd)
+      let shareEnd = skipToSep(from: shareStart)
+      return skipPastSep(from: shareEnd)
+    }
+
+    // \\?\<drive>:[\] — a drive letter is any single non-separator code
+    // unit before the colon (matching eatDrive). In verbatim paths
+    // separators are not normalized and `/` is a legal component byte,
+    // so `!isSeparator` accepts it: `\\?\/:` parses with drive `/`,
+    // taking the bytes as written.
+    s = self[afterPrefix...]
+    if s._eat(if: { !_isSeparator($0) }) != nil,
+       s._eat(._colon) != nil {
+      return skipPastSep(from: s.startIndex)
+    }
+
+    // \\?\device[\]
+    let deviceEnd = skipToSep(from: afterPrefix)
+    return skipPastSep(from: deviceEnd)
+  }
 }
 
-extension SystemString {
-  // TODO: Or, should I always inline this to remove some of the bookeeping?
-  private func _parseWindowsRootInternal() -> _ParsedWindowsRoot? {
-    assert(_windowsPaths)
+// MARK: - Windows root parsing
 
-    /*
-      Windows root: device or UNC or DOS
-        device: (`\\.` or `\\?`) `\` (drive or guid or UNC-link)
-          drive: letter `:`
-          guid: `Volume{` (hex-digit or `-`)* `}`
-          UNC-link: `UNC\` UNC-volume
-        UNC: `\\` UNC-volume
-          UNC-volume: server `\` share
-        DOS: fully-qualified or legacy-device or drive or `\`
-          full-qualified: drive `\`
-
-     TODO: What is \\?\server1\e:\utilities\\filecomparer\ from the docs?
-     TODO: What about admin use of `$` instead of `:`? E.g. \\system07\C$\
-
-     NOTE: Legacy devices are not handled by System at a library level, but
-     are deferred to the relevant syscalls.
-    */
+@available(SwiftStdlib 9999, *)
+extension _SystemString {
+  internal func _parseWindowsRootInternal() -> _ParsedWindowsRoot? {
+    _internalInvariant(_isWindows)
 
     var lexer = _Lexer(self)
 
-    // Helper to parse a UNC root
-    func parseUNC(deviceSigil: SystemChar?) -> _ParsedWindowsRoot {
-      let serverRange = lexer.eatComponent()
+    func parseUNC(
+      deviceSigil: FilePath.CodeUnit?
+    ) -> _ParsedWindowsRoot {
+      _ = lexer.eatComponent()
       guard lexer.eatBackslash() else {
-        fatalError("expected normalized root to contain backslash")
+        let end = lexer.current
+        return .unc(
+          deviceSigil: deviceSigil,
+          endingAt: end,
+          relativeBegin: end)
       }
-      let shareRange = lexer.eatComponent()
+      _ = lexer.eatComponent()
       let rootEnd = lexer.current
       _ = lexer.eatBackslash()
       return .unc(
         deviceSigil: deviceSigil,
-        server: serverRange, share: shareRange,
         endingAt: rootEnd, relativeBegin: lexer.current)
     }
 
-
     // `C:` or `C:\`
     if let d = lexer.eatDrive() {
-      // `C:\` - fully qualified
-      let fullyQualified = lexer.eatBackslash()
+      _ = lexer.eatBackslash()
       return .traditional(
-        drive: d, fullQualified: fullyQualified, endingAt: lexer.current)
+        drive: d,
+        endingAt: lexer.current)
     }
 
-    // `\` or else it's just a rootless relative path
     guard lexer.eatBackslash() else { return nil }
-
-    // `\\` or else it's just a current-drive rooted traditional path
     guard lexer.eatBackslash() else {
       return .traditional(
-        drive: nil, fullQualified: false, endingAt: lexer.current)
+        drive: nil,
+        endingAt: lexer.current)
     }
 
-    // `\\.` or `\\?` (device paths) or else it's just UNC
     guard let sigil = lexer.eatSigil() else {
       return parseUNC(deviceSigil: nil)
     }
-    _ = sigil // suppress warnings
 
     guard lexer.eatBackslash() else {
-      fatalError("expected normalized root to contain backslash")
+      return .device(
+        deviceSigil: sigil,
+        drive: nil,
+        endingAt: lexer.current,
+        relativeBegin: lexer.current)
     }
 
-    if lexer.eatUNC() {
+    // UNC sub-form only applies to verbatim paths (\\?\UNC\...).
+    // For device-namespace (\\.\), UNC is just a device name.
+    if sigil == ._question, lexer.eatUNC() {
       guard lexer.eatBackslash() else {
-        fatalError("expected normalized root to contain backslash")
+        let end = lexer.current
+        return .device(
+          deviceSigil: sigil,
+          drive: nil,
+          endingAt: end,
+          relativeBegin: end)
       }
       return parseUNC(deviceSigil: sigil)
     }
 
-    let device = lexer.eatComponent()
+    // Check for device drive: \\.\C:\ or \\?\C:\
+    let deviceRange = lexer.eatComponent()
     let rootEnd = lexer.current
+
+    // A drive letter is any single non-separator code unit before the
+    // colon (matching `eatDrive`). In verbatim paths `/` is a non-separator
+    // and legal, so `\\?\/:` parses with drive `/`.
+    let drive = _driveLetter(of: self[deviceRange])
+    if drive != nil, lexer.eatBackslash() {
+      // \\?\C:\  or \\.\C:\
+      let newEnd = lexer.current
+      return .device(
+        deviceSigil: sigil,
+        drive: drive,
+        endingAt: newEnd,
+        relativeBegin: newEnd)
+    }
+
     _ = lexer.eatBackslash()
 
     return .device(
-      deviceSigil: sigil, volume: device,
+      deviceSigil: sigil,
+      drive: drive,
       endingAt: rootEnd, relativeBegin: lexer.current)
   }
 
-  @inline(never)
   internal func _parseWindowsRoot() -> (
-    rootEnd: SystemString.Index, relativeBegin: SystemString.Index
+    rootEnd: _SystemString.Index,
+    relativeBegin: _SystemString.Index
   ) {
     guard let parsed = _parseWindowsRootInternal() else {
       return (startIndex, startIndex)
@@ -403,136 +304,88 @@ extension SystemString {
   }
 }
 
-extension SystemString {
-  // UNC and device roots can have multiple repeated roots that are meaningful,
-  // and extra backslashes may need to be inserted for partial roots (e.g. empty
-  // volume).
-  //
-  // Returns the point where `_normalizeSeparators` should resume.
+// Returns the drive letter if `slice` is exactly the 2-byte drive form
+// `<non-separator><colon>`, else nil. Intended for testing already-
+// extracted device slices; for parsing-from-stream, see `_Lexer.eatDrive`.
+@available(SwiftStdlib 9999, *)
+private func _driveLetter(
+  of slice: Slice<_SystemString>
+) -> FilePath.CodeUnit? {
+  var s = slice
+  guard let first = s._eat(if: { !_isSeparator($0) }),
+        s._eat(._colon) != nil,
+        s.isEmpty
+  else { return nil }
+  return first
+}
+
+// MARK: - Windows root prenormalization
+
+@available(SwiftStdlib 9999, *)
+extension _SystemString {
   internal mutating func _prenormalizeWindowsRoots() -> Index {
-    assert(_windowsPaths)
-    assert(!self.contains(.slash), "only valid after separator conversion")
+    _internalInvariant(_isWindows)
 
     var lexer = _Lexer(self)
 
-    // Only relevant for UNC or device paths
     guard lexer.eatBackslash(), lexer.eatBackslash() else {
       return lexer.current
     }
 
-    // Parse a backslash, inserting one if needed
+    // Three or more leading backslashes: NOT a UNC/device path.
+    // Return after the first backslash; coalescing handles the rest.
+    if !lexer.isEmpty && lexer.slice.first == ._backslash {
+      return self.index(after: self.startIndex)
+    }
+
     func expectBackslash() {
       if lexer.eatBackslash() { return }
-
-      // A little gross, but we reset the lexer because the lexer
-      // holds a strong reference to `self`.
-      //
-      // TODO: Intern the empty SystemString. Right now, this is
-      // along an uncommon/pathological case, but we want to in
-      // general make empty strings without allocation
       let idx = lexer.current
       lexer.clear()
-      self.insert(.backslash, at: idx)
+      self.insert(._backslash, at: idx)
       lexer.reset(to: self, at: idx)
       let p = lexer.eatBackslash()
-      assert(p)
+      _internalInvariant(p)
     }
-    // Parse a component and subsequent backslash, insering one if needed
     func expectComponent() {
       _ = lexer.eatComponent()
       expectBackslash()
     }
 
-    // Check for `\\.` style paths
-    if lexer.eatSigil() != nil {
+    if let sigil = lexer.eatSigil() {
       expectBackslash()
-      if lexer.eatUNC() {
+      // UNC sub-form only for verbatim (\\?\UNC\...), not device (\\.\UNC\...)
+      if sigil == ._question, lexer.eatUNC() {
         expectBackslash()
-        expectComponent()
-        expectComponent()
+        expectComponent()          // server: its separator is structural
+        // Share: consume a trailing separator only if one is actually
+        // present — never synthesize one. The share can be the final
+        // element of a verbatim-UNC root with no trailing separator
+        // (\\?\UNC\s\h); forcing a backslash here would store a phantom
+        // trailing separator and make it compare equal to \\?\UNC\s\h\.
+        // Mirrors parseUNC's `_ = lexer.eatBackslash()` and the
+        // `!lexer.isEmpty`-guarded device path.
+        _ = lexer.eatComponent()
+        _ = lexer.eatBackslash()
         return lexer.current
       }
-      expectComponent()
+      // Check for drive letter device: \\.\C:\ or \\?\C:\. A drive
+      // letter is any single non-separator code unit before the colon.
+      let deviceRange = lexer.eatComponent()
+      if _driveLetter(of: self[deviceRange]) != nil {
+        // Eat the trailing backslash if present (both branches return
+        // `lexer.current`).
+        _ = lexer.eatBackslash()
+        return lexer.current
+      }
+      // Only expect trailing backslash if there's more content
+      if !deviceRange.isEmpty && !lexer.isEmpty {
+        expectBackslash()
+      }
       return lexer.current
     }
 
     expectComponent()
-    expectComponent()
     return lexer.current
   }
 }
-
-#if os(Windows)
-import WinSDK
-
-// FIXME: Rather than canonicalizing the path at every call site to a Win32 API,
-// we should consider always storing absolute paths with the \\?\ prefix applied,
-// for better performance.
-extension UnsafePointer where Pointee == CInterop.PlatformChar {
-  /// Invokes `body` with a resolved and potentially `\\?\`-prefixed version of the pointee,
-  /// to ensure long paths greater than MAX_PATH (260) characters are handled correctly.
-  ///
-  /// - seealso: https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation
-  internal func withCanonicalPathRepresentation<Result>(_ body: (Self) throws -> Result) throws -> Result {
-    // 1. Normalize the path first.
-    // Contrary to the documentation, this works on long paths independently
-    // of the registry or process setting to enable long paths (but it will also
-    // not add the \\?\ prefix required by other functions under these conditions).
-    let dwLength: DWORD = GetFullPathNameW(self, 0, nil, nil)
-    return try withUnsafeTemporaryAllocation(of: WCHAR.self, capacity: Int(dwLength)) { pwszFullPath in
-      guard (1..<dwLength).contains(GetFullPathNameW(self, DWORD(pwszFullPath.count), pwszFullPath.baseAddress, nil)) else {
-        throw Errno(rawValue: _mapWindowsErrorToErrno(GetLastError()))
-      }
-
-      // 1.5 Leave \\.\ prefixed paths alone since device paths are already an exact representation and PathCchCanonicalizeEx will mangle these.
-      if let base = pwszFullPath.baseAddress,
-        base[0] == UInt8(ascii: "\\"),
-        base[1] == UInt8(ascii: "\\"),
-        base[2] == UInt8(ascii: "."),
-        base[3] == UInt8(ascii: "\\") {
-        return try body(base)
-      }
-
-      // 2. Canonicalize the path.
-      // This will add the \\?\ prefix if needed based on the path's length.
-      var pwszCanonicalPath: LPWSTR?
-      let flags: ULONG = numericCast(PATHCCH_ALLOW_LONG_PATHS.rawValue)
-      let result = PathAllocCanonicalize(pwszFullPath.baseAddress, flags, &pwszCanonicalPath)
-      if let pwszCanonicalPath {
-          defer { LocalFree(pwszCanonicalPath) }
-          if result == S_OK {
-            // 3. Perform the operation on the normalized path.
-            return try body(pwszCanonicalPath)
-          }
-      }
-      throw Errno(rawValue: _mapWindowsErrorToErrno(WIN32_FROM_HRESULT(result)))
-    }
-  }
-}
-
-@inline(__always)
-fileprivate func HRESULT_CODE(_ hr: HRESULT) -> DWORD {
-    DWORD(hr) & 0xffff
-}
-
-@inline(__always)
-fileprivate func HRESULT_FACILITY(_ hr: HRESULT) -> DWORD {
-    DWORD(hr >> 16) & 0x1fff
-}
-
-@inline(__always)
-fileprivate func SUCCEEDED(_ hr: HRESULT) -> Bool {
-    hr >= 0
-}
-
-// This is a non-standard extension to the Windows SDK that allows us to convert
-// an HRESULT to a Win32 error code.
-@inline(__always)
-fileprivate func WIN32_FROM_HRESULT(_ hr: HRESULT) -> DWORD {
-    if SUCCEEDED(hr) { return ERROR_SUCCESS }
-    if HRESULT_FACILITY(hr) == FACILITY_WIN32 {
-        return HRESULT_CODE(hr)
-    }
-    return DWORD(hr)
-}
-#endif

@@ -105,11 +105,21 @@ struct StringTest: TestCase {
       expectEqualSequence(rawChars, $0, "rawChars")
     }
 
-    // Whether the content has normalized separators
+    // Whether the content has normalized separators. FilePath coalesces runs
+    // of the platform separator and drops a trailing separator at
+    // construction, so the raw is "already normal" iff it has neither a run of
+    // 2+ separators nor a trailing separator. (Was:
+    // `normalSys._normalizeSeparators(); return normalSys == sysRaw`, using a
+    // SystemString method the vendored substrate no longer provides.)
     let hasNormalSeparators: Bool = {
-      var normalSys = sysRaw
-      normalSys._normalizeSeparators()
-      return normalSys == sysRaw
+      let sep = SystemChar(rawValue: _platformSeparator)
+      var prevWasSep = false
+      for ch in sysRaw {
+        let isSep = (ch == sep)
+        if isSep && prevWasSep { return false }
+        prevWasSep = isSep
+      }
+      return !prevWasSep
     }()
 
     let fpStr = FilePath(string)
@@ -118,20 +128,24 @@ struct StringTest: TestCase {
         string.unicodeScalars, fpStr.string.unicodeScalars, "FilePath from string")
       expectEqual(string, String(decoding: fpStr), "FilePath from string")
       expectEqual(string, String(validating: fpStr), "FilePath from string")
-      expectEqual(sysStr, fpStr._storage, "FilePath from string")
+      expectEqual(sysStr, fpStr._systemStringStorage, "FilePath from string")
     }
 
     let fpRaw = FilePath(sysRaw)
     if hasNormalSeparators {
       expectEqual(string, String(decoding: fpRaw), "raw FilePath")
       expectEqual(isValid, nil != String(validating: fpRaw), "raw FilePath")
-      expectEqual(sysRaw, fpRaw._storage, "raw FilePath")
+      expectEqual(sysRaw, fpRaw._systemStringStorage, "raw FilePath")
       expectEqual(isValid, fpStr == fpRaw, "raw FilePath")
     }
     fpRaw.withPlatformString { fp0 in
-      fpRaw._storage.withPlatformString { storage0 in
-        expectEqual(fp0, storage0,
-          "FilePath withPlatformString address forwarding")
+      fpRaw._systemStringStorage.withPlatformString { storage0 in
+        // The stdlib copy hands out a fresh null-terminated buffer rather than
+        // aliasing its storage, so the old zero-copy *address* forwarding no
+        // longer holds across the module boundary. Check byte-content
+        // agreement instead of pointer identity.
+        expectEqual(String(platformString: fp0), String(platformString: storage0),
+          "FilePath withPlatformString content matches storage")
       }
     }
 
@@ -144,12 +158,14 @@ struct StringTest: TestCase {
         string.unicodeScalars, compStr.string.unicodeScalars, "Component from string")
       expectEqual(string, String(decoding: compStr), "Component from string")
       expectEqual(string, String(validating: compStr), "Component from string")
-      expectEqual(sysStr, compStr._slice.base, "Component from string")
+      expectEqual(sysStr, SystemString(_codeUnits: compStr._codeUnits),
+                  "Component from string")
 
-      let compRaw = FilePath.Component(sysRaw)!
+      let compRaw = FilePath.Component(sysRaw.map { $0.rawValue })!
       expectEqual(string, String(decoding: compRaw), "raw Component")
       expectEqual(isValid, nil != String(validating: compRaw), "raw Component")
-      expectEqual(sysRaw, compRaw._slice.base, "raw Component")
+      expectEqual(sysRaw, SystemString(_codeUnits: compRaw._codeUnits),
+                  "raw Component")
       expectEqual(isValid, compStr == compRaw, "raw Component")
 
       // TODO: Below works after we add last component optimization
@@ -168,10 +184,11 @@ struct StringTest: TestCase {
       expectEqualSequence(raw, UnsafeBufferPointer(start: $0, count: 1+len),
         "SystemString.withPlatformString")
       if hasNormalSeparators {
-        expectEqual(sysRaw, FilePath(platformString: $0)._storage)
+        expectEqual(sysRaw, FilePath(platformString: $0)._systemStringStorage)
         if isComponent {
           expectEqual(
-            sysRaw, FilePath.Component(platformString: $0)!._slice.base)
+            sysRaw,
+            SystemString(_codeUnits: FilePath.Component(platformString: $0)!._codeUnits))
         }
       }
     }
