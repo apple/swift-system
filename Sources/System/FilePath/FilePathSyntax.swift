@@ -36,9 +36,11 @@ extension FilePath {
   ///   * `C:\Users\`
   ///   * `\\?\UNC\server\share\bar.exe`
   ///   * `\\server\share\bar.exe`
+#if false // PORT-CLOBBERED: superseded by stdlib copy
   public var isAbsolute: Bool {
     self.root?.isAbsolute ?? false
   }
+#endif
 
   /// Returns true if this path is not absolute (see `isAbsolute`).
   ///
@@ -95,7 +97,9 @@ extension FilePath {
   }
 
   /// Whether this path is empty
+#if false // PORT-CLOBBERED: superseded by stdlib copy
   public var isEmpty: Bool { _storage.isEmpty }
+#endif
 }
 
 // MARK: - Decompose a path
@@ -331,7 +335,7 @@ extension FilePath {
         base._extensionIndex() ?? base._slice.endIndex
       ) ..< base._slice.endIndex
 
-      _storage.replaceSubrange(extRange, with: suffix)
+      _storage.replaceSubrange(extRange, with: _SystemString(suffix))
     }
   }
 
@@ -502,10 +506,10 @@ extension FilePath {
     defer { _invariantCheck() }
     guard !other.utf8.isEmpty else { return }
     guard !isEmpty else {
-      self = FilePath(other)
+      self = FilePath(SystemString(other))
       return
     }
-    let otherPath = FilePath(other)
+    let otherPath = FilePath(SystemString(other))
     _append(unchecked: otherPath._storage[otherPath._relativeStart...])
   }
 

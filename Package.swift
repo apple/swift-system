@@ -81,6 +81,15 @@ let swiftSettings = swiftSettingsAvailability + swiftSettingsCI + [
   .define("SYSTEM_PACKAGE"),
   .define("ENABLE_MOCKING", .when(configuration: .debug)),
   .enableExperimentalFeature("Lifetimes"),
+  // FilePath port: select the SE-0529 sources' package-mode branch (provides
+  // _internalInvariant etc.) and define the SwiftStdlib availability macro their
+  // @available annotations reference. Mirrors ../SE-0529-FilePath/Package.swift;
+  // that package's strictMemorySafety/-Werror are enforcement, not source seam,
+  // so are intentionally not brought over.
+  .define("FILEPATH_PACKAGE"),
+  .enableExperimentalFeature(
+    "AvailabilityMacro=SwiftStdlib 9999:macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, visionOS 9999"),
+  .unsafeFlags(["-Xfrontend", "-disable-availability-checking"]),
 ]
 
 let cSettings: [CSetting] = [
