@@ -1,3 +1,12 @@
+/*
+ This source file is part of the Swift System open source project
+
+ Copyright (c) 2023 - 2026 Apple Inc. and the Swift System project authors
+ Licensed under Apache License v2.0 with Runtime Library Exception
+
+ See https://swift.org/LICENSE.txt for license information
+*/
+
 #if compiler(>=6.2) && $Lifetimes
 #if os(Linux)
 
@@ -21,6 +30,12 @@ internal enum IORequestCore {
         options: FileDescriptor.OpenOptions = FileDescriptor.OpenOptions(),
         permissions: FilePermissions? = nil,
         intoSlot: IORing.RegisteredFile,
+        context: UInt64 = 0
+    )
+    case pollAdd(
+        file: FileDescriptor,
+        pollEvents: IORing.Request.PollEvents,
+        isMultiShot: Bool = true,
         context: UInt64 = 0
     )
     case read(
@@ -187,6 +202,100 @@ extension IORing.Request {
         .init(core: .nop)
     }
 
+    // Poll
+
+    /// Multishot poll: the poll handler continues to report CQEs on behalf
+    /// of the same SQE, each flagged with
+    /// ``IORing/Completion/Flags/moreCompletions``.
+    ///
+    /// Corresponds to `IORING_POLL_ADD_MULTI`. Note that since
+    /// `sqe->poll_events` is the event space, the command flags for
+    /// `POLL_ADD` are stored in `sqe->len`.
+    @_alwaysEmitIntoClient
+    internal static var SWIFT_IORING_POLL_ADD_MULTI: UInt32 { 1 << 0 }
+
+    /// Adds a poll operation to monitor a file descriptor for specific I/O
+    /// events.
+    ///
+    /// This method creates an io_uring poll operation that monitors the
+    /// specified file descriptor for I/O readiness events. The operation
+    /// completes when any of the requested events occur on the file
+    /// descriptor, such as data becoming available for reading or the
+    /// descriptor becoming ready for writing.
+    ///
+    /// Poll operations are useful for implementing efficient I/O
+    /// multiplexing, allowing you to monitor multiple file descriptors
+    /// concurrently within a single io_uring instance. When used with
+    /// multishot mode, a single poll operation can deliver multiple
+    /// completion events without needing to be resubmitted.
+    ///
+    /// ## Multishot Behavior
+    ///
+    /// When `isMultiShot` is `true`, the poll operation automatically rearms
+    /// after each completion event, continuing to monitor the file descriptor
+    /// for subsequent events. This reduces submission overhead for long-lived
+    /// monitoring operations. The operation continues until explicitly
+    /// cancelled or the file descriptor is closed.
+    ///
+    /// When `isMultiShot` is `false`, the poll operation completes once after
+    /// the first matching event occurs, requiring resubmission to continue
+    /// monitoring.
+    ///
+    /// ## Example Usage
+    ///
+    /// ```swift
+    /// // Monitor a socket for incoming connections
+    /// var ring = try IORing(queueDepth: 32)
+    /// let pollRequest = IORing.Request.pollAdd(
+    ///     listenSocket,
+    ///     pollEvents: .pollIn,
+    ///     isMultiShot: true,
+    ///     context: 1
+    /// )
+    /// guard try ring.submit(linkedRequests: pollRequest) else {
+    ///     // The submission queue was full; retry or drain completions first.
+    ///     return
+    /// }
+    ///
+    /// // Process completions. A multishot poll stays armed while its
+    /// // completions contain `.moreCompletions`.
+    /// var armed = true
+    /// while armed {
+    ///     let completion = try ring.blockingConsumeCompletion()
+    ///     armed = completion.flags.contains(.moreCompletions)
+    ///     if completion.context == 1 {
+    ///         // Handle incoming connection
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - file: The file descriptor to monitor for I/O events.
+    ///   - pollEvents: The I/O events to monitor on the file descriptor.
+    ///   - isMultiShot: If `true`, the poll operation automatically rearms
+    ///     after each event, continuing to monitor the file descriptor. If
+    ///     `false`, the operation completes after the first matching event.
+    ///     Defaults to `false`.
+    ///   - context: An application-specific value passed through to the
+    ///     completion event, allowing you to identify which operation
+    ///     completed. Defaults to `0`.
+    ///
+    /// - Returns: An I/O ring request that monitors the file descriptor for
+    ///   the specified events.
+    ///
+    /// ## See Also
+    ///
+    /// - ``PollEvents``: The events that can be monitored.
+    /// - ``IORing/Request/cancel(_:matching:)``: Cancelling poll operations.
+    @inlinable public static func pollAdd(
+        _ file: FileDescriptor,
+        pollEvents: PollEvents,
+        isMultiShot: Bool = false,
+        context: UInt64 = 0
+    ) -> IORing.Request {
+        .init(core: .pollAdd(file: file, pollEvents: pollEvents, isMultiShot: isMultiShot, context: context))
+    }
+    
     @inlinable public static func read(
         _ file: IORing.RegisteredFile,
         into buffer: IORing.RegisteredBuffer,
@@ -316,24 +425,49 @@ extension IORing.Request {
 
     // Cancel
 
-    /*
-    * ASYNC_CANCEL flags.
-    *
-    * IORING_ASYNC_CANCEL_ALL	Cancel all requests that match the given key
-    * IORING_ASYNC_CANCEL_FD	Key off 'fd' for cancellation rather than the
-    *				request 'user_data'
-    * IORING_ASYNC_CANCEL_ANY	Match any request
-    * IORING_ASYNC_CANCEL_FD_FIXED	'fd' passed in is a fixed descriptor
-    * IORING_ASYNC_CANCEL_USERDATA	Match on user_data, default for no other key
-    * IORING_ASYNC_CANCEL_OP	Match request based on opcode
-    */
+    /// Cancel every request matching the given key, rather than only the
+    /// first one found.
+    ///
+    /// Corresponds to `IORING_ASYNC_CANCEL_ALL`.
+    @_alwaysEmitIntoClient
+    internal static var SWIFT_IORING_ASYNC_CANCEL_ALL: UInt32 { 1 << 0 }
 
-@inlinable internal static var SWIFT_IORING_ASYNC_CANCEL_ALL: UInt32 { 1 << 0 }
-@inlinable internal static var SWIFT_IORING_ASYNC_CANCEL_FD: UInt32 { 1 << 1 }
-@inlinable internal static var SWIFT_IORING_ASYNC_CANCEL_ANY: UInt32 { 1 << 2 }
-@inlinable internal static var SWIFT_IORING_ASYNC_CANCEL_FD_FIXED: UInt32 { 1 << 3 }
-@inlinable internal static var SWIFT_IORING_ASYNC_CANCEL_USERDATA: UInt32 { 1 << 4 }
-@inlinable internal static var SWIFT_IORING_ASYNC_CANCEL_OP: UInt32 { 1 << 5 }
+    /// Match requests on `sqe->fd`, rather than on their `user_data`.
+    ///
+    /// Corresponds to `IORING_ASYNC_CANCEL_FD`. Cannot be combined with
+    /// ``SWIFT_IORING_ASYNC_CANCEL_ANY``.
+    @_alwaysEmitIntoClient
+    internal static var SWIFT_IORING_ASYNC_CANCEL_FD: UInt32 { 1 << 1 }
+
+    /// Match any request, disregarding every other key.
+    ///
+    /// Corresponds to `IORING_ASYNC_CANCEL_ANY`. Cannot be combined with
+    /// ``SWIFT_IORING_ASYNC_CANCEL_FD`` or ``SWIFT_IORING_ASYNC_CANCEL_OP``.
+    @_alwaysEmitIntoClient
+    internal static var SWIFT_IORING_ASYNC_CANCEL_ANY: UInt32 { 1 << 2 }
+
+    /// The descriptor to match against is a registered file, so `sqe->fd`
+    /// carries a slot index rather than a file descriptor.
+    ///
+    /// Corresponds to `IORING_ASYNC_CANCEL_FD_FIXED`, and accompanies
+    /// ``SWIFT_IORING_ASYNC_CANCEL_FD``.
+    @_alwaysEmitIntoClient
+    internal static var SWIFT_IORING_ASYNC_CANCEL_FD_FIXED: UInt32 { 1 << 3 }
+
+    /// Match requests on their `user_data`. This is the default when no other
+    /// key is given.
+    ///
+    /// Corresponds to `IORING_ASYNC_CANCEL_USERDATA`.
+    @_alwaysEmitIntoClient
+    internal static var SWIFT_IORING_ASYNC_CANCEL_USERDATA: UInt32 { 1 << 4 }
+
+    /// Match requests by operation. Note that the opcode to match is read
+    /// from `sqe->len`.
+    ///
+    /// Corresponds to `IORING_ASYNC_CANCEL_OP`. Cannot be combined with
+    /// ``SWIFT_IORING_ASYNC_CANCEL_ANY``.
+    @_alwaysEmitIntoClient
+    internal static var SWIFT_IORING_ASYNC_CANCEL_OP: UInt32 { 1 << 5 }
 
     public enum CancellationMatch {
     	case all
@@ -477,6 +611,14 @@ extension IORing.Request {
         case .cancel(let flags):
             request.operation = .asyncCancel
             request.cancel_flags = flags
+        case .pollAdd(let file, let pollEvents, let isMultiShot, let context):
+            request.operation = .pollAdd
+            request.fileDescriptor = file
+            request.rawValue.user_data = context
+            if isMultiShot {
+                request.rawValue.len = Self.SWIFT_IORING_POLL_ADD_MULTI
+            }
+            request.pollEvents = pollEvents
         }
 
         return request
