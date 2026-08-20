@@ -297,6 +297,48 @@ final class FileOperationsTestWindows: XCTestCase {
     }
   }
 
+  /// The sequential read/write adapters must reject a byte count exceeding
+  /// DWORD.max with EINVAL, matching the positioned pread/pwrite guard.
+  /// Without the guard, `numericCast(count)` into the CRT's unsigned int would
+  /// trap. We pass an oversized *count* over a small allocation; the guard
+  /// rejects it before any bytes are touched.
+  func testSequentialBufferSizeLimit() throws {
+    try withTemporaryFilePath(basename: "testSequentialBufferSizeLimit") { path in
+      let fd = try FileDescriptor.open(
+        path.appending("test.txt"),
+        .readWrite,
+        options: [.create, .truncate],
+        permissions: .ownerReadWrite
+      )
+      defer { try? fd.close() }
+
+      try fd.writeAll("test data".utf8)
+
+      let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 1024, alignment: 1)
+      defer { buffer.deallocate() }
+
+      let oversizedCount = Int(DWORD.max) + 1
+      let oversizedBuffer = UnsafeMutableRawBufferPointer(
+        start: buffer.baseAddress,
+        count: oversizedCount
+      )
+
+      do {
+        _ = try fd.read(into: oversizedBuffer)
+        XCTFail("Expected EINVAL for buffer size exceeding DWORD.max")
+      } catch let err as Errno {
+        XCTAssertEqual(err, .invalidArgument, "Expected EINVAL, got \(err)")
+      }
+
+      do {
+        _ = try fd.write(UnsafeRawBufferPointer(oversizedBuffer))
+        XCTFail("Expected EINVAL for buffer size exceeding DWORD.max")
+      } catch let err as Errno {
+        XCTAssertEqual(err, .invalidArgument, "Expected EINVAL, got \(err)")
+      }
+    }
+  }
+
   func testCloseOnExecOpenOption() throws {
     try withTemporaryFilePath(basename: "testCloseOnExec") { path in
 
