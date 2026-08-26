@@ -127,3 +127,4 @@ For example, anything landing on `release/1.6.0` will eventually appear on `rele
 Like all Swift.org projects, we would like the Swift System project to foster a diverse and friendly community. We expect contributors to adhere to the [Swift.org Code of Conduct](https://swift.org/code-of-conduct/). A copy of this document is [available in this repository][coc].
 
 [coc]: CODE_OF_CONDUCT.md
+
