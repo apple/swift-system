@@ -1,0 +1,2 @@
+build:debug -c dbg
+test --config=debug
