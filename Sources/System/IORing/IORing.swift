@@ -97,7 +97,7 @@ internal final class PendingPathBuffers {
 
     @usableFromInline let ringMask: UInt32
 
-    @usableFromInline let cqes: UnsafeBufferPointer<io_uring_cqe>
+    @usableFromInline let cqes: UnsafeBufferPointer<swift_io_uring_cqe>
 }
 
 @inline(__always) @inlinable
@@ -217,8 +217,8 @@ internal func _getSubmissionEntry(
 private func setUpRing(
     queueDepth: UInt32, flags: IORing.SetupFlags
 ) throws(Errno) -> 
-    (params: io_uring_params, ringDescriptor: Int32, ringPtr: UnsafeMutableRawPointer?, ringSize: Int, submissionRingPtr: UnsafeMutableRawPointer?, submissionRingSize: Int, completionRingPtr: UnsafeMutableRawPointer?, completionRingSize: Int, sqes: UnsafeMutableRawPointer) {
-    var params = io_uring_params()
+    (params: swift_io_uring_params, ringDescriptor: Int32, ringPtr: UnsafeMutableRawPointer?, ringSize: Int, submissionRingPtr: UnsafeMutableRawPointer?, submissionRingSize: Int, completionRingPtr: UnsafeMutableRawPointer?, completionRingSize: Int, sqes: UnsafeMutableRawPointer) {
+    var params = swift_io_uring_params()
     params.flags = flags.rawValue
 
     var err: Errno? = nil
@@ -253,7 +253,7 @@ private func setUpRing(
 
     let completionRingSize =
         params.cq_off.cqes
-        + params.cq_entries * UInt32(MemoryLayout<io_uring_cqe>.size)
+        + params.cq_entries * UInt32(MemoryLayout<swift_io_uring_cqe>.size)
 
     let ringSize = Int(max(submitRingSize, completionRingSize))
 
@@ -261,14 +261,14 @@ private func setUpRing(
     var sqPtr: UnsafeMutableRawPointer!
     var cqPtr: UnsafeMutableRawPointer!
 
-    if params.features & IORING_FEAT_SINGLE_MMAP != 0{
+    if params.features & SWIFT_IORING_FEAT_SINGLE_MMAP != 0{
         ringPtr = mmap(
             /* addr: */ nil,
             /* len: */ ringSize,
             /* prot: */ PROT_READ | PROT_WRITE,
             /* flags: */ MAP_SHARED | MAP_POPULATE,
             /* fd: */ ringDescriptor,
-            /* offset: */ off_t(IORING_OFF_SQ_RING)
+            /* offset: */ off_t(SWIFT_IORING_OFF_SQ_RING)
         )
 
         if ringPtr == MAP_FAILED {
@@ -283,7 +283,7 @@ private func setUpRing(
             /* prot: */ PROT_READ | PROT_WRITE,
             /* flags: */ MAP_SHARED | MAP_POPULATE,
             /* fd: */ ringDescriptor,
-            /* offset: */ off_t(IORING_OFF_SQ_RING)
+            /* offset: */ off_t(SWIFT_IORING_OFF_SQ_RING)
         )
 
         if sqPtr == MAP_FAILED {
@@ -298,7 +298,7 @@ private func setUpRing(
             /* prot: */ PROT_READ | PROT_WRITE,
             /* flags: */ MAP_SHARED | MAP_POPULATE,
             /* fd: */ ringDescriptor,
-            /* offset: */ off_t(IORING_OFF_CQ_RING)
+            /* offset: */ off_t(SWIFT_IORING_OFF_CQ_RING)
         )
 
         if cqPtr == MAP_FAILED {
@@ -315,7 +315,7 @@ private func setUpRing(
         /* prot: */ PROT_READ | PROT_WRITE,
         /* flags: */ MAP_SHARED | MAP_POPULATE,
         /* fd: */ ringDescriptor,
-        /* offset: */ off_t(IORING_OFF_SQES)
+        /* offset: */ off_t(SWIFT_IORING_OFF_SQES)
     )
 
     if sqes == MAP_FAILED {
@@ -464,7 +464,7 @@ public struct IORing: ~Copyable {
                 .assumingMemoryBound(to: UInt32.self).pointee,
             cqes: UnsafeBufferPointer(
                 start: completionBasePtr.advanced(by: params.cq_off.cqes)
-                    .assumingMemoryBound(to: io_uring_cqe.self),
+                    .assumingMemoryBound(to: swift_io_uring_cqe.self),
                 count: Int(
                     completionBasePtr.advanced(by: params.cq_off.ring_entries)
                         .assumingMemoryBound(to: UInt32.self).pointee)
@@ -524,10 +524,10 @@ public struct IORing: ~Copyable {
         if count < minimumCount {
             while count < minimumCount {
                 var sz = 0
-                var flags = IORING_ENTER_GETEVENTS
+                var flags = SWIFT_IORING_ENTER_GETEVENTS
                 if extraArgs != nil {
                     sz = MemoryLayout<swift_io_uring_getevents_arg>.size
-                    flags |= IORING_ENTER_EXT_ARG
+                    flags |= SWIFT_IORING_ENTER_EXT_ARG
                 }
                 do {
                     _ = try _ioUringEnter2(

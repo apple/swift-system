@@ -5,10 +5,10 @@ import CSystem
 
 public extension IORing {
     struct Completion: ~Copyable {
-        @inlinable init(rawValue inRawValue: io_uring_cqe) {
+        @inlinable init(rawValue inRawValue: swift_io_uring_cqe) {
             rawValue = inRawValue
         }
-        @usableFromInline let rawValue: io_uring_cqe
+        @usableFromInline let rawValue: swift_io_uring_cqe
     }
 }
 
