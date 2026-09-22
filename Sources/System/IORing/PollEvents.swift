@@ -56,6 +56,7 @@ extension IORing.Request {
             case peerClosed = 0x2000
         }
 
+        @inlinable
         public static var allEvents: [PollEvents] {
             Event.allCases.map(PollEvents.init(_:))
         }
@@ -75,7 +76,7 @@ extension IORing.Request {
         /// exceptional conditions on descriptors that have no other way to
         /// signal them, such as a `sysfs` attribute that has changed value.
         /// Corresponds to the POSIX `POLLPRI` event flag.
-        @_alwaysEmitIntoClient
+        @inlinable
         public static var priorityData: PollEvents { PollEvents(.priorityData) }
 
         /// An event indicating the file descriptor is ready for writing.
@@ -93,20 +94,17 @@ extension IORing.Request {
         /// asked only for ``readable`` or ``writable``. Requesting it
         /// explicitly has no effect. Corresponds to the POSIX `POLLERR` event
         /// flag.
-        @_alwaysEmitIntoClient
+        @inlinable
         public static var error: PollEvents { PollEvents(.error) }
 
         /// An event indicating the peer closed its end of the channel.
         ///
         /// For a pipe this means the writing end was closed; for a socket, that
-        /// the connection was shut down. A descriptor reporting this event will
-        /// never become readable again, so treating it as "not ready yet" and
-        /// polling again will not make progress.
+        /// the connection was shut down.
         ///
         /// The kernel reports this event whether or not it was requested, and
         /// requesting it explicitly has no effect. Corresponds to the POSIX
-        /// `POLLHUP` event flag.
-        @_alwaysEmitIntoClient
+        /// `POLLHUP` event flag.v
         public static var hangUp: PollEvents { PollEvents(.hangUp) }
 
         /// An event indicating that the object a descriptor refers to is no
@@ -122,7 +120,7 @@ extension IORing.Request {
         /// The kernel reports this event whether or not it was requested, and
         /// requesting it explicitly has no effect. Corresponds to the POSIX
         /// `POLLNVAL` event flag.
-        @_alwaysEmitIntoClient
+        @inlinable
         public static var invalidDescriptor: PollEvents {
             PollEvents(.invalidDescriptor)
         }
@@ -133,7 +131,7 @@ extension IORing.Request {
         /// Unlike ``hangUp``, this event leaves the connection half-open: data
         /// already in flight can still be read, and the local end can still
         /// write. Corresponds to the Linux `POLLRDHUP` event flag.
-        @_alwaysEmitIntoClient
+        @inlinable
         public static var peerClosed: PollEvents { PollEvents(.peerClosed) }
     }
 }

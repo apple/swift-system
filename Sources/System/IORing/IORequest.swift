@@ -425,44 +425,41 @@ extension IORing.Request {
 
     // Cancel
 
-    /// Cancel every request matching the given key, rather than only the
-    /// first one found.
+    /// Cancel every request matching the given key.
     ///
     /// Corresponds to `IORING_ASYNC_CANCEL_ALL`.
     @_alwaysEmitIntoClient
     internal static var SWIFT_IORING_ASYNC_CANCEL_ALL: UInt32 { 1 << 0 }
 
-    /// Match requests on `sqe->fd`, rather than on their `user_data`.
+    /// Cancel any request matching the given file descriptor.
     ///
     /// Corresponds to `IORING_ASYNC_CANCEL_FD`. Cannot be combined with
     /// ``SWIFT_IORING_ASYNC_CANCEL_ANY``.
     @_alwaysEmitIntoClient
     internal static var SWIFT_IORING_ASYNC_CANCEL_FD: UInt32 { 1 << 1 }
 
-    /// Match any request, disregarding every other key.
+    /// Cancel any matching request, disregarding every other key.
     ///
     /// Corresponds to `IORING_ASYNC_CANCEL_ANY`. Cannot be combined with
     /// ``SWIFT_IORING_ASYNC_CANCEL_FD`` or ``SWIFT_IORING_ASYNC_CANCEL_OP``.
     @_alwaysEmitIntoClient
     internal static var SWIFT_IORING_ASYNC_CANCEL_ANY: UInt32 { 1 << 2 }
 
-    /// The descriptor to match against is a registered file, so `sqe->fd`
-    /// carries a slot index rather than a file descriptor.
+    /// Cancel any request matching a registered file.
     ///
     /// Corresponds to `IORING_ASYNC_CANCEL_FD_FIXED`, and accompanies
     /// ``SWIFT_IORING_ASYNC_CANCEL_FD``.
     @_alwaysEmitIntoClient
     internal static var SWIFT_IORING_ASYNC_CANCEL_FD_FIXED: UInt32 { 1 << 3 }
 
-    /// Match requests on their `user_data`. This is the default when no other
+    /// Cancel requests matching the `user_data`. This is the default when no other
     /// key is given.
     ///
     /// Corresponds to `IORING_ASYNC_CANCEL_USERDATA`.
     @_alwaysEmitIntoClient
     internal static var SWIFT_IORING_ASYNC_CANCEL_USERDATA: UInt32 { 1 << 4 }
 
-    /// Match requests by operation. Note that the opcode to match is read
-    /// from `sqe->len`.
+    /// Cancel requests matching the operation.
     ///
     /// Corresponds to `IORING_ASYNC_CANCEL_OP`. Cannot be combined with
     /// ``SWIFT_IORING_ASYNC_CANCEL_ANY``.
