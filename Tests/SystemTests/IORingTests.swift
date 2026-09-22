@@ -332,7 +332,7 @@ final class IORingTests: XCTestCase {
 
         // Submit a pollAdd request to monitor for POLLIN events (data available for reading)
         let enqueued = try ring.submit(linkedRequests:
-            .pollAdd(testEventFD, pollEvents: .pollIn, isMultiShot: false, context: pollInContext))
+            .pollAdd(testEventFD, events: .readable, isMultiShot: false, context: pollInContext))
         XCTAssert(enqueued)
 
         // Write to the eventfd to trigger the POLLIN event
@@ -346,9 +346,9 @@ final class IORingTests: XCTestCase {
             timeout: .seconds(1)
         )
         XCTAssertEqual(completion.context, pollInContext)
-        let pollIn = Int32(IORing.Request.PollEvents.pollIn.rawValue)
+        let readable = Int32(IORing.Request.PollEvents.readable.rawValue)
         XCTAssertNotEqual(
-            completion.result & pollIn, 0, "expected POLLIN in the result mask"
+            completion.result & readable, 0, "expected POLLIN in the result mask"
         )
     }
 
@@ -377,7 +377,7 @@ final class IORingTests: XCTestCase {
         // Submit a pollAdd request to monitor for POLLOUT events (ready for writing)
         // Pipes are typically ready for writing when empty
         let enqueuedOut = try ring.submit(linkedRequests:
-            .pollAdd(writeFD, pollEvents: .pollOut, isMultiShot: false, context: pollOutContext))
+            .pollAdd(writeFD, events: .writable, isMultiShot: false, context: pollOutContext))
         XCTAssert(enqueuedOut)
 
         // Consume the completion from the poll operation
@@ -385,15 +385,15 @@ final class IORingTests: XCTestCase {
             timeout: .seconds(1)
         )
         XCTAssertEqual(completionOut.context, pollOutContext)
-        let pollOut = Int32(IORing.Request.PollEvents.pollOut.rawValue)
+        let writable = Int32(IORing.Request.PollEvents.writable.rawValue)
         XCTAssertNotEqual(
-            completionOut.result & pollOut, 0,
+            completionOut.result & writable, 0,
             "expected POLLOUT in the result mask"
         )
     }
 
     // Similar to the multishot example in the documentation for
-    // `pollAdd(_:pollEvents:isMultiShot:context:)`: arm a multishot poll,
+    // `pollAdd(_:events:isMultiShot:context:)`: arm a multishot poll,
     // then consume completions for as long as they carry `.moreCompletions`.
     func testPollAddMultiShotRearmsAcrossEvents() throws {
         try XCTSkipIf(!uringEnabled, failureMessage)
@@ -429,10 +429,10 @@ final class IORingTests: XCTestCase {
         }
 
         let context: UInt64 = 44
-        let pollIn = Int32(IORing.Request.PollEvents.pollIn.rawValue)
+        let readable = Int32(IORing.Request.PollEvents.readable.rawValue)
 
         let pollRequest = IORing.Request.pollAdd(
-            readFD, pollEvents: .pollIn, isMultiShot: true, context: context
+            readFD, events: .readable, isMultiShot: true, context: context
         )
         let enqueued = try ring.submit(linkedRequests: pollRequest)
         XCTAssert(enqueued)
@@ -446,7 +446,7 @@ final class IORingTests: XCTestCase {
         )
         XCTAssertEqual(first.context, context)
         XCTAssertNotEqual(
-            first.result & pollIn, 0, "expected POLLIN in the result mask"
+            first.result & readable, 0, "expected POLLIN in the result mask"
         )
         XCTAssert(first.flags.contains(.moreCompletions))
 
@@ -459,7 +459,7 @@ final class IORingTests: XCTestCase {
         let second = try ring.blockingConsumeCompletion(timeout: .seconds(1))
         XCTAssertEqual(second.context, context)
         XCTAssertNotEqual(
-            second.result & pollIn, 0, "expected POLLIN in the result mask"
+            second.result & readable, 0, "expected POLLIN in the result mask"
         )
 
         // Drain again
@@ -508,9 +508,13 @@ final class IORingTests: XCTestCase {
         try XCTSkipIf(!uringEnabled, failureMessage)
         var ring = try IORing(queueDepth: 8)
         let (readFD, writeFD) = try FileDescriptor.pipe()
+        // The hangup is produced by closing the write end mid-test, so the
+        // cleanup below must not close it a second time: the descriptor number
+        // may already have been reused elsewhere in the test process.
+        var writeEndClosed = false
         defer {
             try? readFD.close()
-            try? writeFD.close()
+            if !writeEndClosed { try? writeFD.close() }
         }
 
         // This test case requires timeout support
@@ -520,18 +524,19 @@ final class IORingTests: XCTestCase {
         )
 
         let request = IORing.Request.pollAdd(
-            readFD, pollEvents: .pollIn, isMultiShot: false, context: 97
+            readFD, events: .readable, isMultiShot: false, context: 97
         )
         let success = try ring.submit(linkedRequests: request)
         XCTAssertEqual(success, true)
         try writeFD.close()
+        writeEndClosed = true
 
         let dt = Duration.seconds(1)
         let completion = try ring.blockingConsumeCompletion(timeout: dt)
 
-        for event in IORing.Request.PollEvents.allCases {
+        for event in IORing.Request.PollEvents.allEvents {
             if completion.result & Int32(event.rawValue) != 0 {
-                XCTAssertEqual(event, .pollHup)
+                XCTAssertEqual(event, .hangUp)
                 return
             }
         }
@@ -544,8 +549,11 @@ final class IORingTests: XCTestCase {
         try XCTSkipIf(!uringEnabled, failureMessage)
         var ring = try IORing(queueDepth: 8)
         let (readFD, writeFD) = try FileDescriptor.pipe(options: .nonBlocking)
+        // POLLERR is produced by closing the read end mid-test; see the note in
+        // `testPollHangup` for why cleanup must not close it twice.
+        var readEndClosed = false
         defer {
-            try? readFD.close()
+            if !readEndClosed { try? readFD.close() }
             try? writeFD.close()
         }
 
@@ -562,19 +570,20 @@ final class IORingTests: XCTestCase {
         }
 
         let request = IORing.Request.pollAdd(
-            writeFD, pollEvents: .pollOut, isMultiShot: false, context: 98
+            writeFD, events: .writable, isMultiShot: false, context: 98
         )
         let success = try ring.submit(linkedRequests: request)
         XCTAssertEqual(success, true)
         try readFD.close()
+        readEndClosed = true
 
         let dt = Duration.seconds(1)
         let completion = try ring.blockingConsumeCompletion(timeout: dt)
         XCTAssertEqual(completion.context, 98)
 
-        let pollErr = IORing.Request.PollEvents.pollErr.rawValue
-        let result = completion.result & Int32(pollErr)
-        if result != pollErr {
+        let pollError = IORing.Request.PollEvents.error.rawValue
+        let result = completion.result & Int32(pollError)
+        if result != pollError {
             XCTFail("expected POLLERR, got 0x\(String(result, radix: 16))")
         }
     }
@@ -588,7 +597,7 @@ final class IORingTests: XCTestCase {
         var ring = try IORing(queueDepth: 8)
 
         let request = IORing.Request.pollAdd(
-            FileDescriptor(rawValue: -1), pollEvents: .pollIn,
+            FileDescriptor(rawValue: -1), events: .readable,
             isMultiShot: false, context: 99
         )
         let success = try ring.submit(linkedRequests: request)
@@ -607,8 +616,8 @@ final class IORingTests: XCTestCase {
 
         // A negative result may look like another result code.
         // Checking for the error must happen first.
-        let pollNval = Int32(IORing.Request.PollEvents.pollNval.rawValue)
-        XCTAssertNotEqual(completion.result & pollNval, 0)
+        let invalidDescriptor = Int32(IORing.Request.PollEvents.invalidDescriptor.rawValue)
+        XCTAssertNotEqual(completion.result & invalidDescriptor, 0)
     }
 }
 #endif // os(Linux)

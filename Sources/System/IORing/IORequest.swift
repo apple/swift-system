@@ -34,7 +34,7 @@ internal enum IORequestCore {
     )
     case pollAdd(
         file: FileDescriptor,
-        pollEvents: IORing.Request.PollEvents,
+        events: IORing.Request.PollEvents,
         isMultiShot: Bool = true,
         context: UInt64 = 0
     )
@@ -248,7 +248,7 @@ extension IORing.Request {
     /// var ring = try IORing(queueDepth: 32)
     /// let pollRequest = IORing.Request.pollAdd(
     ///     listenSocket,
-    ///     pollEvents: .pollIn,
+    ///     events: .readable,
     ///     isMultiShot: true,
     ///     context: 1
     /// )
@@ -271,7 +271,7 @@ extension IORing.Request {
     ///
     /// - Parameters:
     ///   - file: The file descriptor to monitor for I/O events.
-    ///   - pollEvents: The I/O events to monitor on the file descriptor.
+    ///   - events: The I/O events to monitor on the file descriptor.
     ///   - isMultiShot: If `true`, the poll operation automatically rearms
     ///     after each event, continuing to monitor the file descriptor. If
     ///     `false`, the operation completes after the first matching event.
@@ -289,11 +289,11 @@ extension IORing.Request {
     /// - ``IORing/Request/cancel(_:matching:)``: Cancelling poll operations.
     @inlinable public static func pollAdd(
         _ file: FileDescriptor,
-        pollEvents: PollEvents,
+        events: PollEvents,
         isMultiShot: Bool = false,
         context: UInt64 = 0
     ) -> IORing.Request {
-        .init(core: .pollAdd(file: file, pollEvents: pollEvents, isMultiShot: isMultiShot, context: context))
+        .init(core: .pollAdd(file: file, events: events, isMultiShot: isMultiShot, context: context))
     }
     
     @inlinable public static func read(
@@ -611,14 +611,14 @@ extension IORing.Request {
         case .cancel(let flags):
             request.operation = .asyncCancel
             request.cancel_flags = flags
-        case .pollAdd(let file, let pollEvents, let isMultiShot, let context):
+        case .pollAdd(let file, let events, let isMultiShot, let context):
             request.operation = .pollAdd
             request.fileDescriptor = file
             request.rawValue.user_data = context
             if isMultiShot {
                 request.rawValue.len = Self.SWIFT_IORING_POLL_ADD_MULTI
             }
-            request.pollEvents = pollEvents
+            request.pollEvents = events
         }
 
         return request

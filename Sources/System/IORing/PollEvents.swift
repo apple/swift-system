@@ -18,7 +18,7 @@ extension IORing.Request {
     /// defined in the kernel's `poll.h` header.
     ///
     /// Use `PollEvents` with
-    /// ``IORing/Request/pollAdd(_:pollEvents:isMultiShot:context:)`` to
+    /// ``IORing/Request/pollAdd(_:events:isMultiShot:context:)`` to
     /// register interest in specific I/O events. The poll operation completes
     /// when any of the specified events become active on the file descriptor.
     ///
@@ -28,12 +28,12 @@ extension IORing.Request {
     /// // Monitor a socket for incoming data
     /// let request = IORing.Request.pollAdd(
     ///     socketFD,
-    ///     pollEvents: .pollIn,
+    ///     events: .readable,
     ///     isMultiShot: true
     /// )
     /// ```
-    public struct PollEvents: OptionSet, Hashable, Codable, CaseIterable {
-        public var rawValue: UInt32
+    public struct PollEvents: OptionSet, Hashable, Codable {
+        public let rawValue: UInt32
 
         @inlinable
         public init(rawValue: UInt32) {
@@ -47,14 +47,16 @@ extension IORing.Request {
 
         @usableFromInline
         enum Event: UInt32, RawRepresentable, Hashable, CaseIterable {
-            case pollIn = 0x0001
-            case pollOut = 0x0004
-            case pollErr = 0x0008
-            case pollHup = 0x0010
-            case pollNval = 0x0020
+            case readable = 0x0001
+            case priorityData = 0x0002
+            case writable = 0x0004
+            case error = 0x0008
+            case hangUp = 0x0010
+            case invalidDescriptor = 0x0020
+            case peerClosed = 0x2000
         }
 
-        public static var allCases: [PollEvents] {
+        public static var allEvents: [PollEvents] {
             Event.allCases.map(PollEvents.init(_:))
         }
 
@@ -65,7 +67,16 @@ extension IORing.Request {
         /// a new connection is available on a listening socket. Corresponds
         /// to the POSIX `POLLIN` event flag.
         @inlinable
-        public static var pollIn: PollEvents { PollEvents(.pollIn) }
+        public static var readable: PollEvents { PollEvents(.readable) }
+
+        /// An event indicating out-of-band data is available for reading.
+        ///
+        /// For sockets this signals urgent data; it is also used to report
+        /// exceptional conditions on descriptors that have no other way to
+        /// signal them, such as a `sysfs` attribute that has changed value.
+        /// Corresponds to the POSIX `POLLPRI` event flag.
+        @_alwaysEmitIntoClient
+        public static var priorityData: PollEvents { PollEvents(.priorityData) }
 
         /// An event indicating the file descriptor is ready for writing.
         ///
@@ -73,16 +84,17 @@ extension IORing.Request {
         /// not block. For sockets, this indicates that send buffer space is
         /// available. Corresponds to the POSIX `POLLOUT` event flag.
         @inlinable
-        public static var pollOut: PollEvents { PollEvents(.pollOut) }
+        public static var writable: PollEvents { PollEvents(.writable) }
 
         /// An event indicating an error condition on the file descriptor.
         ///
         /// The kernel reports this event whether or not it was requested, so
         /// it can appear in a completion's result mask even when the poll
-        /// asked only for ``pollIn`` or ``pollOut``. Requesting it explicitly
-        /// has no effect. Corresponds to the POSIX `POLLERR` event flag.
+        /// asked only for ``readable`` or ``writable``. Requesting it
+        /// explicitly has no effect. Corresponds to the POSIX `POLLERR` event
+        /// flag.
         @_alwaysEmitIntoClient
-        public static var pollErr: PollEvents { PollEvents(.pollErr) }
+        public static var error: PollEvents { PollEvents(.error) }
 
         /// An event indicating the peer closed its end of the channel.
         ///
@@ -95,7 +107,7 @@ extension IORing.Request {
         /// requesting it explicitly has no effect. Corresponds to the POSIX
         /// `POLLHUP` event flag.
         @_alwaysEmitIntoClient
-        public static var pollHup: PollEvents { PollEvents(.pollHup) }
+        public static var hangUp: PollEvents { PollEvents(.hangUp) }
 
         /// An event indicating that the object a descriptor refers to is no
         /// longer valid.
@@ -111,7 +123,18 @@ extension IORing.Request {
         /// requesting it explicitly has no effect. Corresponds to the POSIX
         /// `POLLNVAL` event flag.
         @_alwaysEmitIntoClient
-        public static var pollNval: PollEvents { PollEvents(.pollNval) }
+        public static var invalidDescriptor: PollEvents {
+            PollEvents(.invalidDescriptor)
+        }
+
+        /// An event indicating the peer closed its writing end of a stream
+        /// socket, or shut it down for writing.
+        ///
+        /// Unlike ``hangUp``, this event leaves the connection half-open: data
+        /// already in flight can still be read, and the local end can still
+        /// write. Corresponds to the Linux `POLLRDHUP` event flag.
+        @_alwaysEmitIntoClient
+        public static var peerClosed: PollEvents { PollEvents(.peerClosed) }
     }
 }
 #endif
