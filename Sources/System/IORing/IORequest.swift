@@ -35,7 +35,7 @@ internal enum IORequestCore {
     case pollAdd(
         file: FileDescriptor,
         events: IORing.Request.PollEvents,
-        isMultiShot: Bool = true,
+        isMultiShot: Bool = false,
         context: UInt64 = 0
     )
     case read(
