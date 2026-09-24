@@ -116,6 +116,7 @@ extension IORing.Request {
         /// The kernel reports this event whether or not it was requested, and
         /// requesting it explicitly has no effect. Corresponds to the POSIX
         /// `POLLHUP` event flag.
+        @inlinable
         public static var hangUp: PollEvents { PollEvents(.hangUp) }
 
         @_alwaysEmitIntoClient
