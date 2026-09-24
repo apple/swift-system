@@ -217,7 +217,7 @@ extension IORing.Request {
     /// Adds a poll operation to monitor a file descriptor for specific I/O
     /// events.
     ///
-    /// This method creates an io_uring poll operation that monitors the
+    /// This method creates an `io_uring` poll operation that monitors the
     /// specified file descriptor for I/O readiness events. The operation
     /// completes when any of the requested events occur on the file
     /// descriptor, such as data becoming available for reading or the
@@ -225,17 +225,24 @@ extension IORing.Request {
     ///
     /// Poll operations are useful for implementing efficient I/O
     /// multiplexing, allowing you to monitor multiple file descriptors
-    /// concurrently within a single io_uring instance. When used with
+    /// concurrently within a single `io_uring` instance. When used with
     /// multishot mode, a single poll operation can deliver multiple
     /// completion events without needing to be resubmitted.
+    ///
+    /// Poll requests on a ring created with
+    /// ``IORing/SetupFlags/pollCompletions`` fail with
+    /// ``Errno/invalidArgument``.
     ///
     /// ## Multishot Behavior
     ///
     /// When `isMultiShot` is `true`, the poll operation automatically rearms
     /// after each completion event, continuing to monitor the file descriptor
     /// for subsequent events. This reduces submission overhead for long-lived
-    /// monitoring operations. The operation continues until explicitly
-    /// cancelled or the file descriptor is closed.
+    /// monitoring operations. The poll stays armed until it's canceled or the
+    /// kernel ends it; its last completion is the one without
+    /// ``IORing/Completion/Flags/moreCompletions``. Neither a hangup nor
+    /// closing the descriptor ends the poll, and the request keeps the file
+    /// open until the poll ends.
     ///
     /// When `isMultiShot` is `false`, the poll operation completes once after
     /// the first matching event occurs, requiring resubmission to continue
@@ -262,12 +269,18 @@ extension IORing.Request {
     /// var armed = true
     /// while armed {
     ///     let completion = try ring.blockingConsumeCompletion()
-    ///     armed = completion.flags.contains(.moreCompletions)
-    ///     if completion.context == 1 {
-    ///         // Handle incoming connection
+    ///     guard completion.context == 1 else {
+    ///         // Handle completions for other requests.
+    ///         continue
     ///     }
+    ///     armed = completion.flags.contains(.moreCompletions)
+    ///     // Handle incoming connection
     /// }
     /// ```
+    ///
+    /// If the poll ends with an error, such as ``Errno/canceled``,
+    /// ``IORing/blockingConsumeCompletion(timeout:)`` throws that error
+    /// instead of returning the completion.
     ///
     /// - Parameters:
     ///   - file: The file descriptor to monitor for I/O events.
@@ -286,7 +299,8 @@ extension IORing.Request {
     /// ## See Also
     ///
     /// - ``PollEvents``: The events that can be monitored.
-    /// - ``IORing/Request/cancel(_:matching:)``: Cancelling poll operations.
+    /// - ``IORing/Request/cancel(_:matching:)-(_,FileDescriptor)``:
+    ///   Canceling poll operations.
     @inlinable public static func pollAdd(
         _ file: FileDescriptor,
         events: PollEvents,

@@ -5,14 +5,14 @@
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
- */
+*/
 
 #if compiler(>=6.2) && $Lifetimes
 #if os(Linux)
 extension IORing.Request {
     /// A set of I/O events that can be monitored on a file descriptor.
     ///
-    /// `PollEvents` represents the event mask used with io_uring poll
+    /// `PollEvents` represents the event mask used with `io_uring` poll
     /// operations to specify which I/O conditions to monitor on a file
     /// descriptor. These events correspond to the standard POSIX poll events
     /// defined in the kernel's `poll.h` header.
@@ -104,7 +104,7 @@ extension IORing.Request {
         ///
         /// The kernel reports this event whether or not it was requested, and
         /// requesting it explicitly has no effect. Corresponds to the POSIX
-        /// `POLLHUP` event flag.v
+        /// `POLLHUP` event flag.
         public static var hangUp: PollEvents { PollEvents(.hangUp) }
 
         /// An event indicating that the object a descriptor refers to is no
@@ -114,8 +114,8 @@ extension IORing.Request {
         /// refers to has since become invalid. For example, the disconnection
         /// of a sound device could cause this event.
         ///
-        /// Note that a descriptor which simply does not resolve would
-        /// return the EBADF error code (Errno.badFileDescriptor).
+        /// A descriptor that doesn't resolve at all would make the request
+        /// fail with ``Errno/badFileDescriptor`` instead.
         ///
         /// The kernel reports this event whether or not it was requested, and
         /// requesting it explicitly has no effect. Corresponds to the POSIX
@@ -128,9 +128,14 @@ extension IORing.Request {
         /// An event indicating the peer closed its writing end of a stream
         /// socket, or shut it down for writing.
         ///
-        /// Unlike ``hangUp``, this event leaves the connection half-open: data
-        /// already in flight can still be read, and the local end can still
-        /// write. Corresponds to the Linux `POLLRDHUP` event flag.
+        /// Unlike ``hangUp``, this event can arrive while the connection is
+        /// still half-open: data already in flight can still be read, and the
+        /// local end can still write. Once both directions are shut down,
+        /// ``hangUp`` is reported alongside this event.
+        ///
+        /// Unlike `poll(2)`, `io_uring` reports this event whether or not it
+        /// was requested, and requesting it explicitly has no effect.
+        /// Corresponds to the Linux `POLLRDHUP` event flag.
         @inlinable
         public static var peerClosed: PollEvents { PollEvents(.peerClosed) }
     }
