@@ -19,8 +19,7 @@ import Musl
 
 @usableFromInline
 internal struct RawIORequest: ~Copyable {
-    // swift_io_uring_sqe is a typedef of io_uring_sqe on platforms where
-    // IORing is supported (currently requires kernel version >= 5.15).
+    // Use the vendored SQE layout independently of the installed Linux headers.
     @usableFromInline var rawValue: swift_io_uring_sqe
 
     @inlinable public init() {
