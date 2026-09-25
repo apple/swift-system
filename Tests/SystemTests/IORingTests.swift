@@ -10,9 +10,9 @@ import Musl  // for errno
 #endif
 
 #if SYSTEM_PACKAGE
-import SystemPackage
+@testable import SystemPackage
 #else
-import System
+@testable import System
 #endif
 
 // Cache `isUringEnabled()`. The probe is complex and the answer doesn't change
@@ -24,6 +24,8 @@ let uringEnabled: Bool = {
         return false
     }
 }()
+
+let failureMessage = "Runtime environment does not support IORing."
 
 func isUringEnabled() throws -> Bool {
     // Even if the kernel supports io_uring, the SystemPackage build may have
@@ -83,12 +85,12 @@ final class IORingTests: XCTestCase {
     }
 
     func testInit() throws {
-        guard uringEnabled else { return }
+        try XCTSkipIf(!uringEnabled, failureMessage)
         _ = try IORing(queueDepth: 32, flags: [])
     }
 
     func testNop() throws {
-        guard uringEnabled else { return }
+        try XCTSkipIf(!uringEnabled, failureMessage)
         var ring = try IORing(queueDepth: 32, flags: [])
         _ = try ring.submit(linkedRequests: .nop())
         let completion = try ring.blockingConsumeCompletion()
@@ -124,7 +126,7 @@ final class IORingTests: XCTestCase {
     }
 
     func testUndersizedSubmissionQueue() throws {
-        guard uringEnabled else { return }
+        try XCTSkipIf(!uringEnabled, failureMessage)
         var ring: IORing = try IORing(queueDepth: 1)
         let enqueued = ring.prepare(linkedRequests: .nop(), .nop())
         XCTAssertFalse(enqueued)
@@ -132,7 +134,7 @@ final class IORingTests: XCTestCase {
 
     // Exercises opening, reading, closing, registered files, registered buffers, and eventfd
     func testOpenReadAndWriteFixedFile() throws {
-        guard uringEnabled else { return }
+        try XCTSkipIf(!uringEnabled, failureMessage)
         let (parent, path) = try makeHelloWorldFile()
         let rawBuffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 13, alignment: 16)
         var ring = try setupTestRing(depth: 6, fileSlots: 1, buffers: [rawBuffer])
@@ -177,7 +179,7 @@ final class IORingTests: XCTestCase {
         let bytesRead = try nonRingFD.read(into: rawBuffer)
         XCTAssert(bytesRead == 13)
         let result2 = String(cString: rawBuffer.assumingMemoryBound(to: CChar.self).baseAddress!)
-        XCTAssertEqual(result2, "Hello, World!")   
+        XCTAssertEqual(result2, "Hello, World!")
         try cleanUpHelloWorldFile(parent)
         efdBuf.deallocate()
         rawBuffer.deallocate()
@@ -189,7 +191,7 @@ final class IORingTests: XCTestCase {
     // dangling pointer. Here we deliberately let the FilePath go out of scope
     // between prepare and submit, then churn the heap to make UAFs observable.
     func testPathBufferLifetimeAcrossPrepareSubmit() throws {
-        guard uringEnabled else { return }
+        try XCTSkipIf(!uringEnabled, failureMessage)
         let (parent, _) = try makeHelloWorldFile()
         var ring = try IORing(queueDepth: 6)
 
@@ -223,7 +225,7 @@ final class IORingTests: XCTestCase {
     }
   
     func testPathBufferLifetimeAcrossLinkedRequests() throws {
-        guard uringEnabled else { return }
+        try XCTSkipIf(!uringEnabled, failureMessage)
         let (parent, _) = try makeHelloWorldFile()
         let rawBuffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 13, alignment: 16)
         var ring = try setupTestRing(depth: 6, fileSlots: 1, buffers: [rawBuffer])
@@ -260,12 +262,12 @@ final class IORingTests: XCTestCase {
 
     // Timeout test for `blockingConsumeCompletion(timeout:)`:
     func testBlockingConsumeCompletionWithTimeoutOnIdleRing() throws {
-        guard uringEnabled else { return }
+        try XCTSkipIf(!uringEnabled, failureMessage)
         let ring = try IORing(queueDepth: 4, flags: [])
-        guard ring.supportedFeatures.contains(.extendedArguments) else {
-            // Kernel < 5.11: timeouts in io_uring_enter aren't supported.
-            return
-        }
+        try XCTSkipIf(
+            !ring.supportedFeatures.contains(.extendedArguments),
+            "Kernel < 5.11: timeouts in io_uring_enter aren't supported."
+        )
 
         let clock = ContinuousClock()
         let start = clock.now
@@ -285,7 +287,7 @@ final class IORingTests: XCTestCase {
     }
 
     func testRegisterEventFDTwiceThrows() throws {
-        guard uringEnabled else { return }
+        try XCTSkipIf(!uringEnabled, failureMessage)
         var ring = try IORing(queueDepth: 4)
         let efd = FileDescriptor(rawValue: eventfd(0, Int32(EFD_SEMAPHORE)))
         defer { try? efd.close() }
@@ -300,15 +302,322 @@ final class IORingTests: XCTestCase {
     }
 
     func testSubmitOnDisabledRingThrows() throws {
-        guard uringEnabled else { return }
+        try XCTSkipIf(!uringEnabled, failureMessage)
         var ring = try IORing(queueDepth: 4, flags: [.startDisabled])
 
-         do throws(Errno) {
+        do throws(Errno) {
             _ = try ring.submit(linkedRequests: .nop())
             XCTFail("expected submit on a disabled ring to throw")
         } catch {
             XCTAssertEqual(error, Errno(rawValue: EBADFD))
         }
+    }
+
+    func testPollAddPollIn() throws {
+        try XCTSkipIf(!uringEnabled, failureMessage)
+        var ring = try IORing(queueDepth: 32, flags: [])
+
+        // This test case requires timeout support
+        try XCTSkipIf(
+            !ring.supportedFeatures.contains(.extendedArguments),
+            "Kernel < 5.11: timeouts in io_uring_enter aren't supported."
+        )
+
+        // Test POLLIN: Create an eventfd to monitor for read readiness
+        let testEventFD = FileDescriptor(rawValue: eventfd(0, 0))
+        defer {
+            try? testEventFD.close()
+        }
+        let pollInContext: UInt64 = 42
+
+        // Submit a pollAdd request to monitor for POLLIN events (data available for reading)
+        let enqueued = try ring.submit(linkedRequests:
+            .pollAdd(testEventFD, events: .readable, isMultiShot: false, context: pollInContext))
+        XCTAssert(enqueued)
+
+        // Write to the eventfd to trigger the POLLIN event
+        var value: UInt64 = 1
+        withUnsafeBytes(of: &value) { bufferPtr in
+            _ = try? testEventFD.write(bufferPtr)
+        }
+
+        // Consume the completion from the poll operation
+        let completion = try ring.blockingConsumeCompletion(
+            timeout: .seconds(1)
+        )
+        XCTAssertEqual(completion.context, pollInContext)
+        let readable = Int32(IORing.Request.PollEvents.readable.rawValue)
+        XCTAssertNotEqual(
+            completion.result & readable, 0, "expected POLLIN in the result mask"
+        )
+    }
+
+    func testPollAddPollOut() throws {
+        try XCTSkipIf(!uringEnabled, failureMessage)
+        var ring = try IORing(queueDepth: 32, flags: [])
+
+        // This test case requires timeout support
+        try XCTSkipIf(
+            !ring.supportedFeatures.contains(.extendedArguments),
+            "Kernel < 5.11: timeouts in io_uring_enter aren't supported."
+        )
+
+        // Test POLLOUT: Create a pipe to monitor for write readiness
+        var pipeFDs: [Int32] = [0, 0]
+        let pipeResult = pipe(&pipeFDs)
+        XCTAssertEqual(pipeResult, 0)
+        let writeFD = FileDescriptor(rawValue: pipeFDs[1])
+        let readFD = FileDescriptor(rawValue: pipeFDs[0])
+        defer {
+            try? writeFD.close()
+            try? readFD.close()
+        }
+        let pollOutContext: UInt64 = 43
+
+        // Submit a pollAdd request to monitor for POLLOUT events (ready for writing)
+        // Pipes are typically ready for writing when empty
+        let enqueuedOut = try ring.submit(linkedRequests:
+            .pollAdd(writeFD, events: .writable, isMultiShot: false, context: pollOutContext))
+        XCTAssert(enqueuedOut)
+
+        // Consume the completion from the poll operation
+        let completionOut = try ring.blockingConsumeCompletion(
+            timeout: .seconds(1)
+        )
+        XCTAssertEqual(completionOut.context, pollOutContext)
+        let writable = Int32(IORing.Request.PollEvents.writable.rawValue)
+        XCTAssertNotEqual(
+            completionOut.result & writable, 0,
+            "expected POLLOUT in the result mask"
+        )
+    }
+
+    // Similar to the multishot example in the documentation for
+    // `pollAdd(_:events:isMultiShot:context:)`: arm a multishot poll,
+    // then consume completions for as long as they carry `.moreCompletions`.
+    func testPollAddMultiShotRearmsAcrossEvents() throws {
+        try XCTSkipIf(!uringEnabled, failureMessage)
+        var ring = try IORing(queueDepth: 32, flags: [])
+
+        // This test case requires timeout support
+        try XCTSkipIf(
+            !ring.supportedFeatures.contains(.extendedArguments),
+            "Kernel < 5.11: timeouts in io_uring_enter aren't supported."
+        )
+
+        var pipeFDs: [Int32] = [0, 0]
+        XCTAssertEqual(pipe(&pipeFDs), 0)
+        let readFD = FileDescriptor(rawValue: pipeFDs[0])
+        let writeFD = FileDescriptor(rawValue: pipeFDs[1])
+        defer {
+            try? readFD.close()
+            try? writeFD.close()
+        }
+
+        func writeByte() throws {
+            var byte: UInt8 = 1
+            try withUnsafeBytes(of: &byte) {
+                try XCTAssertEqual(writeFD.write($0), 1)
+            }
+        }
+
+        func readByte() throws {
+            var scratch: UInt8 = 0
+            try withUnsafeMutableBytes(of: &scratch) {
+                try XCTAssertEqual(readFD.read(into: $0), 1)
+            }
+        }
+
+        let context: UInt64 = 44
+        let readable = Int32(IORing.Request.PollEvents.readable.rawValue)
+
+        let pollRequest = IORing.Request.pollAdd(
+            readFD, events: .readable, isMultiShot: true, context: context
+        )
+        let enqueued = try ring.submit(linkedRequests: pollRequest)
+        XCTAssert(enqueued)
+
+        try writeByte()
+        let first = try ring.blockingConsumeCompletion(timeout: .seconds(1))
+        // Kernels before 5.13 reject IORING_POLL_ADD_MULTI
+        try XCTSkipIf(
+            first.result == -EINVAL,
+            "Kernel < 5.13: multishot poll is unsupported."
+        )
+        XCTAssertEqual(first.context, context)
+        XCTAssertNotEqual(
+            first.result & readable, 0, "expected POLLIN in the result mask"
+        )
+        XCTAssert(first.flags.contains(.moreCompletions))
+
+        // Drain the pipe, then any extra completions.
+        try readByte()
+        while ring.tryConsumeCompletion() != nil {}
+
+        try writeByte()
+        // This written byte will only be reported by a re-armed poll.
+        let second = try ring.blockingConsumeCompletion(timeout: .seconds(1))
+        XCTAssertEqual(second.context, context)
+        XCTAssertNotEqual(
+            second.result & readable, 0, "expected POLLIN in the result mask"
+        )
+
+        // Drain again
+        try readByte()
+        while ring.tryConsumeCompletion() != nil {}
+
+        // Cancel to end the multishot poll.
+        try XCTAssert(
+            ring.submit(linkedRequests: .cancel(.all, matchingContext: context))
+        )
+        var terminal: (result: Int32, flags: IORing.Completion.Flags)? = nil
+        var observed: [(context: UInt64, result: Int32, flags: UInt32)] = []
+        // The cancel posts a completion of its own under a different context,
+        // and the two may land a moment apart, so retry briefly rather than
+        // draining exactly once.
+        for _ in 0..<100 where terminal == nil {
+            while let completion = ring.tryConsumeCompletion() {
+                observed.append(
+                    (
+                        completion.context,
+                        completion.result,
+                        completion.flags.rawValue
+                    )
+                )
+                if completion.context == context {
+                    terminal = (completion.result, completion.flags)
+                }
+            }
+            if terminal == nil { usleep(1000) }
+        }
+        XCTAssertNotNil(
+            terminal,
+            "no terminal completion for the cancelled poll; "
+                + "completions seen: \(observed)"
+        )
+        if let terminal {
+            XCTAssertEqual(terminal.result, -ECANCELED)
+            XCTAssertFalse(
+                terminal.flags.contains(.moreCompletions),
+                "poll kept its armed state after being cancelled"
+            )
+        }
+    }
+
+    func testPollHangup() throws {
+        try XCTSkipIf(!uringEnabled, failureMessage)
+        var ring = try IORing(queueDepth: 8)
+        let (readFD, writeFD) = try FileDescriptor.pipe()
+        // The hangup is produced by closing the write end mid-test, so the
+        // cleanup below must not close it a second time: the descriptor number
+        // may already have been reused elsewhere in the test process.
+        var writeEndClosed = false
+        defer {
+            try? readFD.close()
+            if !writeEndClosed { try? writeFD.close() }
+        }
+
+        // This test case requires timeout support
+        try XCTSkipIf(
+            !ring.supportedFeatures.contains(.extendedArguments),
+            "Kernel < 5.11: timeouts in io_uring_enter aren't supported."
+        )
+
+        let request = IORing.Request.pollAdd(
+            readFD, events: .readable, isMultiShot: false, context: 97
+        )
+        let success = try ring.submit(linkedRequests: request)
+        XCTAssertEqual(success, true)
+        try writeFD.close()
+        writeEndClosed = true
+
+        let dt = Duration.seconds(1)
+        let completion = try ring.blockingConsumeCompletion(timeout: dt)
+
+        for event in IORing.Request.PollEvents.Event.allCases {
+            if completion.result & Int32(event.rawValue) != 0 {
+                XCTAssertEqual(event, .hangUp)
+                return
+            }
+        }
+
+        let unexpected = completion.result
+        XCTFail("Unexpected poll event: 0x\(String(unexpected, radix: 16))")
+    }
+
+    func testPollError() throws {
+        try XCTSkipIf(!uringEnabled, failureMessage)
+        var ring = try IORing(queueDepth: 8)
+        let (readFD, writeFD) = try FileDescriptor.pipe(options: .nonBlocking)
+        // POLLERR is produced by closing the read end mid-test; see the note in
+        // `testPollHangup` for why cleanup must not close it twice.
+        var readEndClosed = false
+        defer {
+            if !readEndClosed { try? readFD.close() }
+            try? writeFD.close()
+        }
+
+        // This test case requires timeout support
+        try XCTSkipIf(
+            !ring.supportedFeatures.contains(.extendedArguments),
+            "Kernel < 5.11: timeouts in io_uring_enter aren't supported."
+        )
+
+        let chunk = [UInt8](repeating: 0, count: 4096)
+        chunk.withUnsafeBytes {
+            // Fill the pipe by writing until an operation fails
+            while let written = try? writeFD.write($0), written > 0 {}
+        }
+
+        let request = IORing.Request.pollAdd(
+            writeFD, events: .writable, isMultiShot: false, context: 98
+        )
+        let success = try ring.submit(linkedRequests: request)
+        XCTAssertEqual(success, true)
+        try readFD.close()
+        readEndClosed = true
+
+        let dt = Duration.seconds(1)
+        let completion = try ring.blockingConsumeCompletion(timeout: dt)
+        XCTAssertEqual(completion.context, 98)
+
+        let pollError = IORing.Request.PollEvents.error.rawValue
+        let result = completion.result & Int32(pollError)
+        if result != pollError {
+            XCTFail("expected POLLERR, got 0x\(String(result, radix: 16))")
+        }
+    }
+
+    // A completion's `result` is two things in one field: a non-negative
+    // value is an event mask, and a negative value is a negated errno. The
+    // sign is the only thing distinguishing them, so it has to be checked
+    // before the value is treated as anything else.
+    func testPollAddOnInvalidDescriptor() throws {
+        try XCTSkipIf(!uringEnabled, failureMessage)
+        var ring = try IORing(queueDepth: 8)
+
+        let request = IORing.Request.pollAdd(
+            FileDescriptor(rawValue: -1), events: .readable,
+            isMultiShot: false, context: 99
+        )
+        let success = try ring.submit(linkedRequests: request)
+        XCTAssertEqual(success, true)
+
+        guard let completion = ring.tryConsumeCompletion() else {
+            XCTFail("expected a completion for the failed poll")
+            return
+        }
+        XCTAssertEqual(completion.context, 99)
+
+        // A negative value for `result` marks the completion a a failure.
+        XCTAssertLessThan(completion.result, 0, "expected a failure")
+        // The negative value is the error code multiplied by -1.
+        XCTAssertEqual(Errno(rawValue: -completion.result), .badFileDescriptor)
+
+        // A negative result may look like another result code.
+        // Checking for the error must happen first.
+        let invalidDescriptor = Int32(IORing.Request.PollEvents.invalidDescriptor.rawValue)
+        XCTAssertNotEqual(completion.result & invalidDescriptor, 0)
     }
 }
 #endif // os(Linux)

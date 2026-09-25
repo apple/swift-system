@@ -1,3 +1,12 @@
+/*
+ This source file is part of the Swift System open source project
+
+ Copyright (c) 2023 - 2026 Apple Inc. and the Swift System project authors
+ Licensed under Apache License v2.0 with Runtime Library Exception
+
+ See https://swift.org/LICENSE.txt for license information
+*/
+
 #if compiler(>=6.2) && $Lifetimes
 #if os(Linux)
 
@@ -42,8 +51,8 @@ extension UnsafeMutableRawBufferPointer {
 }
 
 /// Owns the FilePaths whose interior pointers have been written into pending
-/// SQEs. The kernel copies SQE-referenced data out during io_uring_enter (due to
-/// IORING_FEAT_SUBMIT_STABLE), so the paths only need to live across the prepare->submit gap
+/// SQEs. The kernel copies SQE-referenced data out during `io_uring_enter` (due to
+/// `IORING_FEAT_SUBMIT_STABLE`), so the paths only need to live across the prepare->submit gap
 /// This is a class purely to avoid making methods calling `pin` mutating, which would be an API break
 @usableFromInline
 internal final class PendingPathBuffers {
@@ -876,7 +885,7 @@ public struct IORing: ~Copyable {
         return true
     }
 
-    /// Describes which io_uring features are supported by the kernel this program is running on
+    /// Describes which `io_uring` features are supported by the kernel this program is running on
     public struct Features: OptionSet, RawRepresentable, Hashable {
 		public let rawValue: UInt32
 		
@@ -902,7 +911,7 @@ public struct IORing: ~Copyable {
 		@inlinable public static var bundledSendReceive: Features { .init(rawValue: UInt32(1) << 14) } //IORING_FEAT_RECVSEND_BUNDLE
 	}
 
-    /// Describes which io_uring features are supported by the kernel this program is running on
+    /// Describes which `io_uring` features are supported by the kernel this program is running on
 	public var supportedFeatures: Features {
         return features
     }
