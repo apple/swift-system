@@ -56,11 +56,6 @@ extension IORing.Request {
             case peerClosed = 0x2000
         }
 
-        @inlinable
-        public static var allEvents: [PollEvents] {
-            Event.allCases.map(PollEvents.init(_:))
-        }
-
         /// An event indicating data is available for reading.
         ///
         /// This event becomes active when data arrives on the file descriptor

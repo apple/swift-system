@@ -10,9 +10,9 @@ import Musl  // for errno
 #endif
 
 #if SYSTEM_PACKAGE
-import SystemPackage
+@testable import SystemPackage
 #else
-import System
+@testable import System
 #endif
 
 // Cache `isUringEnabled()`. The probe is complex and the answer doesn't change
@@ -534,7 +534,7 @@ final class IORingTests: XCTestCase {
         let dt = Duration.seconds(1)
         let completion = try ring.blockingConsumeCompletion(timeout: dt)
 
-        for event in IORing.Request.PollEvents.allEvents {
+        for event in IORing.Request.PollEvents.Event.allCases {
             if completion.result & Int32(event.rawValue) != 0 {
                 XCTAssertEqual(event, .hangUp)
                 return
