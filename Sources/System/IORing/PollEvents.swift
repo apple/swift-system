@@ -65,6 +65,10 @@ extension IORing.Request {
         @inlinable
         public static var readable: PollEvents { PollEvents(.readable) }
 
+        @_alwaysEmitIntoClient
+        @available(*, unavailable, renamed: "readable")
+        public static var POLLIN: PollEvents { readable }
+
         /// An event indicating out-of-band data is available for reading.
         ///
         /// For sockets this signals urgent data; it is also used to report
@@ -74,6 +78,10 @@ extension IORing.Request {
         @inlinable
         public static var priorityData: PollEvents { PollEvents(.priorityData) }
 
+        @_alwaysEmitIntoClient
+        @available(*, unavailable, renamed: "priorityData")
+        public static var POLLPRI: PollEvents { priorityData }
+
         /// An event indicating the file descriptor is ready for writing.
         ///
         /// This event becomes active when writing to the file descriptor will
@@ -81,6 +89,10 @@ extension IORing.Request {
         /// available. Corresponds to the POSIX `POLLOUT` event flag.
         @inlinable
         public static var writable: PollEvents { PollEvents(.writable) }
+
+        @_alwaysEmitIntoClient
+        @available(*, unavailable, renamed: "writable")
+        public static var POLLOUT: PollEvents { writable }
 
         /// An event indicating an error condition on the file descriptor.
         ///
@@ -92,6 +104,10 @@ extension IORing.Request {
         @inlinable
         public static var error: PollEvents { PollEvents(.error) }
 
+        @_alwaysEmitIntoClient
+        @available(*, unavailable, renamed: "error")
+        public static var POLLERR: PollEvents { error }
+
         /// An event indicating the peer closed its end of the channel.
         ///
         /// For a pipe this means the writing end was closed; for a socket, that
@@ -101,6 +117,10 @@ extension IORing.Request {
         /// requesting it explicitly has no effect. Corresponds to the POSIX
         /// `POLLHUP` event flag.
         public static var hangUp: PollEvents { PollEvents(.hangUp) }
+
+        @_alwaysEmitIntoClient
+        @available(*, unavailable, renamed: "hangUp")
+        public static var POLLHUP: PollEvents { hangUp }
 
         /// An event indicating that the object a descriptor refers to is no
         /// longer valid.
@@ -120,6 +140,10 @@ extension IORing.Request {
             PollEvents(.invalidDescriptor)
         }
 
+        @_alwaysEmitIntoClient
+        @available(*, unavailable, renamed: "invalidDescriptor")
+        public static var POLLNVAL: PollEvents { invalidDescriptor }
+
         /// An event indicating the peer closed its writing end of a stream
         /// socket, or shut it down for writing.
         ///
@@ -133,6 +157,10 @@ extension IORing.Request {
         /// Corresponds to the Linux `POLLRDHUP` event flag.
         @inlinable
         public static var peerClosed: PollEvents { PollEvents(.peerClosed) }
+
+        @_alwaysEmitIntoClient
+        @available(*, unavailable, renamed: "peerClosed")
+        public static var POLLRDHUP: PollEvents { peerClosed }
     }
 }
 #endif
