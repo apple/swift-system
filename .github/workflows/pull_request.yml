@@ -10,7 +10,7 @@ on:
 jobs:
   tests:
     name: Test
-    uses: swiftlang/github-workflows/.github/workflows/swift_package_test.yml@0.0.12
+    uses: swiftlang/github-workflows/.github/workflows/swift_package_test.yml@0.0.15
     with:
       swift_flags: "-Xbuild-tools-swiftc -DSYSTEM_CI"
       enable_linux_checks: true
