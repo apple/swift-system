@@ -381,7 +381,7 @@ extension FileDescriptor {
   /// Duplicates this file descriptor and returns the newly created copy.
   ///
   /// - Parameters:
-  ///   - `target`: The desired target file descriptor, or `nil`, in which case
+  ///   - target: The desired target file descriptor, or `nil`, in which case
   ///      the copy is assigned to the file descriptor with the lowest raw value
   ///      that is not currently in use by the process.
   ///   - retryOnInterrupt: Whether to retry the duplicate operation

@@ -11,6 +11,7 @@
 // they can be used anywhere without imports and without confusion to
 // unavailable local decls.
 
+import CSystem
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif os(Windows)
@@ -26,8 +27,6 @@ import Android
 #else
 #error("Unsupported Platform")
 #endif
-
-import CSystem
 
 // MARK: errno
 #if SYSTEM_PACKAGE_DARWIN
