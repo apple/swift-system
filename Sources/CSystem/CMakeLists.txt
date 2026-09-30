@@ -13,11 +13,9 @@ target_include_directories(CSystem PUBLIC
   $<INSTALL_INTERFACE:include/CSystem>)
 
 install(FILES
-  include/CSystemDarwin.h
   include/CSystemLinux.h
   include/CSystemShared.h
   include/CSystemWASI.h
-  include/CSystemWindows.h
   include/CSystemFreeBSD.h
   include/io_uring.h
   include/module.modulemap

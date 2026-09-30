@@ -10,14 +10,15 @@
 #if compiler(>=6.2) && $Lifetimes
 #if os(Linux)
 
-import CSystem
+internal import CSystem
+public import CSystemIOUring
 #if canImport(Glibc)
 import Glibc
 #elseif canImport(Musl)
 import Musl
 #endif
 
-/// Throwing wrapper around the `io_uring_enter2` shim.
+/// Throwing wrapper around the `csystem_io_uring_enter2` shim.
 ///
 /// On success returns the syscall's non-negative result (the number of SQEs
 /// consumed by the kernel). On failure, reads `errno` and throws the matching
@@ -32,14 +33,14 @@ internal func _ioUringEnter2(
   argsSize: Int
 ) throws(Errno) -> Int32 {
   let result = valueOrErrno(retryOnInterrupt: true) {
-    io_uring_enter2(
+    csystem_io_uring_enter2(
       ringDescriptor, toSubmit, minComplete, flags, args, argsSize
     )
   }
   return try result.get()
 }
 
-/// Throwing wrapper around the `io_uring_enter` shim.
+/// Throwing wrapper around the `csystem_io_uring_enter` shim.
 ///
 /// On success returns the syscall's non-negative result (the number of SQEs
 /// consumed by the kernel). On failure, reads `errno` and throws the matching
@@ -53,12 +54,12 @@ internal func _ioUringEnter(
   sig: UnsafeMutablePointer<sigset_t>?
 ) throws(Errno) -> Int32 {
   let result = valueOrErrno(retryOnInterrupt: true) {
-    io_uring_enter(ringDescriptor, toSubmit, minComplete, flags, sig)
+    csystem_io_uring_enter(ringDescriptor, toSubmit, minComplete, flags, sig)
   }
   return try result.get()
 }
 
-/// Throwing wrapper around the `io_uring_register` shim.
+/// Throwing wrapper around the `csystem_io_uring_register` shim.
 ///
 /// On success returns the syscall's non-negative result. On failure, reads
 /// `errno` and throws the matching `Errno`. `EINTR` is retried automatically.
@@ -70,7 +71,7 @@ internal func _ioUringRegister(
   nrArgs: UInt32
 ) throws(Errno) -> Int32 {
   let result = valueOrErrno(retryOnInterrupt: true) {
-    io_uring_register(ringDescriptor, opcode, arg, nrArgs)
+    csystem_io_uring_register(ringDescriptor, opcode, arg, nrArgs)
   }
   return try result.get()
 }

@@ -16,8 +16,9 @@
 //  - Access raw C members of vended types (e.g. CInterop.Stat) as a downstream
 //    consumer would. Don't go through the Swift (e.g. Stat) wrapper since its
 //    accesses happen inside System, where importing CSystem is fine.
-//  - Touch every direct member the public API exposes. One field is not always
-//    a safe proxy for the rest.
+//  - Touch every direct member the public API exposes, and the members of C
+//    types it exposes through them (e.g. timespec). One field is not always a
+//    safe proxy for the rest.
 
 #if canImport(Glibc) || canImport(Musl) || canImport(Android)
 #if canImport(Glibc)
@@ -43,5 +44,7 @@ func _mivProbe(_ s: CInterop.Stat) {
   _ = s.st_atim
   _ = s.st_mtim
   _ = s.st_ctim
+  _ = s.st_atim.tv_sec
+  _ = s.st_atim.tv_nsec
 }
 #endif

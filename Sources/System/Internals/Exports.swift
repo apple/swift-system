@@ -10,23 +10,18 @@
 // Internal wrappers and typedefs which help reduce #if littering in System's
 // code base.
 
-// TODO: Should CSystem just include all the header files we need?
-
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif os(Windows)
-import CSystem
 import ucrt
+import WinSDK
 #elseif canImport(Glibc)
-import CSystem
 import Glibc
 #elseif canImport(Musl)
-import CSystem
 import Musl
 #elseif canImport(WASILibc)
 import WASILibc
 #elseif canImport(Android)
-import CSystem
 import Android
 #else
 #error("Unsupported Platform")
