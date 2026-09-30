@@ -23,7 +23,6 @@ import Musl
 #elseif canImport(WASILibc)
 import WASILibc
 #elseif canImport(Android)
-import CSystem
 import Android
 #else
 #error("Unsupported Platform")
@@ -797,11 +796,63 @@ internal var _UF_SYSTEM: UInt32 { UInt32(bitPattern: UF_SYSTEM) }
 internal var _SF_SNAPSHOT: UInt32 { UInt32(bitPattern: SF_SNAPSHOT) }
 #endif
 
-// MARK: - statfs/statvfs Mount Flags
+// MARK: - statfs Mount Flags
 
-// Darwin and BSD (`statfs`) and other platforms (`statvfs`) use different C
-// names (`MNT_*` vs `ST_*`) for the flags they share, so flags are exposed
-// here under general `_MOUNT_*` names that resolve per platform.
+// `_MOUNT_*` is `MNT_*` on Darwin and BSD, or `ST_*` on Linux and Android.
+
+#if !os(WASI)
+
+// MARK: ST_* bits on Linux and Android
+
+// Literal bits to keep `@_alwaysEmitIntoClient` semantics. Calling CSystem's
+// `_system_get_ST_*` getters would put a CSystem symbol in every client, block
+// constant folding, and fail to compile under an `internal import CSystem`.
+// `StatFSTests.mountFlagBitsMatchLibc` checks the literals against libc.
+#if os(Linux) || os(Android)
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_RDONLY_BIT: CInterop.MountFlags { 0x0001 }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_NOSUID_BIT: CInterop.MountFlags { 0x0002 }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_NODEV_BIT: CInterop.MountFlags { 0x0004 }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_NOEXEC_BIT: CInterop.MountFlags { 0x0008 }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_SYNCHRONOUS_BIT: CInterop.MountFlags { 0x0010 }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_MANDLOCK_BIT: CInterop.MountFlags { 0x0040 }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_NOATIME_BIT: CInterop.MountFlags { 0x0400 }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_NODIRATIME_BIT: CInterop.MountFlags { 0x0800 }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_RELATIME_BIT: CInterop.MountFlags { 0x1000 }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_NOSYMFOLLOW_BIT: CInterop.MountFlags { 0x2000 }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_VALID_BIT: CInterop.MountFlags { 0x0020 }
+#endif
 
 // MARK: Flags Available on All Platforms
 
@@ -811,9 +862,7 @@ internal var _MOUNT_RDONLY: CInterop.MountFlags {
   #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
   CInterop.MountFlags(truncatingIfNeeded: MNT_RDONLY)
   #elseif os(Linux) || os(Android)
-  CInterop.MountFlags(truncatingIfNeeded: _system_get_ST_RDONLY())
-  #else
-  CInterop.MountFlags(truncatingIfNeeded: ST_RDONLY)
+  _ST_RDONLY_BIT
   #endif
 }
 
@@ -823,9 +872,7 @@ internal var _MOUNT_SYNCHRONOUS: CInterop.MountFlags {
   #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
   CInterop.MountFlags(truncatingIfNeeded: MNT_SYNCHRONOUS)
   #elseif os(Linux) || os(Android)
-  CInterop.MountFlags(truncatingIfNeeded: _system_get_ST_SYNCHRONOUS())
-  #else
-  CInterop.MountFlags(truncatingIfNeeded: ST_SYNCHRONOUS)
+  _ST_SYNCHRONOUS_BIT
   #endif
 }
 
@@ -835,9 +882,7 @@ internal var _MOUNT_NOEXEC: CInterop.MountFlags {
   #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
   CInterop.MountFlags(truncatingIfNeeded: MNT_NOEXEC)
   #elseif os(Linux) || os(Android)
-  CInterop.MountFlags(truncatingIfNeeded: _system_get_ST_NOEXEC())
-  #else
-  CInterop.MountFlags(truncatingIfNeeded: ST_NOEXEC)
+  _ST_NOEXEC_BIT
   #endif
 }
 
@@ -847,9 +892,7 @@ internal var _MOUNT_NOSUID: CInterop.MountFlags {
   #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
   CInterop.MountFlags(truncatingIfNeeded: MNT_NOSUID)
   #elseif os(Linux) || os(Android)
-  CInterop.MountFlags(truncatingIfNeeded: _system_get_ST_NOSUID())
-  #else
-  CInterop.MountFlags(truncatingIfNeeded: ST_NOSUID)
+  _ST_NOSUID_BIT
   #endif
 }
 
@@ -859,9 +902,7 @@ internal var _MOUNT_NOATIME: CInterop.MountFlags {
   #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
   CInterop.MountFlags(truncatingIfNeeded: MNT_NOATIME)
   #elseif os(Linux) || os(Android)
-  CInterop.MountFlags(truncatingIfNeeded: _system_get_ST_NOATIME())
-  #else
-  CInterop.MountFlags(truncatingIfNeeded: ST_NOATIME)
+  _ST_NOATIME_BIT
   #endif
 }
 
@@ -874,79 +915,25 @@ internal var _MOUNT_NODEV: CInterop.MountFlags {
   #if SYSTEM_PACKAGE_DARWIN || os(OpenBSD)
   CInterop.MountFlags(truncatingIfNeeded: MNT_NODEV)
   #elseif os(Linux) || os(Android)
-  CInterop.MountFlags(truncatingIfNeeded: _system_get_ST_NODEV())
-  #else
-  CInterop.MountFlags(truncatingIfNeeded: ST_NODEV)
+  _ST_NODEV_BIT
   #endif
 }
 #endif
 
-// MARK: Flags Available on Linux, WASI, and Android
+// MARK: Flags Available on Linux and Android
 
-#if os(Linux) || os(WASI) || os(Android)
+#if os(Linux) || os(Android)
 @available(System 199, *)
 @_alwaysEmitIntoClient
-internal var _ST_MANDLOCK: CInterop.MountFlags {
-  #if os(WASI)
-  CInterop.MountFlags(truncatingIfNeeded: ST_MANDLOCK)
-  #else
-  CInterop.MountFlags(truncatingIfNeeded: _system_get_ST_MANDLOCK())
-  #endif
-}
+internal var _ST_MANDLOCK: CInterop.MountFlags { _ST_MANDLOCK_BIT }
 
 @available(System 199, *)
 @_alwaysEmitIntoClient
-internal var _ST_NODIRATIME: CInterop.MountFlags {
-  #if os(WASI)
-  CInterop.MountFlags(truncatingIfNeeded: ST_NODIRATIME)
-  #else
-  CInterop.MountFlags(truncatingIfNeeded: _system_get_ST_NODIRATIME())
-  #endif
-}
+internal var _ST_NODIRATIME: CInterop.MountFlags { _ST_NODIRATIME_BIT }
 
 @available(System 199, *)
 @_alwaysEmitIntoClient
-internal var _ST_RELATIME: CInterop.MountFlags {
-  #if os(WASI)
-  CInterop.MountFlags(truncatingIfNeeded: ST_RELATIME)
-  #else
-  CInterop.MountFlags(truncatingIfNeeded: _system_get_ST_RELATIME())
-  #endif
-}
-#endif
-
-// MARK: Flags Available on Linux and WASI Only
-
-#if os(Linux) || os(WASI)
-@available(System 199, *)
-@_alwaysEmitIntoClient
-internal var _ST_WRITE: CInterop.MountFlags {
-  #if os(WASI)
-  CInterop.MountFlags(truncatingIfNeeded: ST_WRITE)
-  #else
-  CInterop.MountFlags(truncatingIfNeeded: _system_get_ST_WRITE())
-  #endif
-}
-
-@available(System 199, *)
-@_alwaysEmitIntoClient
-internal var _ST_APPEND: CInterop.MountFlags {
-  #if os(WASI)
-  CInterop.MountFlags(truncatingIfNeeded: ST_APPEND)
-  #else
-  CInterop.MountFlags(truncatingIfNeeded: _system_get_ST_APPEND())
-  #endif
-}
-
-@available(System 199, *)
-@_alwaysEmitIntoClient
-internal var _ST_IMMUTABLE: CInterop.MountFlags {
-  #if os(WASI)
-  CInterop.MountFlags(truncatingIfNeeded: ST_IMMUTABLE)
-  #else
-  CInterop.MountFlags(truncatingIfNeeded: _system_get_ST_IMMUTABLE())
-  #endif
-}
+internal var _ST_RELATIME: CInterop.MountFlags { _ST_RELATIME_BIT }
 #endif
 
 // MARK: Flags Available on Linux, Android, and FreeBSD
@@ -958,7 +945,7 @@ internal var _MOUNT_NOSYMFOLLOW: CInterop.MountFlags {
   #if os(FreeBSD)
   CInterop.MountFlags(truncatingIfNeeded: MNT_NOSYMFOLLOW)
   #else
-  CInterop.MountFlags(truncatingIfNeeded: _system_get_ST_NOSYMFOLLOW())
+  _ST_NOSYMFOLLOW_BIT
   #endif
 }
 #endif
@@ -1142,5 +1129,7 @@ internal var _MNT_NOPERM: CInterop.MountFlags { CInterop.MountFlags(truncatingIf
 @_alwaysEmitIntoClient
 internal var _MNT_WXALLOWED: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_WXALLOWED) }
 #endif
+
+#endif // !os(WASI)
 
 #endif // !os(Windows)

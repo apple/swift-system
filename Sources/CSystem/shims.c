@@ -19,11 +19,6 @@
 #endif
 
 #ifdef __linux__
-
-// The `ST_*` mount-flag constants in <sys/statvfs.h> require _GNU_SOURCE.
-// Define it here, in a dedicated translation unit, not in CSystemLinux.h,
-// since defining it there changes libc types like `fd_set` for every file
-// that imports CSystem and conflicts with SwiftGlibc.
 #define _GNU_SOURCE
 #include <sys/statvfs.h>
 #include <stdint.h>
@@ -38,19 +33,12 @@ uint64_t _system_get_ST_NOATIME(void) { return ST_NOATIME; }
 uint64_t _system_get_ST_NODIRATIME(void) { return ST_NODIRATIME; }
 uint64_t _system_get_ST_RELATIME(void) { return ST_RELATIME; }
 
-// ST_NOSYMFOLLOW was added to glibc's <sys/statvfs.h> in Linux 5.10. For
-// older versions, fall back to the fixed kernel UAPI bit (<linux/statfs.h>),
-// which is the same value a newer glibc header defines.
+// ST_NOSYMFOLLOW wasn't defined until glibc 2.34. 0x2000 is the bit the
+// kernel's internal <linux/statfs.h> and newer glibc both use.
 #ifndef ST_NOSYMFOLLOW
 #define ST_NOSYMFOLLOW 0x2000
 #endif
 uint64_t _system_get_ST_NOSYMFOLLOW(void) { return ST_NOSYMFOLLOW; }
-
-#if !defined(__ANDROID__)
-uint64_t _system_get_ST_WRITE(void) { return ST_WRITE; }
-uint64_t _system_get_ST_APPEND(void) { return ST_APPEND; }
-uint64_t _system_get_ST_IMMUTABLE(void) { return ST_IMMUTABLE; }
-#endif
 
 #include <CSystemLinux.h>
 #endif

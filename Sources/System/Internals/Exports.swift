@@ -19,12 +19,14 @@ import CSystem
 import ucrt
 #elseif canImport(Glibc)
 import CSystem
+#if os(Linux)
+import CSystemStatFS
+#endif
 import Glibc
 #elseif canImport(Musl)
 import CSystem
 import Musl
 #elseif canImport(WASILibc)
-@_implementationOnly import CSystem
 import WASILibc
 #elseif canImport(Android)
 import CSystem
@@ -110,23 +112,15 @@ internal func system_fstatat(_ fd: CInt, _ p: UnsafePointer<CChar>, _ s: inout C
   fstatat(fd, p, &s, flags)
 }
 
-#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
-@available(System 199, *)
+#if !os(WASI)
+@available(System 0.0.2, *)
+@_alwaysEmitIntoClient
 internal func system_statfs(_ p: UnsafePointer<CChar>, _ s: inout CInterop.StatFS) -> Int32 {
   statfs(p, &s)
 }
 @available(System 199, *)
 internal func system_fstatfs(_ fd: CInt, _ s: inout CInterop.StatFS) -> Int32 {
   fstatfs(fd, &s)
-}
-#else
-@available(System 199, *)
-internal func system_statvfs(_ p: UnsafePointer<CChar>, _ s: inout CInterop.StatFS) -> Int32 {
-  statvfs(p, &s)
-}
-@available(System 199, *)
-internal func system_fstatvfs(_ fd: CInt, _ s: inout CInterop.StatFS) -> Int32 {
-  fstatvfs(fd, &s)
 }
 #endif
 #endif

@@ -21,9 +21,8 @@
 #include <unistd.h>
 #include "io_uring.h"
 
-// The `ST_*` mount-flag constants in <sys/statvfs.h> require _GNU_SOURCE.
-// Rather than define _GNU_SOURCE module-wide, which clashes with SwiftGlibc,
-// expose them through these getters, defined in shims.c under _GNU_SOURCE.
+// Test-only: libc's `ST_*` values, which glibc gates on _GNU_SOURCE. Defining
+// that here would clash with SwiftGlibc, so shims.c defines it instead.
 #include <stdint.h>
 uint64_t _system_get_ST_RDONLY(void);
 uint64_t _system_get_ST_NOSUID(void);
@@ -35,10 +34,5 @@ uint64_t _system_get_ST_NOATIME(void);
 uint64_t _system_get_ST_NODIRATIME(void);
 uint64_t _system_get_ST_RELATIME(void);
 uint64_t _system_get_ST_NOSYMFOLLOW(void);
-#if !defined(__ANDROID__)
-uint64_t _system_get_ST_WRITE(void);
-uint64_t _system_get_ST_APPEND(void);
-uint64_t _system_get_ST_IMMUTABLE(void);
-#endif
 #endif
 

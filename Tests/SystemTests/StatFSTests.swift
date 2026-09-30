@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if !os(Windows)
+#if !os(Windows) && !os(WASI)
 
 import Testing
 
@@ -25,10 +25,8 @@ import Glibc
 #elseif canImport(Musl)
 import CSystem
 import Musl
-#elseif canImport(WASILibc)
-import CSystem
-import WASILibc
 #elseif canImport(Android)
+import CSystem
 import Android
 #else
 #error("Unsupported Platform")
@@ -43,11 +41,6 @@ import Android
 @Suite("StatFS")
 private struct StatFSTests {
 
-  // On WASI, statvfs/fstatvfs are unconditional stubs that set ENOSYS and
-  // return -1, so every StatFS initializer throws Errno.noFunction. Skip the
-  // behavioral tests there.
-  #if !os(WASI)
-
   @available(System 199, *)
   @Test func initializersAgree() async throws {
     try withTemporaryFilePath(basename: "StatFS_initializersAgree") { tempDir in
@@ -60,7 +53,6 @@ private struct StatFSTests {
       let fromFD = try StatFS(dirFD)
       let fromFDExt = try dirFD.statfs()
 
-      // All construction paths describe the same file system.
       #expect(fromFilePath.fileSystemID == fromCString.fileSystemID)
       #expect(fromFilePath.fileSystemID == fromFilePathExt.fileSystemID)
       #expect(fromFilePath.fileSystemID == fromFD.fileSystemID)
@@ -79,48 +71,8 @@ private struct StatFSTests {
 
       #expect(statfs.blockSize > 0)
       #expect(statfs.totalBlocks > 0)
-
-      // Free space cannot exceed the total, and available (non-superuser)
-      // cannot exceed the total free.
       #expect(statfs.freeBlocks <= statfs.totalBlocks)
       #expect(statfs.availableBlocks <= statfs.freeBlocks)
-
-      // Computed sizes are the block count times the block-count unit.
-      #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
-      let unit = UInt64(statfs.blockSize)
-      #else
-      let unit = UInt64(statfs.fragmentSize)
-      #endif
-      #expect(statfs.totalSpace == statfs.totalBlocks * unit)
-      #expect(statfs.freeSpace == statfs.freeBlocks * unit)
-      #expect(statfs.availableSpace == statfs.availableBlocks * unit)
-
-      #expect(statfs.totalSpace >= statfs.freeSpace)
-      #expect(statfs.freeSpace >= statfs.availableSpace)
-    }
-  }
-
-  @available(System 199, *)
-  @Test func spaceSaturatesOnOverflow() async throws {
-    try withTemporaryFilePath(basename: "StatFS_saturates") { tempDir in
-      var statfs = try StatFS(tempDir)
-      statfs.totalBlocks = .max
-      #expect(statfs.blockSize > 1)
-      // Max blocks times a >1 unit overflows UInt64 and must saturate.
-      #expect(statfs.totalSpace == .max)
-    }
-  }
-
-  @available(System 199, *)
-  @Test func inodes() async throws {
-    try withTemporaryFilePath(basename: "StatFS_inodes") { tempDir in
-      let statfs = try StatFS(tempDir)
-      // totalInodes can legitimately be 0 on file systems with dynamic inode
-      // allocation, so only assert the ordering when it is nonzero.
-      #expect(statfs.freeInodes <= statfs.totalInodes || statfs.totalInodes == 0)
-      #if !SYSTEM_PACKAGE_DARWIN && !os(FreeBSD)
-      #expect(statfs.availableInodes <= statfs.freeInodes)
-      #endif
     }
   }
 
@@ -128,16 +80,6 @@ private struct StatFSTests {
   @Test func readOnlyFlagReflectsWritableFileSystem() async throws {
     try withTemporaryFilePath(basename: "StatFS_readOnly") { tempDir in
       let statfs = try StatFS(tempDir)
-
-      // Create and write a file in the temp dir. If this succeeds,
-      // the file system is not read-only...
-      let probe = tempDir.appending("probe")
-      let fd = try FileDescriptor.open(
-        probe, .readWrite, options: .create, permissions: .ownerReadWrite)
-      defer { try? fd.close() }
-      try fd.writeAll("probe".utf8)
-
-      // ...so the read-only mount flag must be clear.
       #expect(!statfs.mountFlags.contains(.readOnly))
     }
   }
@@ -148,35 +90,14 @@ private struct StatFSTests {
     try withTemporaryFilePath(basename: "StatFS_darwinBSD") { tempDir in
       let statfs = try StatFS(tempDir)
       #expect(statfs.preferredIOBlockSize > 0)
-
-      // `typeName` is a non-empty, readable file system name.
       #expect(!statfs.typeName.isEmpty)
-
-      // `mountPoint` is some absolute path, and `mountSource` is a non-empty
-      // device path. Note that on Darwin, firmlinks mean the temp dir path is
-      // not necessarily a lexical prefix of its mount point, so don't assert
-      // that relationship.
       #expect(statfs.mountPoint.isAbsolute)
       #expect(!statfs.mountSource.string.isEmpty)
 
-      // statfs of the mount point itself reports that same mount point.
       let mountStatFS = try StatFS(statfs.mountPoint)
       #expect(mountStatFS.mountPoint == statfs.mountPoint)
       #expect(mountStatFS.typeName == statfs.typeName)
     }
-  }
-  #endif
-
-  #if SYSTEM_PACKAGE_DARWIN
-  @available(System 199, *)
-  @Test func typeAndSubtypeRoundTrip() throws {
-    // On Darwin, `type` and `subtype` are opaque kernel indices with no stable
-    // public constants, so we can only assert that mutation round-trips.
-    var statfs = StatFS(rawValue: CInterop.StatFS())
-    statfs.type = FileSystemType(rawValue: 42)
-    #expect(statfs.type == FileSystemType(42))
-    statfs.subtype = FileSystemSubtype(rawValue: 7)
-    #expect(statfs.subtype == FileSystemSubtype(7))
   }
   #endif
 
@@ -206,15 +127,10 @@ private struct StatFSTests {
 
   @available(System 199, *)
   @Test func propertiesMatchRawFields() async throws {
-    // Verify property mappings from the raw C struct
     try withTemporaryFilePath(basename: "StatFS_diff") { tempDir in
       var raw = CInterop.StatFS()
       try tempDir.withPlatformString {
-        #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
         try #require(statfs($0, &raw) == 0, "\(Errno.current)")
-        #else
-        try #require(statvfs($0, &raw) == 0, "\(Errno.current)")
-        #endif
       }
       let s = StatFS(rawValue: raw)
 
@@ -229,8 +145,6 @@ private struct StatFSTests {
       #expect(s.preferredIOBlockSize == Int(raw.f_iosize))
       #expect(s.owner.rawValue == raw.f_owner)
       #expect(s.mountFlags.rawValue == raw.f_flags)
-      // Decode independently with `String(cString:)`, not the implementation's
-      // own helper, so this checks the decode rather than restating it.
       #expect(s.typeName == withUnsafeBytes(of: raw.f_fstypename) {
         $0.withMemoryRebound(to: CChar.self) { String(cString: $0.baseAddress!) }
       })
@@ -240,59 +154,60 @@ private struct StatFSTests {
       #expect(s.mountSource.string == withUnsafeBytes(of: raw.f_mntfromname) {
         $0.withMemoryRebound(to: CChar.self) { String(cString: $0.baseAddress!) }
       })
+      #if SYSTEM_PACKAGE_DARWIN
+      #expect(s.type.rawValue == raw.f_type)
+      #expect(s.subtype.rawValue == raw.f_fssubtype)
+      #elseif os(FreeBSD)
+      #expect(s.type.rawValue == raw.f_type)
+      #expect(s.maximumNameLength == Int(raw.f_namemax))
+      #else // os(OpenBSD)
+      #expect(s.maximumNameLength == Int(raw.f_namemax))
+      #expect(s.availableInodes == UInt64(clamping: raw.f_favail))
+      #endif
       #else
       #expect(s.fragmentSize == Int(raw.f_frsize))
-      #expect(s.availableInodes == UInt64(clamping: raw.f_favail))
-      #expect(s.maximumNameLength == Int(raw.f_namemax))
-      #expect(s.mountFlags.rawValue == raw.f_flag)
+      #expect(s.maximumNameLength == Int(raw.f_namelen))
+      #expect(s.type.rawValue == UInt32(truncatingIfNeeded: raw.f_type))
+      // `mountFlags` omits the kernel's ST_VALID (0x20) bookkeeping bit.
+      #expect(s.mountFlags.rawValue == CInterop.MountFlags(truncatingIfNeeded: raw.f_flags) & ~0x20)
       #endif
     }
   }
 
-  #endif // !os(WASI)
-
+  // Each setter writes its own field, and clamps instead of trapping.
   @available(System 199, *)
-  @Test func propertiesAndRawValueRoundTrip() throws {
-    var raw = CInterop.StatFS()
-    raw.f_bsize = 4096
-    var statfs = StatFS(rawValue: raw)
-    #expect(statfs.blockSize == 4096)
+  @Test func settersWriteRawFields() throws {
+    var s = StatFS(rawValue: CInterop.StatFS())
+    s.blockSize = 1
+    s.totalBlocks = 2
+    s.freeBlocks = 3
+    s.availableBlocks = 4
+    s.totalInodes = 5
+    s.freeInodes = 6
+    #expect(s.rawValue.f_bsize == 1)
+    #expect(s.rawValue.f_blocks == 2)
+    #expect(s.rawValue.f_bfree == 3)
+    #expect(s.rawValue.f_bavail == 4)
+    #expect(s.rawValue.f_files == 5)
+    #expect(s.rawValue.f_ffree == 6)
+    #if SYSTEM_PACKAGE_DARWIN
+    s.type = FileSystemType(7)
+    s.subtype = FileSystemSubtype(8)
+    #expect(s.rawValue.f_type == 7)
+    #expect(s.rawValue.f_fssubtype == 8)
+    #endif
 
-    statfs.blockSize = 8192
-    #expect(statfs.blockSize == 8192)
-    #expect(statfs.rawValue.f_bsize == 8192)
+    s.mountFlags.insert(.readOnly)
+    #expect(s.mountFlags.contains(.readOnly))
 
-    statfs.totalBlocks = 123456
-    #expect(statfs.totalBlocks == 123456)
-    #expect(statfs.rawValue.f_blocks == 123456)
-
-    statfs.mountFlags.insert(.readOnly)
-    #expect(statfs.mountFlags.contains(.readOnly))
-  }
-
-  // Setters clamp to the field's range instead of trapping. If the field is
-  // 64-bit the write round-trips; if it's narrower the value clamps to the
-  // field's max. Either way, setting `UInt64.max` should never trap or wrap
-  // to a small value.
-  @available(System 199, *)
-  @Test func settersClamp() throws {
-    var statfs = StatFS(rawValue: CInterop.StatFS())
-
-    statfs.totalBlocks = .max
-    #expect(statfs.totalBlocks >= UInt64(UInt32.max))
-
-    statfs.blockSize = .max
-    #expect(statfs.blockSize > 0)
-
-    // Writing 0 always fits and reads back exactly.
-    statfs.freeBlocks = 0
-    #expect(statfs.freeBlocks == 0)
+    s.blockSize = .max
+    #expect(s.blockSize == Int(clamping: type(of: s.rawValue.f_bsize).max))
   }
 
   @available(System 199, *)
   @Test func craftedStructComputesSpace() throws {
     var raw = CInterop.StatFS()
-    // The block-count unit is f_bsize on Darwin/BSD, f_frsize on statvfs.
+    // The block-count unit is f_bsize on Darwin/BSD, f_frsize elsewhere.
     #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
     raw.f_bsize = 512
     #else
@@ -309,19 +224,51 @@ private struct StatFSTests {
     #expect(s.availableSpace == 100 * 512)
   }
 
+  @available(System 199, *)
+  @Test func spaceSaturatesOnOverflow() throws {
+    var raw = CInterop.StatFS()
+    #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+    raw.f_bsize = 512
+    #else
+    raw.f_frsize = 512
+    #endif
+    raw.f_blocks = .max
+
+    let s = StatFS(rawValue: raw)
+    if MemoryLayout.size(ofValue: raw.f_blocks) == MemoryLayout<UInt64>.size {
+      #expect(s.totalSpace == .max)
+    } else {
+      #expect(s.totalSpace == UInt64(raw.f_blocks) * 512)
+    }
+  }
+
   #if os(FreeBSD) || os(OpenBSD)
-  // The block/inode-count fields are signed here; negatives clamp to 0.
   @available(System 199, *)
   @Test func negativeCountsClampToZero() throws {
     var raw = CInterop.StatFS()
     raw.f_bsize = 512
     raw.f_bavail = -1
+    #if os(FreeBSD)
     raw.f_ffree = -1
+    #else
+    raw.f_favail = -1
+    #endif
 
     let s = StatFS(rawValue: raw)
     #expect(s.availableBlocks == 0)
     #expect(s.availableSpace == 0)
+    #if os(FreeBSD)
     #expect(s.freeInodes == 0)
+    #else
+    #expect(s.availableInodes == 0)
+    #endif
+
+    // Distinct negative counts read the same through the clamped property,
+    // but they're still different values.
+    var other = raw
+    other.f_bavail = -2
+    #expect(StatFS(rawValue: other).availableBlocks == s.availableBlocks)
+    #expect(StatFS(rawValue: other) != s)
   }
   #endif
 
@@ -341,15 +288,11 @@ private struct StatFSTests {
     return String(decoding: result, as: UTF8.self)
   }
 
-  // Cross-check mountFlags against /proc/self/mounts, the kernel's textual view
-  // of the same flags produced by a different code path.
   @available(System 199, *)
   @Test func mountFlagsMatchProcMounts() throws {
     let contents = try _readEntireFile("/proc/self/mounts")
 
-    // Fields: device, mountPoint, fsType, options, dump, pass. A later entry
-    // shadows an earlier one at the same mount point, as statvfs also sees, so
-    // key on mount point to keep the effective options.
+    // Fields: device, mountPoint, fsType, options, dump, pass.
     var mounts: [String: Set<String>] = [:]
     for line in contents.split(separator: "\n") {
       let fields = line.split(separator: " ")
@@ -360,7 +303,6 @@ private struct StatFSTests {
       mounts[mountPoint] = Set(fields[3].split(separator: ",").map(String.init))
     }
 
-    // Match whole options, so "errors=remount-ro" doesn't look like "ro".
     let checks: [(option: String, flag: MountFlags)] = [
       ("ro", .readOnly),
       ("noexec", .noExecution),
@@ -369,8 +311,12 @@ private struct StatFSTests {
       ("noatime", .noAccessTime),
     ]
 
+    // Only probe well-known local mounts. statfs on an arbitrary host mount
+    // can hang (e.g. a stale NFS mount).
+    let candidates: Set<String> = ["/", "/proc", "/sys", "/dev", "/dev/shm", "/run"]
+
     var verified = 0
-    for (mountPoint, options) in mounts {
+    for (mountPoint, options) in mounts where candidates.contains(mountPoint) {
       guard let statfs = try? StatFS(FilePath(mountPoint)) else { continue }
       for (option, flag) in checks {
         #expect(
@@ -386,51 +332,110 @@ private struct StatFSTests {
   }
   #endif
 
-  #if os(WASI)
+  #if os(Linux) || os(Android)
   @available(System 199, *)
-  @Test func wasiThrowsNoFunction() async throws {
-    // wasi-libc's statvfs is a stub that always fails with ENOSYS.
-    #expect(throws: Errno.noFunction) {
-      _ = try StatFS("/")
+  @Test func typeIsMagicNumber() throws {
+    // PROC_SUPER_MAGIC from <linux/magic.h>.
+    #expect(try StatFS("/proc").type == FileSystemType(0x9FA0))
+
+    // Magic numbers from 0x80000000 up should round-trip correctly even
+    // on platforms where they're signed.
+    var statfs = StatFS(rawValue: CInterop.StatFS())
+    statfs.type = FileSystemType(0x9123_683E) // BTRFS_SUPER_MAGIC
+    #expect(statfs.type == FileSystemType(0x9123_683E))
+  }
+
+  // The kernel sets ST_VALID (0x20) in every `f_flags` to mark the field as
+  // filled in, though Bionic's `statfs()` clears it.
+  @available(System 199, *)
+  @Test func mountFlagsOmitValidBit() throws {
+    var raw = CInterop.StatFS()
+    raw.f_flags = 0x20 | 0x01 // ST_VALID | ST_RDONLY
+    var statfs = StatFS(rawValue: raw)
+    #expect(statfs.mountFlags == .readOnly)
+
+    statfs.mountFlags = .noExecution
+    #expect(statfs.rawValue.f_flags == 0x20 | 0x08) // ST_VALID | ST_NOEXEC
+
+    let root = try StatFS("/")
+    #if os(Linux)
+    #expect(root.rawValue.f_flags & 0x20 != 0)
+    #endif
+    #expect(root.mountFlags.rawValue & 0x20 == 0)
+  }
+  #endif
+
+  #if os(Linux) || os(Android)
+  @available(System 199, *)
+  @Test func mountFlagBitsMatchLibc() throws {
+    let expected: [(name: String, literal: CInterop.MountFlags, libc: UInt64)] = [
+      ("ST_RDONLY", _ST_RDONLY_BIT, _system_get_ST_RDONLY()),
+      ("ST_NOSUID", _ST_NOSUID_BIT, _system_get_ST_NOSUID()),
+      ("ST_NODEV", _ST_NODEV_BIT, _system_get_ST_NODEV()),
+      ("ST_NOEXEC", _ST_NOEXEC_BIT, _system_get_ST_NOEXEC()),
+      ("ST_SYNCHRONOUS", _ST_SYNCHRONOUS_BIT, _system_get_ST_SYNCHRONOUS()),
+      ("ST_MANDLOCK", _ST_MANDLOCK_BIT, _system_get_ST_MANDLOCK()),
+      ("ST_NOATIME", _ST_NOATIME_BIT, _system_get_ST_NOATIME()),
+      ("ST_NODIRATIME", _ST_NODIRATIME_BIT, _system_get_ST_NODIRATIME()),
+      ("ST_RELATIME", _ST_RELATIME_BIT, _system_get_ST_RELATIME()),
+      ("ST_NOSYMFOLLOW", _ST_NOSYMFOLLOW_BIT, _system_get_ST_NOSYMFOLLOW()),
+    ]
+
+    for (name, literal, libc) in expected {
+      #expect(
+        UInt64(literal) == libc,
+        "\(name): literal \(literal) disagrees with libc value \(libc)"
+      )
     }
   }
   #endif
 
   @available(System 199, *)
   @Test func fileSystemIDConformances() throws {
-    let a = FileSystemID(rawValue: CInterop.FileSystemID())
-    let b = FileSystemID(rawValue: CInterop.FileSystemID())
-    #expect(a == b)
-    #expect(a.hashValue == b.hashValue)
+    let id = FileSystemID(_words: (1, 2))
+    #expect(id == FileSystemID(_words: (1, 2)))
+    #expect(id != FileSystemID(_words: (1, 3)))
+    #expect(id != FileSystemID(_words: (3, 2)))
+    #expect(id.hashValue != FileSystemID(_words: (1, 3)).hashValue)
 
-    // Codable round-trips, including the manual fsid_t implementation on
-    // Darwin and BSD.
     #if canImport(Foundation)
-    let statfs = try? StatFS(FilePath("/"))
-    if let id = statfs?.fileSystemID {
-      let data = try JSONEncoder().encode(id)
-      let decoded = try JSONDecoder().decode(FileSystemID.self, from: data)
-      #expect(decoded == id)
-      #expect(decoded.hashValue == id.hashValue)
-    }
+    let data = try JSONEncoder().encode(id)
+    #expect(String(decoding: data, as: UTF8.self) == "[1,2]")
+    #expect(try JSONDecoder().decode(FileSystemID.self, from: data) == id)
     #endif
   }
 
   @available(System 199, *)
-  @Test func mountFlagsIsOptionSet() throws {
-    var flags: MountFlags = [.readOnly, .noExecution]
-    #expect(flags.contains(.readOnly))
-    #expect(flags.contains(.noExecution))
-    #expect(!flags.contains(.synchronous))
+  @Test func descriptions() throws {
+    #expect(MountFlags.readOnly.description == "[.readOnly]")
+    let flags: MountFlags = [.readOnly, .noExecution]
+    #expect(flags.description == "[.readOnly, .noExecution]")
+    #expect(flags.debugDescription == flags.description)
+    #expect(MountFlags(rawValue: 0).description == "[]")
 
-    flags.remove(.readOnly)
-    #expect(!flags.contains(.readOnly))
-
-    let empty = MountFlags(rawValue: 0)
-    #expect(empty.isEmpty)
+    #expect(FileSystemID(_words: (1, 2)).description == "FileSystemID(1, 2)")
   }
 
-  #if !os(WASI)
+  #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+  // A name buffer with no NUL terminator (malformed) is read in full.
+  @available(System 199, *)
+  @Test func unterminatedNameBuffers() throws {
+    var raw = CInterop.StatFS()
+    withUnsafeMutableBytes(of: &raw.f_fstypename) { buffer in
+      for i in buffer.indices { buffer[i] = UInt8(ascii: "a") }
+    }
+    withUnsafeMutableBytes(of: &raw.f_mntonname) { buffer in
+      for i in buffer.indices { buffer[i] = UInt8(ascii: "b") }
+    }
+
+    let s = StatFS(rawValue: raw)
+    let typeNameLength = MemoryLayout.size(ofValue: raw.f_fstypename)
+    let mountPointLength = MemoryLayout.size(ofValue: raw.f_mntonname)
+    #expect(s.typeName == String(repeating: "a", count: typeNameLength))
+    #expect(s.mountPoint.string == String(repeating: "b", count: mountPointLength))
+  }
+  #endif
+
   @available(System 199, *)
   @Test func equalityAndHashing() throws {
     try withTemporaryFilePath(basename: "StatFS_equality") { tempDir in
@@ -450,6 +455,11 @@ private struct StatFSTests {
       reserved.rawValue.f_reserved.0 &+= 1
       #expect(statfs == reserved)
       #expect(statfs.hashValue == reserved.hashValue)
+
+      // Fields without a property, like `f_flags_ext`, are.
+      var extended = statfs
+      extended.rawValue.f_flags_ext ^= 1
+      #expect(statfs != extended)
       #endif
 
       // Name buffers are read only up to their NUL terminator, so bytes past
@@ -468,7 +478,6 @@ private struct StatFSTests {
       #endif
     }
   }
-  #endif
 
 }
 

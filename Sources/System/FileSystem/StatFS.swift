@@ -11,17 +11,40 @@
 
 #if os(Windows)
 
-/// A Swift wrapper of the C `statfs` struct on Darwin and BSD operating
-/// systems, or the standard `statvfs` otherwise.
+/// A Swift wrapper of the C `statfs` struct.
 ///
-/// - Note: Only available on Unix-like platforms.
-@available(Windows, unavailable, message: "StatFS is unavailable on Windows. Consider using a Win32 API such as GetVolumeInformationW or GetDiskFreeSpaceExW instead.")
-public struct StatFS {}
+/// - Note: Not available on Windows or WASI.
+@available(Windows, unavailable, message: "Consider using a Win32 API such as GetVolumeInformationW or GetDiskFreeSpaceExW instead.")
+public struct StatFS {
+  /// Creates a `StatFS` from a `FilePath`.
+  public init(
+    _ path: FilePath,
+    retryOnInterrupt: Bool = true
+  ) throws(Errno) {
+    fatalError("StatFS is unavailable on Windows")
+  }
+
+  /// Creates a `StatFS` from a null-terminated `UnsafePointer<CChar>` path.
+  public init(
+    _ path: UnsafePointer<CChar>,
+    retryOnInterrupt: Bool = true
+  ) throws(Errno) {
+    fatalError("StatFS is unavailable on Windows")
+  }
+
+  /// Creates a `StatFS` from a `FileDescriptor`.
+  public init(
+    _ fd: FileDescriptor,
+    retryOnInterrupt: Bool = true
+  ) throws(Errno) {
+    fatalError("StatFS is unavailable on Windows")
+  }
+}
 
 extension FileDescriptor {
   /// Creates a `StatFS` for the file system containing the file referenced by
   /// this `FileDescriptor`.
-  @available(Windows, unavailable, message: "StatFS is unavailable on Windows. Consider using a Win32 API such as GetVolumeInformationW or GetDiskFreeSpaceExW instead.")
+  @available(Windows, unavailable, message: "Consider using a Win32 API such as GetVolumeInformationW or GetDiskFreeSpaceExW instead.")
   public func statfs(retryOnInterrupt: Bool = true) throws(Errno) -> StatFS {
     fatalError("StatFS is unavailable on Windows")
   }
@@ -30,27 +53,76 @@ extension FileDescriptor {
 extension FilePath {
   /// Creates a `StatFS` for the file system containing the file referenced by
   /// this `FilePath`.
-  @available(Windows, unavailable, message: "StatFS is unavailable on Windows. Consider using a Win32 API such as GetVolumeInformationW or GetDiskFreeSpaceExW instead.")
+  @available(Windows, unavailable, message: "Consider using a Win32 API such as GetVolumeInformationW or GetDiskFreeSpaceExW instead.")
   public func statfs(retryOnInterrupt: Bool = true) throws(Errno) -> StatFS {
     fatalError("StatFS is unavailable on Windows")
   }
 }
 
+#elseif os(WASI)
+
+/// A Swift wrapper of the C `statfs` struct.
+///
+/// - Note: Not available on Windows or WASI.
+@available(*, unavailable, message: "wasi-libc doesn't implement statfs or statvfs.")
+public struct StatFS {
+  /// Creates a `StatFS` from a `FilePath`.
+  public init(
+    _ path: FilePath,
+    retryOnInterrupt: Bool = true
+  ) throws(Errno) {
+    fatalError("StatFS is unavailable on WASI")
+  }
+
+  /// Creates a `StatFS` from a null-terminated `UnsafePointer<CChar>` path.
+  public init(
+    _ path: UnsafePointer<CChar>,
+    retryOnInterrupt: Bool = true
+  ) throws(Errno) {
+    fatalError("StatFS is unavailable on WASI")
+  }
+
+  /// Creates a `StatFS` from a `FileDescriptor`.
+  public init(
+    _ fd: FileDescriptor,
+    retryOnInterrupt: Bool = true
+  ) throws(Errno) {
+    fatalError("StatFS is unavailable on WASI")
+  }
+}
+
+extension FileDescriptor {
+  /// Creates a `StatFS` for the file system containing the file referenced by
+  /// this `FileDescriptor`.
+  @available(*, unavailable, message: "wasi-libc doesn't implement statfs or statvfs.")
+  public func statfs(retryOnInterrupt: Bool = true) throws(Errno) -> StatFS {
+    fatalError("StatFS is unavailable on WASI")
+  }
+}
+
+extension FilePath {
+  /// Creates a `StatFS` for the file system containing the file referenced by
+  /// this `FilePath`.
+  @available(*, unavailable, message: "wasi-libc doesn't implement statfs or statvfs.")
+  public func statfs(retryOnInterrupt: Bool = true) throws(Errno) -> StatFS {
+    fatalError("StatFS is unavailable on WASI")
+  }
+}
+
 #else
 
-// Must import here to use C statfs/statvfs properties in
-// @_alwaysEmitIntoClient APIs.
+// Must import here to use C statfs properties in @_alwaysEmitIntoClient APIs.
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif canImport(Glibc)
 import CSystem
+#if os(Linux)
+import CSystemStatFS
+#endif
 import Glibc
 #elseif canImport(Musl)
 import CSystem
 import Musl
-#elseif canImport(WASILibc)
-import CSystem
-import WASILibc
 #elseif canImport(Android)
 import CSystem
 import Android
@@ -60,8 +132,10 @@ import Android
 
 // MARK: - FileSystemID
 
-/// A Swift wrapper of the C `f_fsid` file system ID found in a `statfs` or
-/// `statvfs` struct.
+/// A Swift wrapper of the C `f_fsid` file system ID found in a `statfs`
+/// struct.
+///
+/// - Note: Not available on Windows or WASI.
 @frozen
 @available(System 199, *)
 public struct FileSystemID: RawRepresentable, Sendable {
@@ -79,17 +153,34 @@ public struct FileSystemID: RawRepresentable, Sendable {
   public init(_ rawValue: CInterop.FileSystemID) { self.rawValue = rawValue }
 }
 
-// On Darwin, FreeBSD, and OpenBSD, `CInterop.FileSystemID` is the C `fsid_t`
-// struct (a fixed two-element `int32_t` array), which provides no synthesized
-// conformances. Implement `Equatable`, `Hashable`, and `Codable` manually in
-// terms of the underlying `val` members. On other platforms, the raw value is
-// an integer, so the conformances are derived automatically.
-#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+// `CInterop.FileSystemID` is the C `fsid_t` struct (a fixed two-element
+// `int32_t` array), which provides no synthesized conformances.
+@available(System 199, *)
+extension FileSystemID {
+  @_alwaysEmitIntoClient
+  internal var _words: (Int32, Int32) {
+    #if os(Linux) || os(Android)
+    rawValue.__val
+    #else
+    rawValue.val
+    #endif
+  }
+
+  @_alwaysEmitIntoClient
+  internal init(_words words: (Int32, Int32)) {
+    #if os(Linux) || os(Android)
+    self.init(rawValue: CInterop.FileSystemID(__val: words))
+    #else
+    self.init(rawValue: CInterop.FileSystemID(val: words))
+    #endif
+  }
+}
+
 @available(System 199, *)
 extension FileSystemID: Equatable {
   @_alwaysEmitIntoClient
   public static func == (lhs: Self, rhs: Self) -> Bool {
-    lhs.rawValue.val.0 == rhs.rawValue.val.0 && lhs.rawValue.val.1 == rhs.rawValue.val.1
+    lhs._words.0 == rhs._words.0 && lhs._words.1 == rhs._words.1
   }
 }
 
@@ -97,8 +188,8 @@ extension FileSystemID: Equatable {
 extension FileSystemID: Hashable {
   @_alwaysEmitIntoClient
   public func hash(into hasher: inout Hasher) {
-    hasher.combine(rawValue.val.0)
-    hasher.combine(rawValue.val.1)
+    hasher.combine(_words.0)
+    hasher.combine(_words.1)
   }
 }
 
@@ -107,8 +198,8 @@ extension FileSystemID: Codable {
   @_alwaysEmitIntoClient
   public func encode(to encoder: any Encoder) throws {
     var container = encoder.unkeyedContainer()
-    try container.encode(rawValue.val.0)
-    try container.encode(rawValue.val.1)
+    try container.encode(_words.0)
+    try container.encode(_words.1)
   }
 
   @_alwaysEmitIntoClient
@@ -116,21 +207,29 @@ extension FileSystemID: Codable {
     var container = try decoder.unkeyedContainer()
     let val0 = try container.decode(Int32.self)
     let val1 = try container.decode(Int32.self)
-    self.init(rawValue: CInterop.FileSystemID(val: (val0, val1)))
+    self.init(_words: (val0, val1))
   }
 }
-#else
-@available(System 199, *)
-extension FileSystemID: Equatable, Hashable, Codable {}
-#endif
 
-#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
+@available(System 199, *)
+extension FileSystemID: CustomStringConvertible, CustomDebugStringConvertible {
+  /// A textual representation of the file system ID.
+  @inline(never)
+  public var description: String {
+    "FileSystemID(\(_words.0), \(_words.1))"
+  }
+
+  /// A textual representation of the file system ID, suitable for debugging.
+  public var debugDescription: String { self.description }
+}
+
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(Linux) || os(Android)
 // MARK: - FileSystemType
 
 /// A Swift wrapper of the C `f_type` file system type found in a `statfs`
-/// struct on Darwin and FreeBSD.
+/// struct.
 ///
-/// - Note: Only available on Darwin and FreeBSD.
+/// - Note: Only available on Darwin, FreeBSD, Linux, and Android.
 @frozen
 @available(System 199, *)
 public struct FileSystemType: RawRepresentable, Sendable, Hashable, Codable {
@@ -147,7 +246,7 @@ public struct FileSystemType: RawRepresentable, Sendable, Hashable, Codable {
   @_alwaysEmitIntoClient
   public init(_ rawValue: UInt32) { self.rawValue = rawValue }
 }
-#endif
+#endif // SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(Linux) || os(Android)
 
 #if SYSTEM_PACKAGE_DARWIN
 // MARK: - FileSystemSubtype
@@ -214,18 +313,16 @@ extension FilePath {
 }
 #endif
 
-/// A Swift wrapper of the C `statfs` struct on Darwin and BSD operating
-/// systems, or the standard `statvfs` otherwise.
+/// A Swift wrapper of the C `statfs` struct.
 ///
-/// - Note: Only available on Unix-like platforms.
-/// - Note: The numeric properties clamp to the range of the underlying C
-///   field in both directions. Use `rawValue` for exact, unclamped access.
+/// - Note: Not available on Windows or WASI.
+/// - Note: The numeric properties clamp when converting to or from the
+///   underlying C field. Use `rawValue` for exact, unclamped access.
 @frozen
 @available(System 199, *)
 public struct StatFS: RawRepresentable, Sendable, Hashable {
 
-  /// The raw C `statfs` struct on Darwin and BSD, or the `statvfs` struct
-  /// otherwise.
+  /// The raw C `statfs` struct.
   @_alwaysEmitIntoClient
   public var rawValue: CInterop.StatFS
 
@@ -237,8 +334,7 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
 
   /// Creates a `StatFS` from a `FilePath`.
   ///
-  /// The corresponding C function is `statfs()` on Darwin and BSD, or
-  /// `statvfs()` otherwise.
+  /// The corresponding C function is `statfs()`.
   @_alwaysEmitIntoClient
   public init(
     _ path: FilePath,
@@ -251,8 +347,7 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
 
   /// Creates a `StatFS` from a null-terminated `UnsafePointer<CChar>` path.
   ///
-  /// The corresponding C function is `statfs()` on Darwin and BSD, or
-  /// `statvfs()` otherwise.
+  /// The corresponding C function is `statfs()`.
   @_alwaysEmitIntoClient
   public init(
     _ path: UnsafePointer<CChar>,
@@ -270,18 +365,13 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
   ) -> Result<CInterop.StatFS, Errno> {
     var result = CInterop.StatFS()
     return nothingOrErrno(retryOnInterrupt: retryOnInterrupt) {
-      #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
       system_statfs(path, &result)
-      #else
-      system_statvfs(path, &result)
-      #endif
     }.map { result }
   }
 
   /// Creates a `StatFS` from a `FileDescriptor`.
   ///
-  /// The corresponding C function is `fstatfs()` on Darwin and BSD, or
-  /// `fstatvfs()` otherwise.
+  /// The corresponding C function is `fstatfs()`.
   @_alwaysEmitIntoClient
   public init(
     _ fd: FileDescriptor,
@@ -299,11 +389,7 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
   ) -> Result<CInterop.StatFS, Errno> {
     var result = CInterop.StatFS()
     return nothingOrErrno(retryOnInterrupt: retryOnInterrupt) {
-      #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
       system_fstatfs(fd.rawValue, &result)
-      #else
-      system_fstatvfs(fd.rawValue, &result)
-      #endif
     }.map { result }
   }
 
@@ -311,9 +397,10 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
 
   /// File system block size, in bytes.
   ///
-  /// The corresponding C property is `f_bsize`.
   /// - Note: On Darwin and BSD, this is the fundamental size for block counts.
-  ///   `statvfs` platforms use `fragmentSize` (`f_frsize`) instead.
+  ///   Other platforms use `fragmentSize` (`f_frsize`) instead.
+  ///
+  /// The corresponding C property is `f_bsize`.
   @_alwaysEmitIntoClient
   public var blockSize: Int {
     get { Int(clamping: rawValue.f_bsize) }
@@ -323,8 +410,9 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
   #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
   /// Block size for optimal data transfer, in bytes.
   ///
-  /// The corresponding C property is `f_iosize`.
   /// - Note: Only available on Darwin and BSD.
+  ///
+  /// The corresponding C property is `f_iosize`.
   @_alwaysEmitIntoClient
   public var preferredIOBlockSize: Int {
     get { Int(clamping: rawValue.f_iosize) }
@@ -333,9 +421,10 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
   #else
   /// File system fragment size, in bytes.
   ///
-  /// The corresponding C property is `f_frsize`.
-  /// - Note: On `statvfs` platforms, this is the fundamental size for block
+  /// - Note: On Linux and Android, this is the fundamental size for block
   ///   counts. Not present on Darwin or BSD, which use `blockSize` instead.
+  ///
+  /// The corresponding C property is `f_frsize`.
   @_alwaysEmitIntoClient
   public var fragmentSize: Int {
     get { Int(clamping: rawValue.f_frsize) }
@@ -345,8 +434,7 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
 
   /// The fundamental block size used for space calculations, in bytes.
   ///
-  /// This is `blockSize` on Darwin and BSD (`statfs`), or `fragmentSize`
-  /// otherwise (`statvfs`).
+  /// This is `blockSize` on Darwin and BSD, or `fragmentSize` otherwise.
   @_alwaysEmitIntoClient
   internal var _fundamentalBlockSize: UInt64 {
     #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
@@ -356,8 +444,6 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
     #endif
   }
 
-  /// Multiplies a block count by the fundamental block size, saturating to
-  /// `UInt64.max` on overflow.
   @_alwaysEmitIntoClient
   internal func _saturatingSpace(_ blocks: UInt64) -> UInt64 {
     let (result, overflow) = blocks.multipliedReportingOverflow(by: _fundamentalBlockSize)
@@ -366,9 +452,10 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
 
   /// Total number of blocks in the file system.
   ///
+  /// - Note: In units of `blockSize` on Darwin and BSD, or `fragmentSize`
+  ///   otherwise.
+  ///
   /// The corresponding C property is `f_blocks`.
-  /// - Note: In units of `blockSize` on Darwin and BSD (`statfs`), or
-  ///   `fragmentSize` otherwise (`statvfs`).
   @_alwaysEmitIntoClient
   public var totalBlocks: UInt64 {
     get { UInt64(clamping: rawValue.f_blocks) }
@@ -384,9 +471,10 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
 
   /// Number of free blocks in the file system.
   ///
+  /// - Note: In units of `blockSize` on Darwin and BSD, or `fragmentSize`
+  ///   otherwise.
+  ///
   /// The corresponding C property is `f_bfree`.
-  /// - Note: In units of `blockSize` on Darwin and BSD (`statfs`), or
-  ///   `fragmentSize` otherwise (`statvfs`).
   @_alwaysEmitIntoClient
   public var freeBlocks: UInt64 {
     get { UInt64(clamping: rawValue.f_bfree) }
@@ -402,10 +490,11 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
 
   /// Number of free blocks available to non-superuser.
   ///
+  /// - Note: In units of `blockSize` on Darwin and BSD, or `fragmentSize`
+  ///   otherwise. On FreeBSD and OpenBSD, the underlying C property is
+  ///   signed; negative values are clamped to 0.
+  ///
   /// The corresponding C property is `f_bavail`.
-  /// - Note: In units of `blockSize` on Darwin and BSD (`statfs`), or
-  ///   `fragmentSize` otherwise (`statvfs`). On FreeBSD and OpenBSD, the
-  ///   underlying C property is signed; negative values are clamped to 0.
   @_alwaysEmitIntoClient
   public var availableBlocks: UInt64 {
     get { UInt64(clamping: rawValue.f_bavail) }
@@ -430,24 +519,26 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
 
   /// Number of free inodes in the file system.
   ///
-  /// The corresponding C property is `f_ffree`.
   /// - Note: On FreeBSD, this reports the inodes available to a non-superuser
   ///   rather than the total free count, and the underlying C field is signed
   ///   (negative values are clamped to 0); on other platforms, it is the total
   ///   number of free inodes.
+  ///
+  /// The corresponding C property is `f_ffree`.
   @_alwaysEmitIntoClient
   public var freeInodes: UInt64 {
     get { UInt64(clamping: rawValue.f_ffree) }
     set { rawValue.f_ffree = .init(clamping: newValue) }
   }
 
-  #if !SYSTEM_PACKAGE_DARWIN && !os(FreeBSD)
+  #if os(OpenBSD)
   /// Number of free inodes available to non-superuser.
   ///
-  /// The corresponding C property is `f_favail`, reported on the `statvfs`
-  /// platforms and by OpenBSD's `statfs`.
-  /// - Note: Darwin and FreeBSD `statfs` do not report it. On OpenBSD, the
-  ///   underlying C property is signed; negative values are clamped to 0.
+  /// - Note: Darwin, FreeBSD, Linux, and Android `statfs` do not report it.
+  ///   On OpenBSD, the underlying C property is signed; negative values are
+  ///   clamped to 0.
+  ///
+  /// The corresponding C property is `f_favail`.
   @_alwaysEmitIntoClient
   public var availableInodes: UInt64 {
     get { UInt64(clamping: rawValue.f_favail) }
@@ -458,13 +549,26 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
   #if !SYSTEM_PACKAGE_DARWIN
   /// Maximum length of a file name on the file system, in bytes.
   ///
-  /// The corresponding C property is `f_namemax`, reported on the `statvfs`
-  /// platforms and by FreeBSD and OpenBSD `statfs`.
   /// - Note: Darwin's `statfs` does not report it.
+  ///
+  /// The corresponding C property is `f_namelen` on Linux and Android, or
+  /// `f_namemax` otherwise.
   @_alwaysEmitIntoClient
   public var maximumNameLength: Int {
-    get { Int(clamping: rawValue.f_namemax) }
-    set { rawValue.f_namemax = .init(clamping: newValue) }
+    get {
+      #if os(Linux) || os(Android)
+      Int(clamping: rawValue.f_namelen)
+      #else
+      Int(clamping: rawValue.f_namemax)
+      #endif
+    }
+    set {
+      #if os(Linux) || os(Android)
+      rawValue.f_namelen = .init(clamping: newValue)
+      #else
+      rawValue.f_namemax = .init(clamping: newValue)
+      #endif
+    }
   }
   #endif
 
@@ -477,61 +581,83 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
     set { rawValue.f_fsid = newValue.rawValue }
   }
 
-  /// Mount flags indicating the options employed when mounting the file system.
+  /// Flags describing how the file system is mounted.
   ///
-  /// The corresponding C property is `f_flags` on Darwin and BSD, or `f_flag`
-  /// otherwise.
+  /// - Note: On Linux, the kernel also sets an `ST_VALID` bit in `f_flags`
+  ///   to mark the field as filled in. It isn't a mount flag, so this
+  ///   property omits it like glibc's `statvfs` and Bionic's `statfs` do.
+  ///   The setter preserves it.
+  ///
+  /// The corresponding C property is `f_flags`.
   @_alwaysEmitIntoClient
   public var mountFlags: MountFlags {
     get {
       #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
       MountFlags(rawValue: rawValue.f_flags)
-      #else
-      MountFlags(rawValue: rawValue.f_flag)
+      #elseif os(Linux) || os(Android)
+      MountFlags(rawValue: CInterop.MountFlags(truncatingIfNeeded: rawValue.f_flags) & ~_ST_VALID_BIT)
       #endif
     }
     set {
       #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
       rawValue.f_flags = newValue.rawValue
-      #else
-      rawValue.f_flag = newValue.rawValue
+      #elseif os(Linux) || os(Android)
+      let valid = CInterop.MountFlags(truncatingIfNeeded: rawValue.f_flags) & _ST_VALID_BIT
+      rawValue.f_flags = .init(truncatingIfNeeded: newValue.rawValue | valid)
       #endif
     }
   }
 
-  #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
+  #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(Linux) || os(Android)
   /// File system type.
   ///
+  /// - Note: On Linux and Android, this is the file system's magic number,
+  ///   such as `0xEF53` for ext4. On Darwin and FreeBSD, it's an internal,
+  ///   kernel-assigned VFS type index with no stable, public constants;
+  ///   prefer `typeName` to identify the file system in a readable format.
+  ///   Not available on OpenBSD.
+  ///
   /// The corresponding C property is `f_type`.
-  /// - Note: Only available on Darwin and FreeBSD, where this is an internal,
-  ///   kernel-assigned VFS type index with no stable, public constants; it is
-  ///   *not* a filesystem magic number like those found in the Linux `statfs`.
-  ///   Prefer `typeName` to identify the file system in a readable format.
   @_alwaysEmitIntoClient
   public var type: FileSystemType {
-    get { FileSystemType(rawValue: numericCast(rawValue.f_type)) }
-    set { rawValue.f_type = numericCast(newValue.rawValue) }
+    get {
+      #if os(Linux) || os(Android)
+      // glibc's `f_type` is a signed `long` and can be negative.
+      FileSystemType(rawValue: UInt32(truncatingIfNeeded: rawValue.f_type))
+      #else
+      FileSystemType(rawValue: rawValue.f_type)
+      #endif
+    }
+    set {
+      #if os(Linux) || os(Android)
+      rawValue.f_type = .init(truncatingIfNeeded: newValue.rawValue)
+      #else
+      rawValue.f_type = newValue.rawValue
+      #endif
+    }
   }
   #endif
 
   #if SYSTEM_PACKAGE_DARWIN
   /// File system subtype.
   ///
-  /// The corresponding C property is `f_fssubtype`.
   /// - Note: Like `type`, this is a numeric value with no stable, public
   ///   constants. Only available on Darwin.
+  ///
+  /// The corresponding C property is `f_fssubtype`.
   @_alwaysEmitIntoClient
   public var subtype: FileSystemSubtype {
-    get { FileSystemSubtype(rawValue: numericCast(rawValue.f_fssubtype)) }
-    set { rawValue.f_fssubtype = numericCast(newValue.rawValue) }
+    get { FileSystemSubtype(rawValue: rawValue.f_fssubtype) }
+    set { rawValue.f_fssubtype = newValue.rawValue }
   }
   #endif
 
   #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
   /// User that mounted the file system.
   ///
-  /// The corresponding C property is `f_owner`.
   /// - Note: Only available on Darwin and BSD.
+  ///
+  /// The corresponding C property is `f_owner`.
   @_alwaysEmitIntoClient
   public var owner: UserID {
     get { UserID(rawValue: rawValue.f_owner) }
@@ -540,8 +666,9 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
 
   /// File system type name.
   ///
-  /// The corresponding C property is `f_fstypename`.
   /// - Note: Only available on Darwin and BSD.
+  ///
+  /// The corresponding C property is `f_fstypename`.
   @_alwaysEmitIntoClient
   public var typeName: String {
     withUnsafeBytes(of: rawValue.f_fstypename) {
@@ -551,8 +678,9 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
 
   /// Directory where the file system is mounted, such as "/System/Volumes/Data".
   ///
-  /// The corresponding C property is `f_mntonname`.
   /// - Note: Only available on Darwin and BSD.
+  ///
+  /// The corresponding C property is `f_mntonname`.
   @_alwaysEmitIntoClient
   public var mountPoint: FilePath {
     withUnsafeBytes(of: rawValue.f_mntonname) {
@@ -562,8 +690,9 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
 
   /// The source of the mounted file system, such as "/dev/disk3s7".
   ///
-  /// The corresponding C property is `f_mntfromname`.
   /// - Note: Only available on Darwin and BSD.
+  ///
+  /// The corresponding C property is `f_mntfromname`.
   @_alwaysEmitIntoClient
   public var mountSource: FilePath {
     withUnsafeBytes(of: rawValue.f_mntfromname) {
@@ -577,58 +706,28 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
 
 @available(System 199, *)
 extension StatFS {
-  /// Compares the meaningful file-system metadata fields of two `StatFS` values.
+  /// Compares the file system metadata fields of two `StatFS` values,
+  /// including fields not exposed as properties, such as `f_flags_ext` on
+  /// Darwin.
   ///
-  /// Reserved/"spare" fields are not compared, and name buffers are compared
+  /// Fields are compared by their raw C values. Reserved/"spare" fields and
+  /// OpenBSD's `mount_info` union are not compared. Name buffers are compared
   /// only up to their NUL terminators.
   public static func == (lhs: Self, rhs: Self) -> Bool {
-    guard lhs.blockSize == rhs.blockSize,
-          lhs.totalBlocks == rhs.totalBlocks,
-          lhs.freeBlocks == rhs.freeBlocks,
-          lhs.availableBlocks == rhs.availableBlocks,
-          lhs.totalInodes == rhs.totalInodes,
-          lhs.freeInodes == rhs.freeInodes,
-          lhs.fileSystemID == rhs.fileSystemID,
-          lhs.mountFlags == rhs.mountFlags else {
+    guard lhs.rawValue.f_bsize == rhs.rawValue.f_bsize,
+          lhs.rawValue.f_blocks == rhs.rawValue.f_blocks,
+          lhs.rawValue.f_bfree == rhs.rawValue.f_bfree,
+          lhs.rawValue.f_bavail == rhs.rawValue.f_bavail,
+          lhs.rawValue.f_files == rhs.rawValue.f_files,
+          lhs.rawValue.f_ffree == rhs.rawValue.f_ffree,
+          lhs.fileSystemID == rhs.fileSystemID else {
       return false
     }
 
     #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
-    guard lhs.preferredIOBlockSize == rhs.preferredIOBlockSize else {
-      return false
-    }
-    #else
-    guard lhs.fragmentSize == rhs.fragmentSize else {
-      return false
-    }
-    #endif
-
-    #if !SYSTEM_PACKAGE_DARWIN && !os(FreeBSD)
-    guard lhs.availableInodes == rhs.availableInodes else {
-      return false
-    }
-    #endif
-
-    #if !SYSTEM_PACKAGE_DARWIN
-    guard lhs.maximumNameLength == rhs.maximumNameLength else {
-      return false
-    }
-    #endif
-
-    #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
-    guard lhs.type == rhs.type else {
-      return false
-    }
-    #endif
-
-    #if SYSTEM_PACKAGE_DARWIN
-    guard lhs.subtype == rhs.subtype else {
-      return false
-    }
-    #endif
-
-    #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
-    guard lhs.owner == rhs.owner,
+    guard lhs.rawValue.f_iosize == rhs.rawValue.f_iosize,
+          lhs.rawValue.f_flags == rhs.rawValue.f_flags,
+          lhs.rawValue.f_owner == rhs.rawValue.f_owner,
           _nullTerminatedBytesEqual(lhs.rawValue.f_fstypename,
                                     rhs.rawValue.f_fstypename),
           _nullTerminatedBytesEqual(lhs.rawValue.f_mntonname,
@@ -637,57 +736,99 @@ extension StatFS {
                                     rhs.rawValue.f_mntfromname) else {
       return false
     }
+    #elseif os(Linux) || os(Android)
+    guard lhs.rawValue.f_type == rhs.rawValue.f_type,
+          lhs.rawValue.f_frsize == rhs.rawValue.f_frsize,
+          lhs.rawValue.f_flags == rhs.rawValue.f_flags,
+          lhs.rawValue.f_namelen == rhs.rawValue.f_namelen else {
+      return false
+    }
+    #endif
+
+    #if SYSTEM_PACKAGE_DARWIN
+    guard lhs.rawValue.f_type == rhs.rawValue.f_type,
+          lhs.rawValue.f_fssubtype == rhs.rawValue.f_fssubtype,
+          lhs.rawValue.f_flags_ext == rhs.rawValue.f_flags_ext else {
+      return false
+    }
+    #elseif os(FreeBSD)
+    guard lhs.rawValue.f_version == rhs.rawValue.f_version,
+          lhs.rawValue.f_type == rhs.rawValue.f_type,
+          lhs.rawValue.f_namemax == rhs.rawValue.f_namemax,
+          lhs.rawValue.f_syncwrites == rhs.rawValue.f_syncwrites,
+          lhs.rawValue.f_asyncwrites == rhs.rawValue.f_asyncwrites,
+          lhs.rawValue.f_syncreads == rhs.rawValue.f_syncreads,
+          lhs.rawValue.f_asyncreads == rhs.rawValue.f_asyncreads else {
+      return false
+    }
+    #elseif os(OpenBSD)
+    guard lhs.rawValue.f_favail == rhs.rawValue.f_favail,
+          lhs.rawValue.f_namemax == rhs.rawValue.f_namemax,
+          lhs.rawValue.f_syncwrites == rhs.rawValue.f_syncwrites,
+          lhs.rawValue.f_syncreads == rhs.rawValue.f_syncreads,
+          lhs.rawValue.f_asyncwrites == rhs.rawValue.f_asyncwrites,
+          lhs.rawValue.f_asyncreads == rhs.rawValue.f_asyncreads,
+          lhs.rawValue.f_ctime == rhs.rawValue.f_ctime,
+          _nullTerminatedBytesEqual(lhs.rawValue.f_mntfromspec,
+                                    rhs.rawValue.f_mntfromspec) else {
+      return false
+    }
     #endif
 
     return true
   }
 
-  /// Hashes the meaningful file-system metadata fields of a `StatFS` struct.
+  /// Hashes the file system metadata fields of a `StatFS` struct.
   ///
   /// These are the same fields compared by `==`. Reserved/"spare" fields are
   /// not hashed, and name buffers are hashed only up to their NUL terminators.
   public func hash(into hasher: inout Hasher) {
-    hasher.combine(blockSize)
-    hasher.combine(totalBlocks)
-    hasher.combine(freeBlocks)
-    hasher.combine(availableBlocks)
-    hasher.combine(totalInodes)
-    hasher.combine(freeInodes)
+    hasher.combine(rawValue.f_bsize)
+    hasher.combine(rawValue.f_blocks)
+    hasher.combine(rawValue.f_bfree)
+    hasher.combine(rawValue.f_bavail)
+    hasher.combine(rawValue.f_files)
+    hasher.combine(rawValue.f_ffree)
     hasher.combine(fileSystemID)
-    hasher.combine(mountFlags)
 
     #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
-    hasher.combine(preferredIOBlockSize)
-    #else
-    hasher.combine(fragmentSize)
-    #endif
-
-    #if !SYSTEM_PACKAGE_DARWIN && !os(FreeBSD)
-    hasher.combine(availableInodes)
-    #endif
-
-    #if !SYSTEM_PACKAGE_DARWIN
-    hasher.combine(maximumNameLength)
-    #endif
-
-    #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
-    hasher.combine(type)
-    #endif
-
-    #if SYSTEM_PACKAGE_DARWIN
-    hasher.combine(subtype)
-    #endif
-
-    #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
-    hasher.combine(owner)
+    hasher.combine(rawValue.f_iosize)
+    hasher.combine(rawValue.f_flags)
+    hasher.combine(rawValue.f_owner)
     Self._combineNullTerminatedBytes(rawValue.f_fstypename, into: &hasher)
     Self._combineNullTerminatedBytes(rawValue.f_mntonname, into: &hasher)
     Self._combineNullTerminatedBytes(rawValue.f_mntfromname, into: &hasher)
+    #elseif os(Linux) || os(Android)
+    hasher.combine(rawValue.f_type)
+    hasher.combine(rawValue.f_frsize)
+    hasher.combine(rawValue.f_flags)
+    hasher.combine(rawValue.f_namelen)
+    #endif
+
+    #if SYSTEM_PACKAGE_DARWIN
+    hasher.combine(rawValue.f_type)
+    hasher.combine(rawValue.f_fssubtype)
+    hasher.combine(rawValue.f_flags_ext)
+    #elseif os(FreeBSD)
+    hasher.combine(rawValue.f_version)
+    hasher.combine(rawValue.f_type)
+    hasher.combine(rawValue.f_namemax)
+    hasher.combine(rawValue.f_syncwrites)
+    hasher.combine(rawValue.f_asyncwrites)
+    hasher.combine(rawValue.f_syncreads)
+    hasher.combine(rawValue.f_asyncreads)
+    #elseif os(OpenBSD)
+    hasher.combine(rawValue.f_favail)
+    hasher.combine(rawValue.f_namemax)
+    hasher.combine(rawValue.f_syncwrites)
+    hasher.combine(rawValue.f_syncreads)
+    hasher.combine(rawValue.f_asyncwrites)
+    hasher.combine(rawValue.f_asyncreads)
+    hasher.combine(rawValue.f_ctime)
+    Self._combineNullTerminatedBytes(rawValue.f_mntfromspec, into: &hasher)
     #endif
   }
 
-  // Compares two fixed-size, NUL-terminated C character buffers (such as
-  // `f_mntonname`) up to their first NUL terminator.
   @inline(__always)
   private static func _nullTerminatedBytesEqual<T>(_ lhs: T, _ rhs: T) -> Bool {
     withUnsafeBytes(of: lhs) { lhsBytes in
@@ -697,14 +838,14 @@ extension StatFS {
     }
   }
 
-  // Hashes a fixed-size, NUL-terminated C character buffer (such as
-  // `f_mntonname`) up to its first NUL terminator.
+  // Feeds the length first so adjacent buffers can't run together.
   @inline(__always)
   private static func _combineNullTerminatedBytes<T>(
     _ value: T, into hasher: inout Hasher
   ) {
     withUnsafeBytes(of: value) { buffer in
       let bytes = buffer.prefix { $0 != 0 }
+      hasher.combine(bytes.count)
       hasher.combine(bytes: .init(rebasing: bytes))
     }
   }
@@ -718,8 +859,7 @@ extension FileDescriptor {
   /// Creates a `StatFS` for the file system containing the file referenced by
   /// this `FileDescriptor`.
   ///
-  /// The corresponding C function is `fstatfs()` on Darwin and BSD, or
-  /// `fstatvfs()` otherwise.
+  /// The corresponding C function is `fstatfs()`.
   @_alwaysEmitIntoClient
   public func statfs(
     retryOnInterrupt: Bool = true
@@ -736,8 +876,7 @@ extension FilePath {
   /// Creates a `StatFS` for the file system containing the file referenced by
   /// this `FilePath`.
   ///
-  /// The corresponding C function is `statfs()` on Darwin and BSD, or
-  /// `statvfs()` otherwise.
+  /// The corresponding C function is `statfs()`.
   @_alwaysEmitIntoClient
   public func statfs(
     retryOnInterrupt: Bool = true
@@ -746,4 +885,4 @@ extension FilePath {
   }
 }
 
-#endif // !os(Windows)
+#endif // !os(Windows) && !os(WASI)

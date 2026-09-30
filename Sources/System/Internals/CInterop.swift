@@ -14,12 +14,16 @@ import CSystem
 import ucrt
 #elseif canImport(Glibc)
 import CSystem
+#if os(Linux)
+// SwiftGlibc doesn't export `struct statfs`, so re-export it for clients who
+// need to use the fields of a `CInterop.StatFS`.
+@_exported import CSystemStatFS
+#endif
 import Glibc
 #elseif canImport(Musl)
 import CSystem
 import Musl
 #elseif canImport(WASILibc)
-import CSystem
 import WASILibc
 #elseif canImport(Bionic)
 import CSystem
@@ -105,6 +109,30 @@ extension CInterop {
   public static func stat(_ path: UnsafePointer<CChar>, _ s: inout CInterop.Stat) -> Int32 {
     system_stat(path, &s)
   }
+
+  #if !os(WASI)
+  /// The C `statfs` struct.
+  public typealias StatFS = statfs
+
+  /// Calls the C `statfs()` function.
+  ///
+  /// This is a direct wrapper around the C system call.
+  /// For a more ergonomic Swift API, use `StatFS` instead.
+  ///
+  /// - Warning: This API is primarily intended for migration purposes when
+  ///   supporting older deployment targets. If your deployment target supports
+  ///   it, prefer using the `StatFS` API, which provides type-safe, ergonomic
+  ///   access to file system metadata in Swift.
+  ///
+  /// - Parameters:
+  ///   - path: A null-terminated C string representing the file path.
+  ///   - s: An `inout` reference to a `CInterop.StatFS` struct to populate.
+  /// - Returns: 0 on success, -1 on error (check `errno`).
+  @_alwaysEmitIntoClient
+  public static func statfs(_ path: UnsafePointer<CChar>, _ s: inout CInterop.StatFS) -> Int32 {
+    system_statfs(path, &s)
+  }
+  #endif
 }
 
 @available(System 1.7.0, *)
@@ -118,14 +146,9 @@ extension CInterop {
   #endif
 }
 
+#if !os(WASI)
 @available(System 199, *)
 extension CInterop {
-  #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
-  public typealias StatFS = statfs
-  #else
-  public typealias StatFS = statvfs
-  #endif
-
   #if SYSTEM_PACKAGE_DARWIN || os(OpenBSD)
   public typealias MountFlags = UInt32
   #elseif os(FreeBSD)
@@ -134,10 +157,7 @@ extension CInterop {
   public typealias MountFlags = CUnsignedLong
   #endif
 
-  #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
   public typealias FileSystemID = fsid_t
-  #else
-  public typealias FileSystemID = CUnsignedLong
-  #endif
 }
+#endif
 #endif

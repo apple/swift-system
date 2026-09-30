@@ -84,6 +84,10 @@ target_sources(SystemPackage PRIVATE
   Internals/WindowsSyscallAdapters.swift)
 target_link_libraries(SystemPackage PUBLIC
   CSystem)
+if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+  target_link_libraries(SystemPackage PUBLIC
+    CSystemStatFS)
+endif()
 
 set(SWIFT_SYSTEM_APPLE_PLATFORMS "Darwin" "iOS" "watchOS" "tvOS" "visionOS")
 if(CMAKE_SYSTEM_NAME IN_LIST SWIFT_SYSTEM_APPLE_PLATFORMS)
