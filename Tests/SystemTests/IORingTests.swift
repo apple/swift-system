@@ -2,7 +2,8 @@
 #if os(Linux)
 
 import XCTest
-import CSystem //for eventfd
+import CSystem // for eventfd and csystem_io_uring_setup
+import CSystemIOUring
 #if canImport(Glibc)
 import Glibc // for errno
 #elseif canImport(Musl)
@@ -28,7 +29,7 @@ let uringEnabled: Bool = {
 func isUringEnabled() throws -> Bool {
     // Even if the kernel supports io_uring, the SystemPackage build may have
     // been compiled against older kernel headers that lack features it needs
-    // (gated on IORING_TIMEOUT_BOOTTIME in CSystem); in that configuration
+    // (gated on IORING_TIMEOUT_BOOTTIME in io_uring.h); in that configuration
     // IORing.init throws ENOTSUP. Treat that as disabled so tests skip cleanly
     // instead of failing.
     do throws(Errno) {
@@ -59,7 +60,7 @@ func isUringEnabled() throws -> Bool {
     //   - EPERM or EACCES -> treat as disabled
     //   - propagate any other error.
     var params = io_uring_params()
-    let raw = io_uring_setup(1, &params)
+    let raw = csystem_io_uring_setup(1, &params)
     if raw < 0 {
         let err = Errno(rawValue: errno)
         switch err {

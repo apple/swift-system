@@ -1,9 +1,18 @@
+// System imports CSystem with `internal import`. Don't include a header that
+// the platform's C module also includes: CSystem would then co-own its
+// declarations, so Swift would limit them to CSystem's import access level and
+// could credit their members to CSystem under MemberImportVisibility.
+// (CSystemWASI.h and CSystemFreeBSD.h still do; see Constants.swift.)
 module CSystem {
   header "CSystemShared.h"
-  header "CSystemDarwin.h"
   header "CSystemLinux.h"
   header "CSystemWASI.h"
-  header "CSystemWindows.h"
   header "CSystemFreeBSD.h"
   export *
+}
+
+// IORing's inlinable code stores these types, so System imports this module
+// with `public import`. Keep libc headers out of it too.
+module CSystemIOUring {
+  header "io_uring.h"
 }

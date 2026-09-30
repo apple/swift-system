@@ -1,7 +1,8 @@
 #if compiler(>=6.2) && $Lifetimes
 #if os(Linux)
 
-import CSystem
+internal import CSystem
+public import CSystemIOUring
 // needed for mmap
 #if canImport(Glibc)
 import Glibc
@@ -223,7 +224,7 @@ private func setUpRing(
 
     var err: Errno? = nil
     let ringDescriptor = withUnsafeMutablePointer(to: &params) {
-        let result = io_uring_setup(queueDepth, $0)
+        let result = csystem_io_uring_setup(queueDepth, $0)
         if result < 0 {
             err = Errno.current
         }
