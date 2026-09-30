@@ -286,6 +286,17 @@ final class IORingTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(elapsed, .milliseconds(50))
     }
 
+    func testBlockingConsumeCompletionsSendsDone() throws {
+        try XCTSkipIf(!uringEnabled, failureMessage)
+        var ring = try IORing(queueDepth: 4)
+        XCTAssertTrue(try ring.submit(linkedRequests: .nop()))
+        var dones: [Bool] = []
+        ring.blockingConsumeCompletions { (completion: consuming IORing.Completion?, error, done) in
+            dones.append(done)
+        }
+        XCTAssertEqual(dones, [false, true])
+    }
+
     func testRegisterEventFDTwiceThrows() throws {
         try XCTSkipIf(!uringEnabled, failureMessage)
         var ring = try IORing(queueDepth: 4)
