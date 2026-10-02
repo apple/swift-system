@@ -1,4 +1,4 @@
-# A `Win32` Namespace and `Win32.Error` for Swift System
+# A `Win32` Namespace and `Win32Error` for Swift System
 
 * Proposal: [SYS-0010](0010-win32-namespace-and-error.md)
 * Author: [Jonathan Flat](https://github.com/jrflat)
@@ -10,16 +10,17 @@
 #### Revision history
 
 * **v1** Initial version.
+* **v2** Rename `Win32.Error` to a top-level `Win32Error`. Clarify the synthesized code's bits and how wrappers can throw `.success`. Add `NTStatus` to **Future directions**.
 
 ## Introduction
 
-System's current file system APIs are POSIX-shaped, and on Windows they are built mostly on the Universal C Runtime's POSIX compatibility layer. That layer is a portability shim, not a model of the operating system. This proposal adds `Win32`, a namespace for Windows-native file system APIs, and `Win32.Error`, the error type those APIs report.
+System's current file system APIs are POSIX-shaped, and on Windows they are built mostly on the Universal C Runtime's POSIX compatibility layer. That layer is a portability shim, not a model of the operating system. This proposal adds `Win32`, a namespace for Windows-native file system APIs, and `Win32Error`, the error type those APIs report.
 
 It's the foundation for a series of proposals that nest their types in the namespace and throw the error. Each is mostly reviewable on its own, but may depend on others in the series for the final shape:
 
 | API | Proposal |
 | --- | --- |
-| `Win32` namespace, `Win32.Error` | This proposal |
+| `Win32` namespace, `Win32Error` | This proposal |
 | `Win32.FileHandle`, ownership and closing | [SYS-0011](0011-win32-filehandle.md) |
 | Opening files and directories, duplication, and reopening | [SYS-0012](0012-win32-opening-handles.md) |
 | `FileDescriptor` bridging for `Win32.FileHandle` | [SYS-0013](0013-win32-filedescriptor-bridging.md) |
@@ -53,7 +54,7 @@ The library already treats POSIX and Windows file metadata as disjoint surfaces.
 
 > Rather than forcing Windows file metadata semantics into a cross-platform `Stat` type, we should instead create Windows-specific types that give developers full access to platform-native file metadata.
 
-Those Windows-specific types need somewhere to live, and it shouldn't be the top level, where the natural names would conflict. System already declares `FileType` and `FileFlags` for other platforms, and [SYS-0012](0012-win32-opening-handles.md) and [SYS-0015](0015-win32-file-type.md) need Windows types with those names and different meanings. A top-level `Error` or `FileHandle` would collide with the standard library or Foundation. System has a shipped precedent for the alternative. `Mach` is a caseless `enum` that serves purely as a namespace for a family of platform-specific types. A `Win32` namespace follows that precedent.
+Those Windows-specific types need somewhere to live, and it shouldn't be the top level, where the natural names would conflict. System already declares `FileType` and `FileFlags` for other platforms, and [SYS-0012](0012-win32-opening-handles.md) and [SYS-0015](0015-win32-file-type.md) need Windows types with those names and different meanings. A top-level `FileHandle` would collide with Foundation's. System has a shipped precedent for the alternative. `Mach` is a caseless `enum` that serves purely as a namespace for a family of platform-specific types. A `Win32` namespace follows that precedent.
 
 ### `Errno` can't express Windows failures
 
@@ -77,13 +78,13 @@ A media failure, a device that's not ready, and a sharing violation are three di
 
 **It turns control-flow signals into ordinary failures.** `ERROR_MORE_DATA` (234) is a retry instruction, and a caller that can't distinguish it from `EINVAL` can't write the grow-and-retry loop that Windows' variable-length query APIs require. `ERROR_NO_MORE_FILES` (18) ends an enumeration, but it maps to `ENOENT`.
 
-**It misses even the POSIX analogs that exist.** `ERROR_NO_DATA` (232) is what's reported when writing to a pipe whose reader has closed, so `FileDescriptor.write` throws `EINVAL` where Linux and Darwin report `EPIPE`. `ERROR_FILE_TOO_LARGE` (223), which reports a file system limit, likewise becomes `EINVAL` rather than `EFBIG`.
+**It misses even the POSIX analogs that exist.** `ERROR_NO_DATA` (232) is what's reported when writing to a pipe whose reader has closed, so `FileDescriptor.write` throws `EINVAL` where Linux and Darwin report `EPIPE`. `ERROR_FILE_TOO_LARGE` (223), which reports a size limit, likewise becomes `EINVAL` rather than `EFBIG`.
 
 None of this is a defect in `_mapWindowsErrorToErrno`. The shim's job is to match what the C runtime does, and it does. The problem is that the destination type can't carry the code Windows reported.
 
 ## Proposed solution
 
-Add `Win32`, a namespace available on Windows and scoped to the Win32 layer, and `Win32.Error`, the error currency for everything in it. Also provide a public `Errno(approximating: Win32.Error)` conversion for callers who want a POSIX approximation (such as a cross-platform library that throws `Errno` on every platform), and document that it's lossy.
+Add `Win32`, a namespace available on Windows and scoped to the Win32 layer, and `Win32Error`, the error currency for everything in it. `Win32Error` is top-level, like `Errno`, because error domains can be useful as top-level types even when their APIs are namespaced. Also provide a public `Errno(approximating: Win32Error)` conversion for callers who want a POSIX approximation (such as a cross-platform library that throws `Errno` on every platform), and document that it's lossy.
 
 ```swift
 #if os(Windows)
@@ -91,7 +92,7 @@ do {
   // `Win32.FileHandle` and `open` are proposed separately, in SYS-0011 and SYS-0012.
   let handle = try Win32.FileHandle.open(path, access: .genericWrite)
   try handle.close()
-} catch Win32.Error.sharingViolation {
+} catch Win32Error.sharingViolation {
   // Retryable: another process has the file open with an incompatible share mode.
 } catch let error {
   log("open failed: \(error)")                   // localized system message
@@ -115,103 +116,103 @@ Wrapper constants and functions introduced here are `@_alwaysEmitIntoClient`. Al
 /// documented, ABI-stable system interface for desktop Windows.
 @frozen
 public enum Win32 {}
-#else
+#elseif SYSTEM_PACKAGE
 @available(*, unavailable, message: "Win32 APIs are only available on Windows.")
-public enum Win32 {
-  public struct Error {}  // Each nested type gets an empty stub.
-}
+public enum Win32 {}  // Each nested type gets an empty stub.
+
+@available(*, unavailable, message: "Win32 APIs are only available on Windows.")
+public struct Win32Error: Error {}
 #endif
 ```
 
-Other platforms get an unavailable stub for `Win32` and for each type nested in it, so naming one as a type reports that it's Windows-only. Their members aren't declared on other platforms.
+In package builds, other platforms get an unavailable stub for `Win32`, `Win32Error`, and nested types, so naming one as a type reports that it's Windows-only. Their members aren't declared on other platforms.
 
-### `Win32.Error`
+### `Win32Error`
 
 ```swift
-extension Win32 {
-  /// A Windows system error code.
+/// A Windows system error code.
+///
+/// This represents a value reported by `GetLastError`, or a code that
+/// System synthesizes. See ``isSynthesized``.
+@frozen
+public struct Win32Error: RawRepresentable, Error, Sendable, Hashable, Codable {
+  /// The raw C error code.
+  public let rawValue: DWORD
+
+  /// Creates a strongly-typed error from a raw C error code.
+  public init(rawValue: DWORD)
+
+  /// Creates a strongly-typed error from a raw C error code.
+  public init(_ rawValue: DWORD)
+
+  /// No error.
   ///
-  /// This represents a value reported by `GetLastError`, or a code that
-  /// System synthesizes. See ``isSynthesized``.
-  @frozen
-  public struct Error: RawRepresentable, Swift.Error, Sendable, Hashable, Codable {
-    /// The raw C error code.
-    public let rawValue: DWORD
+  /// The corresponding C constant is `ERROR_SUCCESS`.
+  public static var success: Win32Error { get }
 
-    /// Creates a strongly-typed error from a raw C error code.
-    public init(rawValue: DWORD)
+  // ... the curated set of named codes:
+  public static var invalidFunction: Win32Error { get }        // ERROR_INVALID_FUNCTION
+  public static var fileNotFound: Win32Error { get }           // ERROR_FILE_NOT_FOUND
+  public static var pathNotFound: Win32Error { get }           // ERROR_PATH_NOT_FOUND
+  public static var accessDenied: Win32Error { get }           // ERROR_ACCESS_DENIED
+  public static var invalidHandle: Win32Error { get }          // ERROR_INVALID_HANDLE
+  public static var deviceNotReady: Win32Error { get }         // ERROR_NOT_READY
+  public static var cyclicRedundancyCheck: Win32Error { get }  // ERROR_CRC
+  public static var writeFault: Win32Error { get }             // ERROR_WRITE_FAULT
+  public static var sharingViolation: Win32Error { get }       // ERROR_SHARING_VIOLATION
+  public static var lockViolation: Win32Error { get }          // ERROR_LOCK_VIOLATION
+  public static var notLocked: Win32Error { get }              // ERROR_NOT_LOCKED
+  public static var negativeSeek: Win32Error { get }           // ERROR_NEGATIVE_SEEK
+  public static var endOfFile: Win32Error { get }              // ERROR_HANDLE_EOF
+  public static var brokenPipe: Win32Error { get }             // ERROR_BROKEN_PIPE
+  public static var notSupported: Win32Error { get }           // ERROR_NOT_SUPPORTED
+  public static var fileExists: Win32Error { get }             // ERROR_FILE_EXISTS
+  public static var invalidParameter: Win32Error { get }       // ERROR_INVALID_PARAMETER
+  public static var insufficientBuffer: Win32Error { get }     // ERROR_INSUFFICIENT_BUFFER
+  public static var invalidName: Win32Error { get }            // ERROR_INVALID_NAME
+  public static var badPathName: Win32Error { get }            // ERROR_BAD_PATHNAME
+  public static var alreadyExists: Win32Error { get }          // ERROR_ALREADY_EXISTS
+  public static var fileTooLarge: Win32Error { get }           // ERROR_FILE_TOO_LARGE
+  public static var diskFull: Win32Error { get }               // ERROR_DISK_FULL
+  public static var pipeBusy: Win32Error { get }               // ERROR_PIPE_BUSY
+  public static var noData: Win32Error { get }                 // ERROR_NO_DATA
+  public static var pipeNotConnected: Win32Error { get }       // ERROR_PIPE_NOT_CONNECTED
+  public static var moreData: Win32Error { get }               // ERROR_MORE_DATA
+  public static var notDirectory: Win32Error { get }           // ERROR_DIRECTORY
+  public static var operationAborted: Win32Error { get }       // ERROR_OPERATION_ABORTED
+  public static var ioPending: Win32Error { get }              // ERROR_IO_PENDING
+  public static var userMappedFile: Win32Error { get }         // ERROR_USER_MAPPED_FILE
+  public static var cannotResolveFileName: Win32Error { get }  // ERROR_CANT_RESOLVE_FILENAME
 
-    /// Creates a strongly-typed error from a raw C error code.
-    public init(_ rawValue: DWORD)
+  // ... and a code System synthesizes, which Windows never reports:
+  public static var incompleteTransfer: Win32Error { get }     // 0xA0535901
 
-    /// The operation completed successfully.
-    ///
-    /// The corresponding C constant is `ERROR_SUCCESS`.
-    public static var success: Error { get }
-
-    // ... the curated set of named codes:
-    public static var invalidFunction: Error { get }        // ERROR_INVALID_FUNCTION
-    public static var fileNotFound: Error { get }           // ERROR_FILE_NOT_FOUND
-    public static var pathNotFound: Error { get }           // ERROR_PATH_NOT_FOUND
-    public static var accessDenied: Error { get }           // ERROR_ACCESS_DENIED
-    public static var invalidHandle: Error { get }          // ERROR_INVALID_HANDLE
-    public static var deviceNotReady: Error { get }         // ERROR_NOT_READY
-    public static var cyclicRedundancyCheck: Error { get }  // ERROR_CRC
-    public static var writeFault: Error { get }             // ERROR_WRITE_FAULT
-    public static var sharingViolation: Error { get }       // ERROR_SHARING_VIOLATION
-    public static var lockViolation: Error { get }          // ERROR_LOCK_VIOLATION
-    public static var notLocked: Error { get }              // ERROR_NOT_LOCKED
-    public static var negativeSeek: Error { get }           // ERROR_NEGATIVE_SEEK
-    public static var endOfFile: Error { get }              // ERROR_HANDLE_EOF
-    public static var brokenPipe: Error { get }             // ERROR_BROKEN_PIPE
-    public static var notSupported: Error { get }           // ERROR_NOT_SUPPORTED
-    public static var fileExists: Error { get }             // ERROR_FILE_EXISTS
-    public static var invalidParameter: Error { get }       // ERROR_INVALID_PARAMETER
-    public static var insufficientBuffer: Error { get }     // ERROR_INSUFFICIENT_BUFFER
-    public static var invalidName: Error { get }            // ERROR_INVALID_NAME
-    public static var badPathName: Error { get }            // ERROR_BAD_PATHNAME
-    public static var alreadyExists: Error { get }          // ERROR_ALREADY_EXISTS
-    public static var fileTooLarge: Error { get }           // ERROR_FILE_TOO_LARGE
-    public static var diskFull: Error { get }               // ERROR_DISK_FULL
-    public static var pipeBusy: Error { get }               // ERROR_PIPE_BUSY
-    public static var noData: Error { get }                 // ERROR_NO_DATA
-    public static var pipeNotConnected: Error { get }       // ERROR_PIPE_NOT_CONNECTED
-    public static var moreData: Error { get }               // ERROR_MORE_DATA
-    public static var notADirectory: Error { get }          // ERROR_DIRECTORY
-    public static var operationAborted: Error { get }       // ERROR_OPERATION_ABORTED
-    public static var ioPending: Error { get }              // ERROR_IO_PENDING
-    public static var userMappedFile: Error { get }         // ERROR_USER_MAPPED_FILE
-    public static var cannotResolveFileName: Error { get }  // ERROR_CANT_RESOLVE_FILENAME
-
-    // ... and a code System synthesizes, which Windows never reports:
-    public static var incompleteTransfer: Error { get }     // 0xA0535901
-
-    /// Whether System synthesized this error instead of Windows reporting it.
-    public var isSynthesized: Bool { get }
-  }
+  /// Whether this is a code that System synthesizes instead of one that
+  /// Windows reports.
+  public var isSynthesized: Bool { get }
 }
 
-extension Win32.Error: CustomStringConvertible, CustomDebugStringConvertible {
+extension Win32Error: CustomStringConvertible, CustomDebugStringConvertible {
   public var description: String { get }
   public var debugDescription: String { get }
 }
 
-extension Win32.Error {
-  public static func ~= (_ lhs: Win32.Error, _ rhs: Swift.Error) -> Bool
+extension Win32Error {
+  public static func ~= (_ lhs: Win32Error, _ rhs: Error) -> Bool
 }
 ```
 
 The named constants are not exhaustive. They cover every code that System's Win32 APIs document plus codes that callers commonly branch on, and `rawValue` covers everything else. A `struct` over `DWORD` keeps unknown codes representable and round-trippable, which is required for a type modeling an error space of several thousand values that any application can extend with `SetLastError`.
 
-The last code is System's own and uses a base of `0xA0535900`. Windows reserves bit 29 (`APPLICATION_ERROR_MASK`) for application-defined codes, and setting bit 31 makes the code negative so `HRESULT_FROM_WIN32` leaves it unchanged. `isSynthesized` checks for System's base.
+The last code is System's own and uses a base of `0xA0535900`. Windows reserves bit 29 (`APPLICATION_ERROR_MASK`) for application-defined codes, and setting bit 31 makes the code negative so `HRESULT_FROM_WIN32` leaves it unchanged. (As an `HRESULT`, these are the customer and severity bits, so the code reads as a customer-defined failure.) `isSynthesized` checks for System's base.
 
-System may reuse a Windows code if it accurately describes the condition, even for a check Windows doesn't make itself. For example, a wrapper throws `.invalidParameter` for an argument it rejects before calling Win32, such as an overlapped flag or a negative offset, and `.notADirectory` when a directory open doesn't resolve to a directory. System only synthesizes a code when no Windows code fits. One example is `.incompleteTransfer`, which is thrown in [SYS-0014](0014-win32-file-io.md) when a `WriteFile` succeeds without writing anything.
+System may reuse a Windows code if it accurately describes the condition, even for a check Windows doesn't make itself. For example, a wrapper throws `.invalidParameter` for an argument it rejects before calling Win32, such as an overlapped flag or a negative offset, and `.notDirectory` when a directory open doesn't resolve to a directory. System only synthesizes a code when no Windows code fits. One example is `.incompleteTransfer`, which is thrown in [SYS-0014](0014-win32-file-io.md) when a `WriteFile` succeeds without writing anything.
 
-`~=` lets a `catch` clause match a `Win32.Error` pattern against an untyped error, as `Errno`'s does.
+`~=` lets a `catch` clause match a `Win32Error` pattern against an untyped error, as `Errno`'s does.
 
 ### `description` and `debugDescription`
 
-Like `Errno`, `Win32.Error` provides a human-readable `description` using `FormatMessageW`. As with `strerror`, the message is localized to the system or thread locale, so it's suitable for display or logging, but not for programmatic matching. `FormatMessageW` allocates, so `description` should be avoided in hot paths. `description` strips the trailing `\r\n` that system messages end with, and falls back to a numeric rendering when `FormatMessageW` fails.
+Like `Errno`, `Win32Error` provides a human-readable `description` using `FormatMessageW`. As with `strerror`, the message varies by language, so it's suitable for display or logging, but not for programmatic matching. `FormatMessageW` allocates, so `description` should be avoided in hot paths. `description` strips the trailing `\r\n` that system messages end with, and falls back to a numeric rendering when `FormatMessageW` fails.
 
 `debugDescription` gives the symbolic constant with the decimal and hexadecimal value, such as `ERROR_SHARING_VIOLATION (32, 0x20)`, and the numeric form alone for codes that have no name. It's locale-independent and suitable for tests or structured logs.
 
@@ -219,13 +220,21 @@ A synthesized code has no system message, so both properties render it from a lo
 
 ### Capturing the last error
 
-`GetLastError` is thread-local and volatile. The next Win32 call on the thread clobbers it, and so can an ARC release that runs a `deinit` between the failing call and the error read. Every wrapper in the namespace must capture the code into a `Win32.Error` immediately at the failure site.
+`GetLastError` is thread-local and volatile. The next Win32 call on the thread clobbers it, and so can an ARC release that runs a `deinit` between the failing call and the error read. Every wrapper in the namespace must capture the code into a `Win32Error` immediately at the failure site.
 
 Some Win32 functions return a value that can mean either success or failure, such as `GetFileType`'s `FILE_TYPE_UNKNOWN` ([SYS-0015](0015-win32-file-type.md)), and don't clear the last error when they succeed. In this case, a System wrapper must call `SetLastError(ERROR_SUCCESS)` before the function so users don't have to.
 
 Certain Win32 functions may succeed and set the last error to a code that carries information. For example, `CreateFileW` with `OPEN_ALWAYS` or `CREATE_ALWAYS` can return a valid handle and set `ERROR_ALREADY_EXISTS` to report that the file already existed. A `throws` signature can't express this, so System APIs must surface it through parameter or return types instead. See [SYS-0012](0012-win32-opening-handles.md). If the code instead means the operation didn't happen, the wrapper throws it. For instance, a console `ReadFile` interrupted by Ctrl+C succeeds with `ERROR_OPERATION_ABORTED`, so the reads in [SYS-0014](0014-win32-file-io.md) throw `.operationAborted` instead of reporting the end of the file.
 
-A Win32 function may also fail while `GetLastError` reports `ERROR_SUCCESS`. Wrappers report the error directly from the system, so a `throws(Win32.Error)` API can throw `.success`.
+A Win32 function may also fail while `GetLastError` reports `ERROR_SUCCESS`:
+
+```c
+if (!SomeWin32Function(...)) {
+  DWORD error = GetLastError();  // can be ERROR_SUCCESS
+}
+```
+
+Wrappers throw the code exactly as `GetLastError` reports it, so a `throws(Win32Error)` API can throw `.success`.
 
 ### Interoperating with `Errno`
 
@@ -233,13 +242,13 @@ The conversion to `Errno` is lossy:
 
 ```swift
 extension Errno {
-  /// The closest POSIX equivalent of a Windows system error.
+  /// Creates the closest POSIX ``Errno`` for a Windows system error.
   ///
-  /// This mapping is lossy. It approximates the C runtime's `_dosmaperr`
-  /// behavior, which folds Windows' several thousand system error codes onto
-  /// sixteen ``Errno`` values. Unrecognized codes become
-  /// ``Errno/invalidArgument``. Prefer handling ``Win32/Error`` directly.
-  public init(approximating error: Win32.Error)
+  /// This mapping is lossy. It approximates the C runtime's `_dosmaperr`,
+  /// folding Windows' several thousand system error codes onto a small set
+  /// of ``Errno`` values. Unrecognized codes become ``Errno/invalidArgument``.
+  /// Prefer handling ``Win32Error`` directly.
+  public init(approximating error: Win32Error)
 }
 ```
 
@@ -255,7 +264,7 @@ This proposal is additive and ABI-compatible with existing code.
 
 ## Implications on adoption
 
-`Win32` and everything in it is only available on Windows, so cross-platform callers must guard their uses. This is intentional so the platform dependency is visible at the use site rather than hidden behind a portable-looking type with unportable behavior.
+The `Win32` namespace and `Win32Error` are only available on Windows, so cross-platform callers must guard their uses. This is intentional so the platform dependency is visible at the use site rather than hidden behind a portable-looking type with unportable behavior.
 
 ## Future directions
 
@@ -282,9 +291,13 @@ These stages could follow the proposals in the **Introduction**:
 
 **Security descriptors.** `GetSecurityInfo`, `SetSecurityInfo`, ACLs, and SIDs reach beyond the file system. They're the Windows analog of `FilePermissions` and `UserID`, and are large enough to be their own effort. That effort would build on the `Win32.SecurityDescriptor` that [SYS-0012](0012-win32-opening-handles.md) introduces.
 
-### `Win32.HResult`
+### `HResult` and `NTStatus`
 
-COM-shaped APIs in the Win32 surface (the `PathCch*` family in particular) report an `HRESULT` rather than a system error code, and System's Windows path canonicalization already flattens one with a private helper. The namespace will eventually need a public story for this, most likely a minimal `Win32.HResult` wrapper with a `var win32Error: Win32.Error?` that extracts the code only when the facility is `FACILITY_WIN32`. None of the proposals in this series need to surface it publicly, so it's left out for now.
+Some Win32 functions (the `PathCch*` family in particular) report an `HRESULT` rather than a system error code, and System's Windows path canonicalization already flattens one with a private helper. System will eventually need a public story for this, most likely a minimal `HResult` wrapper with a `var win32Error: Win32Error?` that extracts the code only when the facility is `FACILITY_WIN32`.
+
+Similarly, a minimal `NTStatus` wrapper over the signed `NTSTATUS` would serve callers of `Nt*` functions, without System wrapping the NT Native API itself.
+
+None of the proposals in this series need either type, so they're left out for now.
 
 ## Alternatives considered
 
@@ -305,18 +318,28 @@ Rejected because:
 
 ### No namespace, prefixed top-level names
 
-Spell the types `Win32Error`, `Win32FileHandle`, and so on, with no enclosing type.
+Spell the types `Win32FileHandle`, `Win32FileType`, and so on, with no enclosing type.
 
 Rejected because:
 
 * A namespace is the canonical way to organize and document which of Windows' several overlapping API layers is being wrapped.
 * `Mach` and `Mach.Port` already provide precedent in System.
 
+### Nest the error type as `Win32.Error`
+
+Declare the error type in the namespace with the rest of the series, so every Win32 API is under one name.
+
+Rejected because:
+
+* Error domains can be useful as top-level types, even when their APIs are namespaced. `Win32Error` is generally useful outside the `Win32` namespace, and it aligns with other top-level errors (`POSIXError`, `MachError`, `Errno`).
+* Future `NTStatus` and `HResult` types would fit in with their peers.
+* A nested `Error` shadows `Swift.Error` in every `extension Win32 { }`, including clients' extensions.
+
 ### A separate `Win32System` module
 
 Vend the Windows APIs from their own module instead of a namespace, possibly alongside a `POSIXSystem` module for System's Unix-only types.
 
-Rejected because Swift modules don't namespace their top-level names. A top-level `Error` would shadow `Swift.Error` in any file that imports the module, and a `FileHandle` would clash with Foundation's, so the module would still need the `Win32` namespace, or prefixed names. Whether that namespace lives in its own module is a packaging choice that doesn't change these APIs.
+Rejected because Swift modules don't namespace their top-level names. A top-level `FileHandle` would clash with Foundation's, so the module would still need the `Win32` namespace, or prefixed names. Whether that namespace lives in its own module is a packaging choice that doesn't change these APIs.
 
 ### Name the namespace `Windows`
 
@@ -329,7 +352,7 @@ Rejected because:
 
 ### Expose a `CInterop.DWORD` typealias
 
-Spell raw Win32 values through `CInterop`, so that `Win32.Error.rawValue` would be a `CInterop.DWORD`. This would match how `UserID` stores a `CInterop.UserID`.
+Spell raw Win32 values through `CInterop`, so that `Win32Error.rawValue` would be a `CInterop.DWORD`. This would match how `UserID` stores a `CInterop.UserID`.
 
 Rejected because:
 
@@ -337,32 +360,43 @@ Rejected because:
 * `Mach`, the precedent for this namespace, spells Darwin's types directly, such as `mach_port_name_t`.
 * Code that reads or passes a raw value is calling Win32 functions, so it already imports `WinSDK`.
 
-### Name the error type `Win32.ErrorCode`
+### Name the error type `Win32ErrorCode`
 
-`Win32.ErrorCode` is more literal, since Windows calls these "system error codes", and it would avoid shadowing `Swift.Error` inside the namespace.
+`Win32ErrorCode` is more literal, since Windows calls these "system error codes".
 
-Rejected because it's verbose and breaks the convention Foundation and other Swift projects follow, where error types are named like `POSIXError` and `URLError`, and `Code` names their nested code types. The shadowing only affects code written inside `extension Win32 { }`, which would be mostly System's own implementations.
+Rejected because it's verbose and breaks the convention Foundation and other Swift projects follow, where error types are named like `POSIXError` and `URLError`, and `Code` names their nested code types.
 
 ### An `enum` with cases instead of a `struct`
 
-Give `Win32.Error` a case per named code, making a `switch` over it exhaustive.
+Give `Win32Error` a case per named code, making a `switch` over it exhaustive.
 
 Rejected because an `enum` can't represent a code the library has not enumerated, and the Windows error space is open-ended.
 
-### A public `Win32.Error.current`
+### A public `Win32Error.current`
 
 A `GetLastError` wrapper, with a setter for `SetLastError`, would let callers read and clear the last error themselves.
 
 Rejected because:
 
 * Such an accessor can't be made correct by construction. Swift may insert an ARC release between the failing call and the read, and the caller's own intervening work could clobber the value, too. `Errno.current` is internal for the same reason.
-* Callers using raw Win32 functions already have `GetLastError` and `SetLastError`, and can wrap a result with `Win32.Error.init(_:)`.
+* Callers using raw Win32 functions already have `GetLastError` and `SetLastError`, and can wrap a result with `Win32Error.init(_:)`.
 
 ### Synthesize a code instead of throwing `.success`
 
 When a Win32 function fails but `GetLastError` reports `ERROR_SUCCESS`, throw a synthesized code, so that a logged error doesn't read "The operation completed successfully."
 
-Rejected because it trades fidelity for a friendlier log line. When Windows reports a failure, the thrown error is the code Windows reported, even `ERROR_SUCCESS`. System synthesizes codes only for results that Windows reports as success, like the `WriteFile` behind `.incompleteTransfer`. The case is rare, and `debugDescription` still identifies it as `ERROR_SUCCESS (0, 0x0)`.
+Rejected because it trades fidelity for a friendlier log line. When a call fails, the thrown error is the code `GetLastError` reports, even if it's `ERROR_SUCCESS`. System only synthesizes a code for a call that _succeeds_ without doing what was asked, and only when no Windows code fits, for example:
+
+```c
+if (!SomeWin32Function(...)) {
+  // Failed: throw the code from GetLastError(), even ERROR_SUCCESS.
+}
+if (WriteFile(handle, buffer, remaining, &written, NULL) && written == 0) {
+  // Succeeded without writing anything: throw .incompleteTransfer (synthesized).
+}
+```
+
+On top of this, a misleading "successful" `description` can only come from a failure that reports `ERROR_SUCCESS`, which is rare. `debugDescription` also identifies it more clearly as `ERROR_SUCCESS (0, 0x0)`.
 
 ## Appendix
 
@@ -370,8 +404,8 @@ Rejected because it trades fidelity for a friendlier log line. When Windows repo
 
 | Swift | C |
 | --- | --- |
-| `Win32.Error` | `DWORD` system error code |
-| `Win32.Error.description` | `FormatMessageW` with `FORMAT_MESSAGE_FROM_SYSTEM`, `FORMAT_MESSAGE_ALLOCATE_BUFFER`, and `FORMAT_MESSAGE_IGNORE_INSERTS` |
+| `Win32Error` | `DWORD` system error code |
+| `Win32Error.description` | `FormatMessageW` with `FORMAT_MESSAGE_FROM_SYSTEM`, `FORMAT_MESSAGE_ALLOCATE_BUFFER`, and `FORMAT_MESSAGE_IGNORE_INSERTS` |
 | `Errno.init(approximating:)` | `_dosmaperr` (as `_mapWindowsErrorToErrno`) |
 
 Testing was performed on an ARM64 Windows 11 VM (build 22631). The pipe error codes were reproduced on an x64 Windows 11 PC (build 26200).
