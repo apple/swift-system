@@ -584,8 +584,8 @@ public struct IORing: ~Copyable {
                     break
                 }
             }
-            try consumer(nil, nil, true)
         }
+        try consumer(nil, nil, true)
     }
 
     @inlinable
