@@ -204,7 +204,7 @@ extension Win32Error {
 
 The named constants are not exhaustive. They cover every code that System's Win32 APIs document plus codes that callers commonly branch on, and `rawValue` covers everything else. A `struct` over `DWORD` keeps unknown codes representable and round-trippable, which is required for a type modeling an error space of several thousand values that any application can extend with `SetLastError`.
 
-The last code is System's own and uses a base of `0xA0535900`. Windows reserves bit 29 (`APPLICATION_ERROR_MASK`) for application-defined codes, and setting bit 31 makes the code negative so `HRESULT_FROM_WIN32` leaves it unchanged. (As an `HRESULT`, these are the customer and severity bits, so the code reads as a customer-defined failure.) `isSynthesized` checks for System's base.
+The last code is System's own and uses a base of `0xA0535900`. It sets the customer bit (29) and the severity bit (31), so it's a customer-defined failure `HRESULT` rather than a system error code. `isSynthesized` checks for System's base.
 
 System may reuse a Windows code if it accurately describes the condition, even for a check Windows doesn't make itself. For example, a wrapper throws `.invalidParameter` for an argument it rejects before calling Win32, such as an overlapped flag or a negative offset, and `.notDirectory` when a directory open doesn't resolve to a directory. System only synthesizes a code when no Windows code fits. One example is `.incompleteTransfer`, which is thrown in [SYS-0014](0014-win32-file-io.md) when a `WriteFile` succeeds without writing anything.
 
