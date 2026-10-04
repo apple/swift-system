@@ -85,10 +85,10 @@ struct _Lexer {
     slice._eat(.backslash) != nil
   }
 
-  // Try to consume a drive letter and subsequent `:`.
+  // Try to consume a drive designator and subsequent `:`.
   mutating func eatDrive() -> SystemChar? {
     let copy = slice
-    if let d = slice._eat(if: { $0.isLetter }), slice._eat(.colon) != nil {
+    if let d = slice._eat(if: { !isSeparator($0) && $0 != .colon }), slice._eat(.colon) != nil {
       return d
     }
     // Restore slice

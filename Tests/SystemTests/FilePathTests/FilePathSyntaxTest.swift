@@ -595,7 +595,7 @@ final class FilePathSyntaxTest: XCTestCase {
       ),
     ]
 
-    let windowsPaths: Array<SyntaxTestCase> = [
+    var windowsPaths: Array<SyntaxTestCase> = [
       .windows(#""#, absolute: false,  components: []),
 
       .windows(
@@ -626,6 +626,15 @@ final class FilePathSyntaxTest: XCTestCase {
         dirname: #"C:\foo"#, basename: "bar.exe",
         stem: "bar", extension: "exe",
         components: ["foo", "bar.exe"]
+      ),
+
+      .windows(
+        #"+:\foo"#,
+        absolute: true,
+        root: #"+:\"#, relative: #"foo"#,
+        dirname: #"+:\"#, basename: "foo",
+        stem: "foo",
+        components: ["foo"]
       ),
 
       .windows(
@@ -768,6 +777,19 @@ final class FilePathSyntaxTest: XCTestCase {
 
       // TODO: partially-formed Windows roots, we should fully form them...
     ]
+
+#if os(Windows)
+    windowsPaths.append(
+      .windows(
+        #"€:\foo"#,
+        absolute: true,
+        root: #"€:\"#, relative: #"foo"#,
+        dirname: #"€:\"#, basename: "foo",
+        stem: "foo",
+        components: ["foo"]
+      )
+    )
+#endif
 
     for test in unixPaths {
       test.runAllTests()
