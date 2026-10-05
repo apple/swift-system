@@ -519,11 +519,10 @@ public struct IORing: ~Copyable {
         var count = 0
         while let completion = _tryConsumeCompletion(ring: completionRing) {
             count += 1
-            if completion.result < 0 {
-                try consumer(nil, Errno(rawValue: -completion.result), false)
-            } else {
-                try consumer(completion, nil, false)
-            }
+            // We still return the completion for a failed operation so that the
+            // caller can tell which request failed through its `context`.
+            let error = completion.error
+            try consumer(completion, error, false)
             if count == maximumCount {
                 try consumer(nil, nil, true)
                 return
@@ -575,11 +574,8 @@ public struct IORing: ~Copyable {
             var count = 0
             while let completion = _tryConsumeCompletion(ring: completionRing) {
                 count += 1
-                if completion.result < 0 {
-                    try consumer(nil, Errno(rawValue: -completion.result), false)
-                } else {
-                    try consumer(completion, nil, false)
-                }
+                let error = completion.error
+                try consumer(completion, error, false)
                 if count == maximumCount {
                     break
                 }
@@ -595,17 +591,23 @@ public struct IORing: ~Copyable {
         var result: Completion? = nil
         try _blockingConsumeCompletionGuts(minimumCount: 1, maximumCount: 1, extraArgs: extraArgs) {
             (completion: consuming Completion?, error, done) throws(Errno) in
-            if let error {
-                throw error
-            }
             if let completion {
                 result = consume completion
+            } else if let error {
+                throw error
             }
         }
         return result.take()!
     }
 
     /// Synchronously waits for an operation to complete for up to `timeout` (or forever if not specified)
+    ///
+    /// The completion is returned even if its operation failed. Check
+    /// ``IORing/Completion/error`` to find out whether it did, and
+    /// ``IORing/Completion/context`` to find out which request it belongs to.
+    ///
+    /// - Throws: An error of the ring itself, such as ``Errno/timeout`` when
+    ///   no operation completed within `timeout`.
     @inlinable
     public func blockingConsumeCompletion(
         timeout: Duration? = nil
@@ -629,7 +631,17 @@ public struct IORing: ~Copyable {
         }
     }
 
-    /// Synchronously waits for `minimumCount` or more operations to complete for up to `timeout` (or forever if not specified). For each completed operation found, `consumer` is called to handle processing it
+    /// Synchronously waits for `minimumCount` or more operations to complete for up to `timeout`
+    /// (or forever if not specified). For each completed operation found, `consumer` is called to handle
+    /// processing it.
+    ///
+    /// `consumer` receives a completion, an error, and whether consuming is done:
+    /// - For each completed operation, it receives the completion. If the
+    ///   operation failed, it receives the operation's error alongside the
+    ///   completion.
+    /// - If the ring itself fails, such as with ``Errno/timeout``, it receives
+    ///   the error without a completion.
+    /// - Once consuming is done, it is called a final time with `done` set to `true`.
     @inlinable
     public func blockingConsumeCompletions<Err: Error>(
         minimumCount: UInt32 = 1,
@@ -657,10 +669,6 @@ public struct IORing: ~Copyable {
                 minimumCount: minimumCount, maximumCount: UInt32.max, consumer: consumer)
         }
     }
-
-    // public func peekNextCompletion() -> IOCompletion {
-
-    // }
 
     /// Takes a completed operation from the ring and returns it, if one is ready. Otherwise, returns nil.
     @inlinable

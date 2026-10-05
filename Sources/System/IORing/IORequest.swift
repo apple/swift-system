@@ -278,9 +278,9 @@ extension IORing.Request {
     /// }
     /// ```
     ///
-    /// If the poll ends with an error, such as ``Errno/canceled``,
-    /// ``IORing/blockingConsumeCompletion(timeout:)`` throws that error
-    /// instead of returning the completion.
+    /// If the poll ends with an error, such as ``Errno/canceled``, its last
+    /// completion carries that error in ``IORing/Completion/error`` and
+    /// doesn't contain `.moreCompletions`.
     ///
     /// - Parameters:
     ///   - file: The file descriptor to monitor for I/O events.
