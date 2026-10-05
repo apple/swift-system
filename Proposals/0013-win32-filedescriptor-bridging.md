@@ -154,7 +154,7 @@ These `FileDescriptor` extensions sit behind `#if os(Windows)`, so cross-platfor
 
 ### Put the bridge entirely on `Win32.FileHandle`
 
-Spell the conversions `Win32.FileHandle.init?(borrowing: FileDescriptor)` and `Win32.FileHandle.fileDescriptor(translation:append:)`, so every Windows-only declaration stays inside the namespace.
+Spell the conversions `Win32.FileHandle.init?(borrowing: FileDescriptor)` and `Win32.FileHandle.fileDescriptor(translation:append:)`, so the bridge stays inside the namespace.
 
 Rejected because:
 

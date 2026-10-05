@@ -89,7 +89,7 @@ extension Win32.FileHandle {
   ///   - disposition: Whether to create, open, or truncate.
   ///     ``Win32/CreationDisposition/truncateExisting`` and
   ///     ``Win32/CreationDisposition/createAlways`` fail with
-  ///     ``Win32/Error/userMappedFile`` while a view of the file is mapped.
+  ///     ``Win32Error/userMappedFile`` while a view of the file is mapped.
   ///   - attributes: File attributes to apply when the file is created, or
   ///     when ``Win32/CreationDisposition/createAlways`` overwrites an
   ///     existing one. Otherwise ignored. The default `[]` requests no
@@ -97,7 +97,7 @@ extension Win32.FileHandle {
   ///     only on its own.
   ///     With ``Win32/CreationDisposition/createAlways``, overwriting a
   ///     ``Win32/FileAttributes/hidden`` or ``Win32/FileAttributes/system``
-  ///     file fails with ``Win32/Error/accessDenied`` unless `attributes`
+  ///     file fails with ``Win32Error/accessDenied`` unless `attributes`
   ///     matches those bits.
   ///   - flags: Caching, semantic, and lifetime flags for this handle.
   ///   - inheritable: Whether child processes created with handle inheritance
@@ -111,12 +111,12 @@ extension Win32.FileHandle {
   ///     ``Win32/AccessMask/genericRead`` access. Ignored when an existing
   ///     file is opened. This handle is borrowed, not consumed.
   ///
-  /// Throws ``Win32/Error/invalidParameter`` if `flags` contains
+  /// Throws ``Win32Error/invalidParameter`` if `flags` contains
   /// `FILE_FLAG_OVERLAPPED`, which ``Win32/FileHandle`` does not support, or
   /// if `attributes` contains a bit that can't be set at creation.
   ///
   /// Opening a directory without ``Win32/FileFlags/backupSemantics`` fails
-  /// with ``Win32/Error/accessDenied``. To open one, use
+  /// with ``Win32Error/accessDenied``. To open one, use
   /// ``Win32/DirectoryHandle/open(_:access:shareMode:flags:inheritable:)``.
   ///
   /// The corresponding C function is `CreateFileW`.
@@ -130,7 +130,7 @@ extension Win32.FileHandle {
     inheritable: Bool = false,
     securityDescriptor: borrowing Win32.SecurityDescriptor? = nil,
     templateFile: borrowing Win32.FileHandle? = nil
-  ) throws(Win32.Error) -> Win32.FileHandle
+  ) throws(Win32Error) -> Win32.FileHandle
 
   /// The result of ``openOrCreate(_:access:shareMode:overwriteExisting:attributes:flags:inheritable:securityDescriptor:templateFile:)``.
   @frozen
@@ -149,7 +149,7 @@ extension Win32.FileHandle {
   ///   - overwriteExisting: Whether to overwrite the contents of a file that
   ///     already exists. `false` corresponds to `OPEN_ALWAYS`, and `true` to
   ///     `CREATE_ALWAYS`. `CREATE_ALWAYS` also applies `attributes` to an
-  ///     existing file, and fails with ``Win32/Error/userMappedFile`` while a
+  ///     existing file, and fails with ``Win32Error/userMappedFile`` while a
   ///     view of the file is mapped.
   ///
   /// All other parameters and errors behave as they do on
@@ -166,7 +166,7 @@ extension Win32.FileHandle {
     inheritable: Bool = false,
     securityDescriptor: borrowing Win32.SecurityDescriptor? = nil,
     templateFile: borrowing Win32.FileHandle? = nil
-  ) throws(Win32.Error) -> OpenOrCreateResult
+  ) throws(Win32Error) -> OpenOrCreateResult
 }
 ```
 
@@ -204,7 +204,7 @@ extension Win32 {
     @unsafe
     public consuming func relinquish() -> HANDLE
 
-    public consuming func close() throws(Win32.Error)
+    public consuming func close() throws(Win32Error)
   }
 }
 
@@ -214,10 +214,10 @@ extension Win32.DirectoryHandle {
   /// `FILE_FLAG_BACKUP_SEMANTICS` is added to `flags` automatically. Without
   /// that flag, `CreateFileW` fails on a directory.
   ///
-  /// Throws ``Win32/Error/invalidParameter`` if `flags` contains
+  /// Throws ``Win32Error/invalidParameter`` if `flags` contains
   /// `FILE_FLAG_OVERLAPPED`, which ``Win32/DirectoryHandle`` does not support.
   ///
-  /// Throws ``Win32/Error/notADirectory`` if the opened handle is not a
+  /// Throws ``Win32Error/notDirectory`` if the opened handle is not a
   /// directory, after closing the handle.
   ///
   /// The corresponding C function is `CreateFileW`.
@@ -227,7 +227,7 @@ extension Win32.DirectoryHandle {
     shareMode: Win32.ShareMode = [.read, .write, .delete],
     flags: Win32.FileFlags = [],
     inheritable: Bool = false
-  ) throws(Win32.Error) -> Win32.DirectoryHandle
+  ) throws(Win32Error) -> Win32.DirectoryHandle
 }
 ```
 
@@ -237,7 +237,7 @@ Developers may be unaware that `FILE_FLAG_BACKUP_SEMANTICS` is required to open 
 
 `Win32.DirectoryHandle` has no `disposition`, `attributes`, `securityDescriptor`, or `templateFile` parameter. Creating a directory requires `CreateDirectoryW`, not `CreateFileW`, and should be considered in a future proposal.
 
-`FILE_FLAG_BACKUP_SEMANTICS` allows a directory to be opened, but does not require the returned handle to be a directory. `open` verifies the result: after `CreateFileW` succeeds, it calls `GetFileInformationByHandleEx` with `FileStandardInfo`, which needs no access rights, to confirm the object is a directory. If not, it throws `.notADirectory`. Without that check, a regular-file path would yield a `Win32.DirectoryHandle` that fails every directory operation.
+`FILE_FLAG_BACKUP_SEMANTICS` allows a directory to be opened, but does not require the returned handle to be a directory. `open` verifies the result: after `CreateFileW` succeeds, it calls `GetFileInformationByHandleEx` with `FileStandardInfo`, which needs no access rights, to confirm the object is a directory. If not, it throws `.notDirectory`. Without that check, a regular-file path would yield a `Win32.DirectoryHandle` that fails every directory operation.
 
 ### Path handling
 
@@ -245,7 +245,7 @@ Developers may be unaware that `FILE_FLAG_BACKUP_SEMANTICS` is required to open 
 
 However, `open` will pass a path that starts with `\\?\` to `CreateFileW` untouched, since that prefix means "pass this path through verbatim". `FileDescriptor` doesn't exempt it, and in testing, `GetFullPathNameW` stripped trailing dots and collapsed `..` even inside a `\\?\` path, so `FileDescriptor.open` opens `\\?\C:\dir\name.` as `name` rather than `name.`.
 
-A failed `PathAllocCanonicalize` reports an `HRESULT`, but `open` throws `Win32.Error`, so System will convert the `FACILITY_WIN32` errors internally. A public `Win32.HResult` remains future work as described in [SYS-0010](0010-win32-namespace-and-error.md).
+A failed `PathAllocCanonicalize` reports an `HRESULT`, but `open` throws `Win32Error`, so System will convert the `FACILITY_WIN32` errors internally. A public `HResult` remains future work as described in [SYS-0010](0010-win32-namespace-and-error.md).
 
 ### Supporting types for `open`
 
@@ -306,7 +306,7 @@ extension Win32 {
     /// The corresponding C function is
     /// `ConvertStringSecurityDescriptorToSecurityDescriptorW` with
     /// `SDDL_REVISION_1`.
-    public init(sddl: String) throws(Win32.Error)
+    public init(sddl: String) throws(Win32Error)
 
     /// Adopts a descriptor allocated with `LocalAlloc`, taking ownership.
     ///
@@ -356,7 +356,7 @@ extension Win32.FileHandle {
   public func duplicate(
     access: Win32.AccessMask? = nil,
     inheritable: Bool = false
-  ) throws(Win32.Error) -> Win32.FileHandle
+  ) throws(Win32Error) -> Win32.FileHandle
 
   /// Re-opens this handle's file as a new file object, with its own file
   /// pointer, access rights, share mode, and flags.
@@ -370,7 +370,7 @@ extension Win32.FileHandle {
   /// Like any open, the request must be compatible with the share modes of
   /// the file's other open handles, including this one.
   ///
-  /// Throws ``Win32/Error/invalidParameter`` if `flags` contains
+  /// Throws ``Win32Error/invalidParameter`` if `flags` contains
   /// `FILE_FLAG_OVERLAPPED`.
   ///
   /// The corresponding C function is `ReOpenFile`.
@@ -378,15 +378,15 @@ extension Win32.FileHandle {
     access: Win32.AccessMask,
     shareMode: Win32.ShareMode = [.read, .write, .delete],
     flags: Win32.FileFlags = []
-  ) throws(Win32.Error) -> Win32.FileHandle
+  ) throws(Win32Error) -> Win32.FileHandle
 
   /// Whether child processes created with handle inheritance enabled receive
   /// a copy of this handle.
   ///
   /// The corresponding C functions are `GetHandleInformation` and
   /// `SetHandleInformation` with `HANDLE_FLAG_INHERIT`.
-  public func isInheritable() throws(Win32.Error) -> Bool
-  public func setInheritable(_ value: Bool) throws(Win32.Error)
+  public func isInheritable() throws(Win32Error) -> Bool
+  public func setInheritable(_ value: Bool) throws(Win32Error)
 }
 ```
 

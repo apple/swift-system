@@ -66,7 +66,7 @@ extension Win32 {
     /// Use this for a volume with no assigned drive letter. A file on a
     /// network share has no volume GUID, so passing this format to
     /// ``Win32/FileHandle/finalPath(volumeName:normalized:)`` throws
-    /// ``Win32/Error/pathNotFound`` for such a file.
+    /// ``Win32Error/pathNotFound`` for such a file.
     ///
     /// The corresponding C constant is `VOLUME_NAME_GUID`.
     public static var guid: VolumeNameFormat { get }
@@ -96,20 +96,20 @@ extension Win32.FileHandle {
   /// - Parameters:
   ///   - volumeName: How to spell the volume component. The default,
   ///     ``Win32/VolumeNameFormat/dos``, throws
-  ///     ``Win32/Error/pathNotFound`` for a volume with no drive letter; use
+  ///     ``Win32Error/pathNotFound`` for a volume with no drive letter; use
   ///     ``Win32/VolumeNameFormat/guid`` in that case.
   ///   - normalized: Whether to return the canonical name of each component
   ///     rather than the names supplied when the file was opened.
   ///
   /// Requires no access rights. Throws for a handle with no path, such as
-  /// ``Win32/Error/badPathName`` for a pipe, ``Win32/Error/invalidParameter``
-  /// for `NUL`, and ``Win32/Error/invalidFunction`` for a console or volume.
+  /// ``Win32Error/badPathName`` for a pipe, ``Win32Error/invalidParameter``
+  /// for `NUL`, and ``Win32Error/invalidFunction`` for a console or volume.
   ///
   /// The corresponding C function is `GetFinalPathNameByHandleW`.
   public func finalPath(
     volumeName: Win32.VolumeNameFormat = .dos,
     normalized: Bool = true
-  ) throws(Win32.Error) -> FilePath
+  ) throws(Win32Error) -> FilePath
 }
 
 extension Win32.DirectoryHandle {
@@ -119,7 +119,7 @@ extension Win32.DirectoryHandle {
   public func finalPath(
     volumeName: Win32.VolumeNameFormat = .dos,
     normalized: Bool = true
-  ) throws(Win32.Error) -> FilePath
+  ) throws(Win32Error) -> FilePath
 }
 ```
 

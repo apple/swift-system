@@ -78,7 +78,7 @@ A media failure, a device that's not ready, and a sharing violation are three di
 
 **It turns control-flow signals into ordinary failures.** `ERROR_MORE_DATA` (234) is a retry instruction, and a caller that can't distinguish it from `EINVAL` can't write the grow-and-retry loop that Windows' variable-length query APIs require. `ERROR_NO_MORE_FILES` (18) ends an enumeration, but it maps to `ENOENT`.
 
-**It misses even the POSIX analogs that exist.** `ERROR_NO_DATA` (232) is what's reported when writing to a pipe whose reader has closed, so `FileDescriptor.write` throws `EINVAL` where Linux and Darwin report `EPIPE`. `ERROR_FILE_TOO_LARGE` (223), which reports a file system limit, likewise becomes `EINVAL` rather than `EFBIG`.
+**It misses even the POSIX analogs that exist.** `ERROR_NO_DATA` (232) is what's reported when writing to a pipe whose reader has closed, so `FileDescriptor.write` throws `EINVAL` where Linux and Darwin report `EPIPE`. `ERROR_FILE_TOO_LARGE` (223), which reports a size limit, likewise becomes `EINVAL` rather than `EFBIG`.
 
 None of this is a defect in `_mapWindowsErrorToErrno`. The shim's job is to match what the C runtime does, and it does. The problem is that the destination type can't carry the code Windows reported.
 
@@ -121,7 +121,7 @@ public enum Win32 {}
 public enum Win32 {}  // Each nested type gets an empty stub.
 
 @available(*, unavailable, message: "Win32 APIs are only available on Windows.")
-public struct Win32Error {}
+public struct Win32Error: Error {}
 #endif
 ```
 
@@ -187,7 +187,7 @@ public struct Win32Error: RawRepresentable, Error, Sendable, Hashable, Codable {
   // ... and a code System synthesizes, which Windows never reports:
   public static var incompleteTransfer: Win32Error { get }     // 0xA0535901
 
-  /// Whether this is a code that System synthesizes, rather than one that
+  /// Whether this is a code that System synthesizes instead of one that
   /// Windows reports.
   public var isSynthesized: Bool { get }
 }
@@ -204,7 +204,7 @@ extension Win32Error {
 
 The named constants are not exhaustive. They cover every code that System's Win32 APIs document plus codes that callers commonly branch on, and `rawValue` covers everything else. A `struct` over `DWORD` keeps unknown codes representable and round-trippable, which is required for a type modeling an error space of several thousand values that any application can extend with `SetLastError`.
 
-The last code is System's own and uses a base of `0xA0535900`. Windows reserves bit 29 (`APPLICATION_ERROR_MASK`) for application-defined codes, and setting bit 31 makes the code negative so `HRESULT_FROM_WIN32` leaves it unchanged. (As an `HRESULT`, these are the customer and severity bits, so the code reads as a customer-defined failure.) `isSynthesized` checks for System's base.
+The last code is System's own and uses a base of `0xA0535900`. It sets the customer bit (29) and the severity bit (31), so it's a customer-defined failure `HRESULT` rather than a system error code. `isSynthesized` checks for System's base.
 
 System may reuse a Windows code if it accurately describes the condition, even for a check Windows doesn't make itself. For example, a wrapper throws `.invalidParameter` for an argument it rejects before calling Win32, such as an overlapped flag or a negative offset, and `.notDirectory` when a directory open doesn't resolve to a directory. System only synthesizes a code when no Windows code fits. One example is `.incompleteTransfer`, which is thrown in [SYS-0014](0014-win32-file-io.md) when a `WriteFile` succeeds without writing anything.
 
@@ -212,7 +212,7 @@ System may reuse a Windows code if it accurately describes the condition, even f
 
 ### `description` and `debugDescription`
 
-Like `Errno`, `Win32Error` provides a human-readable `description` using `FormatMessageW`. As with `strerror`, the message is localized to the system or thread locale, so it's suitable for display or logging, but not for programmatic matching. `FormatMessageW` allocates, so `description` should be avoided in hot paths. `description` strips the trailing `\r\n` that system messages end with, and falls back to a numeric rendering when `FormatMessageW` fails.
+Like `Errno`, `Win32Error` provides a human-readable `description` using `FormatMessageW`. As with `strerror`, the message varies by language, so it's suitable for display or logging, but not for programmatic matching. `FormatMessageW` allocates, so `description` should be avoided in hot paths. `description` strips the trailing `\r\n` that system messages end with, and falls back to a numeric rendering when `FormatMessageW` fails.
 
 `debugDescription` gives the symbolic constant with the decimal and hexadecimal value, such as `ERROR_SHARING_VIOLATION (32, 0x20)`, and the numeric form alone for codes that have no name. It's locale-independent and suitable for tests or structured logs.
 
@@ -245,8 +245,8 @@ extension Errno {
   /// Creates the closest POSIX ``Errno`` for a Windows system error.
   ///
   /// This mapping is lossy. It approximates the C runtime's `_dosmaperr`,
-  /// folding Windows' several thousand system error codes onto sixteen
-  /// ``Errno`` values. Unrecognized codes become ``Errno/invalidArgument``.
+  /// folding Windows' several thousand system error codes onto a small set
+  /// of ``Errno`` values. Unrecognized codes become ``Errno/invalidArgument``.
   /// Prefer handling ``Win32Error`` directly.
   public init(approximating error: Win32Error)
 }

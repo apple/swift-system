@@ -95,7 +95,7 @@ extension Win32.FileHandle {
   /// when reading from a pipe or console. To read until `span` is full or the
   /// file ends, use ``readFully(fromAbsoluteOffset:into:)-(_,MutableRawSpan)``.
   ///
-  /// Throws ``Win32/Error/invalidParameter`` if
+  /// Throws ``Win32Error/invalidParameter`` if
   /// - `offset` is negative, or
   /// - `span` is larger than the `DWORD.max` bytes `ReadFile` can express.
   ///
@@ -111,12 +111,12 @@ extension Win32.FileHandle {
   public func read(
     fromAbsoluteOffset offset: Int64? = nil,
     into span: inout MutableRawSpan
-  ) throws(Win32.Error) -> Int
+  ) throws(Win32Error) -> Int
 
   public func read(
     fromAbsoluteOffset offset: Int64? = nil,
     into span: inout MutableSpan<UInt8>
-  ) throws(Win32.Error) -> Int
+  ) throws(Win32Error) -> Int
 
   /// Reads bytes starting at `offset`, or the current file pointer when
   /// `offset` is `nil`, into `span`'s free capacity.
@@ -128,13 +128,13 @@ extension Win32.FileHandle {
   public func read(
     fromAbsoluteOffset offset: Int64? = nil,
     into span: inout OutputRawSpan
-  ) throws(Win32.Error) -> Int
+  ) throws(Win32Error) -> Int
 
   @discardableResult
   public func read(
     fromAbsoluteOffset offset: Int64? = nil,
     into span: inout OutputSpan<UInt8>
-  ) throws(Win32.Error) -> Int
+  ) throws(Win32Error) -> Int
 
   /// Reads bytes starting at `offset`, or the current file pointer when
   /// `offset` is `nil`, until `span` is full or the file ends.
@@ -144,7 +144,7 @@ extension Win32.FileHandle {
   /// file, where it means the file ended. A span larger than `DWORD.max`
   /// bytes is split across calls to `ReadFile` rather than rejected.
   ///
-  /// Throws ``Win32/Error/invalidParameter`` if `offset` is negative.
+  /// Throws ``Win32Error/invalidParameter`` if `offset` is negative.
   ///
   /// - Important: On a pipe or console, this blocks until the span fills, so
   ///   an over-sized span will hang for as long as the writer stays open.
@@ -160,12 +160,12 @@ extension Win32.FileHandle {
   public func readFully(
     fromAbsoluteOffset offset: Int64? = nil,
     into span: inout MutableRawSpan
-  ) throws(Win32.Error) -> Int
+  ) throws(Win32Error) -> Int
 
   public func readFully(
     fromAbsoluteOffset offset: Int64? = nil,
     into span: inout MutableSpan<UInt8>
-  ) throws(Win32.Error) -> Int
+  ) throws(Win32Error) -> Int
 
   /// Reads bytes starting at `offset`, or the current file pointer when
   /// `offset` is `nil`, until `span` has no free capacity or the file ends.
@@ -177,13 +177,13 @@ extension Win32.FileHandle {
   public func readFully(
     fromAbsoluteOffset offset: Int64? = nil,
     into span: inout OutputRawSpan
-  ) throws(Win32.Error) -> Int
+  ) throws(Win32Error) -> Int
 
   @discardableResult
   public func readFully(
     fromAbsoluteOffset offset: Int64? = nil,
     into span: inout OutputSpan<UInt8>
-  ) throws(Win32.Error) -> Int
+  ) throws(Win32Error) -> Int
 }
 ```
 
@@ -201,7 +201,7 @@ extension Win32.FileHandle {
   /// This loops until the span is exhausted by splitting a span larger than
   /// `DWORD.max` bytes across multiple `WriteFile` calls.
   ///
-  /// Throws ``Win32/Error/invalidParameter`` if `offset` is
+  /// Throws ``Win32Error/invalidParameter`` if `offset` is
   /// negative. To write at the end of the file, use ``append(_:)``.
   ///
   /// - Important: Writing to a non-`nil` `offset` also updates the file
@@ -212,7 +212,7 @@ extension Win32.FileHandle {
   ///   drains it.
   ///
   /// - Note: If a `WriteFile` succeeds without writing any of the given bytes,
-  ///   the loop ends with a synthesized ``Win32/Error/incompleteTransfer``
+  ///   the loop ends with a synthesized ``Win32Error/incompleteTransfer``
   ///   instead of retrying forever. A legacy `PIPE_NOWAIT` pipe reports a span
   ///   that doesn't fit this way. Such a write is all-or-nothing, so only retry
   ///   a `span` that will fit in the pipe's buffer.
@@ -222,7 +222,7 @@ extension Win32.FileHandle {
   public func write(
     _ span: RawSpan,
     toAbsoluteOffset offset: Int64? = nil
-  ) throws(Win32.Error)
+  ) throws(Win32Error)
 
   /// Writes `span` like ``write(_:toAbsoluteOffset:)``, but advances the start
   /// of `span` to exclude the bytes that were written.
@@ -233,31 +233,31 @@ extension Win32.FileHandle {
   public func write(
     draining span: inout RawSpan,
     toAbsoluteOffset offset: Int64? = nil
-  ) throws(Win32.Error)
+  ) throws(Win32Error)
 
   /// Writes the contents of `span` to the end of the file.
   ///
   /// Calls `WriteFile` once, transferring the whole span or throwing. The file
   /// pointer is updated to the new end of file.
   ///
-  /// Throws ``Win32/Error/invalidParameter`` if `span` is larger
+  /// Throws ``Win32Error/invalidParameter`` if `span` is larger
   /// than `DWORD.max` bytes. A single `WriteFile` can't express this size, and
   /// looping would risk another writer appending between the chunks.
   ///
   /// - Note: Because the append is all-or-nothing, a `WriteFile` that succeeds
-  ///   without taking the whole span throws ``Win32/Error/incompleteTransfer``.
+  ///   without taking the whole span throws ``Win32Error/incompleteTransfer``.
   ///   A legacy `PIPE_NOWAIT` pipe reports a span that doesn't fit this way;
   ///   see ``write(_:toAbsoluteOffset:)``.
   ///
   /// The corresponding C function is `WriteFile` with an `OVERLAPPED` offset of `-1`.
-  public func append(_ span: RawSpan) throws(Win32.Error)
+  public func append(_ span: RawSpan) throws(Win32Error)
 
   /// Appends `span` like ``append(_:)``, but advances the start of `span` to
   /// exclude the bytes that were written.
   ///
   /// If this throws, `span` holds the bytes that weren't written. On success,
   /// `span` is empty.
-  public func append(draining span: inout RawSpan) throws(Win32.Error)
+  public func append(draining span: inout RawSpan) throws(Win32Error)
 }
 ```
 
@@ -282,7 +282,7 @@ On a handle opened with the `.noBuffering` flag, `ReadFile` requires a sector-mu
 
 ### Progress on failure
 
-Every transfer function throws `Win32.Error`, and one that fails after moving bytes may report that progress through its span:
+Every transfer function throws `Win32Error`, and one that fails after moving bytes may report that progress through its span:
 
 * A read into an `OutputRawSpan` or `OutputSpan` grows `span.byteCount` as bytes arrive.
 * `write(draining:toAbsoluteOffset:)` and `append(draining:)` drop bytes from the front of `span` as they're written.
@@ -327,11 +327,11 @@ extension Win32.FileHandle {
   ///
   /// The corresponding C function is `SetFilePointerEx` with zero offset
   /// from `FILE_CURRENT`.
-  public func currentOffset() throws(Win32.Error) -> Int64
+  public func currentOffset() throws(Win32Error) -> Int64
 
   /// Moves the file pointer to an absolute position.
   ///
-  /// A negative `offset` throws ``Win32/Error/negativeSeek``, the error
+  /// A negative `offset` throws ``Win32Error/negativeSeek``, the error
   /// `SetFilePointerEx` sets when a displacement lands before the start
   /// of the file.
   ///
@@ -340,14 +340,14 @@ extension Win32.FileHandle {
   ///   no transfer uses.
   ///
   /// The corresponding C function is `SetFilePointerEx`.
-  public func seek(to offset: Int64) throws(Win32.Error)
+  public func seek(to offset: Int64) throws(Win32Error)
 
   /// Moves the file pointer and returns its new absolute position.
   ///
   /// `offset` is a displacement from `origin`, so it may be negative. For
   /// instance, `-1` from ``Win32/SeekOrigin/end`` addresses the last byte.
   /// A displacement that would land before the start of the file throws
-  /// ``Win32/Error/negativeSeek``.
+  /// ``Win32Error/negativeSeek``.
   ///
   /// - Warning: This function is not valid on a nonseeking device such as a
   ///   pipe or console. The call may succeed anyway, returning a position
@@ -358,7 +358,7 @@ extension Win32.FileHandle {
   public func seek(
     offset: Int64,
     from origin: Win32.SeekOrigin
-  ) throws(Win32.Error) -> Int64
+  ) throws(Win32Error) -> Int64
 }
 ```
 
@@ -383,7 +383,7 @@ extension Win32.FileHandle {
   ///   written so far.
   ///
   /// The corresponding C function is `FlushFileBuffers`.
-  public func flush() throws(Win32.Error)
+  public func flush() throws(Win32Error)
 }
 ```
 
@@ -399,28 +399,28 @@ extension Win32.FileHandle {
   ///   use `PeekNamedPipe`.
   ///
   /// The corresponding C function is `GetFileSizeEx`.
-  public func size() throws(Win32.Error) -> Int64
+  public func size() throws(Win32Error) -> Int64
 
   /// Sets the end of the file to the current file pointer, truncating or
   /// extending it.
   ///
-  /// Throws ``Win32/Error/userMappedFile`` when truncating a file that has a
+  /// Throws ``Win32Error/userMappedFile`` when truncating a file that has a
   /// mapped view.
   ///
   /// The corresponding C function is `SetEndOfFile`.
-  public func resizeToCurrentOffset() throws(Win32.Error)
+  public func resizeToCurrentOffset() throws(Win32Error)
 
   /// Truncates or extends the file to `newSize`, leaving the file pointer
   /// where it is.
   ///
-  /// Throws ``Win32/Error/invalidParameter`` if `newSize` is negative, or
+  /// Throws ``Win32Error/invalidParameter`` if `newSize` is negative, or
   /// larger than the file system can represent, and
-  /// ``Win32/Error/userMappedFile`` when truncating a file that has a mapped
+  /// ``Win32Error/userMappedFile`` when truncating a file that has a mapped
   /// view.
   ///
   /// The corresponding C function is `SetFileInformationByHandle` with
   /// `FileEndOfFileInfo`.
-  public func resize(to newSize: Int64) throws(Win32.Error)
+  public func resize(to newSize: Int64) throws(Win32Error)
 }
 ```
 
@@ -458,11 +458,11 @@ Rejected because:
 
 ### Throw a `Win32.PartialTransferError` wrapper
 
-Throw a `Win32.PartialTransferError` carrying `bytesTransferred` and the underlying `Win32.Error` from every transfer that can fail after moving bytes.
+Throw a `Win32.PartialTransferError` carrying `bytesTransferred` and the underlying `Win32Error` from every transfer that can fail after moving bytes.
 
 Rejected because:
 
-* Typed throws has no implicit conversion, so a function that throws `Win32.Error` couldn't call a transfer without mapping the error.
+* Typed throws has no implicit conversion, so a function that throws `Win32Error` couldn't call a transfer without mapping the error.
 * Every caller would carry a count that most ignore, and a `catch` clause would need `~=` to reach through the wrapper to name a code.
 * Some span types already know how many bytes moved. Reporting progress there costs nothing for callers who don't ask.
 

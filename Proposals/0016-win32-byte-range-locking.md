@@ -64,7 +64,7 @@ extension Win32 {
     /// - Important: A shared lock denies write access to the range for every
     ///   process, including the one that took it. Writing through this handle
     ///   inside a shared ``Win32/FileHandle/withLock(byteRange:mode:_:)``
-    ///   fails with ``Win32/Error/lockViolation``.
+    ///   fails with ``Win32Error/lockViolation``.
     ///
     /// The corresponding C value is a `dwFlags` without
     /// `LOCKFILE_EXCLUSIVE_LOCK`.
@@ -93,7 +93,7 @@ extension Win32.FileHandle {
   /// `byteRange` defaults to `0...`, which locks the whole file, including
   /// bytes appended while the lock is held. An empty range locks nothing and
   /// never calls `LockFileEx`, so `body` runs immediately. A negative bound
-  /// throws ``Win32/Error/invalidParameter``. Byte `Int64.max` is not
+  /// throws ``Win32Error/invalidParameter``. Byte `Int64.max` is not
   /// addressable, so a range closed at `Int64.max` ends one byte earlier.
   ///
   /// The range is unlocked when `body` returns or throws. If `body` succeeds
@@ -110,8 +110,8 @@ extension Win32.FileHandle {
   public func withLock<R: ~Copyable>(
     byteRange: some RangeExpression<Int64> = Int64.zero...,
     mode: Win32.LockMode = .exclusive,
-    _ body: () throws(Win32.Error) -> R
-  ) throws(Win32.Error) -> R
+    _ body: () throws(Win32Error) -> R
+  ) throws(Win32Error) -> R
 
   @available(*, noasync)
   @_disfavoredOverload
@@ -132,8 +132,8 @@ extension Win32.FileHandle {
   public func withLockIfAvailable<R: ~Copyable>(
     byteRange: some RangeExpression<Int64> = Int64.zero...,
     mode: Win32.LockMode = .exclusive,
-    _ body: () throws(Win32.Error) -> R
-  ) throws(Win32.Error) -> R?
+    _ body: () throws(Win32Error) -> R
+  ) throws(Win32Error) -> R?
 
   @_disfavoredOverload
   public func withLockIfAvailable<R: ~Copyable>(
@@ -146,7 +146,7 @@ extension Win32.FileHandle {
 
 Notes on the design:
 
-* **Typed and untyped overloads.** Locking can fail, so unlike `Mutex.withLock`, `body`'s error can't pass through as a generic `E`. The typed overload serves a `body` that doesn't throw or is annotated `throws(Win32.Error)`, such as one doing I/O on the same handle. An unannotated throwing `body` gets the untyped overload.
+* **Typed and untyped overloads.** Locking can fail, so unlike `Mutex.withLock`, `body`'s error can't pass through as a generic `E`. The typed overload serves a `body` that doesn't throw or is annotated `throws(Win32Error)`, such as one doing I/O on the same handle. An unannotated throwing `body` gets the untyped overload.
 * **Requires a right in the handle's `Win32.AccessMask`.** Locking needs `.readData` or `.writeData` access, and only an exclusive lock lets the body write to the range it has locked.
 * **Bounds are `Int64`** like every other position and length in the series, so the range an I/O call addresses can be locked without a conversion. `LockFileEx` accepts any unsigned 64-bit offset and length, but no file holds data past `Int64.max`, and .NET's `FileStream.Lock` and Java's `FileChannel.lock` stop there too. A negative bound throws `.invalidParameter` before calling `LockFileEx`, as a negative `offset` does in [SYS-0014](0014-win32-file-io.md). Since a range ends at or below `Int64.max`, `ERROR_INVALID_LOCK_RANGE` is unreachable. The default `0...` passes an offset of zero and a length of `Int64.max`.
 * **`byteRange` is resolved with `RangeExpression.relative(to:)`** against an internal collection whose indices are `0..<Int64.max`. That collection's `index(after:)` saturates, so `0...Int64.max` clamps rather than trapping on `Int64.max + 1`. Byte `Int64.max` is therefore unaddressable, but no file can hold a byte there anyway.
@@ -171,8 +171,8 @@ Everything here is reached through `Win32.FileHandle` and sits behind `#if os(Wi
 
 * **Lock ownership as a value.** A `lock(byteRange:mode:)` returning a noncopyable token that releases its range on `deinit` would serve the object-lifetime and non-LIFO cases that the closure-based version can't express. It's left out for now because a leaked token blocks other processes, which requires additional consideration.
 * **Locking across suspension points.** An `async` overload of `withLock(byteRange:mode:_:)`, which would hold a mandatory lock that blocks other processes across an unbounded `await`, deserves its own consideration.
-* **Typed throws without an annotation.** Closure thrown-type inference, a future direction of [SE-0413](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0413-typed-throws.md), would let an unannotated `body` that throws only `Win32.Error` select the typed overload.
-* **Typed throws for other error types.** An overload generic over `E: Win32.ErrorRepresentable`, a protocol requiring `init(_: Win32.Error)`, could throw lock failures as the caller's error type. It would join the `Win32.Error` overload, not replace it, since a non-throwing `body` infers `E == Never`.
+* **Typed throws without an annotation.** Closure thrown-type inference, a future direction of [SE-0413](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0413-typed-throws.md), would let an unannotated `body` that throws only `Win32Error` select the typed overload.
+* **Typed throws for other error types.** An overload generic over `E: Win32ErrorRepresentable`, a protocol requiring `init(_: Win32Error)`, could throw lock failures as the caller's error type. It would join the `Win32Error` overload, not replace it, since a non-throwing `body` infers `E == Never`.
 
 ## Alternatives considered
 

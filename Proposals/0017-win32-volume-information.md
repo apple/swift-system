@@ -133,14 +133,14 @@ extension Win32.FileHandle {
   /// Returns information about the volume this file resides on.
   ///
   /// The corresponding C function is `GetVolumeInformationByHandleW`.
-  public func volumeInformation() throws(Win32.Error) -> Win32.VolumeInformation
+  public func volumeInformation() throws(Win32Error) -> Win32.VolumeInformation
 }
 
 extension Win32.DirectoryHandle {
   /// Returns information about the volume this directory resides on.
   ///
   /// The corresponding C function is `GetVolumeInformationByHandleW`.
-  public func volumeInformation() throws(Win32.Error) -> Win32.VolumeInformation
+  public func volumeInformation() throws(Win32Error) -> Win32.VolumeInformation
 }
 ```
 

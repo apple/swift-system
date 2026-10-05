@@ -92,7 +92,7 @@ extension Win32.FileHandle {
   /// The type of device this handle refers to.
   ///
   /// The corresponding C function is `GetFileType`.
-  public func fileType() throws(Win32.Error) -> Win32.FileType
+  public func fileType() throws(Win32Error) -> Win32.FileType
 }
 ```
 

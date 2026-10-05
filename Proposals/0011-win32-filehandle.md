@@ -14,7 +14,7 @@
 
 ## Introduction
 
-This proposal adds `Win32.FileHandle`, a noncopyable wrapper that owns a synchronous (non-overlapped) Windows `HANDLE`. It builds on the `Win32` namespace and `Win32.Error` introduced in [SYS-0010](0010-win32-namespace-and-error.md). Opening a handle is proposed in [SYS-0012](0012-win32-opening-handles.md), and bridging with `FileDescriptor` in [SYS-0013](0013-win32-filedescriptor-bridging.md).
+This proposal adds `Win32.FileHandle`, a noncopyable wrapper that owns a synchronous (non-overlapped) Windows `HANDLE`. It builds on the `Win32` namespace and `Win32Error` introduced in [SYS-0010](0010-win32-namespace-and-error.md). Opening a handle is proposed in [SYS-0012](0012-win32-opening-handles.md), and bridging with `FileDescriptor` in [SYS-0013](0013-win32-filedescriptor-bridging.md).
 
 ## Motivation
 
@@ -87,7 +87,7 @@ extension Win32 {
     /// Closes this handle.
     ///
     /// The corresponding C function is `CloseHandle`.
-    public consuming func close() throws(Win32.Error)
+    public consuming func close() throws(Win32Error)
   }
 }
 ```
