@@ -274,13 +274,17 @@ extension IORing.Request {
     ///         continue
     ///     }
     ///     armed = completion.flags.contains(.moreCompletions)
+    ///     if let error = completion.error {
+    ///         // The poll ended with an error, such as `.canceled`.
+    ///         throw error
+    ///     }
     ///     // Handle incoming connection
     /// }
     /// ```
     ///
-    /// If the poll ends with an error, such as ``Errno/canceled``,
-    /// ``IORing/blockingConsumeCompletion(timeout:)`` throws that error
-    /// instead of returning the completion.
+    /// If the poll ends with an error, such as ``Errno/canceled``, its last
+    /// completion carries that error in ``IORing/Completion/error`` and
+    /// doesn't contain `.moreCompletions`.
     ///
     /// - Parameters:
     ///   - file: The file descriptor to monitor for I/O events.
