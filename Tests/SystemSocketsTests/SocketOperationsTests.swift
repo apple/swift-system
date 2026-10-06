@@ -14,10 +14,13 @@ import Testing
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif canImport(Glibc)
+import CSystem
 import Glibc
 #elseif canImport(Musl)
+import CSystem
 import Musl
 #elseif canImport(Android)
+import CSystem
 import Android
 #else
 #error("Unsupported Platform")
@@ -31,7 +34,7 @@ private struct SocketOperationsTests {
 
   // MARK: - Bind Tests
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func bindToAnyPort() throws {
     let socket = try SocketDescriptor.open(.ipv4, .stream, protocol: .tcp)
     defer { try? socket.close() }
@@ -46,7 +49,7 @@ private struct SocketOperationsTests {
     #expect(localAddr.ipv4?.port != 0) // Port should be assigned
   }
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func bindToLoopback() throws {
     let socket = try SocketDescriptor.open(.ipv4, .stream, protocol: .tcp)
     defer { try? socket.close() }
@@ -61,7 +64,7 @@ private struct SocketOperationsTests {
 
   // MARK: - Listen Tests
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func listenWithDefaultBacklog() throws {
     let socket = try SocketDescriptor.open(.ipv4, .stream, protocol: .tcp)
     defer { try? socket.close() }
@@ -73,7 +76,7 @@ private struct SocketOperationsTests {
 
   // MARK: - Connect and Accept Tests
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func tcpConnectAndAccept() throws {
     // Create server socket
     let server = try SocketDescriptor.open(.ipv4, .stream, protocol: .tcp)
@@ -106,7 +109,7 @@ private struct SocketOperationsTests {
 
   // MARK: - Send and Receive Tests
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func tcpSendReceive() throws {
     // Create server socket
     let server = try SocketDescriptor.open(.ipv4, .stream, protocol: .tcp)
@@ -152,7 +155,7 @@ private struct SocketOperationsTests {
 
   // MARK: - UDP Tests
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func udpSendReceive() throws {
     // Create receiver socket
     let receiver = try SocketDescriptor.open(.ipv4, .datagram, protocol: .udp)
@@ -193,7 +196,7 @@ private struct SocketOperationsTests {
 
   // MARK: - Socket Options Tests
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func setReuseAddress() throws {
     let socket = try SocketDescriptor.open(.ipv4, .stream, protocol: .tcp)
     defer { try? socket.close() }
@@ -203,7 +206,7 @@ private struct SocketOperationsTests {
     #expect(value != 0)
   }
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func getSendBufferSize() throws {
     let socket = try SocketDescriptor.open(.ipv4, .stream, protocol: .tcp)
     defer { try? socket.close() }
@@ -212,7 +215,7 @@ private struct SocketOperationsTests {
     #expect(size > 0)
   }
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func getReceiveBufferSize() throws {
     let socket = try SocketDescriptor.open(.ipv4, .stream, protocol: .tcp)
     defer { try? socket.close() }

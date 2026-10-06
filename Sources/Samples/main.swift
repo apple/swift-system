@@ -10,7 +10,7 @@
 import ArgumentParser
 
 struct SystemSamples: ParsableCommand {
-  static var configuration = CommandConfiguration(
+  static let configuration = CommandConfiguration(
     commandName: "system-samples",
     abstract: "A collection of little programs exercising some System features.",
     subcommands: [

@@ -12,10 +12,13 @@ import SystemPackage
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif canImport(Glibc)
+import CSystem
 import Glibc
 #elseif canImport(Musl)
+import CSystem
 import Musl
 #elseif canImport(Android)
+import CSystem
 import Android
 #else
 #error("Unsupported Platform")
@@ -44,7 +47,7 @@ import Android
 /// `SocketAddress` uses `sockaddr_storage` internally, which is large enough
 /// to hold any socket address type.
 @frozen
-@available(System 99, *)
+@available(System 199, *)
 public struct SocketAddress: Sendable {
   /// The underlying storage using sockaddr_storage.
   @usableFromInline
@@ -93,7 +96,7 @@ public struct SocketAddress: Sendable {
 
 // MARK: - Properties
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketAddress {
   /// The address family of this socket address.
   @_alwaysEmitIntoClient
@@ -119,7 +122,7 @@ extension SocketAddress {
 
 // MARK: - Accessing Raw Bytes
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketAddress {
   /// Calls the given closure with a pointer to the underlying socket address.
   @_alwaysEmitIntoClient
@@ -168,7 +171,7 @@ extension SocketAddress {
 
 // MARK: - Equatable and Hashable
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketAddress: Equatable {
   @_alwaysEmitIntoClient
   public static func == (lhs: SocketAddress, rhs: SocketAddress) -> Bool {
@@ -181,7 +184,7 @@ extension SocketAddress: Equatable {
   }
 }
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketAddress: Hashable {
   @_alwaysEmitIntoClient
   public func hash(into hasher: inout Hasher) {
@@ -194,7 +197,7 @@ extension SocketAddress: Hashable {
 
 // MARK: - CustomStringConvertible
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketAddress: CustomStringConvertible {
   public var description: String {
     if isEmpty {

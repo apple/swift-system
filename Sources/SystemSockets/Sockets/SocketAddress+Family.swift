@@ -10,13 +10,13 @@
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif canImport(Glibc)
-@_implementationOnly import CSystem
+import CSystem
 import Glibc
 #elseif canImport(Musl)
-@_implementationOnly import CSystem
+import CSystem
 import Musl
 #elseif canImport(Android)
-@_implementationOnly import CSystem
+import CSystem
 import Android
 #else
 #error("Unsupported Platform")
@@ -24,7 +24,7 @@ import Android
 
 import SystemPackage
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketAddress {
   @frozen
   /// The address family identifier
@@ -90,7 +90,7 @@ extension SocketAddress {
   }
 }
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketAddress.Family: CustomStringConvertible {
   public var description: String {
     switch self {

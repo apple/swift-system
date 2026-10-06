@@ -14,10 +14,13 @@ import Testing
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif canImport(Glibc)
+import CSystem
 import Glibc
 #elseif canImport(Musl)
+import CSystem
 import Musl
 #elseif canImport(Android)
+import CSystem
 import Android
 #else
 #error("Unsupported Platform")
@@ -38,8 +41,14 @@ private struct SocketDescriptorTests {
   }
 
   @Test func connectionTypeValues() {
+    // Glibc imports the socket types as a C enum.
+    #if canImport(Glibc)
+    #expect(SocketDescriptor.ConnectionType.stream.rawValue == CInt(SOCK_STREAM.rawValue))
+    #expect(SocketDescriptor.ConnectionType.datagram.rawValue == CInt(SOCK_DGRAM.rawValue))
+    #else
     #expect(SocketDescriptor.ConnectionType.stream.rawValue == SOCK_STREAM)
     #expect(SocketDescriptor.ConnectionType.datagram.rawValue == SOCK_DGRAM)
+    #endif
   }
 
   @Test func protocolValues() {
@@ -49,28 +58,28 @@ private struct SocketDescriptorTests {
 
   // MARK: - Socket Creation Tests
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func createTCPSocket() throws {
     let socket = try SocketDescriptor.open(.ipv4, .stream, protocol: .tcp)
     #expect(socket.rawValue >= 0)
     try socket.close()
   }
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func createUDPSocket() throws {
     let socket = try SocketDescriptor.open(.ipv4, .datagram, protocol: .udp)
     #expect(socket.rawValue >= 0)
     try socket.close()
   }
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func createIPv6TCPSocket() throws {
     let socket = try SocketDescriptor.open(.ipv6, .stream, protocol: .tcp)
     #expect(socket.rawValue >= 0)
     try socket.close()
   }
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func createUnixSocket() throws {
     let socket = try SocketDescriptor.open(.local, .stream)
     #expect(socket.rawValue >= 0)

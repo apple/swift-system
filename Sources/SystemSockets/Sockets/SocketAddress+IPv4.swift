@@ -12,10 +12,13 @@ import SystemPackage
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif canImport(Glibc)
+import CSystem
 import Glibc
 #elseif canImport(Musl)
+import CSystem
 import Musl
 #elseif canImport(Android)
+import CSystem
 import Android
 #else
 #error("Unsupported Platform")
@@ -25,7 +28,7 @@ import Android
 ///
 /// An IPv4 address consists of a 32-bit IP address and a 16-bit port number.
 @frozen
-@available(System 99, *)
+@available(System 199, *)
 public struct IPv4Address: Sendable, Equatable, Hashable {
   /// The underlying C structure.
   @usableFromInline
@@ -93,7 +96,7 @@ public struct IPv4Address: Sendable, Equatable, Hashable {
 
 // MARK: - Properties
 
-@available(System 99, *)
+@available(System 199, *)
 extension IPv4Address {
   /// The port number in host byte order.
   @_alwaysEmitIntoClient
@@ -114,7 +117,7 @@ extension IPv4Address {
 
 // MARK: - Pointer Access
 
-@available(System 99, *)
+@available(System 199, *)
 extension IPv4Address {
   /// Calls the given closure with a pointer to the underlying sockaddr.
   @_alwaysEmitIntoClient
@@ -131,7 +134,7 @@ extension IPv4Address {
 
 // MARK: - CustomStringConvertible
 
-@available(System 99, *)
+@available(System 199, *)
 extension IPv4Address: CustomStringConvertible {
   public var description: String {
     "\(addressString):\(port)"
@@ -140,7 +143,7 @@ extension IPv4Address: CustomStringConvertible {
 
 // MARK: - ExpressibleByStringLiteral
 
-@available(System 99, *)
+@available(System 199, *)
 extension IPv4Address: ExpressibleByStringLiteral {
   /// Creates an IPv4 address from a string literal.
   ///
@@ -160,7 +163,7 @@ extension IPv4Address: ExpressibleByStringLiteral {
 
 // MARK: - Equatable and Hashable
 
-@available(System 99, *)
+@available(System 199, *)
 extension IPv4Address {
   @_alwaysEmitIntoClient
   public static func == (lhs: IPv4Address, rhs: IPv4Address) -> Bool {
@@ -179,7 +182,7 @@ extension IPv4Address {
 
 // MARK: - SocketAddress Integration
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketAddress {
   /// Creates a socket address from an IPv4 address.
   @_alwaysEmitIntoClient

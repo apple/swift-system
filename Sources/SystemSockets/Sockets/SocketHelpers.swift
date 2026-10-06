@@ -9,7 +9,7 @@
 
 import SystemPackage
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketDescriptor {
   /// Writes a sequence of bytes to the socket
   ///

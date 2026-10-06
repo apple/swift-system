@@ -9,7 +9,22 @@
 
 import SystemPackage
 
-@available(System 99, *)
+#if SYSTEM_PACKAGE_DARWIN
+import Darwin
+#elseif canImport(Glibc)
+import CSystem
+import Glibc
+#elseif canImport(Musl)
+import CSystem
+import Musl
+#elseif canImport(Android)
+import CSystem
+import Android
+#else
+#error("Unsupported Platform")
+#endif
+
+@available(System 199, *)
 extension SocketDescriptor {
   /// A reusable collection of variable-sized ancillary messages
   /// sent or received over a socket. These represent protocol control
@@ -119,7 +134,8 @@ extension SocketDescriptor {
         let length = try body(
           UnsafeMutableRawBufferPointer(start: p + headerSize, count: capacity))
         precondition(length >= 0 && length <= capacity)
-        header.pointee.cmsg_len = CInterop.SockLen(headerSize + length)
+        // `cmsg_len` is a `socklen_t` on Darwin and a `size_t` on Linux.
+        header.pointee.cmsg_len = numericCast(headerSize + length)
         return headerSize + length
       }
       _endOffset += messageLength
@@ -167,7 +183,7 @@ extension SocketDescriptor {
   }
 }
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketDescriptor.AncillaryMessageBuffer: Collection {
   /// The index type in an ancillary message buffer.
   @frozen
@@ -276,7 +292,7 @@ extension SocketDescriptor.AncillaryMessageBuffer: Collection {
   }
 }
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketDescriptor.AncillaryMessageBuffer.Message {
   internal var _header: CInterop.CMsgHdr {
     _base._withUnsafeBytes { buffer in

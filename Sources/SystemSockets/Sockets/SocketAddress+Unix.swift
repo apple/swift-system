@@ -12,10 +12,13 @@ import SystemPackage
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif canImport(Glibc)
+import CSystem
 import Glibc
 #elseif canImport(Musl)
+import CSystem
 import Musl
 #elseif canImport(Android)
+import CSystem
 import Android
 #else
 #error("Unsupported Platform")
@@ -25,7 +28,7 @@ import Android
 ///
 /// Unix domain socket addresses use a filesystem path to identify the socket.
 @frozen
-@available(System 99, *)
+@available(System 199, *)
 public struct UnixAddress: Sendable, Equatable, Hashable {
   /// The underlying C structure.
   @usableFromInline
@@ -78,7 +81,7 @@ public struct UnixAddress: Sendable, Equatable, Hashable {
 
 // MARK: - Properties
 
-@available(System 99, *)
+@available(System 199, *)
 extension UnixAddress {
   /// The path as a string.
   public var path: String {
@@ -93,7 +96,7 @@ extension UnixAddress {
 
 // MARK: - Pointer Access
 
-@available(System 99, *)
+@available(System 199, *)
 extension UnixAddress {
   /// Calls the given closure with a pointer to the underlying sockaddr.
   @_alwaysEmitIntoClient
@@ -117,7 +120,7 @@ extension UnixAddress {
 
 // MARK: - CustomStringConvertible
 
-@available(System 99, *)
+@available(System 199, *)
 extension UnixAddress: CustomStringConvertible {
   public var description: String {
     path
@@ -126,7 +129,7 @@ extension UnixAddress: CustomStringConvertible {
 
 // MARK: - Equatable and Hashable
 
-@available(System 99, *)
+@available(System 199, *)
 extension UnixAddress {
   @_alwaysEmitIntoClient
   public static func == (lhs: UnixAddress, rhs: UnixAddress) -> Bool {
@@ -149,7 +152,7 @@ extension UnixAddress {
 
 // MARK: - SocketAddress Integration
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketAddress {
   /// Creates a socket address from a Unix address.
   @_alwaysEmitIntoClient

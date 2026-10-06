@@ -12,10 +12,13 @@ import SystemPackage
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif canImport(Glibc)
+import CSystem
 import Glibc
 #elseif canImport(Musl)
+import CSystem
 import Musl
 #elseif canImport(Android)
+import CSystem
 import Android
 #else
 #error("Unsupported Platform")
@@ -25,7 +28,7 @@ import Android
 
 /// An error returned by address resolution functions.
 @frozen
-@available(System 99, *)
+@available(System 199, *)
 public struct AddressResolutionError: Error, Hashable, Sendable {
   /// The error code returned by getaddrinfo or getnameinfo.
   public let code: CInt
@@ -41,7 +44,7 @@ public struct AddressResolutionError: Error, Hashable, Sendable {
   }
 }
 
-@available(System 99, *)
+@available(System 199, *)
 extension AddressResolutionError: CustomStringConvertible {
   public var description: String {
     "AddressResolutionError(\(code)): \(message)"
@@ -50,7 +53,7 @@ extension AddressResolutionError: CustomStringConvertible {
 
 // MARK: - Resolution Hints
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketAddress {
   /// Hints for address resolution.
   public struct ResolutionHints: Sendable {
@@ -128,7 +131,7 @@ extension SocketAddress {
 
 // MARK: - Resolution Result
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketAddress {
   /// A result from address resolution.
   public struct ResolvedAddress: Sendable {
@@ -165,7 +168,7 @@ extension SocketAddress {
 
 // MARK: - Address Resolution
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketAddress {
   /// Resolves a hostname and service to a list of socket addresses.
   ///
@@ -250,7 +253,7 @@ extension SocketAddress {
 
 // MARK: - Reverse Resolution
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketAddress {
   /// Flags for reverse resolution.
   @frozen

@@ -12,13 +12,26 @@ import SystemPackage
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif canImport(Glibc)
+import CSystem
 import Glibc
 #elseif canImport(Musl)
+import CSystem
 import Musl
 #elseif canImport(Android)
+import CSystem
 import Android
 #else
 #error("Unsupported Platform")
+#endif
+
+// Glibc imports the socket types as a C enum, every other platform imports
+// them as plain integers.
+#if canImport(Glibc)
+@_alwaysEmitIntoClient
+internal func _socketType(_ type: __socket_type) -> CInt { CInt(type.rawValue) }
+#else
+@_alwaysEmitIntoClient
+internal func _socketType(_ type: CInt) -> CInt { type }
 #endif
 
 /// A socket descriptor.
@@ -30,7 +43,7 @@ import Android
 /// socket rather than a general file descriptor, enabling socket-specific
 /// operations like `bind`, `listen`, `accept`, and `connect`.
 @frozen
-@available(System 99, *)
+@available(System 199, *)
 public struct SocketDescriptor: RawRepresentable, Hashable, Codable, Sendable {
   /// The raw C socket handle.
   @_alwaysEmitIntoClient
@@ -41,7 +54,7 @@ public struct SocketDescriptor: RawRepresentable, Hashable, Codable, Sendable {
   public init(rawValue: CInt) { self.rawValue = rawValue }
 }
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketDescriptor {
   /// The file descriptor for this socket.
   ///
@@ -64,7 +77,7 @@ extension SocketDescriptor {
 
 // MARK: - Domain (Protocol Family)
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketDescriptor {
   /// Communications domain, identifying the protocol family.
   ///
@@ -156,7 +169,7 @@ extension SocketDescriptor {
 
 // MARK: - Connection Type (Socket Type)
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketDescriptor {
   /// The socket type, specifying the semantics of communication.
   ///
@@ -178,26 +191,26 @@ extension SocketDescriptor {
     ///
     /// The corresponding C constant is `SOCK_STREAM`.
     @_alwaysEmitIntoClient
-    public static var stream: ConnectionType { ConnectionType(SOCK_STREAM) }
+    public static var stream: ConnectionType { ConnectionType(_socketType(SOCK_STREAM)) }
 
     /// Connectionless, unreliable datagrams of a fixed maximum length.
     ///
     /// The corresponding C constant is `SOCK_DGRAM`.
     @_alwaysEmitIntoClient
-    public static var datagram: ConnectionType { ConnectionType(SOCK_DGRAM) }
+    public static var datagram: ConnectionType { ConnectionType(_socketType(SOCK_DGRAM)) }
 
     /// Raw network protocol access.
     ///
     /// The corresponding C constant is `SOCK_RAW`.
     @_alwaysEmitIntoClient
-    public static var raw: ConnectionType { ConnectionType(SOCK_RAW) }
+    public static var raw: ConnectionType { ConnectionType(_socketType(SOCK_RAW)) }
 
     /// Reliably-delivered message.
     ///
     /// The corresponding C constant is `SOCK_RDM`.
     @_alwaysEmitIntoClient
     public static var reliablyDeliveredMessage: ConnectionType {
-      ConnectionType(SOCK_RDM)
+      ConnectionType(_socketType(SOCK_RDM))
     }
 
     /// Sequenced packet stream.
@@ -205,7 +218,7 @@ extension SocketDescriptor {
     /// The corresponding C constant is `SOCK_SEQPACKET`.
     @_alwaysEmitIntoClient
     public static var sequencedPacketStream: ConnectionType {
-      ConnectionType(SOCK_SEQPACKET)
+      ConnectionType(_socketType(SOCK_SEQPACKET))
     }
 
     public var description: String {
@@ -223,7 +236,7 @@ extension SocketDescriptor {
 
 // MARK: - Protocol ID
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketDescriptor {
   /// Identifies a particular protocol to use for communication.
   ///
@@ -248,37 +261,44 @@ extension SocketDescriptor {
     ///
     /// The corresponding C constant is `IPPROTO_IP`.
     @_alwaysEmitIntoClient
-    public static var ip: ProtocolID { Self(IPPROTO_IP) }
+    public static var ip: ProtocolID { Self(CInt(IPPROTO_IP)) }
 
     /// Transmission Control Protocol (TCP).
     ///
     /// The corresponding C constant is `IPPROTO_TCP`.
     @_alwaysEmitIntoClient
-    public static var tcp: ProtocolID { Self(IPPROTO_TCP) }
+    public static var tcp: ProtocolID { Self(CInt(IPPROTO_TCP)) }
 
     /// User Datagram Protocol (UDP).
     ///
     /// The corresponding C constant is `IPPROTO_UDP`.
     @_alwaysEmitIntoClient
-    public static var udp: ProtocolID { Self(IPPROTO_UDP) }
+    public static var udp: ProtocolID { Self(CInt(IPPROTO_UDP)) }
 
     /// IPv4 encapsulation.
     ///
     /// The corresponding C constant is `IPPROTO_IPV4`.
     @_alwaysEmitIntoClient
-    public static var ipv4: ProtocolID { Self(IPPROTO_IPV4) }
+    public static var ipv4: ProtocolID {
+      #if canImport(Glibc) || canImport(Musl) || canImport(Android)
+      // Linux names this protocol `IPPROTO_IPIP`.
+      Self(CInt(IPPROTO_IPIP))
+      #else
+      Self(CInt(IPPROTO_IPV4))
+      #endif
+    }
 
     /// IPv6 header.
     ///
     /// The corresponding C constant is `IPPROTO_IPV6`.
     @_alwaysEmitIntoClient
-    public static var ipv6: ProtocolID { Self(IPPROTO_IPV6) }
+    public static var ipv6: ProtocolID { Self(CInt(IPPROTO_IPV6)) }
 
     /// Raw IP packet.
     ///
     /// The corresponding C constant is `IPPROTO_RAW`.
     @_alwaysEmitIntoClient
-    public static var raw: ProtocolID { Self(IPPROTO_RAW) }
+    public static var raw: ProtocolID { Self(CInt(IPPROTO_RAW)) }
 
     public var description: String {
       rawValue.description
@@ -288,7 +308,7 @@ extension SocketDescriptor {
 
 // MARK: - Message Flags
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketDescriptor {
   /// Flags for send and receive operations.
   @frozen
@@ -310,50 +330,50 @@ extension SocketDescriptor {
     ///
     /// The corresponding C constant is `MSG_OOB`.
     @_alwaysEmitIntoClient
-    public static var outOfBand: MessageFlags { MessageFlags(MSG_OOB) }
+    public static var outOfBand: MessageFlags { MessageFlags(CInt(MSG_OOB)) }
 
     /// Bypass routing, use direct interface.
     ///
     /// The corresponding C constant is `MSG_DONTROUTE`.
     @_alwaysEmitIntoClient
-    public static var doNotRoute: MessageFlags { MessageFlags(MSG_DONTROUTE) }
+    public static var doNotRoute: MessageFlags { MessageFlags(CInt(MSG_DONTROUTE)) }
 
     /// Peek at incoming message without removing it.
     ///
     /// The corresponding C constant is `MSG_PEEK`.
     @_alwaysEmitIntoClient
-    public static var peek: MessageFlags { MessageFlags(MSG_PEEK) }
+    public static var peek: MessageFlags { MessageFlags(CInt(MSG_PEEK)) }
 
     /// Wait for full request or error.
     ///
     /// The corresponding C constant is `MSG_WAITALL`.
     @_alwaysEmitIntoClient
-    public static var waitForAll: MessageFlags { MessageFlags(MSG_WAITALL) }
+    public static var waitForAll: MessageFlags { MessageFlags(CInt(MSG_WAITALL)) }
 
     /// End-of-record marker.
     ///
     /// The corresponding C constant is `MSG_EOR`.
     @_alwaysEmitIntoClient
-    public static var endOfRecord: MessageFlags { MessageFlags(MSG_EOR) }
+    public static var endOfRecord: MessageFlags { MessageFlags(CInt(MSG_EOR)) }
 
     /// Data was truncated.
     ///
     /// The corresponding C constant is `MSG_TRUNC`.
     @_alwaysEmitIntoClient
-    public static var dataTruncated: MessageFlags { MessageFlags(MSG_TRUNC) }
+    public static var dataTruncated: MessageFlags { MessageFlags(CInt(MSG_TRUNC)) }
 
     /// Control data was truncated.
     ///
     /// The corresponding C constant is `MSG_CTRUNC`.
     @_alwaysEmitIntoClient
-    public static var controlTruncated: MessageFlags { MessageFlags(MSG_CTRUNC) }
+    public static var controlTruncated: MessageFlags { MessageFlags(CInt(MSG_CTRUNC)) }
 
     #if !SYSTEM_PACKAGE_DARWIN
     /// Do not generate SIGPIPE on broken pipe.
     ///
     /// The corresponding C constant is `MSG_NOSIGNAL`.
     @_alwaysEmitIntoClient
-    public static var noSignal: MessageFlags { MessageFlags(MSG_NOSIGNAL) }
+    public static var noSignal: MessageFlags { MessageFlags(CInt(MSG_NOSIGNAL)) }
     #endif
 
     public var description: String {
@@ -376,7 +396,7 @@ extension SocketDescriptor {
 
 // MARK: - Shutdown Kind
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketDescriptor {
   /// Specifies which parts of a full-duplex connection to shut down.
   @frozen
@@ -391,19 +411,19 @@ extension SocketDescriptor {
     ///
     /// The corresponding C constant is `SHUT_RD`.
     @_alwaysEmitIntoClient
-    public static var read: ShutdownKind { ShutdownKind(rawValue: SHUT_RD) }
+    public static var read: ShutdownKind { ShutdownKind(rawValue: CInt(SHUT_RD)) }
 
     /// Disallow further sends.
     ///
     /// The corresponding C constant is `SHUT_WR`.
     @_alwaysEmitIntoClient
-    public static var write: ShutdownKind { ShutdownKind(rawValue: SHUT_WR) }
+    public static var write: ShutdownKind { ShutdownKind(rawValue: CInt(SHUT_WR)) }
 
     /// Disallow further sends and receives.
     ///
     /// The corresponding C constant is `SHUT_RDWR`.
     @_alwaysEmitIntoClient
-    public static var readWrite: ShutdownKind { ShutdownKind(rawValue: SHUT_RDWR) }
+    public static var readWrite: ShutdownKind { ShutdownKind(rawValue: CInt(SHUT_RDWR)) }
 
     public var description: String {
       switch self {
@@ -418,7 +438,7 @@ extension SocketDescriptor {
 
 // MARK: - Socket Option
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketDescriptor {
   /// A generic socket option identifier.
   ///

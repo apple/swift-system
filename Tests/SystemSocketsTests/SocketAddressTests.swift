@@ -14,10 +14,13 @@ import Testing
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif canImport(Glibc)
+import CSystem
 import Glibc
 #elseif canImport(Musl)
+import CSystem
 import Musl
 #elseif canImport(Android)
+import CSystem
 import Android
 #else
 #error("Unsupported Platform")
@@ -31,7 +34,7 @@ private struct SocketAddressTests {
 
   // MARK: - IPv4 Address Tests
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func ipv4BasicCreation() {
     let addr = IPv4Address("127.0.0.1", port: 8080)
     #expect(addr != nil)
@@ -39,34 +42,34 @@ private struct SocketAddressTests {
     #expect(addr?.addressString == "127.0.0.1")
   }
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func ipv4InvalidAddress() {
     let addr = IPv4Address("not.an.ip.address", port: 8080)
     #expect(addr == nil)
   }
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func ipv4Any() {
     let addr = IPv4Address.any(port: 0)
     #expect(addr.port == 0)
     #expect(addr.addressString == "0.0.0.0")
   }
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func ipv4Loopback() {
     let addr = IPv4Address.loopback(port: 80)
     #expect(addr.port == 80)
     #expect(addr.addressString == "127.0.0.1")
   }
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func ipv4StringLiteral() {
     let addr: IPv4Address = "192.168.1.1:443"
     #expect(addr.port == 443)
     #expect(addr.addressString == "192.168.1.1")
   }
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func ipv4Equality() {
     let addr1 = IPv4Address("10.0.0.1", port: 8080)!
     let addr2 = IPv4Address("10.0.0.1", port: 8080)!
@@ -78,7 +81,7 @@ private struct SocketAddressTests {
     #expect(addr1 != addr4)
   }
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func ipv4Description() {
     let addr = IPv4Address("8.8.8.8", port: 53)!
     #expect(addr.description == "8.8.8.8:53")
@@ -86,7 +89,7 @@ private struct SocketAddressTests {
 
   // MARK: - IPv6 Address Tests
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func ipv6BasicCreation() {
     let addr = IPv6Address("::1", port: 8080)
     #expect(addr != nil)
@@ -94,33 +97,33 @@ private struct SocketAddressTests {
     #expect(addr?.addressString == "::1")
   }
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func ipv6InvalidAddress() {
     let addr = IPv6Address("not:an:ipv6:address", port: 8080)
     #expect(addr == nil)
   }
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func ipv6Any() {
     let addr = IPv6Address.any(port: 0)
     #expect(addr.port == 0)
     #expect(addr.addressString == "::")
   }
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func ipv6Loopback() {
     let addr = IPv6Address.loopback(port: 80)
     #expect(addr.port == 80)
     #expect(addr.addressString == "::1")
   }
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func ipv6Description() {
     let addr = IPv6Address("2001:db8::1", port: 443)!
     #expect(addr.description == "[2001:db8::1]:443")
   }
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func ipv6StringLiteral() {
     let addr: IPv6Address = "[::1]:8080"
     #expect(addr.port == 8080)
@@ -129,20 +132,20 @@ private struct SocketAddressTests {
 
   // MARK: - Unix Address Tests
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func unixBasicCreation() {
     let addr = UnixAddress("/tmp/test.sock")
     #expect(addr != nil)
     #expect(addr?.path == "/tmp/test.sock")
   }
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func unixDescription() {
     let addr = UnixAddress("/var/run/daemon.sock")!
     #expect(addr.description == "/var/run/daemon.sock")
   }
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func unixEquality() {
     let addr1 = UnixAddress("/tmp/a.sock")!
     let addr2 = UnixAddress("/tmp/a.sock")!
@@ -154,7 +157,7 @@ private struct SocketAddressTests {
 
   // MARK: - SocketAddress Container Tests
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func socketAddressFromIPv4() {
     let ipv4 = IPv4Address.loopback(port: 8080)
     let sockAddr = SocketAddress(ipv4: ipv4)
@@ -166,7 +169,7 @@ private struct SocketAddressTests {
     #expect(sockAddr.unix == nil)
   }
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func socketAddressFromIPv6() {
     let ipv6 = IPv6Address.loopback(port: 443)
     let sockAddr = SocketAddress(ipv6: ipv6)
@@ -178,7 +181,7 @@ private struct SocketAddressTests {
     #expect(sockAddr.unix == nil)
   }
 
-  @available(System 99, *)
+  @available(System 199, *)
   @Test func socketAddressFromUnix() {
     let unix = UnixAddress("/tmp/test.sock")!
     let sockAddr = SocketAddress(unix: unix)

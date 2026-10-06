@@ -12,10 +12,13 @@ import SystemPackage
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif canImport(Glibc)
+import CSystem
 import Glibc
 #elseif canImport(Musl)
+import CSystem
 import Musl
 #elseif canImport(Android)
+import CSystem
 import Android
 #else
 #error("Unsupported Platform")
@@ -23,7 +26,7 @@ import Android
 
 // MARK: - Socket Creation and Lifecycle
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketDescriptor {
   /// Creates an endpoint for communication.
   ///
@@ -94,7 +97,7 @@ extension SocketDescriptor {
 
 // MARK: - Connection Operations
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketDescriptor {
   /// Binds a socket to an address.
   ///
@@ -202,7 +205,7 @@ extension SocketDescriptor {
 
 // MARK: - Send and Receive
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketDescriptor {
   /// Sends data on the socket.
   ///
@@ -347,7 +350,7 @@ extension SocketDescriptor {
 
 // MARK: - Socket Information
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketDescriptor {
   /// Gets the local address of the socket.
   ///

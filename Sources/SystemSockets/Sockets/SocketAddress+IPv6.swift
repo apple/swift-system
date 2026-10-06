@@ -12,10 +12,13 @@ import SystemPackage
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif canImport(Glibc)
+import CSystem
 import Glibc
 #elseif canImport(Musl)
+import CSystem
 import Musl
 #elseif canImport(Android)
+import CSystem
 import Android
 #else
 #error("Unsupported Platform")
@@ -26,7 +29,7 @@ import Android
 /// An IPv6 address consists of a 128-bit IP address, a 16-bit port number,
 /// a flow label, and a scope ID.
 @frozen
-@available(System 99, *)
+@available(System 199, *)
 public struct IPv6Address: Sendable, Hashable {
   /// The underlying C structure.
   @usableFromInline
@@ -94,7 +97,7 @@ public struct IPv6Address: Sendable, Hashable {
 
 // MARK: - Properties
 
-@available(System 99, *)
+@available(System 199, *)
 extension IPv6Address {
   /// The port number in host byte order.
   @_alwaysEmitIntoClient
@@ -127,7 +130,7 @@ extension IPv6Address {
 
 // MARK: - Pointer Access
 
-@available(System 99, *)
+@available(System 199, *)
 extension IPv6Address {
   /// Calls the given closure with a pointer to the underlying sockaddr.
   @_alwaysEmitIntoClient
@@ -144,7 +147,7 @@ extension IPv6Address {
 
 // MARK: - CustomStringConvertible
 
-@available(System 99, *)
+@available(System 199, *)
 extension IPv6Address: CustomStringConvertible {
   public var description: String {
     "[\(addressString)]:\(port)"
@@ -153,7 +156,7 @@ extension IPv6Address: CustomStringConvertible {
 
 // MARK: - ExpressibleByStringLiteral
 
-@available(System 99, *)
+@available(System 199, *)
 extension IPv6Address: ExpressibleByStringLiteral {
   /// Creates an IPv6 address from a string literal.
   ///
@@ -186,7 +189,7 @@ extension IPv6Address: ExpressibleByStringLiteral {
 
 // MARK: - Equatable and Hashable
 
-@available(System 99, *)
+@available(System 199, *)
 extension IPv6Address {
   @_alwaysEmitIntoClient
   public static func == (lhs: IPv6Address, rhs: IPv6Address) -> Bool {
@@ -207,7 +210,7 @@ extension IPv6Address {
 
 // MARK: - SocketAddress Integration
 
-@available(System 99, *)
+@available(System 199, *)
 extension SocketAddress {
   /// Creates a socket address from an IPv6 address.
   @_alwaysEmitIntoClient

@@ -13,11 +13,12 @@ import SystemSockets
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif canImport(Glibc)
-import Glibc
+// Glibc declares `stdin`, `stdout` and `stderr` as mutable globals.
+@preconcurrency import Glibc
 #elseif canImport(Musl)
-import Musl
+@preconcurrency import Musl
 #elseif canImport(Android)
-import Android
+@preconcurrency import Android
 #else
 #error("Unsupported Platform")
 #endif
