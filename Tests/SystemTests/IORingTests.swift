@@ -127,14 +127,14 @@ final class IORingTests: XCTestCase {
 
     func testWriteImmutableUnregisteredBuffer() throws {
         try XCTSkipIf(!uringEnabled, failureMessage)
-        var ring = try IORing(queueDepth: 1)
-        let (readFD, writeFD) = try FileDescriptor.pipe()
-        defer {
-            try? readFD.close()
-            try? writeFD.close()
-        }
         let bytes: [UInt8] = [1, 2, 3]
         try bytes.withUnsafeBytes { buffer in
+            var ring = try IORing(queueDepth: 1)
+            let (readFD, writeFD) = try FileDescriptor.pipe()
+            defer {
+                try? readFD.close()
+                try? writeFD.close()
+            }
             XCTAssertTrue(try ring.submit(linkedRequests: .write(buffer, into: writeFD, context: 42)))
             let completion = try ring.blockingConsumeCompletion(timeout: .seconds(1))
             XCTAssertEqual(completion.context, 42)
