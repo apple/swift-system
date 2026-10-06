@@ -389,6 +389,21 @@ extension IORing.Request {
         )
     }
 
+    /// Creates a request to write an unregistered buffer to a registered file.
+    ///
+    /// The request does not copy the buffer's contents. Keep its storage alive
+    /// and unchanged until the operation completes. The write only reads from
+    /// the buffer; it does not modify its contents.
+    ///
+    /// - Parameters:
+    ///   - buffer: The bytes to write.
+    ///   - file: The registered file to write to.
+    ///   - offset: The byte offset in the file at which to begin writing.
+    ///     Ignored for non-seekable files. Defaults to `0`.
+    ///   - context: An application-specific value passed through to the
+    ///     completion event. Defaults to `0`.
+    /// - Returns: An I/O ring write request. A successful completion's result
+    ///   is the number of bytes written, which may be less than the buffer's count.
     @inlinable public static func write(
         _ buffer: UnsafeRawBufferPointer,
         into file: IORing.RegisteredFile,
@@ -399,6 +414,21 @@ extension IORing.Request {
         write(UnsafeMutableRawBufferPointer(mutating: buffer), into: file, at: offset, context: context)
     }
 
+    /// Creates a request to write an unregistered buffer to a file descriptor.
+    ///
+    /// The request does not copy the buffer's contents. Keep its storage alive
+    /// and unchanged until the operation completes. The write only reads from
+    /// the buffer; it does not modify its contents.
+    ///
+    /// - Parameters:
+    ///   - buffer: The bytes to write.
+    ///   - file: The file descriptor to write to.
+    ///   - offset: The byte offset in the file at which to begin writing.
+    ///     Ignored for non-seekable files. Defaults to `0`.
+    ///   - context: An application-specific value passed through to the
+    ///     completion event. Defaults to `0`.
+    /// - Returns: An I/O ring write request. A successful completion's result
+    ///   is the number of bytes written, which may be less than the buffer's count.
     @inlinable public static func write(
         _ buffer: UnsafeRawBufferPointer,
         into file: FileDescriptor,
