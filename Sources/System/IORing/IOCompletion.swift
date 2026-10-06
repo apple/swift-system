@@ -60,12 +60,18 @@ public extension IORing.Completion {
     /// for a read or a write, an event mask for a poll, and so on.
     ///
     /// A negative value is an `errno` code multiplied by -1. Recover the error
-    /// by negating it again: `Errno(rawValue: -completion.result)`. Only
-    /// ``IORing/tryConsumeCompletion()`` returns completions with a negative
-    /// result; the blocking methods report the error as an ``Errno`` instead.
+    /// by negating it again: `Errno(rawValue: -completion.result)`, or use
+    /// ``error``.
     @inlinable var result: Int32 {
         get {
             rawValue.res
+        }
+    }
+
+    /// The error of the completed operation, or `nil` if the operation succeeded.
+    @inlinable var error: Errno? {
+        get {
+            rawValue.res < 0 ? Errno(rawValue: -rawValue.res) : nil
         }
     }
 
