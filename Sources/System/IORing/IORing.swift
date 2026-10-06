@@ -818,6 +818,14 @@ public struct IORing: ~Copyable {
     }
 
     /// Sends all prepared requests to the kernel for processing, and then dequeues at least `minimumCount` completions, waiting up to `timeout` for them to become available. `consumer` is called to process each completed IO operation as it becomes available.
+    ///
+    /// `consumer` receives a completion, an error, and whether consuming is done:
+    /// - For each completed operation, it receives the completion. If the
+    ///   operation failed, it receives the operation's error alongside the
+    ///   completion.
+    /// - If submitting the requests or waiting for completions fails, such as
+    ///   with ``Errno/timeout``, it receives the error without a completion.
+    /// - Once consuming is done, it is called a final time with `done` set to `true`.
     @inlinable
     public func submitPreparedRequestsAndConsumeCompletions<Err: Error>(
         minimumCount: UInt32 = 1,

@@ -331,6 +331,26 @@ final class IORingTests: XCTestCase {
         XCTAssertEqual(completion.result, -Errno.badFileDescriptor.rawValue)
     }
 
+    func testSubmitAndConsumeCompletionsKeepsContextOfFailedCompletion() throws {
+        try XCTSkipIf(!uringEnabled, failureMessage)
+        var ring = try IORing(queueDepth: 4)
+        XCTAssertTrue(ring.prepare(request: .close(FileDescriptor(rawValue: -1), context: 44)))
+
+        var received: [(context: UInt64?, error: Errno?, done: Bool)] = []
+        ring.submitPreparedRequestsAndConsumeCompletions {
+            (completion: consuming IORing.Completion?, error, done) in
+            received.append((completion?.context, error, done))
+        }
+
+        XCTAssertEqual(received.count, 2)
+        XCTAssertEqual(received.first?.context, 44)
+        XCTAssertEqual(received.first?.error, .badFileDescriptor)
+        XCTAssertEqual(received.first?.done, false)
+        XCTAssertEqual(received.last?.context, nil)
+        XCTAssertEqual(received.last?.error, nil)
+        XCTAssertEqual(received.last?.done, true)
+    }
+
     func testCompletionOfSuccessfulOperationHasNoError() throws {
         try XCTSkipIf(!uringEnabled, failureMessage)
         var ring = try IORing(queueDepth: 4)

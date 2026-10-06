@@ -274,6 +274,10 @@ extension IORing.Request {
     ///         continue
     ///     }
     ///     armed = completion.flags.contains(.moreCompletions)
+    ///     if let error = completion.error {
+    ///         // The poll ended with an error, such as `.canceled`.
+    ///         throw error
+    ///     }
     ///     // Handle incoming connection
     /// }
     /// ```
