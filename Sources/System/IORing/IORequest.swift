@@ -385,6 +385,26 @@ extension IORing.Request {
         )
     }
 
+    @inlinable public static func write(
+        _ buffer: UnsafeRawBufferPointer,
+        into file: IORing.RegisteredFile,
+        at offset: UInt64 = 0,
+        context: UInt64 = 0
+    ) -> IORing.Request {
+        // The shared request encoder uses a mutable pointer, but writes only read the buffer.
+        write(UnsafeMutableRawBufferPointer(mutating: buffer), into: file, at: offset, context: context)
+    }
+
+    @inlinable public static func write(
+        _ buffer: UnsafeRawBufferPointer,
+        into file: FileDescriptor,
+        at offset: UInt64 = 0,
+        context: UInt64 = 0
+    ) -> IORing.Request {
+        // The shared request encoder uses a mutable pointer, but writes only read the buffer.
+        write(UnsafeMutableRawBufferPointer(mutating: buffer), into: file, at: offset, context: context)
+    }
+
     @inlinable public static func close(
         _ file: FileDescriptor,
         context: UInt64 = 0
