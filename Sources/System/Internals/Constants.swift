@@ -11,11 +11,11 @@
 // they can be used anywhere without imports and without confusion to
 // unavailable local decls.
 
-import CSystem
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif os(Windows)
 import ucrt
+import WinSDK
 #elseif canImport(Glibc)
 import Glibc
 #elseif canImport(Musl)
@@ -26,6 +26,12 @@ import WASILibc
 import Android
 #else
 #error("Unsupported Platform")
+#endif
+
+// Some WASI and FreeBSD constants come from CSystem and are inlined into
+// clients.
+#if os(WASI) || os(FreeBSD)
+public import CSystem
 #endif
 
 // MARK: errno
@@ -628,7 +634,9 @@ internal var _O_CLOEXEC: CInt {
 #if !os(Windows)
 @_alwaysEmitIntoClient
 internal var _O_CLOFORK: CInt {
-  #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
+  #if SYSTEM_PACKAGE_DARWIN
+  0x0800_0000 // O_CLOFORK, which SDKs before macOS 27 lack
+  #elseif os(FreeBSD)
   COMPATIBILITY_O_CLOFORK
   #elseif !os(WASI) && !os(Linux) && !os(Android)
   O_CLOFORK
