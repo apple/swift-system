@@ -43,8 +43,10 @@ extension RawIORequest {
         case sendMessage = 9
         case receiveMessage = 10
         // ...
+        case accept = 13
         case asyncCancel = 14
         case link_timeout = 15
+        case connect = 16
         // ...
         case openAt = 18
         case close = 19
@@ -53,9 +55,18 @@ extension RawIORequest {
         case read = 22
         case write = 23
         // ...
+        case send = 26
+        case receive = 27
         case openAt2 = 28
         // ...
+        case shutdown = 34
+        // ...
         case unlinkAt = 36
+        // ...
+        case socket = 45
+        // ...
+        case bind = 56
+        case listen = 57
     }
 
     public struct Flags: OptionSet, Hashable, Codable {

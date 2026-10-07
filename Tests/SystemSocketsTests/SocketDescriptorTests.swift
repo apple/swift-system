@@ -1,0 +1,113 @@
+/*
+ This source file is part of the Swift System open source project
+
+ Copyright (c) 2021 - 2025 Apple Inc. and the Swift System project authors
+ Licensed under Apache License v2.0 with Runtime Library Exception
+
+ See https://swift.org/LICENSE.txt for license information
+*/
+
+#if !os(Windows)
+
+import Testing
+
+#if SYSTEM_PACKAGE_DARWIN
+import Darwin
+#elseif canImport(Glibc)
+import CSystem
+import Glibc
+#elseif canImport(Musl)
+import CSystem
+import Musl
+#elseif canImport(Android)
+import CSystem
+import Android
+#else
+#error("Unsupported Platform")
+#endif
+
+@testable import SystemSockets
+import SystemPackage
+
+@Suite("Socket Descriptor")
+private struct SocketDescriptorTests {
+
+  // MARK: - Type Tests
+
+  @Test func domainValues() {
+    #expect(SocketDescriptor.Domain.ipv4.rawValue == AF_INET)
+    #expect(SocketDescriptor.Domain.ipv6.rawValue == AF_INET6)
+    #expect(SocketDescriptor.Domain.local.rawValue == AF_UNIX)
+  }
+
+  @Test func connectionTypeValues() {
+    // Glibc imports the socket types as a C enum.
+    #if canImport(Glibc)
+    #expect(SocketDescriptor.ConnectionType.stream.rawValue == CInt(SOCK_STREAM.rawValue))
+    #expect(SocketDescriptor.ConnectionType.datagram.rawValue == CInt(SOCK_DGRAM.rawValue))
+    #else
+    #expect(SocketDescriptor.ConnectionType.stream.rawValue == SOCK_STREAM)
+    #expect(SocketDescriptor.ConnectionType.datagram.rawValue == SOCK_DGRAM)
+    #endif
+  }
+
+  #if !SYSTEM_PACKAGE_DARWIN
+  @Test func socketFlagsValues() {
+    #if canImport(Glibc)
+    #expect(SocketDescriptor.SocketFlags.closeOnExec.rawValue == CInt(SOCK_CLOEXEC.rawValue))
+    #expect(SocketDescriptor.SocketFlags.nonBlocking.rawValue == CInt(SOCK_NONBLOCK.rawValue))
+    #else
+    #expect(SocketDescriptor.SocketFlags.closeOnExec.rawValue == SOCK_CLOEXEC)
+    #expect(SocketDescriptor.SocketFlags.nonBlocking.rawValue == SOCK_NONBLOCK)
+    #endif
+    #expect(
+      "\(SocketDescriptor.SocketFlags([.closeOnExec, .nonBlocking]))" == "[.closeOnExec, .nonBlocking]"
+    )
+  }
+  #endif
+
+  @Test func protocolValues() {
+    #expect(SocketDescriptor.ProtocolID.tcp.rawValue == CInt(IPPROTO_TCP))
+    #expect(SocketDescriptor.ProtocolID.udp.rawValue == CInt(IPPROTO_UDP))
+  }
+
+  // MARK: - Socket Creation Tests
+
+  @available(System 199, *)
+  @Test func createTCPSocket() throws {
+    let socket = try SocketDescriptor.open(.ipv4, .stream, protocol: .tcp)
+    #expect(socket.rawValue >= 0)
+    try socket.close()
+  }
+
+  @available(System 199, *)
+  @Test func createUDPSocket() throws {
+    let socket = try SocketDescriptor.open(.ipv4, .datagram, protocol: .udp)
+    #expect(socket.rawValue >= 0)
+    try socket.close()
+  }
+
+  @available(System 199, *)
+  @Test func createIPv6TCPSocket() throws {
+    let socket = try SocketDescriptor.open(.ipv6, .stream, protocol: .tcp)
+    #expect(socket.rawValue >= 0)
+    try socket.close()
+  }
+
+  @available(System 199, *)
+  @Test func createUnixSocket() throws {
+    let socket = try SocketDescriptor.open(.local, .stream)
+    #expect(socket.rawValue >= 0)
+    try socket.close()
+  }
+
+  // MARK: - Shutdown Tests
+
+  @Test func shutdownKindValues() {
+    #expect(SocketDescriptor.ShutdownKind.read.rawValue == SHUT_RD)
+    #expect(SocketDescriptor.ShutdownKind.write.rawValue == SHUT_WR)
+    #expect(SocketDescriptor.ShutdownKind.readWrite.rawValue == SHUT_RDWR)
+  }
+}
+
+#endif

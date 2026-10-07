@@ -59,6 +59,11 @@ internal final class PendingPathBuffers {
     @usableFromInline
     var paths: [FilePath] = []
 
+    /// The socket addresses of pending connect and bind requests. Like paths,
+    /// the kernel copies them during `io_uring_enter`.
+    @usableFromInline
+    var socketAddresses: [PendingSocketAddress] = []
+
     init(reservedCapacity: Int) {
         paths.reserveCapacity(reservedCapacity)
     }
@@ -72,8 +77,43 @@ internal final class PendingPathBuffers {
     }
 
     @usableFromInline
+    func pin(_ address: PendingSocketAddress) -> UnsafePointer<sockaddr> {
+        socketAddresses.append(address)
+        // Safe to escape: `socketAddresses` keeps the allocation alive until
+        // clear() or class deinit.
+        return UnsafePointer(address.address)
+    }
+
+    @usableFromInline
     func clear() {
         paths.removeAll(keepingCapacity: true)
+        socketAddresses.removeAll(keepingCapacity: true)
+    }
+}
+
+/// A copy of the socket address of a connect or bind request.
+///
+/// The copy has a stable address, so the request can point the kernel at it.
+@usableFromInline
+internal final class PendingSocketAddress {
+    @usableFromInline
+    let address: UnsafeMutablePointer<sockaddr>
+
+    @usableFromInline
+    let length: socklen_t
+
+    init(copying address: UnsafePointer<sockaddr>, length: socklen_t) {
+        let raw = UnsafeMutableRawPointer.allocate(
+            byteCount: Int(length),
+            alignment: MemoryLayout<sockaddr_storage>.alignment
+        )
+        raw.copyMemory(from: address, byteCount: Int(length))
+        self.address = raw.bindMemory(to: sockaddr.self, capacity: 1)
+        self.length = length
+    }
+
+    deinit {
+        UnsafeMutableRawPointer(address).deallocate()
     }
 }
 
