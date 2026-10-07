@@ -51,6 +51,21 @@ private struct SocketDescriptorTests {
     #endif
   }
 
+  #if !SYSTEM_PACKAGE_DARWIN
+  @Test func socketFlagsValues() {
+    #if canImport(Glibc)
+    #expect(SocketDescriptor.SocketFlags.closeOnExec.rawValue == CInt(SOCK_CLOEXEC.rawValue))
+    #expect(SocketDescriptor.SocketFlags.nonBlocking.rawValue == CInt(SOCK_NONBLOCK.rawValue))
+    #else
+    #expect(SocketDescriptor.SocketFlags.closeOnExec.rawValue == SOCK_CLOEXEC)
+    #expect(SocketDescriptor.SocketFlags.nonBlocking.rawValue == SOCK_NONBLOCK)
+    #endif
+    #expect(
+      "\(SocketDescriptor.SocketFlags([.closeOnExec, .nonBlocking]))" == "[.closeOnExec, .nonBlocking]"
+    )
+  }
+  #endif
+
   @Test func protocolValues() {
     #expect(SocketDescriptor.ProtocolID.tcp.rawValue == CInt(IPPROTO_TCP))
     #expect(SocketDescriptor.ProtocolID.udp.rawValue == CInt(IPPROTO_UDP))

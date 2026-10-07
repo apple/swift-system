@@ -114,6 +114,51 @@ internal enum IORequestCore {
         flags: UInt32,
         target: IORing.RegisteredFile
     )
+    case socket(
+        domain: CInt,
+        type: CInt,
+        protocol: CInt,
+        context: UInt64 = 0
+    )
+    case connect(
+        socket: FileDescriptor,
+        address: PendingSocketAddress,
+        context: UInt64 = 0
+    )
+    case bind(
+        socket: FileDescriptor,
+        address: PendingSocketAddress,
+        context: UInt64 = 0
+    )
+    case listen(
+        socket: FileDescriptor,
+        backlog: UInt32,
+        context: UInt64 = 0
+    )
+    case accept(
+        socket: FileDescriptor,
+        peerAddress: UnsafeMutablePointer<sockaddr>?,
+        peerAddressLength: UnsafeMutablePointer<socklen_t>?,
+        flags: CInt,
+        context: UInt64 = 0
+    )
+    case send(
+        socket: FileDescriptor,
+        buffer: UnsafeRawBufferPointer,
+        flags: CInt,
+        context: UInt64 = 0
+    )
+    case receive(
+        socket: FileDescriptor,
+        buffer: UnsafeMutableRawBufferPointer,
+        flags: CInt,
+        context: UInt64 = 0
+    )
+    case shutdown(
+        socket: FileDescriptor,
+        how: CInt,
+        context: UInt64 = 0
+    )
 
 }
 
@@ -634,9 +679,151 @@ extension IORing.Request {
                 request.rawValue.len = Self.SWIFT_IORING_POLL_ADD_MULTI
             }
             request.pollEvents = events
+        case .socket(let domain, let type, let `protocol`, let context):
+            request.operation = .socket
+            request.rawValue.fd = domain
+            request.rawValue.off = UInt64(UInt32(bitPattern: type))
+            request.rawValue.len = UInt32(bitPattern: `protocol`)
+            request.rawValue.user_data = context
+        case .connect(let socket, let address, let context):
+            request.operation = .connect
+            request.fileDescriptor = socket
+            request.rawValue.addr = UInt64(UInt(bitPattern: pathBuffers.pin(address)))
+            request.rawValue.addr2 = UInt64(address.length)
+            request.rawValue.user_data = context
+        case .bind(let socket, let address, let context):
+            request.operation = .bind
+            request.fileDescriptor = socket
+            request.rawValue.addr = UInt64(UInt(bitPattern: pathBuffers.pin(address)))
+            request.rawValue.addr2 = UInt64(address.length)
+            request.rawValue.user_data = context
+        case .listen(let socket, let backlog, let context):
+            request.operation = .listen
+            request.fileDescriptor = socket
+            request.rawValue.len = backlog
+            request.rawValue.user_data = context
+        case .accept(let socket, let peerAddress, let peerAddressLength, let flags, let context):
+            request.operation = .accept
+            request.fileDescriptor = socket
+            request.rawValue.addr = UInt64(UInt(bitPattern: peerAddress))
+            request.rawValue.addr2 = UInt64(UInt(bitPattern: peerAddressLength))
+            request.rawValue.accept_flags = UInt32(bitPattern: flags)
+            request.rawValue.user_data = context
+        case .send(let socket, let buffer, let flags, let context):
+            request.operation = .send
+            request.fileDescriptor = socket
+            request.rawValue.addr = UInt64(UInt(bitPattern: buffer.baseAddress))
+            request.rawValue.len = UInt32(exactly: buffer.count)!
+            request.rawValue.msg_flags = UInt32(bitPattern: flags)
+            request.rawValue.user_data = context
+        case .receive(let socket, let buffer, let flags, let context):
+            request.operation = .receive
+            request.fileDescriptor = socket
+            request.rawValue.addr = UInt64(UInt(bitPattern: buffer.baseAddress))
+            request.rawValue.len = UInt32(exactly: buffer.count)!
+            request.rawValue.msg_flags = UInt32(bitPattern: flags)
+            request.rawValue.user_data = context
+        case .shutdown(let socket, let how, let context):
+            request.operation = .shutdown
+            request.fileDescriptor = socket
+            request.rawValue.len = UInt32(bitPattern: how)
+            request.rawValue.user_data = context
         }
 
         return request
+    }
+}
+
+// MARK: - Socket requests
+
+// These are the raw building blocks of the socket requests. The public,
+// typed API lives in `SystemSockets`, which owns the socket types.
+extension IORing.Request {
+    package static func _socket(
+        domain: CInt,
+        type: CInt,
+        protocol: CInt,
+        context: UInt64
+    ) -> IORing.Request {
+        .init(core: .socket(domain: domain, type: type, protocol: `protocol`, context: context))
+    }
+
+    /// The address is copied, so `address` only has to be valid during this call.
+    package static func _connect(
+        _ socket: FileDescriptor,
+        to address: UnsafePointer<sockaddr>,
+        length: socklen_t,
+        context: UInt64
+    ) -> IORing.Request {
+        .init(core: .connect(
+            socket: socket,
+            address: PendingSocketAddress(copying: address, length: length),
+            context: context
+        ))
+    }
+
+    /// The address is copied, so `address` only has to be valid during this call.
+    package static func _bind(
+        _ socket: FileDescriptor,
+        to address: UnsafePointer<sockaddr>,
+        length: socklen_t,
+        context: UInt64
+    ) -> IORing.Request {
+        .init(core: .bind(
+            socket: socket,
+            address: PendingSocketAddress(copying: address, length: length),
+            context: context
+        ))
+    }
+
+    package static func _listen(
+        _ socket: FileDescriptor,
+        backlog: UInt32,
+        context: UInt64
+    ) -> IORing.Request {
+        .init(core: .listen(socket: socket, backlog: backlog, context: context))
+    }
+
+    package static func _accept(
+        _ socket: FileDescriptor,
+        peerAddress: UnsafeMutablePointer<sockaddr>?,
+        peerAddressLength: UnsafeMutablePointer<socklen_t>?,
+        flags: CInt,
+        context: UInt64
+    ) -> IORing.Request {
+        .init(core: .accept(
+            socket: socket,
+            peerAddress: peerAddress,
+            peerAddressLength: peerAddressLength,
+            flags: flags,
+            context: context
+        ))
+    }
+
+    package static func _send(
+        _ buffer: UnsafeRawBufferPointer,
+        to socket: FileDescriptor,
+        flags: CInt,
+        context: UInt64
+    ) -> IORing.Request {
+        .init(core: .send(socket: socket, buffer: buffer, flags: flags, context: context))
+    }
+
+    package static func _receive(
+        _ socket: FileDescriptor,
+        into buffer: UnsafeMutableRawBufferPointer,
+        flags: CInt,
+        context: UInt64
+    ) -> IORing.Request {
+        .init(core: .receive(socket: socket, buffer: buffer, flags: flags, context: context))
+    }
+
+    package static func _shutdown(
+        _ socket: FileDescriptor,
+        how: CInt,
+        context: UInt64
+    ) -> IORing.Request {
+        .init(core: .shutdown(socket: socket, how: how, context: context))
     }
 }
 #endif // os(Linux)

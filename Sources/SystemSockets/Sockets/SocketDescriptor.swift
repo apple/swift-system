@@ -234,6 +234,53 @@ extension SocketDescriptor {
   }
 }
 
+// MARK: - Socket Flags
+
+#if !SYSTEM_PACKAGE_DARWIN
+@available(System 199, *)
+extension SocketDescriptor {
+  /// Flags for a socket that is created or accepted.
+  ///
+  /// The flags are combined with the socket type when a socket is created,
+  /// and passed as `flags` to `accept4` when a connection is accepted. They
+  /// apply atomically, so no other thread can observe the socket without them.
+  ///
+  /// Darwin has no equivalent flags.
+  @frozen
+  public struct SocketFlags: OptionSet, Sendable, Hashable, CustomStringConvertible {
+    @_alwaysEmitIntoClient
+    public var rawValue: CInt
+
+    @_alwaysEmitIntoClient
+    public init(rawValue: CInt) { self.rawValue = rawValue }
+
+    /// Closes the socket when the process executes another program.
+    ///
+    /// The corresponding C constant is `SOCK_CLOEXEC`.
+    @_alwaysEmitIntoClient
+    public static var closeOnExec: SocketFlags {
+      SocketFlags(rawValue: _socketType(SOCK_CLOEXEC))
+    }
+
+    /// Opens the socket in non-blocking mode.
+    ///
+    /// The corresponding C constant is `SOCK_NONBLOCK`.
+    @_alwaysEmitIntoClient
+    public static var nonBlocking: SocketFlags {
+      SocketFlags(rawValue: _socketType(SOCK_NONBLOCK))
+    }
+
+    public var description: String {
+      let descriptions: [(Element, StaticString)] = [
+        (.closeOnExec, ".closeOnExec"),
+        (.nonBlocking, ".nonBlocking"),
+      ]
+      return _buildDescription(descriptions)
+    }
+  }
+}
+#endif
+
 // MARK: - Protocol ID
 
 @available(System 199, *)
