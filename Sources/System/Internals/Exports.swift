@@ -19,6 +19,9 @@ import CSystem
 import ucrt
 #elseif canImport(Glibc)
 import CSystem
+#if os(Linux)
+import CSystemStatFS
+#endif
 import Glibc
 #elseif canImport(Musl)
 import CSystem
@@ -108,6 +111,18 @@ internal func system_fstat(_ fd: CInt, _ s: inout CInterop.Stat) -> Int32 {
 internal func system_fstatat(_ fd: CInt, _ p: UnsafePointer<CChar>, _ s: inout CInterop.Stat, _ flags: CInt) -> Int32 {
   fstatat(fd, p, &s, flags)
 }
+
+#if !os(WASI)
+@available(System 0.0.2, *)
+@_alwaysEmitIntoClient
+internal func system_statfs(_ p: UnsafePointer<CChar>, _ s: inout CInterop.StatFS) -> Int32 {
+  statfs(p, &s)
+}
+@available(System 199, *)
+internal func system_fstatfs(_ fd: CInt, _ s: inout CInterop.StatFS) -> Int32 {
+  fstatfs(fd, &s)
+}
+#endif
 #endif
 
 // Convention: `system_platform_foo` is a

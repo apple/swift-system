@@ -125,9 +125,15 @@ let package = Package(
       dependencies: [],
       exclude: ["CMakeLists.txt"],
       cSettings: cSettings),
+    .systemLibrary(
+      name: "CSystemStatFS",
+      path: "Sources/CSystemStatFS"),
     .target(
       name: "SystemPackage",
-      dependencies: ["CSystem"],
+      dependencies: [
+        "CSystem",
+        .target(name: "CSystemStatFS", condition: .when(platforms: [.linux])),
+      ],
       path: "Sources/System",
       exclude: filesToExclude,
       cSettings: cSettings,

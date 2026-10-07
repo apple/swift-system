@@ -796,4 +796,340 @@ internal var _UF_SYSTEM: UInt32 { UInt32(bitPattern: UF_SYSTEM) }
 internal var _SF_SNAPSHOT: UInt32 { UInt32(bitPattern: SF_SNAPSHOT) }
 #endif
 
+// MARK: - statfs Mount Flags
+
+// `_MOUNT_*` is `MNT_*` on Darwin and BSD, or `ST_*` on Linux and Android.
+
+#if !os(WASI)
+
+// MARK: ST_* bits on Linux and Android
+
+// Literal bits to keep `@_alwaysEmitIntoClient` semantics. Calling CSystem's
+// `_system_get_ST_*` getters would put a CSystem symbol in every client, block
+// constant folding, and fail to compile under an `internal import CSystem`.
+// `StatFSTests.mountFlagBitsMatchLibc` checks the literals against libc.
+#if os(Linux) || os(Android)
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_RDONLY_BIT: CInterop.MountFlags { 0x0001 }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_NOSUID_BIT: CInterop.MountFlags { 0x0002 }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_NODEV_BIT: CInterop.MountFlags { 0x0004 }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_NOEXEC_BIT: CInterop.MountFlags { 0x0008 }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_SYNCHRONOUS_BIT: CInterop.MountFlags { 0x0010 }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_MANDLOCK_BIT: CInterop.MountFlags { 0x0040 }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_NOATIME_BIT: CInterop.MountFlags { 0x0400 }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_NODIRATIME_BIT: CInterop.MountFlags { 0x0800 }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_RELATIME_BIT: CInterop.MountFlags { 0x1000 }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_NOSYMFOLLOW_BIT: CInterop.MountFlags { 0x2000 }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_VALID_BIT: CInterop.MountFlags { 0x0020 }
+#endif
+
+// MARK: Flags Available on All Platforms
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MOUNT_RDONLY: CInterop.MountFlags {
+  #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+  CInterop.MountFlags(truncatingIfNeeded: MNT_RDONLY)
+  #elseif os(Linux) || os(Android)
+  _ST_RDONLY_BIT
+  #endif
+}
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MOUNT_SYNCHRONOUS: CInterop.MountFlags {
+  #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+  CInterop.MountFlags(truncatingIfNeeded: MNT_SYNCHRONOUS)
+  #elseif os(Linux) || os(Android)
+  _ST_SYNCHRONOUS_BIT
+  #endif
+}
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MOUNT_NOEXEC: CInterop.MountFlags {
+  #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+  CInterop.MountFlags(truncatingIfNeeded: MNT_NOEXEC)
+  #elseif os(Linux) || os(Android)
+  _ST_NOEXEC_BIT
+  #endif
+}
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MOUNT_NOSUID: CInterop.MountFlags {
+  #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+  CInterop.MountFlags(truncatingIfNeeded: MNT_NOSUID)
+  #elseif os(Linux) || os(Android)
+  _ST_NOSUID_BIT
+  #endif
+}
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MOUNT_NOATIME: CInterop.MountFlags {
+  #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+  CInterop.MountFlags(truncatingIfNeeded: MNT_NOATIME)
+  #elseif os(Linux) || os(Android)
+  _ST_NOATIME_BIT
+  #endif
+}
+
+// MARK: Flags Available on All Platforms Except FreeBSD
+
+#if !os(FreeBSD)
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MOUNT_NODEV: CInterop.MountFlags {
+  #if SYSTEM_PACKAGE_DARWIN || os(OpenBSD)
+  CInterop.MountFlags(truncatingIfNeeded: MNT_NODEV)
+  #elseif os(Linux) || os(Android)
+  _ST_NODEV_BIT
+  #endif
+}
+#endif
+
+// MARK: Flags Available on Linux and Android
+
+#if os(Linux) || os(Android)
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_MANDLOCK: CInterop.MountFlags { _ST_MANDLOCK_BIT }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_NODIRATIME: CInterop.MountFlags { _ST_NODIRATIME_BIT }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _ST_RELATIME: CInterop.MountFlags { _ST_RELATIME_BIT }
+#endif
+
+// MARK: Flags Available on Linux, Android, and FreeBSD
+
+#if os(Linux) || os(Android) || os(FreeBSD)
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MOUNT_NOSYMFOLLOW: CInterop.MountFlags {
+  #if os(FreeBSD)
+  CInterop.MountFlags(truncatingIfNeeded: MNT_NOSYMFOLLOW)
+  #else
+  _ST_NOSYMFOLLOW_BIT
+  #endif
+}
+#endif
+
+// MARK: Flags Available on Darwin, FreeBSD, and OpenBSD
+
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_ASYNC: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_ASYNC) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_EXPORTED: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_EXPORTED) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_LOCAL: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_LOCAL) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_QUOTA: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_QUOTA) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_ROOTFS: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_ROOTFS) }
+#endif
+
+// MARK: Flags Available on Darwin and FreeBSD
+
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_UNION: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_UNION) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_AUTOMOUNTED: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_AUTOMOUNTED) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_MULTILABEL: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_MULTILABEL) }
+#endif
+
+// MARK: Flags Available on FreeBSD and OpenBSD
+
+#if os(FreeBSD) || os(OpenBSD)
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_EXRDONLY: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_EXRDONLY) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_DEFEXPORTED: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_DEFEXPORTED) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_EXPORTANON: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_EXPORTANON) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_SOFTDEP: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_SOFTDEP) }
+#endif
+
+// MARK: Flags Available on Darwin Only
+
+#if SYSTEM_PACKAGE_DARWIN
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_CPROTECT: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_CPROTECT) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_REMOVABLE: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_REMOVABLE) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_QUARANTINE: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_QUARANTINE) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_DOVOLFS: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_DOVOLFS) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_DONTBROWSE: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_DONTBROWSE) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_IGNORE_OWNERSHIP: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_IGNORE_OWNERSHIP) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_JOURNALED: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_JOURNALED) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_NOUSERXATTR: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_NOUSERXATTR) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_DEFWRITE: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_DEFWRITE) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_NOFOLLOW: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_NOFOLLOW) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_SNAPSHOT: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_SNAPSHOT) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_STRICTATIME: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_STRICTATIME) }
+#endif
+
+// MARK: Flags Available on FreeBSD Only
+
+#if os(FreeBSD)
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_EXKERB: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_EXKERB) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_EXPUBLIC: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_EXPUBLIC) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_ACLS: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_ACLS) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_GJOURNAL: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_GJOURNAL) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_IGNORE: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_IGNORE) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_NFS4ACLS: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_NFS4ACLS) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_NOCLUSTERR: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_NOCLUSTERR) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_NOCLUSTERW: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_NOCLUSTERW) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_SUIDDIR: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_SUIDDIR) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_SUJ: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_SUJ) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_UNTRUSTED: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_UNTRUSTED) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_USER: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_USER) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_VERIFIED: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_VERIFIED) }
+#endif
+
+// MARK: Flags Available on OpenBSD Only
+
+#if os(OpenBSD)
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_NOPERM: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_NOPERM) }
+
+@available(System 199, *)
+@_alwaysEmitIntoClient
+internal var _MNT_WXALLOWED: CInterop.MountFlags { CInterop.MountFlags(truncatingIfNeeded: MNT_WXALLOWED) }
+#endif
+
+#endif // !os(WASI)
+
 #endif // !os(Windows)
