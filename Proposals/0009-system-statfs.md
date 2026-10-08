@@ -11,6 +11,7 @@
 
 * **v1** Initial version
 * **v2** Use `statfs` on Linux and Android, make `StatFS` unavailable on WASI, omit Linux flags the kernel never reports, add descriptions for `MountFlags` and `FileSystemID`, and back-deploy `CInterop.StatFS` with `CInterop.statfs(_:_:)` for migration
+* **v3** Rename `MountFlags` constants for consistency, remove `type` on Darwin and FreeBSD, and remove the `statfs()` methods on `FilePath` and `FileDescriptor`, eliminating the need for `CInterop` back-deployment
 
 ## Introduction
 
@@ -39,10 +40,10 @@ This proposal adds a `struct StatFS` that is available on Unix-like platforms. O
 let statfs = try StatFS("/")
 
 // From FileDescriptor
-let fdStatFS = try fd.statfs()
+let fdStatFS = try StatFS(fd)
 
 // From FilePath
-let pathStatFS = try filePath.statfs()
+let pathStatFS = try StatFS(filePath)
 
 print("File system ID: \(statfs.fileSystemID)")
 print("Total space: \(statfs.totalSpace) bytes")
@@ -124,7 +125,8 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   /// or `ST_NOEXEC` otherwise.
   public static var noExecution: MountFlags { get }
 
-  /// Set-user-ID and set-group-ID bits are not honored on the file system.
+  /// Set-user-ID and set-group-ID (setuid and setgid) bits are not honored on
+  /// the file system.
   ///
   /// The corresponding C constant is `MNT_NOSUID` on Darwin and BSD,
   /// or `ST_NOSUID` otherwise.
@@ -154,7 +156,7 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   // Flags available on Linux and Android
 
   #if os(Linux) || os(Android)
-  public static var mandatoryLockingPermitted: MountFlags { get }
+  public static var mandatoryLocking: MountFlags { get }
   public static var noDirectoryAccessTime: MountFlags { get }
   public static var relativeAccessTime: MountFlags { get }
   #endif
@@ -162,7 +164,7 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   // Flags available on Linux, Android, and FreeBSD
 
   #if os(Linux) || os(Android) || os(FreeBSD)
-  public static var noSymlinkFollow: MountFlags { get }
+  public static var noSymlinkFollowing: MountFlags { get }
   #endif
 
   // Flags available on Darwin, FreeBSD, and OpenBSD
@@ -194,7 +196,7 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   /// - Note: Only available on Darwin and BSD.
   ///
   /// The corresponding C constant is `MNT_QUOTA`.
-  public static var quota: MountFlags { get }
+  public static var quotasEnabled: MountFlags { get }
 
   /// The file system is the root file system.
   ///
@@ -222,7 +224,7 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   /// The corresponding C constant is `MNT_AUTOMOUNTED`.
   public static var automounted: MountFlags { get }
 
-  /// The file system supports Mandatory Access Control (MAC) labels for
+  /// The file system maintains Mandatory Access Control (MAC) labels for
   /// individual objects.
   ///
   /// - Note: Only available on Darwin and FreeBSD.
@@ -243,7 +245,7 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   // Flags available on Darwin only
 
   #if os(anyAppleOS)
-  /// The file system supports per-file encrypted data protection.
+  /// Per-file encrypted data protection is enabled on the file system.
   ///
   /// - Note: Only available on Darwin.
   ///
@@ -262,14 +264,14 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   /// - Note: Only available on Darwin.
   ///
   /// The corresponding C constant is `MNT_QUARANTINE`.
-  public static var quarantine: MountFlags { get }
+  public static var quarantined: MountFlags { get }
 
   /// The file system supports volfs.
   ///
   /// - Note: Only available on Darwin. Deprecated since Mac OS X 10.5.
   ///
   /// The corresponding C constant is `MNT_DOVOLFS`.
-  public static var volumeFileSystem: MountFlags { get }
+  public static var supportsVolfs: MountFlags { get }
 
   /// The file system should not be presented to the user for browsing
   /// (e.g. hidden in Finder).
@@ -279,12 +281,12 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   /// The corresponding C constant is `MNT_DONTBROWSE`.
   public static var noBrowsing: MountFlags { get }
 
-  /// Ownership information on the file system is ignored.
+  /// The file system ignores ownership information.
   ///
   /// - Note: Only available on Darwin.
   ///
   /// The corresponding C constant is `MNT_IGNORE_OWNERSHIP`.
-  public static var ignoreOwnership: MountFlags { get }
+  public static var ignoresOwnership: MountFlags { get }
 
   /// The file system is journaled.
   ///
@@ -305,24 +307,24 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   /// - Note: Only available on Darwin.
   ///
   /// The corresponding C constant is `MNT_DEFWRITE`.
-  public static var deferWrites: MountFlags { get }
+  public static var defersWrites: MountFlags { get }
 
   /// Symbolic links are not followed when resolving the mount point.
   ///
   /// - Note: Only available on Darwin.
   ///
   /// The corresponding C constant is `MNT_NOFOLLOW`.
-  public static var noSymlinkFollowAtMountPoint: MountFlags { get }
+  public static var noSymlinkFollowingAtMountPoint: MountFlags { get }
 
-  /// The mount is a snapshot.
+  /// The file system is a snapshot.
   ///
   /// - Note: Only available on Darwin.
   ///
   /// The corresponding C constant is `MNT_SNAPSHOT`.
   public static var snapshot: MountFlags { get }
 
-  /// Access times are always updated on access. Relatime-style optimizations
-  /// are disabled.
+  /// Access times are always updated when files are read. Without this flag,
+  /// the file system may skip some access time updates for performance.
   ///
   /// - Note: Only available on Darwin.
   ///
@@ -333,18 +335,18 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   // Flags available on FreeBSD only
 
   #if os(FreeBSD)
-  public static var exportedKerberos: MountFlags { get }
-  public static var exportedPublic: MountFlags { get }
+  public static var exportedWithKerberos: MountFlags { get }
+  public static var exportedPublicly: MountFlags { get }
   public static var posixACLs: MountFlags { get }
   public static var geomJournaled: MountFlags { get }
   public static var excludedFromDiskFreeReports: MountFlags { get }
   public static var nfs4ACLs: MountFlags { get }
-  public static var noClusterRead: MountFlags { get }
-  public static var noClusterWrite: MountFlags { get }
-  public static var setUserIDDirectory: MountFlags { get }
-  public static var softUpdateJournaling: MountFlags { get }
+  public static var noClusteredReads: MountFlags { get }
+  public static var noClusteredWrites: MountFlags { get }
+  public static var setUserIDDirectories: MountFlags { get }
+  public static var softUpdatesJournaling: MountFlags { get }
   public static var untrusted: MountFlags { get }
-  public static var mountedByUser: MountFlags { get }
+  public static var userMounted: MountFlags { get }
   public static var verified: MountFlags { get }
   #endif
 
@@ -394,16 +396,17 @@ extension FileSystemID: CustomStringConvertible, CustomDebugStringConvertible {
   public var debugDescription: String { get }
 }
 
-// `FileSystemType` is available on Darwin, FreeBSD, Linux, and Android, where
-// `statfs` reports `f_type`. `FileSystemSubtype` is Darwin-only. Both fit in a
-// `UInt32` on every platform that provides them, so no `CInterop` typealias is
-// needed.
+// `FileSystemType` is available on Linux and Android, where `f_type` is the
+// file system's magic number. Darwin and FreeBSD report a kernel-assigned
+// index in `f_type`, so `typeName` identifies the file system there instead.
+// `FileSystemSubtype` is Darwin-only. Both fit in a `UInt32` on every platform
+// that provides them, so no `CInterop` typealias is needed.
 
-#if os(anyAppleOS) || os(FreeBSD) || os(Linux) || os(Android)
+#if os(Linux) || os(Android)
 /// A Swift wrapper of the C `f_type` file system type found in a `statfs`
 /// struct.
 ///
-/// - Note: Only available on Darwin, FreeBSD, Linux, and Android.
+/// - Note: Only available on Linux and Android.
 @frozen
 public struct FileSystemType: RawRepresentable, Sendable, Hashable, Codable {
   /// The raw C file system type.
@@ -440,7 +443,7 @@ public struct FileSystemSubtype: RawRepresentable, Sendable, Hashable, Codable {
 
 ### `StatFS`
 
-`StatFS` offers initializers that accept a `FilePath`, null-terminated `UnsafePointer<CChar>`, or `FileDescriptor`. Instance methods on `FileDescriptor` and `FilePath` are also provided, shown below.
+`StatFS` offers initializers that accept a `FilePath`, null-terminated `UnsafePointer<CChar>`, or `FileDescriptor`.
 
 The underlying C fields for each numeric property vary in signedness and width across platforms. Rather than create a platform-dependent type for each, we choose one fixed integer type per property — `Int` or `UInt64` — and clamp when getting or setting the value.
 
@@ -605,14 +608,12 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
   /// The corresponding C property is `f_flags`.
   public var mountFlags: MountFlags { get set }
 
-  #if os(anyAppleOS) || os(FreeBSD) || os(Linux) || os(Android)
+  #if os(Linux) || os(Android)
   /// File system type.
   ///
-  /// - Note: On Linux and Android, this is the file system's magic number,
-  ///   such as `0xEF53` for ext4. On Darwin and FreeBSD, it's an internal,
-  ///   kernel-assigned VFS type index with no stable, public constants;
-  ///   prefer `typeName` to identify the file system in a readable format.
-  ///   Not available on OpenBSD.
+  /// - Note: This is the file system's magic number, such as `0xEF53` for
+  ///   ext4. Only available on Linux and Android. On Darwin and BSD, use
+  ///   `typeName` to identify the file system.
   ///
   /// The corresponding C property is `f_type`.
   public var type: FileSystemType { get set }
@@ -621,8 +622,8 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
   #if os(anyAppleOS)
   /// File system subtype.
   ///
-  /// - Note: Like `type`, this is a numeric value with no stable, public
-  ///   constants. Only available on Darwin.
+  /// - Note: This is a numeric value whose meaning depends on `typeName`,
+  ///   with no stable, public constants. Only available on Darwin.
   ///
   /// The corresponding C property is `f_fssubtype`.
   public var subtype: FileSystemSubtype { get set }
@@ -679,33 +680,15 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
 
 `StatFS` conforms to `Hashable` (and therefore `Equatable`) by comparing and hashing the raw values of its C fields, as `Stat` does, so two `StatFS` values are equal when their `rawValue`s match in every meaningful field. Comparing the clamped properties instead would treat different raw values like two negative `f_bavail` counts as equal, and would ignore fields without a property. A byte-wise comparison would be unreliable because the bytes following each name buffer's NUL terminator are unspecified, and the struct may carry reserved/spare padding.
 
-#### FileDescriptor and FilePath extensions
-```swift
-extension FileDescriptor {
-  /// Creates a `StatFS` for the file system containing the file referenced by this `FileDescriptor`.
-  ///
-  /// The corresponding C function is `fstatfs()`.
-  public func statfs(
-    retryOnInterrupt: Bool = true
-  ) throws(Errno) -> StatFS
-}
-
-extension FilePath {
-  /// Creates a `StatFS` for the file system containing the file referenced by this `FilePath`.
-  ///
-  /// The corresponding C function is `statfs()`.
-  public func statfs(
-    retryOnInterrupt: Bool = true
-  ) throws(Errno) -> StatFS
-}
-```
-
 ### CInterop extensions
 
 This proposal extends the existing `CInterop` namespace with platform-appropriate typealiases for the underlying C types. Each is used as the `rawValue` for a corresponding strongly-typed representation.
 
 ```swift
 extension CInterop {
+  /// The C `statfs` struct.
+  public typealias StatFS = statfs
+
   public typealias FileSystemID = fsid_t
 
   #if os(anyAppleOS) || os(OpenBSD)
@@ -718,32 +701,7 @@ extension CInterop {
 }
 ```
 
-Both have the same availability as the rest of this proposal. Following [SYS-0008](0008-backdeploy-cinterop-stat.md), `CInterop.StatFS` and a new `CInterop.statfs(_:_:)` function are available from `System 0.0.2`, the original availability of `CInterop`, to give clients a migration path on older deployment targets (see **Source compatibility**). The function is `@_alwaysEmitIntoClient`, so it works on older OS versions.
-
-```swift
-@available(System 0.0.2, *)
-extension CInterop {
-  /// The C `statfs` struct.
-  public typealias StatFS = statfs
-
-  /// Calls the C `statfs()` function.
-  ///
-  /// This is a direct wrapper around the C system call.
-  /// For a more ergonomic Swift API, use `StatFS` instead.
-  ///
-  /// - Warning: This API is primarily intended for migration purposes when
-  ///   supporting older deployment targets. If your deployment target supports
-  ///   it, prefer using the `StatFS` API, which provides type-safe, ergonomic
-  ///   access to file system metadata in Swift.
-  ///
-  /// - Parameters:
-  ///   - path: A null-terminated C string representing the file path.
-  ///   - s: An `inout` reference to a `CInterop.StatFS` struct to populate.
-  /// - Returns: 0 on success, -1 on error (check `errno`).
-  @_alwaysEmitIntoClient
-  public static func statfs(_ path: UnsafePointer<CChar>, _ s: inout CInterop.StatFS) -> Int32
-}
-```
+All three have the same availability as the rest of this proposal.
 
 ### Vending `struct statfs` on glibc platforms
 
@@ -783,27 +741,11 @@ public struct StatFS {
 #endif
 ```
 
-Marking the type covers the three throwing initializers each stub declares. The `FileDescriptor.statfs()` and `FilePath.statfs()` methods will also get matching unavailable stubs with the same messages. The other types and `CInterop` additions in this proposal aren't declared on either platform.
+Marking the type covers the three throwing initializers each stub declares. The other types and `CInterop` additions in this proposal aren't declared on either platform.
 
 ## Source compatibility
 
-This proposal is additive, but like `FilePath.stat()` and `FileDescriptor.stat()` in [SYS-0006](https://github.com/apple/swift-system/blob/main/Proposals/0006-system-stat.md), the new `FilePath.statfs()` and `FileDescriptor.statfs()` methods shadow the C `statfs` struct initializer and function inside extensions of those types. Existing code that uses them unqualified there no longer compiles, with these errors among others:
-
-```swift
-extension FilePath {
-  func availableBytes() -> UInt64 {
-    // error: call can throw, but it is not marked with 'try' and the error is not handled
-    var s = statfs()
-    // error: use of 'statfs' refers to instance method rather than global function 'statfs' in module 'Darwin'
-    guard withPlatformString({ statfs($0, &s) }) == 0 else { return 0 }
-    return s.f_bavail * UInt64(s.f_bsize)
-  }
-}
-```
-
-`statfs` meets each of the criteria that made `stat` a special case in [SYS-0008](0008-backdeploy-cinterop-stat.md), so this proposal provides the same migration path. Replacing `statfs()` and `statfs(_:_:)` with `CInterop.StatFS()` and `CInterop.statfs(_:_:)` resolves the errors, including on older deployment targets. Swift's Glibc module doesn't export `statfs` on Linux, so the break mainly affects other platforms. Code on Darwin that needs to support older deployment targets can't rely on `StatFS` alone, so the `CInterop` path matters most for those rare cases.
-
-On glibc platforms, clients that already vend `struct statfs` from their own module (since Swift's Glibc module doesn't export it) may need to import both that module and System in each file that accesses `statfs` fields. When two modules declare the same C struct, `MemberImportVisibility` attributes its fields to the module the compiler reaches the struct through first, which can differ between debug and release builds. In testing, a client that used `StatFS.rawValue` in one file and its own module's `statfs` in another built in debug but failed in release, reporting a missing import of `CSystemStatFS`.
+This proposal is additive, but on glibc platforms, clients that already vend `struct statfs` from their own module (since Swift's Glibc module doesn't export it) may need to import both that module and System in each file that accesses `statfs` fields. When two modules declare the same C struct, `MemberImportVisibility` attributes its fields to the module the compiler reaches the struct through first, which can differ between debug and release builds. In testing, a client that used `StatFS.rawValue` in one file and its own module's `statfs` in another built in debug but failed in release, reporting a missing import of `CSystemStatFS`.
 
 ## ABI compatibility
 
@@ -853,9 +795,11 @@ Having separate types for `statfs` and `statvfs` would increase cognitive overhe
 
 `statvfs` is the POSIX interface, and the Glibc, Musl, and Android modules all export it, so System wouldn't need a `CSystemStatFS` module, which can conflict with clients' own `statfs` modules (see **Source compatibility**). However, on Linux, `statvfs` is also a wrapper around `statfs`, and it drops useful information: 1) with Bionic or glibc before 2.39, `f_type`, the file system magic number (such as `0xEF53` for ext4) that Linux code conventionally uses to identify a file system is absent; and 2) with musl or 32-bit platforms, half of the 2-word `fsid_t` is omitted. `statvfs`'s only extra field, `f_favail`, is a copy of `f_ffree` in glibc, musl, and Bionic.
 
-### Only have `FilePath` and `FileDescriptor` extensions rather than initializers that accept these types
+### Add `statfs()` methods to `FilePath` and `FileDescriptor`
 
-While having `.statfs()` functions on `FilePath` and `FileDescriptor` is preferred for ergonomics and function chaining, this technique might lack the discoverability of having an initializer on `StatFS` directly. This proposal therefore includes both the initializers and extensions.
+Like `FilePath.stat()` and `FileDescriptor.stat()` in [SYS-0006](https://github.com/apple/swift-system/blob/main/Proposals/0006-system-stat.md), `StatFS` could offer `statfs()` methods alongside its initializers. However, `statfs` describes the file system containing a file rather than the file itself, so it's not as closely tied to the individual `FilePath` or `FileDescriptor`. The proposed initializers can still chain, as in `try StatFS(path).availableSpace`.
+
+The methods would also shadow the C `statfs` struct initializer and function inside extensions of those types, so existing code that calls them unqualified there would no longer compile. [SYS-0008](0008-backdeploy-cinterop-stat.md) back-deployed `CInterop.stat(_:_:)` as a migration path for the same issue with `stat()`. Leaving out the methods avoids the break and the need for new `CInterop` APIs. They could always be added later, along with a migration path, if desired.
 
 ### Expose `type` and `subtype` as raw integers
 
@@ -885,11 +829,8 @@ The `retryOnInterrupt: Bool = true` parameter is omitted for clarity.
 |-----------|--------------------------------|
 | `StatFS(_ path: UnsafePointer<CChar>)` | `statfs()` |
 | `StatFS(_ path: FilePath)` | `statfs()` |
-| `FilePath.statfs()` | `statfs()` |
-| `CInterop.statfs(_:_:)` | `statfs()` |
 | | |
 | `StatFS(_ fd: FileDescriptor)` | `fstatfs()` |
-| `FileDescriptor.statfs()` | `fstatfs()` |
 
 #### `StatFS` property mappings
 
@@ -909,7 +850,7 @@ The `retryOnInterrupt: Bool = true` parameter is omitted for clarity.
 | `maximumNameLength` | N/A | `f_namemax` | `f_namemax` | `f_namelen` | `f_namelen` |
 | `fileSystemID` | `f_fsid` | " | " | " | " |
 | `mountFlags` | `f_flags` | " | " | " | " |
-| `type` | `f_type` | `f_type` | N/A | `f_type` | `f_type` |
+| `type` | N/A | N/A | N/A | `f_type` | `f_type` |
 | `subtype` | `f_fssubtype` | N/A | N/A | N/A | N/A |
 | `owner` | `f_owner` | `f_owner` | `f_owner` | N/A | N/A |
 | `typeName` | `f_fstypename` | `f_fstypename` | `f_fstypename` | N/A | N/A |
@@ -926,14 +867,14 @@ The `retryOnInterrupt: Bool = true` parameter is omitted for clarity.
 | `noSetUserID` | `MNT_NOSUID` | `MNT_NOSUID` | `MNT_NOSUID` | `ST_NOSUID` | `ST_NOSUID` |
 | `noAccessTime` | `MNT_NOATIME` | `MNT_NOATIME` | `MNT_NOATIME` | `ST_NOATIME` | `ST_NOATIME` |
 | `noDevices` | `MNT_NODEV` | N/A | `MNT_NODEV` | `ST_NODEV` | `ST_NODEV` |
-| `mandatoryLockingPermitted` | N/A | N/A | N/A | `ST_MANDLOCK` | `ST_MANDLOCK` |
+| `mandatoryLocking` | N/A | N/A | N/A | `ST_MANDLOCK` | `ST_MANDLOCK` |
 | `noDirectoryAccessTime` | N/A | N/A | N/A | `ST_NODIRATIME` | `ST_NODIRATIME` |
 | `relativeAccessTime` | N/A | N/A | N/A | `ST_RELATIME` | `ST_RELATIME` |
-| `noSymlinkFollow` | N/A | `MNT_NOSYMFOLLOW` | N/A | `ST_NOSYMFOLLOW` | `ST_NOSYMFOLLOW` |
+| `noSymlinkFollowing` | N/A | `MNT_NOSYMFOLLOW` | N/A | `ST_NOSYMFOLLOW` | `ST_NOSYMFOLLOW` |
 | `asynchronous` | `MNT_ASYNC` | `MNT_ASYNC` | `MNT_ASYNC` | N/A | N/A |
 | `exported` | `MNT_EXPORTED` | `MNT_EXPORTED` | `MNT_EXPORTED` | N/A | N/A |
 | `local` | `MNT_LOCAL` | `MNT_LOCAL` | `MNT_LOCAL` | N/A | N/A |
-| `quota` | `MNT_QUOTA` | `MNT_QUOTA` | `MNT_QUOTA` | N/A | N/A |
+| `quotasEnabled` | `MNT_QUOTA` | `MNT_QUOTA` | `MNT_QUOTA` | N/A | N/A |
 | `rootFileSystem` | `MNT_ROOTFS` | `MNT_ROOTFS` | `MNT_ROOTFS` | N/A | N/A |
 | `union` | `MNT_UNION` | `MNT_UNION` | N/A | N/A | N/A |
 | `automounted` | `MNT_AUTOMOUNTED` | `MNT_AUTOMOUNTED` | N/A | N/A | N/A |
@@ -944,28 +885,28 @@ The `retryOnInterrupt: Bool = true` parameter is omitted for clarity.
 | `softUpdates` | N/A | `MNT_SOFTDEP` | `MNT_SOFTDEP` | N/A | N/A |
 | `contentProtection` | `MNT_CPROTECT` | N/A | N/A | N/A | N/A |
 | `removable` | `MNT_REMOVABLE` | N/A | N/A | N/A | N/A |
-| `quarantine` | `MNT_QUARANTINE` | N/A | N/A | N/A | N/A |
-| `volumeFileSystem` | `MNT_DOVOLFS` | N/A | N/A | N/A | N/A |
+| `quarantined` | `MNT_QUARANTINE` | N/A | N/A | N/A | N/A |
+| `supportsVolfs` | `MNT_DOVOLFS` | N/A | N/A | N/A | N/A |
 | `noBrowsing` | `MNT_DONTBROWSE` | N/A | N/A | N/A | N/A |
-| `ignoreOwnership` | `MNT_IGNORE_OWNERSHIP` | N/A | N/A | N/A | N/A |
+| `ignoresOwnership` | `MNT_IGNORE_OWNERSHIP` | N/A | N/A | N/A | N/A |
 | `journaled` | `MNT_JOURNALED` | N/A | N/A | N/A | N/A |
 | `noUserExtendedAttributes` | `MNT_NOUSERXATTR` | N/A | N/A | N/A | N/A |
-| `deferWrites` | `MNT_DEFWRITE` | N/A | N/A | N/A | N/A |
-| `noSymlinkFollowAtMountPoint` | `MNT_NOFOLLOW` | N/A | N/A | N/A | N/A |
+| `defersWrites` | `MNT_DEFWRITE` | N/A | N/A | N/A | N/A |
+| `noSymlinkFollowingAtMountPoint` | `MNT_NOFOLLOW` | N/A | N/A | N/A | N/A |
 | `snapshot` | `MNT_SNAPSHOT` | N/A | N/A | N/A | N/A |
 | `strictAccessTime` | `MNT_STRICTATIME` | N/A | N/A | N/A | N/A |
-| `exportedKerberos` | N/A | `MNT_EXKERB` | N/A | N/A | N/A |
-| `exportedPublic` | N/A | `MNT_EXPUBLIC` | N/A | N/A | N/A |
+| `exportedWithKerberos` | N/A | `MNT_EXKERB` | N/A | N/A | N/A |
+| `exportedPublicly` | N/A | `MNT_EXPUBLIC` | N/A | N/A | N/A |
 | `posixACLs` | N/A | `MNT_ACLS` | N/A | N/A | N/A |
 | `geomJournaled` | N/A | `MNT_GJOURNAL` | N/A | N/A | N/A |
 | `excludedFromDiskFreeReports` | N/A | `MNT_IGNORE` | N/A | N/A | N/A |
 | `nfs4ACLs` | N/A | `MNT_NFS4ACLS` | N/A | N/A | N/A |
-| `noClusterRead` | N/A | `MNT_NOCLUSTERR` | N/A | N/A | N/A |
-| `noClusterWrite` | N/A | `MNT_NOCLUSTERW` | N/A | N/A | N/A |
-| `setUserIDDirectory` | N/A | `MNT_SUIDDIR` | N/A | N/A | N/A |
-| `softUpdateJournaling` | N/A | `MNT_SUJ` | N/A | N/A | N/A |
+| `noClusteredReads` | N/A | `MNT_NOCLUSTERR` | N/A | N/A | N/A |
+| `noClusteredWrites` | N/A | `MNT_NOCLUSTERW` | N/A | N/A | N/A |
+| `setUserIDDirectories` | N/A | `MNT_SUIDDIR` | N/A | N/A | N/A |
+| `softUpdatesJournaling` | N/A | `MNT_SUJ` | N/A | N/A | N/A |
 | `untrusted` | N/A | `MNT_UNTRUSTED` | N/A | N/A | N/A |
-| `mountedByUser` | N/A | `MNT_USER` | N/A | N/A | N/A |
+| `userMounted` | N/A | `MNT_USER` | N/A | N/A | N/A |
 | `verified` | N/A | `MNT_VERIFIED` | N/A | N/A | N/A |
 | `noPermissionChecks` | N/A | N/A | `MNT_NOPERM` | N/A | N/A |
 | `writeExecuteAllowed` | N/A | N/A | `MNT_WXALLOWED` | N/A | N/A |
