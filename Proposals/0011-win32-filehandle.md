@@ -22,25 +22,25 @@ A `HANDLE` is Windows' canonical representation of an open file, and the Win32 A
 
 ### The descriptor is not the object
 
-A C runtime descriptor is a second index over the handle and carries state of its own, including a translation mode. In text mode, the runtime rewrites bytes in transit, expanding `\n` to `\r\n` on write and collapsing it on read. Anything built on a descriptor inherits a translation setting that is invisible in System's APIs.
+A C runtime descriptor is a second index over the handle and carries state of its own, including a translation mode. In text mode, the runtime rewrites bytes in transit, expanding `\n` to `\r\n` on write and collapsing it on read. Anything built on a descriptor inherits a translation setting that is invisible in System's APIs, and Win32 calls on the underlying handle bypass it.
 
-The descriptor also leaks Windows semantics into portable-looking APIs. For example, `FileDescriptor.read(fromAbsoluteOffset:into:)` on Windows calls `ReadFile` with an `OVERLAPPED` carrying the offset. However, passing an `OVERLAPPED` on a synchronous handle reads from the given offset *and* updates the file pointer, unlike POSIX `pread`. `FileDescriptor` should document that deviation, but a dedicated `Win32` type eliminates the POSIX contradiction entirely. See [SYS-0014](0014-win32-file-io.md).
+The descriptor also leaks Windows semantics into portable-looking APIs: `FileDescriptor.read(fromAbsoluteOffset:into:)` moves the file pointer on Windows, unlike POSIX `pread` (see [SYS-0014](0014-win32-file-io.md)).
 
 ### A copied handle is a use-after-close hazard
 
-`FileDescriptor` is a copyable value with a non-consuming `FileDescriptor.close()`. Copy it, close one copy, and the other still compiles and still names a number. Windows also recycles handle values, so a stale copy may name a different kernel object and lead to I/O on the wrong file.
+`FileDescriptor` is a copyable value with a non-consuming `FileDescriptor.close()`. Copy it, close one copy, and the other still compiles and names an index. Windows also recycles handle values, so a stale copy may name a different kernel object and lead to I/O on the wrong file.
 
-`FileDescriptor` keeps the copyable model because it's shipped ABI on Apple platforms and predates `~Copyable`. Neither constraint applies to new Windows APIs, so we should pursue an owning, noncopyable type instead. A double close or use after close then becomes a compile error, a dropped handle is closed rather than leaked, and every signature says clearly whether it borrows or consumes. System already ships a precedent: `Mach.Port` is a noncopyable owner that deallocates its port right in `deinit` and gives up ownership with `consuming func relinquish()`.
+`FileDescriptor` keeps the copyable model because it's shipped ABI and predates `~Copyable`. Neither constraint applies to new Windows APIs, so we should pursue an owning, noncopyable type instead. A double close or use after close then becomes a compile error, a dropped handle is closed rather than leaked, and every signature says clearly whether it borrows or consumes. System already ships a precedent: `Mach.Port` is a noncopyable owner that deallocates its port right in `deinit` and gives up ownership with `consuming func relinquish()`.
 
 ## Proposed solution
 
-Add `Win32.FileHandle`, a `~Copyable` type that owns its handle and closes it with a `consuming func close()`.
+Add `Win32.FileHandle`, a noncopyable type that owns its handle and closes it with a `consuming func close()`.
 
 ```swift
 #if os(Windows)
 // `open` is proposed separately, in SYS-0012.
 let file = try Win32.FileHandle.open(path, access: .genericRead)
-try parse(file)   // Borrows `file`.
+try parse(file)   // Borrows `file`. If this throws, `deinit` closes it.
 try file.close()  // Consumes `file` and reports any error.
 try file.close()  // error: 'file' consumed more than once
 #endif
@@ -58,7 +58,8 @@ extension Win32 {
   ///
   /// This type owns its handle. Call ``close()`` to close it and report any
   /// error. Otherwise, `deinit` closes the handle at the end of its scope and
-  /// discards the error.
+  /// discards the error. In debug builds, both trap if unsafe code closed the
+  /// handle or marked it `HANDLE_FLAG_PROTECT_FROM_CLOSE`.
   ///
   /// The corresponding C type is `HANDLE`.
   @frozen @safe
@@ -68,9 +69,14 @@ extension Win32 {
     /// Returns `nil` if `raw` is `NULL` or `INVALID_HANDLE_VALUE`.
     ///
     /// - Warning: `raw` must be a synchronous handle that's closed by
-    ///   `CloseHandle`. Do not pass a handle opened with `FILE_FLAG_OVERLAPPED`
-    ///   or a socket, which is overlapped by default and must be closed with
-    ///   `closesocket`.
+    ///   `CloseHandle`. Do not pass:
+    ///   - A handle opened with `FILE_FLAG_OVERLAPPED`.
+    ///   - A socket, which is overlapped by default and must be closed with
+    ///     `closesocket`.
+    ///   - A handle you don't own, such as one from `GetStdHandle`, since
+    ///     `deinit` closes it.
+    ///   - A handle with `HANDLE_FLAG_PROTECT_FROM_CLOSE` set, since closing
+    ///     it fails.
     @unsafe
     public init?(unsafelyAdopting raw: HANDLE?)
 
@@ -94,31 +100,25 @@ extension Win32 {
 
 #### Lifetime and error handling
 
-A handle is always closed — the only question is whether the caller sees an error if one occurs. `close()` reports it, and `deinit` discards it at the end of the handle's scope. `deinit` still closes to prevent a throw between the open and the close from leaking the handle. `close()` consumes the handle even when it throws because a failed `CloseHandle` leaves nothing safe to retry: the handle may already be invalid, and Windows may have recycled its value for an unrelated object. The one exception is a handle marked `HANDLE_FLAG_PROTECT_FROM_CLOSE`, which `CloseHandle` leaves open. Callers should be aware that consuming a protected handle leaks it, as intended by the flag.
+Every handle gets one `CloseHandle` call, from `close()` at a point the caller chooses or from `deinit` at the end of the handle's scope. Closing in `deinit` prevents a throw between an open and close from leaking the handle. A `Win32.FileHandle` must never hold a handle marked `HANDLE_FLAG_PROTECT_FROM_CLOSE`, which `CloseHandle` leaves open.
 
-Note that `CloseHandle` is only documented to fail for an invalid handle or one protected from closing. It doesn't wait for the cache manager to write cached data to the device, and can't report a failure that happens then, so a client must call `flush()` ([SYS-0014](0014-win32-file-io.md)) first if a write-back failure needs to be surfaced.
+`CloseHandle`'s documentation doesn't list failure conditions, but `NtClose` documents error statuses for 1) an invalid handle and 2) a handle that's protected from closing. Testing shows that `CloseHandle` reports `.invalidHandle` for both cases. `Win32.FileHandle`'s ownership prevents this failure unless unsafe code closed the handle or set its protect-from-close flag. Therefore, `close()` and `deinit` trap in debug builds if `CloseHandle` fails with `.invalidHandle`. Note this can't catch a value that Windows has already reused, so it's only a probabilistic debugging aid.
 
-Ownership also removes the need for a scoped form like `closeAfter(_:)` or `withOpen`. An ordinary binding plus an explicit close reproduces the contract a `closeAfter` would document:
+`CloseHandle` doesn't wait for the cache manager to write cached data to the device, so `close()` can't report such a failure. A client must call `flush()` ([SYS-0014](0014-win32-file-io.md)) before closing if a write-back failure needs to be surfaced.
 
-```swift
-let file = try Win32.FileHandle.open(path, access: .genericRead)
-try doWork(file)    // If this throws, `deinit` closes and discards the error.
-try file.close()    // Otherwise, any close error is reported here.
-```
-
-`unsafeRawHandle` and `relinquish()` are `@unsafe` escape hatches from that model. `unsafeRawHandle` may be used with Win32 functions that borrow a handle and have no System wrapper yet, and `relinquish()` hands ownership to code that will close it.
+`unsafeRawHandle` and `relinquish()` are `@unsafe` escape hatches from the ownership model. `unsafeRawHandle` may be used with Win32 functions that borrow a handle and have no System wrapper yet, and `relinquish()` hands ownership to code that will close it.
 
 #### Two invalid sentinels
 
-`CreateFileW` reports failure as `INVALID_HANDLE_VALUE` (`(HANDLE)-1`), while most other handle-producing functions report failure as `NULL`. `init?(unsafelyAdopting:)` is failable so that both are rejected in one place. A non-nil `Win32.FileHandle` means a valid `HANDLE`. There is no `.invalid` member, since both sentinels report only that the call failed, and `.invalid` would name a handle on which every operation fails. The parameter is `HANDLE?` to support Win32 functions that return `NULL` but import as returning `HANDLE!`.
+`CreateFileW` reports failure as `INVALID_HANDLE_VALUE` (`(HANDLE)-1`), while most other handle-producing functions report failure as `NULL`. `init?(unsafelyAdopting:)` is failable so that both are rejected in one place. There is no `.invalid` member, since both sentinels report only that the call failed, and `.invalid` would name a handle on which every operation fails. The parameter is `HANDLE?` to support Win32 functions that return `NULL` but import as returning `HANDLE!`.
 
 > Note: The C runtime has a third sentinel, `_NO_CONSOLE_FILENO` (`(intptr_t)-2`). This is a CRT convention rather than a Win32 one, so it's filtered by `FileDescriptor.withWin32HandleIfAvailable(_:)` in [SYS-0013](0013-win32-filedescriptor-bridging.md) instead.
 
 #### Synchronous handles only
 
-None of the synchronous I/O in [SYS-0014](0014-win32-file-io.md) survives an overlapped handle: a transfer can report itself complete while the kernel is still writing into the span's memory, or a call can return `ERROR_IO_PENDING` immediately while the work completes later. Therefore, a `Win32.FileHandle` is never overlapped. [SYS-0012](0012-win32-opening-handles.md) rejects `FILE_FLAG_OVERLAPPED` on open, and [SYS-0013](0013-win32-filedescriptor-bridging.md)'s `FileDescriptor` bridging does not lend a handle if it's overlapped. A future asynchronous handle API should instead apply the flag implicitly and withhold the operations that fail, like `Win32.DirectoryHandle` does with `FILE_FLAG_BACKUP_SEMANTICS`.
+None of the synchronous I/O in [SYS-0014](0014-win32-file-io.md) is memory-safe on an overlapped handle: a transfer can report itself complete while the kernel is still writing into the span's memory, or a call can return `ERROR_IO_PENDING` immediately while the work completes later. Therefore, a `Win32.FileHandle` is never overlapped. [SYS-0012](0012-win32-opening-handles.md) rejects `FILE_FLAG_OVERLAPPED` on open, and [SYS-0013](0013-win32-filedescriptor-bridging.md)'s `FileDescriptor` bridging does not lend a handle if it's overlapped. A future asynchronous handle API should instead apply the flag implicitly like `Win32.DirectoryHandle` ([SYS-0012](0012-win32-opening-handles.md)) does with `FILE_FLAG_BACKUP_SEMANTICS` and withhold operations that fail.
 
-`init?(unsafelyAdopting:)` does not check for the flag. It's `@unsafe` because the caller vouches that the handle is valid, owned, and synchronous. The safe `FileDescriptor.withWin32HandleIfAvailable(_:)` can't take a caller's word for it, so it makes the check. Code that owns an overlapped handle should keep it as a `HANDLE` until an asynchronous type exists.
+`init?(unsafelyAdopting:)` does not check for the overlapped flag. It's `@unsafe` because the caller vouches that the handle is valid, owned, and synchronous. The safe `FileDescriptor.withWin32HandleIfAvailable(_:)` can't take a caller's word for it, so it makes the check. Code that owns an overlapped handle should keep it as a `HANDLE` until an asynchronous type exists.
 
 #### Conformances
 
@@ -134,15 +134,15 @@ This proposal is additive and ABI-compatible with existing code.
 
 ## Implications on adoption
 
-`Win32.FileHandle` sits behind `#if os(Windows)`, so cross-platform callers must guard their uses.
+`Win32.FileHandle` sits behind `#if os(Windows)`, so cross-platform callers must guard their uses. The `@safe` and `@unsafe` attributes require Swift 6.2, so System will need to raise its toolchain floor.
 
 ## Future directions
 
 [SYS-0010](0010-win32-namespace-and-error.md) lists the rest of this series and the stages that could follow it.
 
-* **Standard handles.** `GetStdHandle` is the Win32 analog of `FileDescriptor.standardInput` and friends.
 * **Asynchronous I/O.** An overlapped handle could get its own type as **Synchronous handles only** describes, with async versions of the I/O in [SYS-0014](0014-win32-file-io.md).
-* **A borrowed handle type.** A copyable, nonescapable handle view would let an API accept any handle kind, and could represent handles no Swift value owns, such as standard handles. Blocked as of Swift 6.4 since an owned `let handle` that has been viewed can't be consumed with `handle.close()` afterward, even after the view's last use. APIs that take several handles, such as `WaitForMultipleObjects`, can't use views, since no container accepts nonescapable elements, but they can take a `Span` of owned handles from `InlineArray` or swift-collections' `UniqueArray`. Mixing kinds would require a shared protocol.
+* **A borrowed handle type.** A copyable, nonescapable handle view would let an API accept any handle kind, and could represent handles no Swift value owns, such as the standard handles from `GetStdHandle`. Blocked as of Swift 6.4 since an owned `let handle` that has been viewed can't be consumed with `handle.close()` afterward, even after the view's last use.
+* **Opt-in close checking.** If Swift adds must-consume types, a wrapper could make a forgotten `close()` a compile error. Until then, an application that wants every close to be explicit can wrap `Win32.FileHandle` in a type whose `deinit` traps.
 
 ## Alternatives considered
 
@@ -152,16 +152,17 @@ Add the Win32 operations in this series to `FileDescriptor` on Windows, recoveri
 
 Rejected because:
 
-* Every operation would inherit the descriptor's translation mode and its copyable model, as **Motivation** describes.
+* It would keep the descriptor's copyable model.
+* Every operation would bypass the descriptor's translation mode, disagreeing with `FileDescriptor.read(into:)` on a text-mode descriptor.
 * It can't fix the `pread` deviation, where matching POSIX semantics would take three calls (seek, read, restore) and not be atomic against other users of the handle.
 
 ### A copyable value type with a manual `close()`
 
-Model `Win32.FileHandle` on `FileDescriptor`: a `@frozen` copyable struct conforming to `RawRepresentable` and `Hashable`, with a non-consuming `close()`. This matches System's house style and allows handles in ordinary collections.
+Model `Win32.FileHandle` on `FileDescriptor`: a `@frozen` copyable struct conforming to `RawRepresentable`, with a non-consuming `close()`. This matches System's house style and allows handles in ordinary collections.
 
 Rejected because:
 
-* Double close, use after close, and leaks all stay expressible, as **A copied handle is a use-after-close hazard** describes. The primary type should offer lifetime safety.
+* Double close, use after close, and leaks all stay expressible. The primary type should offer lifetime safety.
 * The decision is asymmetric. A copyable borrowed view can be added to a noncopyable type later, but ownership cannot be added to a copyable type.
 
 ### A copyable `Win32.RawFileHandle` beneath `Win32.FileHandle`
@@ -170,7 +171,7 @@ Keep `Win32.FileHandle` as the owner, but have it store a copyable `Win32.RawFil
 
 Rejected because:
 
-* A `Win32.RawFileHandle` names a file handle only until that handle is closed. After that, Windows can reuse the value for any new object, including an overlapped handle, on which the synchronous I/O in [SYS-0014](0014-win32-file-io.md) is memory-unsafe (see **Synchronous handles only**). Its operations would therefore have to be `@unsafe`, just like calling Win32 with a `HANDLE` directly.
+* If a programmer error closes the copyable handle early, Windows can reuse the value for any new object, including an overlapped handle, on which the synchronous I/O in [SYS-0014](0014-win32-file-io.md) is memory-unsafe. Its operations would therefore have to be `@unsafe`, just like calling Win32 with a `HANDLE` directly.
 * It doubles the API surface without improving the escape hatch. Code that can't use `Win32.FileHandle` is typically giving the handle to raw Win32 or another library, which uses `HANDLE` anyway. Unlike `FileDescriptor`, there's no existing `Win32.RawFileHandle` API to interop with.
 * Where a handle is a parameter, `borrowing` already gives it a distinct type along with lifetime safety, and **Future directions** describes a borrowed handle type for the cases `borrowing` can't express.
 
@@ -180,14 +181,20 @@ Make `Win32.FileHandle` a `class` whose `deinit` closes the handle, preventing l
 
 Rejected because:
 
-* It adds ARC and an allocation to a type that is morally a machine word. A `~Copyable` struct prevents leaks with neither cost, and on the explicit-close path the optimizer produces the same function as the copyable design.
+* It adds ARC and an allocation to a type that is morally a machine word. A `~Copyable` struct prevents leaks with neither cost.
 * Every copy of the reference gains the ability to close.
 
-### A `deinit` that traps on leak
+### A `deinit` that traps instead of closing
 
-As prior art, NIO's `SystemFileHandle` calls `fatalError` when a handle is dropped without being closed or detached, and never closes implicitly.
+As prior art, NIO's `SystemFileHandle` calls `fatalError` if it's dropped while open, and [SE-0528](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0528-noncopyable-continuation.md)'s `Continuation` traps if it's deinitialized without being resumed. A trap forces the programmer to choose where the handle closes.
 
-Rejected because turning a leaked handle into a process abort is a policy that an application could choose but a low-level library like System should not impose here.
+Rejected because:
+
+* Unlike the cases above, `Win32.FileHandle.deinit` can close the handle correctly since `CloseHandle` is synchronous, and a trap there wouldn't rule out bugs in safe code. NIO's `deinit` can't await its `async` `close()`, and `Continuation.deinit` has no result to resume with, so their traps turn a silent leak or hang into a crash.
+* A trapping `deinit` would make the client close the handle on every error path in the scope. Since `defer` can't consume a noncopyable value, the owner would need a `do`/`catch` that closes the handle and rethrows, or an `Optional` that `defer` can `take()`. Otherwise, a throw between the open and close would abort the process before any caller could catch it. An application could choose that `fatalError` policy using a wrapper type, but a low-level library like System should not impose it.
+* An owner that needs a precise close point can still call `close()`.
+* `deinit` discards errors, but they're errors a caller can't reasonably recover from. Every known `CloseHandle` failure is an ownership violation that already traps in debug builds (see **Lifetime and error handling**).
+* Some owners wouldn't be able to close a trapping handle without wrapping it. A class or an `InlineArray` would need an `Optional`, since neither can consume a stored handle. A handle shared with a task group's children would need a box such as `Mutex`, since a value they capture can't be consumed afterward.
 
 ### Scoped `withOpen` and `closeAfter` entry points
 
@@ -195,7 +202,7 @@ Rejected because turning a leaked handle into a process abort is a policy that a
 
 Rejected because:
 
-* Noncopyable ownership already guarantees that, so the scoped forms only add more API surface (up to four large declarations restating the nine-parameter list and doc comment of `open` in [SYS-0012](0012-win32-opening-handles.md)).
+* Noncopyable ownership already guarantees that, so the scoped forms only add more API surface (a `withOpen` per opening function in [SYS-0012](0012-win32-opening-handles.md), each restating its parameters and doc comment).
 * Typed throws would then double that surface with the overload pattern `withLock(byteRange:mode:_:)` uses in [SYS-0016](0016-win32-byte-range-locking.md). Separate statements already give each call its own error type.
 
 ## Appendix
@@ -208,3 +215,5 @@ Rejected because:
 | `Win32.FileHandle.close()` | `CloseHandle` |
 | `Win32.FileHandle.deinit` | `CloseHandle`, error discarded |
 | `Win32.FileHandle.relinquish()` | none; gives up ownership of the `HANDLE` |
+
+Testing was performed on an ARM64 Windows 11 VM (build 22631).
