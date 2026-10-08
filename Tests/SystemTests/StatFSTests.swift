@@ -46,17 +46,13 @@ private struct StatFSTests {
     try withTemporaryFilePath(basename: "StatFS_initializersAgree") { tempDir in
       let fromFilePath = try StatFS(tempDir)
       let fromCString = try tempDir.withPlatformString { try StatFS($0) }
-      let fromFilePathExt = try tempDir.statfs()
 
       let dirFD = try FileDescriptor.open(tempDir, .readOnly)
       defer { try? dirFD.close() }
       let fromFD = try StatFS(dirFD)
-      let fromFDExt = try dirFD.statfs()
 
       #expect(fromFilePath.fileSystemID == fromCString.fileSystemID)
-      #expect(fromFilePath.fileSystemID == fromFilePathExt.fileSystemID)
       #expect(fromFilePath.fileSystemID == fromFD.fileSystemID)
-      #expect(fromFilePath.fileSystemID == fromFDExt.fileSystemID)
 
       #expect(fromFilePath.blockSize == fromFD.blockSize)
       #expect(fromFilePath.totalBlocks == fromFD.totalBlocks)
@@ -109,9 +105,6 @@ private struct StatFSTests {
     #expect(throws: Errno.noSuchFileOrDirectory) {
       _ = try StatFS(FilePath("/var/empty/definitely/does/not/exist"))
     }
-    #expect(throws: Errno.noSuchFileOrDirectory) {
-      _ = try FilePath("/var/empty/definitely/does/not/exist").statfs()
-    }
   }
 
   @available(System 199, *)
@@ -119,9 +112,6 @@ private struct StatFSTests {
     let badFD = FileDescriptor(rawValue: -1)
     #expect(throws: Errno.badFileDescriptor) {
       _ = try StatFS(badFD)
-    }
-    #expect(throws: Errno.badFileDescriptor) {
-      _ = try badFD.statfs()
     }
   }
 
@@ -155,10 +145,8 @@ private struct StatFSTests {
         $0.withMemoryRebound(to: CChar.self) { String(cString: $0.baseAddress!) }
       })
       #if SYSTEM_PACKAGE_DARWIN
-      #expect(s.type.rawValue == raw.f_type)
       #expect(s.subtype.rawValue == raw.f_fssubtype)
       #elseif os(FreeBSD)
-      #expect(s.type.rawValue == raw.f_type)
       #expect(s.maximumNameLength == Int(raw.f_namemax))
       #else // os(OpenBSD)
       #expect(s.maximumNameLength == Int(raw.f_namemax))
@@ -191,9 +179,7 @@ private struct StatFSTests {
     #expect(s.rawValue.f_files == 5)
     #expect(s.rawValue.f_ffree == 6)
     #if SYSTEM_PACKAGE_DARWIN
-    s.type = FileSystemType(7)
     s.subtype = FileSystemSubtype(8)
-    #expect(s.rawValue.f_type == 7)
     #expect(s.rawValue.f_fssubtype == 8)
     #endif
 

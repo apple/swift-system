@@ -9,61 +9,61 @@
 //
 //===----------------------------------------------------------------------===//
 
-// |--------------------------------------------------------------------------------------------------------------------------|
-// | Swift API to C Mapping                                                                                                   |
-// |--------------------------------------------------------------------------------------------------------------------------|
-// | MountFlags                  | Darwin               | FreeBSD         | OpenBSD         | Linux          | Android        |
-// |-----------------------------|----------------------|-----------------|-----------------|----------------|----------------|
-// | readOnly                    | MNT_RDONLY           | MNT_RDONLY      | MNT_RDONLY      | ST_RDONLY      | ST_RDONLY      |
-// | synchronous                 | MNT_SYNCHRONOUS      | MNT_SYNCHRONOUS | MNT_SYNCHRONOUS | ST_SYNCHRONOUS | ST_SYNCHRONOUS |
-// | noExecution                 | MNT_NOEXEC           | MNT_NOEXEC      | MNT_NOEXEC      | ST_NOEXEC      | ST_NOEXEC      |
-// | noSetUserID                 | MNT_NOSUID           | MNT_NOSUID      | MNT_NOSUID      | ST_NOSUID      | ST_NOSUID      |
-// | noAccessTime                | MNT_NOATIME          | MNT_NOATIME     | MNT_NOATIME     | ST_NOATIME     | ST_NOATIME     |
-// | noDevices                   | MNT_NODEV            | N/A             | MNT_NODEV       | ST_NODEV       | ST_NODEV       |
-// | mandatoryLockingPermitted   | N/A                  | N/A             | N/A             | ST_MANDLOCK    | ST_MANDLOCK    |
-// | noDirectoryAccessTime       | N/A                  | N/A             | N/A             | ST_NODIRATIME  | ST_NODIRATIME  |
-// | relativeAccessTime          | N/A                  | N/A             | N/A             | ST_RELATIME    | ST_RELATIME    |
-// | noSymlinkFollow             | N/A                  | MNT_NOSYMFOLLOW | N/A             | ST_NOSYMFOLLOW | ST_NOSYMFOLLOW |
-// | asynchronous                | MNT_ASYNC            | MNT_ASYNC       | MNT_ASYNC       | N/A            | N/A            |
-// | exported                    | MNT_EXPORTED         | MNT_EXPORTED    | MNT_EXPORTED    | N/A            | N/A            |
-// | local                       | MNT_LOCAL            | MNT_LOCAL       | MNT_LOCAL       | N/A            | N/A            |
-// | quota                       | MNT_QUOTA            | MNT_QUOTA       | MNT_QUOTA       | N/A            | N/A            |
-// | rootFileSystem              | MNT_ROOTFS           | MNT_ROOTFS      | MNT_ROOTFS      | N/A            | N/A            |
-// | union                       | MNT_UNION            | MNT_UNION       | N/A             | N/A            | N/A            |
-// | automounted                 | MNT_AUTOMOUNTED      | MNT_AUTOMOUNTED | N/A             | N/A            | N/A            |
-// | multiLabel                  | MNT_MULTILABEL       | MNT_MULTILABEL  | N/A             | N/A            | N/A            |
-// | exportedReadOnly            | N/A                  | MNT_EXRDONLY    | MNT_EXRDONLY    | N/A            | N/A            |
-// | exportedByDefault           | N/A                  | MNT_DEFEXPORTED | MNT_DEFEXPORTED | N/A            | N/A            |
-// | exportedAnonymously         | N/A                  | MNT_EXPORTANON  | MNT_EXPORTANON  | N/A            | N/A            |
-// | softUpdates                 | N/A                  | MNT_SOFTDEP     | MNT_SOFTDEP     | N/A            | N/A            |
-// | contentProtection           | MNT_CPROTECT         | N/A             | N/A             | N/A            | N/A            |
-// | removable                   | MNT_REMOVABLE        | N/A             | N/A             | N/A            | N/A            |
-// | quarantine                  | MNT_QUARANTINE       | N/A             | N/A             | N/A            | N/A            |
-// | volumeFileSystem            | MNT_DOVOLFS          | N/A             | N/A             | N/A            | N/A            |
-// | noBrowsing                  | MNT_DONTBROWSE       | N/A             | N/A             | N/A            | N/A            |
-// | ignoreOwnership             | MNT_IGNORE_OWNERSHIP | N/A             | N/A             | N/A            | N/A            |
-// | journaled                   | MNT_JOURNALED        | N/A             | N/A             | N/A            | N/A            |
-// | noUserExtendedAttributes    | MNT_NOUSERXATTR      | N/A             | N/A             | N/A            | N/A            |
-// | deferWrites                 | MNT_DEFWRITE         | N/A             | N/A             | N/A            | N/A            |
-// | noSymlinkFollowAtMountPoint | MNT_NOFOLLOW         | N/A             | N/A             | N/A            | N/A            |
-// | snapshot                    | MNT_SNAPSHOT         | N/A             | N/A             | N/A            | N/A            |
-// | strictAccessTime            | MNT_STRICTATIME      | N/A             | N/A             | N/A            | N/A            |
-// | exportedKerberos            | N/A                  | MNT_EXKERB      | N/A             | N/A            | N/A            |
-// | exportedPublic              | N/A                  | MNT_EXPUBLIC    | N/A             | N/A            | N/A            |
-// | posixACLs                   | N/A                  | MNT_ACLS        | N/A             | N/A            | N/A            |
-// | geomJournaled               | N/A                  | MNT_GJOURNAL    | N/A             | N/A            | N/A            |
-// | excludedFromDiskFreeReports | N/A                  | MNT_IGNORE      | N/A             | N/A            | N/A            |
-// | nfs4ACLs                    | N/A                  | MNT_NFS4ACLS    | N/A             | N/A            | N/A            |
-// | noClusterRead               | N/A                  | MNT_NOCLUSTERR  | N/A             | N/A            | N/A            |
-// | noClusterWrite              | N/A                  | MNT_NOCLUSTERW  | N/A             | N/A            | N/A            |
-// | setUserIDDirectory          | N/A                  | MNT_SUIDDIR     | N/A             | N/A            | N/A            |
-// | softUpdateJournaling        | N/A                  | MNT_SUJ         | N/A             | N/A            | N/A            |
-// | untrusted                   | N/A                  | MNT_UNTRUSTED   | N/A             | N/A            | N/A            |
-// | mountedByUser               | N/A                  | MNT_USER        | N/A             | N/A            | N/A            |
-// | verified                    | N/A                  | MNT_VERIFIED    | N/A             | N/A            | N/A            |
-// | noPermissionChecks          | N/A                  | N/A             | MNT_NOPERM      | N/A            | N/A            |
-// | writeExecuteAllowed         | N/A                  | N/A             | MNT_WXALLOWED   | N/A            | N/A            |
-// |--------------------------------------------------------------------------------------------------------------------------|
+// |-----------------------------------------------------------------------------------------------------------------------------|
+// | Swift API to C Mapping                                                                                                      |
+// |-----------------------------------------------------------------------------------------------------------------------------|
+// | MountFlags                     | Darwin               | FreeBSD         | OpenBSD         | Linux          | Android        |
+// |--------------------------------|----------------------|-----------------|-----------------|----------------|----------------|
+// | readOnly                       | MNT_RDONLY           | MNT_RDONLY      | MNT_RDONLY      | ST_RDONLY      | ST_RDONLY      |
+// | synchronous                    | MNT_SYNCHRONOUS      | MNT_SYNCHRONOUS | MNT_SYNCHRONOUS | ST_SYNCHRONOUS | ST_SYNCHRONOUS |
+// | noExecution                    | MNT_NOEXEC           | MNT_NOEXEC      | MNT_NOEXEC      | ST_NOEXEC      | ST_NOEXEC      |
+// | noSetUserID                    | MNT_NOSUID           | MNT_NOSUID      | MNT_NOSUID      | ST_NOSUID      | ST_NOSUID      |
+// | noAccessTime                   | MNT_NOATIME          | MNT_NOATIME     | MNT_NOATIME     | ST_NOATIME     | ST_NOATIME     |
+// | noDevices                      | MNT_NODEV            | N/A             | MNT_NODEV       | ST_NODEV       | ST_NODEV       |
+// | mandatoryLocking               | N/A                  | N/A             | N/A             | ST_MANDLOCK    | ST_MANDLOCK    |
+// | noDirectoryAccessTime          | N/A                  | N/A             | N/A             | ST_NODIRATIME  | ST_NODIRATIME  |
+// | relativeAccessTime             | N/A                  | N/A             | N/A             | ST_RELATIME    | ST_RELATIME    |
+// | noSymlinkFollowing             | N/A                  | MNT_NOSYMFOLLOW | N/A             | ST_NOSYMFOLLOW | ST_NOSYMFOLLOW |
+// | asynchronous                   | MNT_ASYNC            | MNT_ASYNC       | MNT_ASYNC       | N/A            | N/A            |
+// | exported                       | MNT_EXPORTED         | MNT_EXPORTED    | MNT_EXPORTED    | N/A            | N/A            |
+// | local                          | MNT_LOCAL            | MNT_LOCAL       | MNT_LOCAL       | N/A            | N/A            |
+// | quotasEnabled                  | MNT_QUOTA            | MNT_QUOTA       | MNT_QUOTA       | N/A            | N/A            |
+// | rootFileSystem                 | MNT_ROOTFS           | MNT_ROOTFS      | MNT_ROOTFS      | N/A            | N/A            |
+// | union                          | MNT_UNION            | MNT_UNION       | N/A             | N/A            | N/A            |
+// | automounted                    | MNT_AUTOMOUNTED      | MNT_AUTOMOUNTED | N/A             | N/A            | N/A            |
+// | multiLabel                     | MNT_MULTILABEL       | MNT_MULTILABEL  | N/A             | N/A            | N/A            |
+// | exportedReadOnly               | N/A                  | MNT_EXRDONLY    | MNT_EXRDONLY    | N/A            | N/A            |
+// | exportedByDefault              | N/A                  | MNT_DEFEXPORTED | MNT_DEFEXPORTED | N/A            | N/A            |
+// | exportedAnonymously            | N/A                  | MNT_EXPORTANON  | MNT_EXPORTANON  | N/A            | N/A            |
+// | softUpdates                    | N/A                  | MNT_SOFTDEP     | MNT_SOFTDEP     | N/A            | N/A            |
+// | contentProtection              | MNT_CPROTECT         | N/A             | N/A             | N/A            | N/A            |
+// | removable                      | MNT_REMOVABLE        | N/A             | N/A             | N/A            | N/A            |
+// | quarantined                    | MNT_QUARANTINE       | N/A             | N/A             | N/A            | N/A            |
+// | supportsVolfs                  | MNT_DOVOLFS          | N/A             | N/A             | N/A            | N/A            |
+// | noBrowsing                     | MNT_DONTBROWSE       | N/A             | N/A             | N/A            | N/A            |
+// | ignoresOwnership               | MNT_IGNORE_OWNERSHIP | N/A             | N/A             | N/A            | N/A            |
+// | journaled                      | MNT_JOURNALED        | N/A             | N/A             | N/A            | N/A            |
+// | noUserExtendedAttributes       | MNT_NOUSERXATTR      | N/A             | N/A             | N/A            | N/A            |
+// | defersWrites                   | MNT_DEFWRITE         | N/A             | N/A             | N/A            | N/A            |
+// | noSymlinkFollowingAtMountPoint | MNT_NOFOLLOW         | N/A             | N/A             | N/A            | N/A            |
+// | snapshot                       | MNT_SNAPSHOT         | N/A             | N/A             | N/A            | N/A            |
+// | strictAccessTime               | MNT_STRICTATIME      | N/A             | N/A             | N/A            | N/A            |
+// | exportedWithKerberos           | N/A                  | MNT_EXKERB      | N/A             | N/A            | N/A            |
+// | exportedPublicly               | N/A                  | MNT_EXPUBLIC    | N/A             | N/A            | N/A            |
+// | posixACLs                      | N/A                  | MNT_ACLS        | N/A             | N/A            | N/A            |
+// | geomJournaled                  | N/A                  | MNT_GJOURNAL    | N/A             | N/A            | N/A            |
+// | excludedFromDiskFreeReports    | N/A                  | MNT_IGNORE      | N/A             | N/A            | N/A            |
+// | nfs4ACLs                       | N/A                  | MNT_NFS4ACLS    | N/A             | N/A            | N/A            |
+// | noClusteredReads               | N/A                  | MNT_NOCLUSTERR  | N/A             | N/A            | N/A            |
+// | noClusteredWrites              | N/A                  | MNT_NOCLUSTERW  | N/A             | N/A            | N/A            |
+// | setUserIDDirectories           | N/A                  | MNT_SUIDDIR     | N/A             | N/A            | N/A            |
+// | softUpdatesJournaling          | N/A                  | MNT_SUJ         | N/A             | N/A            | N/A            |
+// | untrusted                      | N/A                  | MNT_UNTRUSTED   | N/A             | N/A            | N/A            |
+// | userMounted                    | N/A                  | MNT_USER        | N/A             | N/A            | N/A            |
+// | verified                       | N/A                  | MNT_VERIFIED    | N/A             | N/A            | N/A            |
+// | noPermissionChecks             | N/A                  | N/A             | MNT_NOPERM      | N/A            | N/A            |
+// | writeExecuteAllowed            | N/A                  | N/A             | MNT_WXALLOWED   | N/A            | N/A            |
+// |-----------------------------------------------------------------------------------------------------------------------------|
 
 #if !os(Windows) && !os(WASI)
 
@@ -109,7 +109,8 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   @_alwaysEmitIntoClient
   public static var noExecution: MountFlags { MountFlags(rawValue: _MOUNT_NOEXEC) }
 
-  /// Set-user-ID and set-group-ID bits are not honored on the file system.
+  /// Set-user-ID and set-group-ID (setuid and setgid) bits are not honored on
+  /// the file system.
   ///
   /// The corresponding C constant is `MNT_NOSUID` on Darwin and BSD,
   /// or `ST_NOSUID` otherwise.
@@ -145,14 +146,14 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   // Linux never reports them in `f_flags`, so they have no corresponding flag.
 
   #if os(Linux) || os(Android)
-  /// The file system permits mandatory file locking.
+  /// Mandatory file locking is enabled on the file system.
   ///
   /// - Note: Only available on Linux and Android.
   /// - Note: Mandatory locking was deprecated and removed in Linux 5.15.
   ///
   /// The corresponding C constant is `ST_MANDLOCK`.
   @_alwaysEmitIntoClient
-  public static var mandatoryLockingPermitted: MountFlags { MountFlags(rawValue: _ST_MANDLOCK) }
+  public static var mandatoryLocking: MountFlags { MountFlags(rawValue: _ST_MANDLOCK) }
 
   /// Directory access times are not updated on the file system.
   ///
@@ -182,7 +183,7 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   /// The corresponding C constant is `MNT_NOSYMFOLLOW` on FreeBSD,
   /// or `ST_NOSYMFOLLOW` on Linux and Android.
   @_alwaysEmitIntoClient
-  public static var noSymlinkFollow: MountFlags { MountFlags(rawValue: _MOUNT_NOSYMFOLLOW) }
+  public static var noSymlinkFollowing: MountFlags { MountFlags(rawValue: _MOUNT_NOSYMFOLLOW) }
   #endif
 
   // MARK: Flags Available on Darwin, FreeBSD, and OpenBSD
@@ -218,7 +219,7 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   ///
   /// The corresponding C constant is `MNT_QUOTA`.
   @_alwaysEmitIntoClient
-  public static var quota: MountFlags { MountFlags(rawValue: _MNT_QUOTA) }
+  public static var quotasEnabled: MountFlags { MountFlags(rawValue: _MNT_QUOTA) }
 
   /// The file system is the root file system.
   ///
@@ -249,7 +250,7 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   @_alwaysEmitIntoClient
   public static var automounted: MountFlags { MountFlags(rawValue: _MNT_AUTOMOUNTED) }
 
-  /// The file system supports Mandatory Access Control (MAC) labels for
+  /// The file system maintains Mandatory Access Control (MAC) labels for
   /// individual objects.
   ///
   /// - Note: Only available on Darwin and FreeBSD.
@@ -270,7 +271,7 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   @_alwaysEmitIntoClient
   public static var exportedReadOnly: MountFlags { MountFlags(rawValue: _MNT_EXRDONLY) }
 
-  /// The file system is exported for reading and writing to any host by default.
+  /// The file system is exported to any host by default.
   ///
   /// - Note: Only available on FreeBSD and OpenBSD.
   ///
@@ -278,7 +279,8 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   @_alwaysEmitIntoClient
   public static var exportedByDefault: MountFlags { MountFlags(rawValue: _MNT_DEFEXPORTED) }
 
-  /// The file system maps all remote users to the anonymous user account.
+  /// The file system is exported with all remote users mapped to the
+  /// anonymous user account.
   ///
   /// - Note: Only available on FreeBSD and OpenBSD.
   ///
@@ -286,7 +288,7 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   @_alwaysEmitIntoClient
   public static var exportedAnonymously: MountFlags { MountFlags(rawValue: _MNT_EXPORTANON) }
 
-  /// The file system uses soft updates.
+  /// Soft updates are enabled on the file system.
   ///
   /// - Note: Only available on FreeBSD and OpenBSD. Accepted for compatibility
   ///   on OpenBSD, but has no effect there.
@@ -299,7 +301,7 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   // MARK: Flags Available on Darwin Only
 
   #if SYSTEM_PACKAGE_DARWIN
-  /// The file system supports per-file encrypted data protection.
+  /// Per-file encrypted data protection is enabled on the file system.
   ///
   /// - Note: Only available on Darwin.
   ///
@@ -321,7 +323,7 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   ///
   /// The corresponding C constant is `MNT_QUARANTINE`.
   @_alwaysEmitIntoClient
-  public static var quarantine: MountFlags { MountFlags(rawValue: _MNT_QUARANTINE) }
+  public static var quarantined: MountFlags { MountFlags(rawValue: _MNT_QUARANTINE) }
 
   /// The file system supports volfs.
   ///
@@ -329,7 +331,7 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   ///
   /// The corresponding C constant is `MNT_DOVOLFS`.
   @_alwaysEmitIntoClient
-  public static var volumeFileSystem: MountFlags { MountFlags(rawValue: _MNT_DOVOLFS) }
+  public static var supportsVolfs: MountFlags { MountFlags(rawValue: _MNT_DOVOLFS) }
 
   /// The file system should not be presented to the user for browsing
   /// (e.g. hidden in Finder).
@@ -340,13 +342,13 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   @_alwaysEmitIntoClient
   public static var noBrowsing: MountFlags { MountFlags(rawValue: _MNT_DONTBROWSE) }
 
-  /// Ownership information on the file system is ignored.
+  /// The file system ignores ownership information.
   ///
   /// - Note: Only available on Darwin.
   ///
   /// The corresponding C constant is `MNT_IGNORE_OWNERSHIP`.
   @_alwaysEmitIntoClient
-  public static var ignoreOwnership: MountFlags { MountFlags(rawValue: _MNT_IGNORE_OWNERSHIP) }
+  public static var ignoresOwnership: MountFlags { MountFlags(rawValue: _MNT_IGNORE_OWNERSHIP) }
 
   /// The file system is journaled.
   ///
@@ -370,7 +372,7 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   ///
   /// The corresponding C constant is `MNT_DEFWRITE`.
   @_alwaysEmitIntoClient
-  public static var deferWrites: MountFlags { MountFlags(rawValue: _MNT_DEFWRITE) }
+  public static var defersWrites: MountFlags { MountFlags(rawValue: _MNT_DEFWRITE) }
 
   /// Symbolic links are not followed when resolving the mount point.
   ///
@@ -378,9 +380,9 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   ///
   /// The corresponding C constant is `MNT_NOFOLLOW`.
   @_alwaysEmitIntoClient
-  public static var noSymlinkFollowAtMountPoint: MountFlags { MountFlags(rawValue: _MNT_NOFOLLOW) }
+  public static var noSymlinkFollowingAtMountPoint: MountFlags { MountFlags(rawValue: _MNT_NOFOLLOW) }
 
-  /// The mount is a snapshot.
+  /// The file system is a snapshot.
   ///
   /// - Note: Only available on Darwin.
   ///
@@ -388,8 +390,8 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   @_alwaysEmitIntoClient
   public static var snapshot: MountFlags { MountFlags(rawValue: _MNT_SNAPSHOT) }
 
-  /// Access times are always updated on access. Relatime-style optimizations
-  /// are disabled.
+  /// Access times are always updated when files are read. Without this flag,
+  /// the file system may skip some access time updates for performance.
   ///
   /// - Note: Only available on Darwin.
   ///
@@ -407,7 +409,7 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   ///
   /// The corresponding C constant is `MNT_EXKERB`.
   @_alwaysEmitIntoClient
-  public static var exportedKerberos: MountFlags { MountFlags(rawValue: _MNT_EXKERB) }
+  public static var exportedWithKerberos: MountFlags { MountFlags(rawValue: _MNT_EXKERB) }
 
   /// The file system is exported publicly for WebNFS clients.
   ///
@@ -415,9 +417,9 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   ///
   /// The corresponding C constant is `MNT_EXPUBLIC`.
   @_alwaysEmitIntoClient
-  public static var exportedPublic: MountFlags { MountFlags(rawValue: _MNT_EXPUBLIC) }
+  public static var exportedPublicly: MountFlags { MountFlags(rawValue: _MNT_EXPUBLIC) }
 
-  /// The file system supports POSIX.1e ACLs.
+  /// POSIX.1e ACLs are enabled on the file system.
   ///
   /// - Note: Only available on FreeBSD.
   ///
@@ -425,7 +427,7 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   @_alwaysEmitIntoClient
   public static var posixACLs: MountFlags { MountFlags(rawValue: _MNT_ACLS) }
 
-  /// The file system uses `gjournal`.
+  /// The file system is journaled by `gjournal`.
   ///
   /// - Note: Only available on FreeBSD. See `gjournal(8)`.
   ///
@@ -441,7 +443,7 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   @_alwaysEmitIntoClient
   public static var excludedFromDiskFreeReports: MountFlags { MountFlags(rawValue: _MNT_IGNORE) }
 
-  /// The file system supports NFSv4 ACLs.
+  /// NFSv4 ACLs are enabled on the file system.
   ///
   /// - Note: Only available on FreeBSD.
   ///
@@ -455,7 +457,7 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   ///
   /// The corresponding C constant is `MNT_NOCLUSTERR`.
   @_alwaysEmitIntoClient
-  public static var noClusterRead: MountFlags { MountFlags(rawValue: _MNT_NOCLUSTERR) }
+  public static var noClusteredReads: MountFlags { MountFlags(rawValue: _MNT_NOCLUSTERR) }
 
   /// Clustered writes are disabled on the file system.
   ///
@@ -463,7 +465,7 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   ///
   /// The corresponding C constant is `MNT_NOCLUSTERW`.
   @_alwaysEmitIntoClient
-  public static var noClusterWrite: MountFlags { MountFlags(rawValue: _MNT_NOCLUSTERW) }
+  public static var noClusteredWrites: MountFlags { MountFlags(rawValue: _MNT_NOCLUSTERW) }
 
   /// Newly created files in a directory with the set-user-ID bit set are owned
   /// by that directory's owner, rather than by the creating user.
@@ -472,15 +474,15 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   ///
   /// The corresponding C constant is `MNT_SUIDDIR`.
   @_alwaysEmitIntoClient
-  public static var setUserIDDirectory: MountFlags { MountFlags(rawValue: _MNT_SUIDDIR) }
+  public static var setUserIDDirectories: MountFlags { MountFlags(rawValue: _MNT_SUIDDIR) }
 
-  /// The file system uses soft updates with journaling.
+  /// Soft updates journaling is enabled on the file system.
   ///
   /// - Note: Only available on FreeBSD.
   ///
   /// The corresponding C constant is `MNT_SUJ`.
   @_alwaysEmitIntoClient
-  public static var softUpdateJournaling: MountFlags { MountFlags(rawValue: _MNT_SUJ) }
+  public static var softUpdatesJournaling: MountFlags { MountFlags(rawValue: _MNT_SUJ) }
 
   /// The file system is untrusted, as the integrity of its media is unknown.
   ///
@@ -496,7 +498,7 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   ///
   /// The corresponding C constant is `MNT_USER`.
   @_alwaysEmitIntoClient
-  public static var mountedByUser: MountFlags { MountFlags(rawValue: _MNT_USER) }
+  public static var userMounted: MountFlags { MountFlags(rawValue: _MNT_USER) }
 
   /// The file system is marked as verified, so per-file integrity checks are
   /// skipped on execution.
@@ -551,21 +553,21 @@ extension MountFlags
       (.asynchronous, ".asynchronous"),
       (.exported, ".exported"),
       (.local, ".local"),
-      (.quota, ".quota"),
+      (.quotasEnabled, ".quotasEnabled"),
       (.rootFileSystem, ".rootFileSystem"),
       (.union, ".union"),
       (.automounted, ".automounted"),
       (.multiLabel, ".multiLabel"),
       (.contentProtection, ".contentProtection"),
       (.removable, ".removable"),
-      (.quarantine, ".quarantine"),
-      (.volumeFileSystem, ".volumeFileSystem"),
+      (.quarantined, ".quarantined"),
+      (.supportsVolfs, ".supportsVolfs"),
       (.noBrowsing, ".noBrowsing"),
-      (.ignoreOwnership, ".ignoreOwnership"),
+      (.ignoresOwnership, ".ignoresOwnership"),
       (.journaled, ".journaled"),
       (.noUserExtendedAttributes, ".noUserExtendedAttributes"),
-      (.deferWrites, ".deferWrites"),
-      (.noSymlinkFollowAtMountPoint, ".noSymlinkFollowAtMountPoint"),
+      (.defersWrites, ".defersWrites"),
+      (.noSymlinkFollowingAtMountPoint, ".noSymlinkFollowingAtMountPoint"),
       (.snapshot, ".snapshot"),
       (.strictAccessTime, ".strictAccessTime"),
     ]
@@ -576,11 +578,11 @@ extension MountFlags
       (.noExecution, ".noExecution"),
       (.noSetUserID, ".noSetUserID"),
       (.noAccessTime, ".noAccessTime"),
-      (.noSymlinkFollow, ".noSymlinkFollow"),
+      (.noSymlinkFollowing, ".noSymlinkFollowing"),
       (.asynchronous, ".asynchronous"),
       (.exported, ".exported"),
       (.local, ".local"),
-      (.quota, ".quota"),
+      (.quotasEnabled, ".quotasEnabled"),
       (.rootFileSystem, ".rootFileSystem"),
       (.union, ".union"),
       (.automounted, ".automounted"),
@@ -589,18 +591,18 @@ extension MountFlags
       (.exportedByDefault, ".exportedByDefault"),
       (.exportedAnonymously, ".exportedAnonymously"),
       (.softUpdates, ".softUpdates"),
-      (.exportedKerberos, ".exportedKerberos"),
-      (.exportedPublic, ".exportedPublic"),
+      (.exportedWithKerberos, ".exportedWithKerberos"),
+      (.exportedPublicly, ".exportedPublicly"),
       (.posixACLs, ".posixACLs"),
       (.geomJournaled, ".geomJournaled"),
       (.excludedFromDiskFreeReports, ".excludedFromDiskFreeReports"),
       (.nfs4ACLs, ".nfs4ACLs"),
-      (.noClusterRead, ".noClusterRead"),
-      (.noClusterWrite, ".noClusterWrite"),
-      (.setUserIDDirectory, ".setUserIDDirectory"),
-      (.softUpdateJournaling, ".softUpdateJournaling"),
+      (.noClusteredReads, ".noClusteredReads"),
+      (.noClusteredWrites, ".noClusteredWrites"),
+      (.setUserIDDirectories, ".setUserIDDirectories"),
+      (.softUpdatesJournaling, ".softUpdatesJournaling"),
       (.untrusted, ".untrusted"),
-      (.mountedByUser, ".mountedByUser"),
+      (.userMounted, ".userMounted"),
       (.verified, ".verified"),
     ]
     #elseif os(OpenBSD)
@@ -614,7 +616,7 @@ extension MountFlags
       (.asynchronous, ".asynchronous"),
       (.exported, ".exported"),
       (.local, ".local"),
-      (.quota, ".quota"),
+      (.quotasEnabled, ".quotasEnabled"),
       (.rootFileSystem, ".rootFileSystem"),
       (.exportedReadOnly, ".exportedReadOnly"),
       (.exportedByDefault, ".exportedByDefault"),
@@ -631,10 +633,10 @@ extension MountFlags
       (.noSetUserID, ".noSetUserID"),
       (.noAccessTime, ".noAccessTime"),
       (.noDevices, ".noDevices"),
-      (.mandatoryLockingPermitted, ".mandatoryLockingPermitted"),
+      (.mandatoryLocking, ".mandatoryLocking"),
       (.noDirectoryAccessTime, ".noDirectoryAccessTime"),
       (.relativeAccessTime, ".relativeAccessTime"),
-      (.noSymlinkFollow, ".noSymlinkFollow"),
+      (.noSymlinkFollowing, ".noSymlinkFollowing"),
     ]
     #endif
 

@@ -41,24 +41,6 @@ public struct StatFS {
   }
 }
 
-extension FileDescriptor {
-  /// Creates a `StatFS` for the file system containing the file referenced by
-  /// this `FileDescriptor`.
-  @available(Windows, unavailable, message: "Consider using a Win32 API such as GetVolumeInformationW or GetDiskFreeSpaceExW instead.")
-  public func statfs(retryOnInterrupt: Bool = true) throws(Errno) -> StatFS {
-    fatalError("StatFS is unavailable on Windows")
-  }
-}
-
-extension FilePath {
-  /// Creates a `StatFS` for the file system containing the file referenced by
-  /// this `FilePath`.
-  @available(Windows, unavailable, message: "Consider using a Win32 API such as GetVolumeInformationW or GetDiskFreeSpaceExW instead.")
-  public func statfs(retryOnInterrupt: Bool = true) throws(Errno) -> StatFS {
-    fatalError("StatFS is unavailable on Windows")
-  }
-}
-
 #elseif os(WASI)
 
 /// A Swift wrapper of the C `statfs` struct.
@@ -87,24 +69,6 @@ public struct StatFS {
     _ fd: FileDescriptor,
     retryOnInterrupt: Bool = true
   ) throws(Errno) {
-    fatalError("StatFS is unavailable on WASI")
-  }
-}
-
-extension FileDescriptor {
-  /// Creates a `StatFS` for the file system containing the file referenced by
-  /// this `FileDescriptor`.
-  @available(*, unavailable, message: "wasi-libc doesn't implement statfs or statvfs.")
-  public func statfs(retryOnInterrupt: Bool = true) throws(Errno) -> StatFS {
-    fatalError("StatFS is unavailable on WASI")
-  }
-}
-
-extension FilePath {
-  /// Creates a `StatFS` for the file system containing the file referenced by
-  /// this `FilePath`.
-  @available(*, unavailable, message: "wasi-libc doesn't implement statfs or statvfs.")
-  public func statfs(retryOnInterrupt: Bool = true) throws(Errno) -> StatFS {
     fatalError("StatFS is unavailable on WASI")
   }
 }
@@ -223,13 +187,13 @@ extension FileSystemID: CustomStringConvertible, CustomDebugStringConvertible {
   public var debugDescription: String { self.description }
 }
 
-#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(Linux) || os(Android)
+#if os(Linux) || os(Android)
 // MARK: - FileSystemType
 
 /// A Swift wrapper of the C `f_type` file system type found in a `statfs`
 /// struct.
 ///
-/// - Note: Only available on Darwin, FreeBSD, Linux, and Android.
+/// - Note: Only available on Linux and Android.
 @frozen
 @available(System 199, *)
 public struct FileSystemType: RawRepresentable, Sendable, Hashable, Codable {
@@ -246,7 +210,7 @@ public struct FileSystemType: RawRepresentable, Sendable, Hashable, Codable {
   @_alwaysEmitIntoClient
   public init(_ rawValue: UInt32) { self.rawValue = rawValue }
 }
-#endif // SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(Linux) || os(Android)
+#endif // os(Linux) || os(Android)
 
 #if SYSTEM_PACKAGE_DARWIN
 // MARK: - FileSystemSubtype
@@ -608,32 +572,22 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
     }
   }
 
-  #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(Linux) || os(Android)
+  #if os(Linux) || os(Android)
   /// File system type.
   ///
-  /// - Note: On Linux and Android, this is the file system's magic number,
-  ///   such as `0xEF53` for ext4. On Darwin and FreeBSD, it's an internal,
-  ///   kernel-assigned VFS type index with no stable, public constants;
-  ///   prefer `typeName` to identify the file system in a readable format.
-  ///   Not available on OpenBSD.
+  /// - Note: This is the file system's magic number, such as `0xEF53` for
+  ///   ext4. Only available on Linux and Android. On Darwin and BSD, use
+  ///   `typeName` to identify the file system.
   ///
   /// The corresponding C property is `f_type`.
   @_alwaysEmitIntoClient
   public var type: FileSystemType {
     get {
-      #if os(Linux) || os(Android)
       // glibc's `f_type` is a signed `long` and can be negative.
       FileSystemType(rawValue: UInt32(truncatingIfNeeded: rawValue.f_type))
-      #else
-      FileSystemType(rawValue: rawValue.f_type)
-      #endif
     }
     set {
-      #if os(Linux) || os(Android)
       rawValue.f_type = .init(truncatingIfNeeded: newValue.rawValue)
-      #else
-      rawValue.f_type = newValue.rawValue
-      #endif
     }
   }
   #endif
@@ -641,8 +595,8 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
   #if SYSTEM_PACKAGE_DARWIN
   /// File system subtype.
   ///
-  /// - Note: Like `type`, this is a numeric value with no stable, public
-  ///   constants. Only available on Darwin.
+  /// - Note: This is a numeric value whose meaning depends on `typeName`,
+  ///   with no stable, public constants. Only available on Darwin.
   ///
   /// The corresponding C property is `f_fssubtype`.
   @_alwaysEmitIntoClient
@@ -848,40 +802,6 @@ extension StatFS {
       hasher.combine(bytes.count)
       hasher.combine(bytes: .init(rebasing: bytes))
     }
-  }
-}
-
-// MARK: - FileDescriptor Extensions
-
-@available(System 199, *)
-extension FileDescriptor {
-
-  /// Creates a `StatFS` for the file system containing the file referenced by
-  /// this `FileDescriptor`.
-  ///
-  /// The corresponding C function is `fstatfs()`.
-  @_alwaysEmitIntoClient
-  public func statfs(
-    retryOnInterrupt: Bool = true
-  ) throws(Errno) -> StatFS {
-    try StatFS(self, retryOnInterrupt: retryOnInterrupt)
-  }
-}
-
-// MARK: - FilePath Extensions
-
-@available(System 199, *)
-extension FilePath {
-
-  /// Creates a `StatFS` for the file system containing the file referenced by
-  /// this `FilePath`.
-  ///
-  /// The corresponding C function is `statfs()`.
-  @_alwaysEmitIntoClient
-  public func statfs(
-    retryOnInterrupt: Bool = true
-  ) throws(Errno) -> StatFS {
-    try StatFS(self, retryOnInterrupt: retryOnInterrupt)
   }
 }
 
