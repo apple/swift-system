@@ -12,6 +12,7 @@
 * **v1** Initial version
 * **v2** Use `statfs` on Linux and Android, make `StatFS` unavailable on WASI, omit Linux flags the kernel never reports, add descriptions for `MountFlags` and `FileSystemID`, and back-deploy `CInterop.StatFS` with `CInterop.statfs(_:_:)` for migration
 * **v3** Rename `MountFlags` constants for consistency, remove `type` on Darwin and FreeBSD, and remove the `statfs()` methods on `FilePath` and `FileDescriptor`, eliminating the need for `CInterop` back-deployment
+* **v4** Add `FileSystemTypeName` wrapper
 
 ## Introduction
 
@@ -58,6 +59,12 @@ if statfs.mountFlags.contains(.readOnly) {
 #if os(anyAppleOS) || os(FreeBSD) || os(OpenBSD)
 print("File system is mounted at \(statfs.mountPoint)")
 print("File system is mounted from \(statfs.mountSource)")
+#endif
+
+#if os(anyAppleOS)
+if statfs.typeName == .apfs {
+  print("File system is APFS")
+}
 #endif
 ```
 
@@ -369,7 +376,7 @@ extension MountFlags: CustomStringConvertible, CustomDebugStringConvertible {
 
 Like `FilePermissions`, `MountFlags` describes itself by listing its flags, such as `[.readOnly, .local]`.
 
-### `FileSystemID`, `FileSystemType`, and `FileSystemSubtype`
+### `FileSystemID`, `FileSystemType`, `FileSystemSubtype`, and `FileSystemTypeName`
 
 ```swift
 /// A Swift wrapper of the C `f_fsid` file system ID found in a `statfs`
@@ -437,9 +444,58 @@ public struct FileSystemSubtype: RawRepresentable, Sendable, Hashable, Codable {
   public init(_ rawValue: UInt32)
 }
 #endif
+
+#if os(anyAppleOS) || os(FreeBSD) || os(OpenBSD)
+/// A Swift wrapper of the C `f_fstypename` file system type name found in a
+/// `statfs` struct.
+///
+/// - Note: Only available on Darwin and BSD.
+@frozen
+public struct FileSystemTypeName: RawRepresentable, Sendable, Hashable, Codable, ExpressibleByStringLiteral {
+  /// The raw file system type name.
+  public var rawValue: String
+
+  /// Creates a strongly-typed `FileSystemTypeName` from the raw name.
+  public init(rawValue: String)
+
+  /// Creates a strongly-typed `FileSystemTypeName` from the raw name.
+  public init(_ rawValue: String)
+
+  /// Creates a `FileSystemTypeName` from a string literal, such as `"apfs"`.
+  public init(stringLiteral value: String)
+
+  // Type names available on Darwin only
+
+  #if os(anyAppleOS)
+  /// The Apple File System (APFS).
+  ///
+  /// - Note: Only available on Darwin.
+  ///
+  /// The corresponding `f_fstypename` value is `"apfs"`.
+  public static var apfs: FileSystemTypeName { get }
+
+  /// The Mac OS Extended file system (HFS Plus).
+  ///
+  /// - Note: Only available on Darwin.
+  ///
+  /// The corresponding `f_fstypename` value is `"hfs"`.
+  public static var hfs: FileSystemTypeName { get }
+  #endif
+}
+
+extension FileSystemTypeName: CustomStringConvertible, CustomDebugStringConvertible {
+  /// The file system type name, such as `apfs`.
+  public var description: String { get }
+
+  /// The file system type name as a quoted string, such as `"apfs"`.
+  public var debugDescription: String { get }
+}
+#endif
 ```
 
 `CInterop.FileSystemID` is the C `fsid_t` struct (a fixed two-element `int32_t` array), which provides no synthesized conformances. `FileSystemID` implements `Equatable`, `Hashable`, and `Codable` manually in terms of its elements, named `val` on Darwin and BSD and `__val` on Linux and Android. It encodes them as an unkeyed container of two `Int32` values and describes itself by listing them, such as `FileSystemID(16777239, 26)`.
+
+`FileSystemTypeName` wraps `f_fstypename` so that well-known type names can be offered as constants, such as `.apfs`. It conforms to `ExpressibleByStringLiteral` so comparisons against names without a constant like `statfs.typeName == "nfs"` still read naturally. This proposal only provides constants for `"apfs"` and `"hfs"`. Other names can be added in the future when their stability is confirmed.
 
 ### `StatFS`
 
@@ -637,12 +693,12 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
   /// The corresponding C property is `f_owner`.
   public var owner: UserID { get set }
 
-  /// File system type name.
+  /// File system type name, such as "apfs".
   ///
   /// - Note: Only available on Darwin and BSD.
   ///
   /// The corresponding C property is `f_fstypename`.
-  public var typeName: String { get }
+  public var typeName: FileSystemTypeName { get }
 
   /// Directory where the file system is mounted, such as "/System/Volumes/Data".
   ///
@@ -804,6 +860,10 @@ The methods would also shadow the C `statfs` struct initializer and function ins
 ### Expose `type` and `subtype` as raw integers
 
 `FileSystemType` and `FileSystemSubtype` wrap `UInt32` values that, except for Linux magic numbers, have no stable, public constants, so exposing `type` and `subtype` as bare `UInt32` was considered. We keep the wrapper types for fidelity to the underlying struct and for consistency with `FileSystemID`, which is similarly opaque. The wrappers also give these fields distinct types, avoiding accidental cross-comparisons and granting flexibility to add members later, if desired.
+
+### Expose `typeName` as a `String`
+
+`typeName` could be a `String` like Foundation's `volumeTypeName` resource value. Unlike Linux magic numbers, type names are already readable, so `typeName == "apfs"` works about as well as a constant would. However, a wrapper allows us to provide constants like `.apfs`, which help with discoverability and avoid mistakes like comparing against `"APFS"`. And `ExpressibleByStringLiteral` allows us to still keep the ergonomics of literal comparison.
 
 ### Make `StatFS` available on WASI
 
