@@ -86,7 +86,7 @@ private struct StatFSTests {
     try withTemporaryFilePath(basename: "StatFS_darwinBSD") { tempDir in
       let statfs = try StatFS(tempDir)
       #expect(statfs.preferredIOBlockSize > 0)
-      #expect(!statfs.typeName.isEmpty)
+      #expect(!statfs.typeName.rawValue.isEmpty)
       #expect(statfs.mountPoint.isAbsolute)
       #expect(!statfs.mountSource.string.isEmpty)
 
@@ -135,7 +135,7 @@ private struct StatFSTests {
       #expect(s.preferredIOBlockSize == Int(raw.f_iosize))
       #expect(s.owner.rawValue == raw.f_owner)
       #expect(s.mountFlags.rawValue == raw.f_flags)
-      #expect(s.typeName == withUnsafeBytes(of: raw.f_fstypename) {
+      #expect(s.typeName.rawValue == withUnsafeBytes(of: raw.f_fstypename) {
         $0.withMemoryRebound(to: CChar.self) { String(cString: $0.baseAddress!) }
       })
       #expect(s.mountPoint.string == withUnsafeBytes(of: raw.f_mntonname) {
@@ -391,6 +391,35 @@ private struct StatFSTests {
     #endif
   }
 
+  #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+  @available(System 199, *)
+  @Test func fileSystemTypeNameConformances() throws {
+    let name: FileSystemTypeName = "apfs"
+    #expect(name == FileSystemTypeName(rawValue: "apfs"))
+    #expect(name == FileSystemTypeName("apfs"))
+    #expect(name != "hfs")
+    #expect(name.hashValue == FileSystemTypeName("apfs").hashValue)
+    #expect(name.description == "apfs")
+    #expect(name.debugDescription == #""apfs""#)
+
+    #if canImport(Foundation)
+    let data = try JSONEncoder().encode(name)
+    #expect(String(decoding: data, as: UTF8.self) == #""apfs""#)
+    #expect(try JSONDecoder().decode(FileSystemTypeName.self, from: data) == name)
+    #endif
+  }
+  #endif
+
+  #if SYSTEM_PACKAGE_DARWIN
+  @available(System 199, *)
+  @Test func fileSystemTypeNameConstants() throws {
+    #expect(FileSystemTypeName.apfs.rawValue == "apfs")
+    #expect(FileSystemTypeName.hfs.rawValue == "hfs")
+    // The root volume is APFS on every supported Apple platform.
+    #expect(try StatFS("/").typeName == .apfs)
+  }
+  #endif
+
   @available(System 199, *)
   @Test func descriptions() throws {
     #expect(MountFlags.readOnly.description == "[.readOnly]")
@@ -417,7 +446,7 @@ private struct StatFSTests {
     let s = StatFS(rawValue: raw)
     let typeNameLength = MemoryLayout.size(ofValue: raw.f_fstypename)
     let mountPointLength = MemoryLayout.size(ofValue: raw.f_mntonname)
-    #expect(s.typeName == String(repeating: "a", count: typeNameLength))
+    #expect(s.typeName.rawValue == String(repeating: "a", count: typeNameLength))
     #expect(s.mountPoint.string == String(repeating: "b", count: mountPointLength))
   }
   #endif

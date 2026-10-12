@@ -237,6 +237,67 @@ public struct FileSystemSubtype: RawRepresentable, Sendable, Hashable, Codable {
 }
 #endif
 
+#if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+// MARK: - FileSystemTypeName
+
+/// A Swift wrapper of the C `f_fstypename` file system type name found in a
+/// `statfs` struct.
+///
+/// - Note: Only available on Darwin and BSD.
+@frozen
+@available(System 199, *)
+public struct FileSystemTypeName
+  : RawRepresentable, Sendable, Hashable, Codable, ExpressibleByStringLiteral
+{
+
+  /// The raw file system type name.
+  @_alwaysEmitIntoClient
+  public var rawValue: String
+
+  /// Creates a strongly-typed `FileSystemTypeName` from the raw name.
+  @_alwaysEmitIntoClient
+  public init(rawValue: String) { self.rawValue = rawValue }
+
+  /// Creates a strongly-typed `FileSystemTypeName` from the raw name.
+  @_alwaysEmitIntoClient
+  public init(_ rawValue: String) { self.rawValue = rawValue }
+
+  /// Creates a `FileSystemTypeName` from a string literal, such as `"apfs"`.
+  @_alwaysEmitIntoClient
+  public init(stringLiteral value: String) { self.rawValue = value }
+
+  // MARK: Type Names Available on Darwin Only
+
+  #if SYSTEM_PACKAGE_DARWIN
+  /// The Apple File System (APFS).
+  ///
+  /// - Note: Only available on Darwin.
+  ///
+  /// The corresponding `f_fstypename` value is `"apfs"`.
+  @_alwaysEmitIntoClient
+  public static var apfs: FileSystemTypeName { FileSystemTypeName(rawValue: "apfs") }
+
+  /// The Mac OS Extended file system (HFS Plus).
+  ///
+  /// - Note: Only available on Darwin.
+  ///
+  /// The corresponding `f_fstypename` value is `"hfs"`.
+  @_alwaysEmitIntoClient
+  public static var hfs: FileSystemTypeName { FileSystemTypeName(rawValue: "hfs") }
+  #endif
+}
+
+@available(System 199, *)
+extension FileSystemTypeName: CustomStringConvertible, CustomDebugStringConvertible {
+  /// The file system type name, such as `apfs`.
+  @inline(never)
+  public var description: String { rawValue }
+
+  /// The file system type name as a quoted string, such as `"apfs"`.
+  public var debugDescription: String { description.debugDescription }
+}
+#endif // SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
+
 // MARK: - StatFS
 
 #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
@@ -618,16 +679,16 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
     set { rawValue.f_owner = newValue.rawValue }
   }
 
-  /// File system type name.
+  /// File system type name, such as "apfs".
   ///
   /// - Note: Only available on Darwin and BSD.
   ///
   /// The corresponding C property is `f_fstypename`.
   @_alwaysEmitIntoClient
-  public var typeName: String {
-    withUnsafeBytes(of: rawValue.f_fstypename) {
+  public var typeName: FileSystemTypeName {
+    FileSystemTypeName(rawValue: withUnsafeBytes(of: rawValue.f_fstypename) {
       String(_nullTerminatedBytes: $0)
-    }
+    })
   }
 
   /// Directory where the file system is mounted, such as "/System/Volumes/Data".
