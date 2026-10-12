@@ -1,12 +1,12 @@
 # File Type for `Win32.FileHandle`
 
-* Proposal: [SYS-0015](0015-win32-file-type.md)
+* Proposal: [SYS-0015](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0015-win32-file-type.md)
 * Author: [Jonathan Flat](https://github.com/jrflat)
 * Review Manager: TBD
 * Status: **Draft**
 * Implementation: TBD
 * Review: TBD
-* Depends on: [SYS-0010](0010-win32-namespace-and-error.md), [SYS-0011](0011-win32-filehandle.md), [SYS-0012](0012-win32-opening-handles.md)
+* Depends on: [SYS-0010](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0010-win32-namespace-and-error.md), [SYS-0011](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0011-win32-filehandle.md), [SYS-0012](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0012-win32-opening-handles.md)
 
 #### Revision history
 
@@ -20,7 +20,7 @@ This proposal adds `Win32.FileType` and a `fileType()` query on `Win32.FileHandl
 
 ### Device class determines handle behavior
 
-A developer with a `Win32.FileHandle` might need to know what device class they're holding to drive decisions in their code. For example, device class matters for the file I/O described in [SYS-0014](0014-win32-file-io.md). On a disk file, `ReadFile` comes up short only at the end of the file, and `GetFileSizeEx` and seek operations report correct values. On a pipe or console, `ReadFile` returns whatever has arrived, `readFully(fromAbsoluteOffset:into:)` blocks until the span fills, and a seek succeeds while reporting a position that no transfer ever advances.
+A developer with a `Win32.FileHandle` might need to know what device class they're holding to drive decisions in their code. For example, device class matters for the file I/O described in [SYS-0014](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0014-win32-file-io.md). On a disk file, `ReadFile` comes up short only at the end of the file, and `GetFileSizeEx` and seek operations report correct values. On a pipe or console, `ReadFile` returns whatever has arrived, `readFully(fromAbsoluteOffset:into:)` blocks until the span fills, and a seek succeeds while reporting a position that no transfer ever advances.
 
 Furthermore, a caller doesn't always know this information. `Win32.FileHandle.open` accepts `\\.\pipe\name`, `CONIN$`, and `NUL` as readily as a file path, or code may receive a handle from another API. `fileType()` allows the caller to query this class information regardless.
 
@@ -30,7 +30,7 @@ Furthermore, a caller doesn't always know this information. `Win32.FileHandle.op
 
 ## Proposed solution
 
-Add `fileType()` to `Win32.FileHandle`. The read functions in this example come from [SYS-0014](0014-win32-file-io.md).
+Add `fileType()` to `Win32.FileHandle`. The read functions in this example come from [SYS-0014](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0014-win32-file-io.md).
 
 ```swift
 #if os(Windows)
@@ -102,7 +102,7 @@ Notes on the design:
 * **Requires no access rights.** `GetFileType` documents none, and a handle opened with an empty `Win32.AccessMask` is still classified.
 * **`FILE_TYPE_REMOTE` isn't vended.** `winbase.h` defines it (`0x8000`), but it's documented as unused, and testing shows a remote file reports `.disk`. `rawValue` would carry it if it ever appeared.
 * **`.pipe` covers sockets.** A `SOCKET` is a kernel handle that Windows classifies with pipes, so `.pipe` doesn't imply the named-pipe API surface (e.g. `PeekNamedPipe`) will work on the handle.
-* **`Win32.DirectoryHandle` doesn't get this member.** A directory handle always reports `.disk` since `open` confirms the object is a directory; see [SYS-0012](0012-win32-opening-handles.md).
+* **`Win32.DirectoryHandle` doesn't get this member.** A directory handle always reports `.disk` since `open` confirms the object is a directory; see [SYS-0012](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0012-win32-opening-handles.md).
 
 ## Source compatibility
 

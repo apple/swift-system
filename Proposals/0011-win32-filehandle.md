@@ -1,12 +1,12 @@
 # A Noncopyable `Win32.FileHandle`
 
-* Proposal: [SYS-0011](0011-win32-filehandle.md)
+* Proposal: [SYS-0011](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0011-win32-filehandle.md)
 * Author: [Jonathan Flat](https://github.com/jrflat)
 * Review Manager: TBD
 * Status: **Draft**
 * Implementation: TBD
 * Review: TBD
-* Depends on: [SYS-0010](0010-win32-namespace-and-error.md)
+* Depends on: [SYS-0010](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0010-win32-namespace-and-error.md)
 
 #### Revision history
 
@@ -14,7 +14,7 @@
 
 ## Introduction
 
-This proposal adds `Win32.FileHandle`, a noncopyable wrapper that owns a synchronous (non-overlapped) Windows `HANDLE`. It builds on the `Win32` namespace and `Win32Error` introduced in [SYS-0010](0010-win32-namespace-and-error.md). Opening a handle is proposed in [SYS-0012](0012-win32-opening-handles.md), and bridging with `FileDescriptor` in [SYS-0013](0013-win32-filedescriptor-bridging.md).
+This proposal adds `Win32.FileHandle`, a noncopyable wrapper that owns a synchronous (non-overlapped) Windows `HANDLE`. It builds on the `Win32` namespace and `Win32Error` introduced in [SYS-0010](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0010-win32-namespace-and-error.md). Opening a handle is proposed in [SYS-0012](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0012-win32-opening-handles.md), and bridging with `FileDescriptor` in [SYS-0013](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0013-win32-filedescriptor-bridging.md).
 
 ## Motivation
 
@@ -24,7 +24,7 @@ A `HANDLE` is Windows' canonical representation of an open file, and the Win32 A
 
 A C runtime descriptor is a second index over the handle and carries state of its own, including a translation mode. In text mode, the runtime rewrites bytes in transit, expanding `\n` to `\r\n` on write and collapsing it on read. Anything built on a descriptor inherits a translation setting that is invisible in System's APIs, and Win32 calls on the underlying handle bypass it.
 
-The descriptor also leaks Windows semantics into portable-looking APIs: `FileDescriptor.read(fromAbsoluteOffset:into:)` moves the file pointer on Windows, unlike POSIX `pread` (see [SYS-0014](0014-win32-file-io.md)).
+The descriptor also leaks Windows semantics into portable-looking APIs: `FileDescriptor.read(fromAbsoluteOffset:into:)` moves the file pointer on Windows, unlike POSIX `pread` (see [SYS-0014](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0014-win32-file-io.md)).
 
 ### A copied handle is a use-after-close hazard
 
@@ -104,7 +104,7 @@ Every handle gets one `CloseHandle` call, from `close()` at a point the caller c
 
 `CloseHandle`'s documentation doesn't list failure conditions, but `NtClose` documents error statuses for 1) an invalid handle and 2) a handle that's protected from closing. Testing shows that `CloseHandle` reports `.invalidHandle` for both cases. `Win32.FileHandle`'s ownership prevents this failure unless unsafe code closed the handle or set its protect-from-close flag. Therefore, `close()` and `deinit` trap in debug builds if `CloseHandle` fails with `.invalidHandle`. Note this can't catch a value that Windows has already reused, so it's only a probabilistic debugging aid.
 
-`CloseHandle` doesn't wait for the cache manager to write cached data to the device, so `close()` can't report such a failure. A client must call `flush()` ([SYS-0014](0014-win32-file-io.md)) before closing if a write-back failure needs to be surfaced.
+`CloseHandle` doesn't wait for the cache manager to write cached data to the device, so `close()` can't report such a failure. A client must call `flush()` ([SYS-0014](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0014-win32-file-io.md)) before closing if a write-back failure needs to be surfaced.
 
 `unsafeRawHandle` and `relinquish()` are `@unsafe` escape hatches from the ownership model. `unsafeRawHandle` may be used with Win32 functions that borrow a handle and have no System wrapper yet, and `relinquish()` hands ownership to code that will close it.
 
@@ -112,17 +112,17 @@ Every handle gets one `CloseHandle` call, from `close()` at a point the caller c
 
 `CreateFileW` reports failure as `INVALID_HANDLE_VALUE` (`(HANDLE)-1`), while most other handle-producing functions report failure as `NULL`. `init?(unsafelyAdopting:)` is failable so that both are rejected in one place. There is no `.invalid` member, since both sentinels report only that the call failed, and `.invalid` would name a handle on which every operation fails. The parameter is `HANDLE?` to support Win32 functions that return `NULL` but import as returning `HANDLE!`.
 
-> Note: The C runtime has a third sentinel, `_NO_CONSOLE_FILENO` (`(intptr_t)-2`). This is a CRT convention rather than a Win32 one, so it's filtered by `FileDescriptor.withWin32HandleIfAvailable(_:)` in [SYS-0013](0013-win32-filedescriptor-bridging.md) instead.
+> Note: The C runtime has a third sentinel, `_NO_CONSOLE_FILENO` (`(intptr_t)-2`). This is a CRT convention rather than a Win32 one, so it's filtered by `FileDescriptor.withWin32HandleIfAvailable(_:)` in [SYS-0013](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0013-win32-filedescriptor-bridging.md) instead.
 
 #### Synchronous handles only
 
-None of the synchronous I/O in [SYS-0014](0014-win32-file-io.md) is memory-safe on an overlapped handle: a transfer can report itself complete while the kernel is still writing into the span's memory, or a call can return `ERROR_IO_PENDING` immediately while the work completes later. Therefore, a `Win32.FileHandle` is never overlapped. [SYS-0012](0012-win32-opening-handles.md) rejects `FILE_FLAG_OVERLAPPED` on open, and [SYS-0013](0013-win32-filedescriptor-bridging.md)'s `FileDescriptor` bridging does not lend a handle if it's overlapped. A future asynchronous handle API should instead apply the flag implicitly like `Win32.DirectoryHandle` ([SYS-0012](0012-win32-opening-handles.md)) does with `FILE_FLAG_BACKUP_SEMANTICS` and withhold operations that fail.
+None of the synchronous I/O in [SYS-0014](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0014-win32-file-io.md) is memory-safe on an overlapped handle: a transfer can report itself complete while the kernel is still writing into the span's memory, or a call can return `ERROR_IO_PENDING` immediately while the work completes later. Therefore, a `Win32.FileHandle` is never overlapped. [SYS-0012](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0012-win32-opening-handles.md) rejects `FILE_FLAG_OVERLAPPED` on open, and [SYS-0013](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0013-win32-filedescriptor-bridging.md)'s `FileDescriptor` bridging does not lend a handle if it's overlapped. A future asynchronous handle API should instead apply the flag implicitly like `Win32.DirectoryHandle` ([SYS-0012](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0012-win32-opening-handles.md)) does with `FILE_FLAG_BACKUP_SEMANTICS` and withhold operations that fail.
 
 `init?(unsafelyAdopting:)` does not check for the overlapped flag. It's `@unsafe` because the caller vouches that the handle is valid, owned, and synchronous. The safe `FileDescriptor.withWin32HandleIfAvailable(_:)` can't take a caller's word for it, so it makes the check. Code that owns an overlapped handle should keep it as a `HANDLE` until an asynchronous type exists.
 
 #### Conformances
 
-`Win32.FileHandle` conforms to `Sendable` and nothing else. `Sendable` is safe on a uniquely owned handle, and Windows permits concurrent use of one handle from multiple threads, though it serializes I/O on a synchronous handle (see [SYS-0014](0014-win32-file-io.md)). `Hashable` may be revisited when noncopyable hashed collections are more widely available.
+`Win32.FileHandle` conforms to `Sendable` and nothing else. `Sendable` is safe on a uniquely owned handle, and Windows permits concurrent use of one handle from multiple threads, though it serializes I/O on a synchronous handle (see [SYS-0014](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0014-win32-file-io.md)). `Hashable` may be revisited when noncopyable hashed collections are more widely available.
 
 ## Source compatibility
 
@@ -138,9 +138,9 @@ This proposal is additive and ABI-compatible with existing code.
 
 ## Future directions
 
-[SYS-0010](0010-win32-namespace-and-error.md) lists the rest of this series and the stages that could follow it.
+[SYS-0010](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0010-win32-namespace-and-error.md) lists the rest of this series and the stages that could follow it.
 
-* **Asynchronous I/O.** An overlapped handle could get its own type as **Synchronous handles only** describes, with async versions of the I/O in [SYS-0014](0014-win32-file-io.md).
+* **Asynchronous I/O.** An overlapped handle could get its own type as **Synchronous handles only** describes, with async versions of the I/O in [SYS-0014](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0014-win32-file-io.md).
 * **A borrowed handle type.** A copyable, nonescapable handle view would let an API accept any handle kind, and could represent handles no Swift value owns, such as the standard handles from `GetStdHandle`. Blocked as of Swift 6.4 since an owned `let handle` that has been viewed can't be consumed with `handle.close()` afterward, even after the view's last use.
 * **Opt-in close checking.** If Swift adds must-consume types, a wrapper could make a forgotten `close()` a compile error. Until then, an application that wants every close to be explicit can wrap `Win32.FileHandle` in a type whose `deinit` traps.
 
@@ -171,7 +171,7 @@ Keep `Win32.FileHandle` as the owner, but have it store a copyable `Win32.RawFil
 
 Rejected because:
 
-* If a programmer error closes the copyable handle early, Windows can reuse the value for any new object, including an overlapped handle, on which the synchronous I/O in [SYS-0014](0014-win32-file-io.md) is memory-unsafe. Its operations would therefore have to be `@unsafe`, just like calling Win32 with a `HANDLE` directly.
+* If a programmer error closes the copyable handle early, Windows can reuse the value for any new object, including an overlapped handle, on which the synchronous I/O in [SYS-0014](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0014-win32-file-io.md) is memory-unsafe. Its operations would therefore have to be `@unsafe`, just like calling Win32 with a `HANDLE` directly.
 * It doubles the API surface without improving the escape hatch. Code that can't use `Win32.FileHandle` is typically giving the handle to raw Win32 or another library, which uses `HANDLE` anyway. Unlike `FileDescriptor`, there's no existing `Win32.RawFileHandle` API to interop with.
 * Where a handle is a parameter, `borrowing` already gives it a distinct type along with lifetime safety, and **Future directions** describes a borrowed handle type for the cases `borrowing` can't express.
 
@@ -202,8 +202,8 @@ Rejected because:
 
 Rejected because:
 
-* Noncopyable ownership already guarantees that, so the scoped forms only add more API surface (a `withOpen` per opening function in [SYS-0012](0012-win32-opening-handles.md), each restating its parameters and doc comment).
-* Typed throws would then double that surface with the overload pattern `withLock(byteRange:mode:_:)` uses in [SYS-0016](0016-win32-byte-range-locking.md). Separate statements already give each call its own error type.
+* Noncopyable ownership already guarantees that, so the scoped forms only add more API surface (a `withOpen` per opening function in [SYS-0012](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0012-win32-opening-handles.md), each restating its parameters and doc comment).
+* Typed throws would then double that surface with the overload pattern `withLock(byteRange:mode:_:)` uses in [SYS-0016](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0016-win32-byte-range-locking.md). Separate statements already give each call its own error type.
 
 ## Appendix
 

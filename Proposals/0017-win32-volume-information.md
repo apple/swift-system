@@ -1,12 +1,12 @@
 # Volume Information for `Win32.FileHandle`
 
-* Proposal: [SYS-0017](0017-win32-volume-information.md)
+* Proposal: [SYS-0017](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0017-win32-volume-information.md)
 * Author: [Jonathan Flat](https://github.com/jrflat)
 * Review Manager: TBD
 * Status: **Draft**
 * Implementation: TBD
 * Review: TBD
-* Depends on: [SYS-0010](0010-win32-namespace-and-error.md), [SYS-0011](0011-win32-filehandle.md), [SYS-0012](0012-win32-opening-handles.md)
+* Depends on: [SYS-0010](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0010-win32-namespace-and-error.md), [SYS-0011](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0011-win32-filehandle.md), [SYS-0012](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0012-win32-opening-handles.md)
 
 #### Revision history
 
@@ -14,7 +14,7 @@
 
 ## Introduction
 
-This proposal adds a volume information query to the Win32 handle types. It builds on the `Win32.FileHandle` and `Win32.DirectoryHandle` types introduced in [SYS-0011](0011-win32-filehandle.md) and [SYS-0012](0012-win32-opening-handles.md).
+This proposal adds a volume information query to the Win32 handle types. It builds on the `Win32.FileHandle` and `Win32.DirectoryHandle` types introduced in [SYS-0011](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0011-win32-filehandle.md) and [SYS-0012](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0012-win32-opening-handles.md).
 
 ## Motivation
 

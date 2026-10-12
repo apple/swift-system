@@ -1,6 +1,6 @@
 # A `Win32` Namespace and `Win32Error` for Swift System
 
-* Proposal: [SYS-0010](0010-win32-namespace-and-error.md)
+* Proposal: [SYS-0010](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0010-win32-namespace-and-error.md)
 * Author: [Jonathan Flat](https://github.com/jrflat)
 * Review Manager: TBD
 * Status: **Draft**
@@ -21,14 +21,14 @@ It's the foundation for a series of proposals that nest their types in the names
 | API | Proposal |
 | --- | --- |
 | `Win32` namespace, `Win32Error` | This proposal |
-| `Win32.FileHandle`, ownership and closing | [SYS-0011](0011-win32-filehandle.md) |
-| Opening files and directories, duplication, and reopening | [SYS-0012](0012-win32-opening-handles.md) |
-| `FileDescriptor` bridging for `Win32.FileHandle` | [SYS-0013](0013-win32-filedescriptor-bridging.md) |
-| Reading, writing, seeking, flushing, and resizing | [SYS-0014](0014-win32-file-io.md) |
-| `Win32.FileType` | [SYS-0015](0015-win32-file-type.md) |
-| Byte-range locking | [SYS-0016](0016-win32-byte-range-locking.md) |
-| Volume information for a handle | [SYS-0017](0017-win32-volume-information.md) |
-| Final path name for a handle | [SYS-0018](0018-win32-final-path-name.md) |
+| `Win32.FileHandle`, ownership and closing | [SYS-0011](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0011-win32-filehandle.md) |
+| Opening files and directories, duplication, and reopening | [SYS-0012](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0012-win32-opening-handles.md) |
+| `FileDescriptor` bridging for `Win32.FileHandle` | [SYS-0013](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0013-win32-filedescriptor-bridging.md) |
+| Reading, writing, seeking, flushing, and resizing | [SYS-0014](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0014-win32-file-io.md) |
+| `Win32.FileType` | [SYS-0015](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0015-win32-file-type.md) |
+| Byte-range locking | [SYS-0016](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0016-win32-byte-range-locking.md) |
+| Volume information for a handle | [SYS-0017](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0017-win32-volume-information.md) |
+| Final path name for a handle | [SYS-0018](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0018-win32-final-path-name.md) |
 
 See **Future directions** for additional APIs that could follow.
 
@@ -50,11 +50,11 @@ Win32 is the documented, stable, ABI-committed system interface for desktop Wind
 
 ### System has no home for Windows-native APIs
 
-The library already treats POSIX and Windows file metadata as disjoint surfaces. `UserID`, `GroupID`, `DeviceID`, and `Inode` are declared entirely inside `#if !os(Windows)`. [SYS-0006](0006-system-stat.md) proposes `Stat` for Unix-like platforms only, where we argue in its **Alternatives considered**:
+The library already treats POSIX and Windows file metadata as disjoint surfaces. `UserID`, `GroupID`, `DeviceID`, and `Inode` are declared entirely inside `#if !os(Windows)`. [SYS-0006](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0006-system-stat.md) proposes `Stat` for Unix-like platforms only, where we argue in its **Alternatives considered**:
 
 > Rather than forcing Windows file metadata semantics into a cross-platform `Stat` type, we should instead create Windows-specific types that give developers full access to platform-native file metadata.
 
-Those Windows-specific types need somewhere to live, and it shouldn't be the top level, where the natural names would conflict. System already declares `FileType` and `FileFlags` for other platforms, and [SYS-0012](0012-win32-opening-handles.md) and [SYS-0015](0015-win32-file-type.md) need Windows types with those names and different meanings. A top-level `FileHandle` would collide with Foundation's. System has a shipped precedent for the alternative. `Mach` is a caseless `enum` that serves purely as a namespace for a family of platform-specific types. A `Win32` namespace follows that precedent.
+Those Windows-specific types need somewhere to live, and it shouldn't be the top level, where the natural names would conflict. System already declares `FileType` and `FileFlags` for other platforms, and [SYS-0012](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0012-win32-opening-handles.md) and [SYS-0015](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0015-win32-file-type.md) need Windows types with those names and different meanings. A top-level `FileHandle` would collide with Foundation's. System has a shipped precedent for the alternative. `Mach` is a caseless `enum` that serves purely as a namespace for a family of platform-specific types. A `Win32` namespace follows that precedent.
 
 ### `Errno` can't express Windows failures
 
@@ -206,7 +206,7 @@ The named constants are not exhaustive. They cover every code that System's Win3
 
 The last code is System's own and uses a base of `0xA0535900`. It sets the customer bit (29) and the severity bit (31), so it's a customer-defined failure `HRESULT` rather than a system error code. `isSynthesized` checks for System's base.
 
-System may reuse a Windows code if it accurately describes the condition, even for a check Windows doesn't make itself. For example, a wrapper throws `.invalidParameter` for an argument it rejects before calling Win32, such as an overlapped flag or a negative offset, and `.notDirectory` when a directory open doesn't resolve to a directory. System only synthesizes a code when no Windows code fits. One example is `.incompleteTransfer`, which is thrown in [SYS-0014](0014-win32-file-io.md) when a `WriteFile` succeeds without writing anything.
+System may reuse a Windows code if it accurately describes the condition, even for a check Windows doesn't make itself. For example, a wrapper throws `.invalidParameter` for an argument it rejects before calling Win32, such as an overlapped flag or a negative offset, and `.notDirectory` when a directory open doesn't resolve to a directory. System only synthesizes a code when no Windows code fits. One example is `.incompleteTransfer`, which is thrown in [SYS-0014](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0014-win32-file-io.md) when a `WriteFile` succeeds without writing anything.
 
 `~=` lets a `catch` clause match a `Win32Error` pattern against an untyped error, as `Errno`'s does.
 
@@ -222,9 +222,9 @@ A synthesized code has no system message, so both properties render it from a lo
 
 `GetLastError` is thread-local and volatile. The next Win32 call on the thread clobbers it, and so can an ARC release that runs a `deinit` between the failing call and the error read. Every wrapper in the namespace must capture the code into a `Win32Error` immediately at the failure site.
 
-Some Win32 functions return a value that can mean either success or failure, such as `GetFileType`'s `FILE_TYPE_UNKNOWN` ([SYS-0015](0015-win32-file-type.md)), and don't clear the last error when they succeed. In this case, a System wrapper must call `SetLastError(ERROR_SUCCESS)` before the function so users don't have to.
+Some Win32 functions return a value that can mean either success or failure, such as `GetFileType`'s `FILE_TYPE_UNKNOWN` ([SYS-0015](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0015-win32-file-type.md)), and don't clear the last error when they succeed. In this case, a System wrapper must call `SetLastError(ERROR_SUCCESS)` before the function so users don't have to.
 
-Certain Win32 functions may succeed and set the last error to a code that carries information. For example, `CreateFileW` with `OPEN_ALWAYS` or `CREATE_ALWAYS` can return a valid handle and set `ERROR_ALREADY_EXISTS` to report that the file already existed. A `throws` signature can't express this, so System APIs must surface it through parameter or return types instead. See [SYS-0012](0012-win32-opening-handles.md). If the code instead means the operation didn't happen, the wrapper throws it. For instance, a console `ReadFile` interrupted by Ctrl+C succeeds with `ERROR_OPERATION_ABORTED`, so the reads in [SYS-0014](0014-win32-file-io.md) throw `.operationAborted` instead of reporting the end of the file.
+Certain Win32 functions may succeed and set the last error to a code that carries information. For example, `CreateFileW` with `OPEN_ALWAYS` or `CREATE_ALWAYS` can return a valid handle and set `ERROR_ALREADY_EXISTS` to report that the file already existed. A `throws` signature can't express this, so System APIs must surface it through parameter or return types instead. See [SYS-0012](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0012-win32-opening-handles.md). If the code instead means the operation didn't happen, the wrapper throws it. For instance, a console `ReadFile` interrupted by Ctrl+C succeeds with `ERROR_OPERATION_ABORTED`, so the reads in [SYS-0014](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0014-win32-file-io.md) throw `.operationAborted` instead of reporting the end of the file.
 
 A Win32 function may also fail while `GetLastError` reports `ERROR_SUCCESS`:
 
@@ -276,20 +276,20 @@ These stages could follow the proposals in the **Introduction**:
 | --- | --- |
 | Querying file information | Below |
 | Setting file information | Below |
-| Security descriptors, ACLs, and SIDs | Below, [SYS-0012](0012-win32-opening-handles.md) |
-| Directory enumeration, change notification, and creation | [SYS-0012](0012-win32-opening-handles.md) |
-| Creating and querying named pipes | [SYS-0012](0012-win32-opening-handles.md), [SYS-0015](0015-win32-file-type.md) |
-| Standard handles and console detection | [SYS-0011](0011-win32-filehandle.md), [SYS-0015](0015-win32-file-type.md) |
-| Asynchronous I/O, including scatter/gather | [SYS-0011](0011-win32-filehandle.md), [SYS-0014](0014-win32-file-io.md) |
-| Volume queries by path, including free space | [SYS-0017](0017-win32-volume-information.md) |
-| `DeviceIoControl` and `FSCTL` codes | [SYS-0018](0018-win32-final-path-name.md) |
-| Portable metadata over `Stat` and the Win32 types | [SYS-0006](0006-system-stat.md), [SYS-0012](0012-win32-opening-handles.md), [SYS-0017](0017-win32-volume-information.md) |
+| Security descriptors, ACLs, and SIDs | Below, [SYS-0012](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0012-win32-opening-handles.md) |
+| Directory enumeration, change notification, and creation | [SYS-0012](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0012-win32-opening-handles.md) |
+| Creating and querying named pipes | [SYS-0012](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0012-win32-opening-handles.md), [SYS-0015](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0015-win32-file-type.md) |
+| Standard handles and console detection | [SYS-0011](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0011-win32-filehandle.md), [SYS-0015](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0015-win32-file-type.md) |
+| Asynchronous I/O, including scatter/gather | [SYS-0011](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0011-win32-filehandle.md), [SYS-0014](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0014-win32-file-io.md) |
+| Volume queries by path, including free space | [SYS-0017](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0017-win32-volume-information.md) |
+| `DeviceIoControl` and `FSCTL` codes | [SYS-0018](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0018-win32-final-path-name.md) |
+| Portable metadata over `Stat` and the Win32 types | [SYS-0006](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0006-system-stat.md), [SYS-0012](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0012-win32-opening-handles.md), [SYS-0017](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0017-win32-volume-information.md) |
 
 **Querying file information.** `GetFileInformationByHandle` and `GetFileInformationByHandleEx` provide file metadata on Windows: attributes, file identifiers, alignment, compression, remote protocol details, alternate data streams, and directory enumeration. A future proposal should nest those information classes and their associated types in `Win32`.
 
 **Setting file information.** `SetFileInformationByHandle` is the natural companion and reaches semantics that have no `FileDescriptor` spelling at all, such as `FILE_DISPOSITION_POSIX_SEMANTICS` and `FILE_RENAME_POSIX_SEMANTICS`. It should follow once the query side has settled the shape of the information-class types.
 
-**Security descriptors.** `GetSecurityInfo`, `SetSecurityInfo`, ACLs, and SIDs reach beyond the file system. They're the Windows analog of `FilePermissions` and `UserID`, and are large enough to be their own effort. That effort would build on the `Win32.SecurityDescriptor` that [SYS-0012](0012-win32-opening-handles.md) introduces.
+**Security descriptors.** `GetSecurityInfo`, `SetSecurityInfo`, ACLs, and SIDs reach beyond the file system. They're the Windows analog of `FilePermissions` and `UserID`, and are large enough to be their own effort. That effort would build on the `Win32.SecurityDescriptor` that [SYS-0012](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0012-win32-opening-handles.md) introduces.
 
 ### `HResult` and `NTStatus`
 

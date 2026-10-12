@@ -1,12 +1,12 @@
 # File I/O on `Win32.FileHandle`
 
-* Proposal: [SYS-0014](0014-win32-file-io.md)
+* Proposal: [SYS-0014](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0014-win32-file-io.md)
 * Author: [Jonathan Flat](https://github.com/jrflat)
 * Review Manager: TBD
 * Status: **Draft**
 * Implementation: TBD
 * Review: TBD
-* Depends on: [SYS-0010](0010-win32-namespace-and-error.md), [SYS-0011](0011-win32-filehandle.md), [SYS-0012](0012-win32-opening-handles.md)
+* Depends on: [SYS-0010](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0010-win32-namespace-and-error.md), [SYS-0011](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0011-win32-filehandle.md), [SYS-0012](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0012-win32-opening-handles.md)
 
 #### Revision history
 
@@ -14,7 +14,7 @@
 
 ## Introduction
 
-This proposal adds reading, writing, seeking, flushing, and resizing to `Win32.FileHandle`, the type introduced in [SYS-0011](0011-win32-filehandle.md).
+This proposal adds reading, writing, seeking, flushing, and resizing to `Win32.FileHandle`, the type introduced in [SYS-0011](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0011-win32-filehandle.md).
 
 ## Motivation
 
@@ -72,7 +72,7 @@ Each operation requires a matching right in the handle's `Win32.AccessMask`:
 | Seek | none |
 | `size()` | none |
 
-These operations share the handle's one file pointer which belongs to the file object, so concurrent use is memory-safe but races that pointer. A handle that's duplicated, inherited by a child process, or bridged via `FileDescriptor.withWin32HandleIfAvailable(_:)` all move the same pointer. An independent pointer requires a second `open` or `reopen(access:shareMode:flags:)`. Windows also serializes I/O on a synchronous handle, so concurrent positional reads don't run in parallel, and while one thread waits in a read on a pipe or console, most other calls on that handle wait too, including `size()`, seeks, a write in the other direction, and `PeekNamedPipe`. (`fileType()` from [SYS-0015](0015-win32-file-type.md) doesn't wait.) None of these synchronous operations are valid on a `FILE_FLAG_OVERLAPPED` handle, which is why [SYS-0012](0012-win32-opening-handles.md) makes `.overlapped` unavailable and `Win32.FileHandle` rejects the flag at `open`.
+These operations share the handle's one file pointer which belongs to the file object, so concurrent use is memory-safe but races that pointer. A handle that's duplicated, inherited by a child process, or bridged via `FileDescriptor.withWin32HandleIfAvailable(_:)` all move the same pointer. An independent pointer requires a second `open` or `reopen(access:shareMode:flags:)`. Windows also serializes I/O on a synchronous handle, so concurrent positional reads don't run in parallel, and while one thread waits in a read on a pipe or console, most other calls on that handle wait too, including `size()`, seeks, a write in the other direction, and `PeekNamedPipe`. (`fileType()` from [SYS-0015](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0015-win32-file-type.md) doesn't wait.) None of these synchronous operations are valid on a `FILE_FLAG_OVERLAPPED` handle, which is why [SYS-0012](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0012-win32-opening-handles.md) makes `.overlapped` unavailable and `Win32.FileHandle` rejects the flag at `open`.
 
 ### Position and length types
 
@@ -187,7 +187,7 @@ extension Win32.FileHandle {
 }
 ```
 
-Reading differs by device classes: on a disk file, `ReadFile` comes up short only at end of file, while on a pipe or console, it returns whatever has arrived. When calling `read(fromAbsoluteOffset:into:)` on a message-mode pipe, a message longer than `span` fills the span, and the rest of the message follows on the next read. Clients should be careful to size their span appropriately when calling `readFully(fromAbsoluteOffset:into:)` on a pipe or console; a span too large will hang waiting for writer data that may not arrive. A caller can determine a handle's device class using `fileType()` from [SYS-0015](0015-win32-file-type.md). A read on a serial port can also return zero when a time-out elapses; see `COMMTIMEOUTS`. A console read that Ctrl+C interrupts succeeds with the last error set to `ERROR_OPERATION_ABORTED`, so reads clear the last error before each `ReadFile` and throw `.operationAborted` in this case instead of reporting the end of the file.
+Reading differs by device classes: on a disk file, `ReadFile` comes up short only at end of file, while on a pipe or console, it returns whatever has arrived. When calling `read(fromAbsoluteOffset:into:)` on a message-mode pipe, a message longer than `span` fills the span, and the rest of the message follows on the next read. Clients should be careful to size their span appropriately when calling `readFully(fromAbsoluteOffset:into:)` on a pipe or console; a span too large will hang waiting for writer data that may not arrive. A caller can determine a handle's device class using `fileType()` from [SYS-0015](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0015-win32-file-type.md). A read on a serial port can also return zero when a time-out elapses; see `COMMTIMEOUTS`. A console read that Ctrl+C interrupts succeeds with the last error set to `ERROR_OPERATION_ABORTED`, so reads clear the last error before each `ReadFile` and throw `.operationAborted` in this case instead of reporting the end of the file.
 
 No read throws `.endOfFile` (`ERROR_HANDLE_EOF`). On a synchronous handle, a file-pointer (default `offset`) read at the end of file returns zero bytes while a read from that specific `offset` fails, so absorbing the code unifies the behavior. Likewise, no read throws `.brokenPipe` or `.pipeNotConnected`, which is how a pipe reports that its writer closed or its server disconnected; the C runtime's `_read` also returns 0 for the former. `readFully(fromAbsoluteOffset:into:)` returns the short count as documented: it stops at a zero-byte read on any handle, such as a pipe's final `ReadFile` or any read from `NUL`, and stops at the first short read on a handle whose `fileType()` is `.disk`.
 

@@ -1,12 +1,12 @@
 # Opening Files and Directories as `Win32` Handles
 
-* Proposal: [SYS-0012](0012-win32-opening-handles.md)
+* Proposal: [SYS-0012](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0012-win32-opening-handles.md)
 * Author: [Jonathan Flat](https://github.com/jrflat)
 * Review Manager: TBD
 * Status: **Draft**
 * Implementation: TBD
 * Review: TBD
-* Depends on: [SYS-0010](0010-win32-namespace-and-error.md), [SYS-0011](0011-win32-filehandle.md)
+* Depends on: [SYS-0010](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0010-win32-namespace-and-error.md), [SYS-0011](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0011-win32-filehandle.md)
 
 #### Revision history
 
@@ -14,7 +14,7 @@
 
 ## Introduction
 
-This proposal adds opening, duplication, reopening, and inheritance control to `Win32.FileHandle`, the type introduced in [SYS-0011](0011-win32-filehandle.md), along with `Win32.DirectoryHandle` for directories.
+This proposal adds opening, duplication, reopening, and inheritance control to `Win32.FileHandle`, the type introduced in [SYS-0011](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0011-win32-filehandle.md), along with `Win32.DirectoryHandle` for directories.
 
 ## Motivation
 
@@ -233,7 +233,7 @@ extension Win32.DirectoryHandle {
 
 Developers may be unaware that `FILE_FLAG_BACKUP_SEMANTICS` is required to open a directory. A separate `Win32.DirectoryHandle` type makes this common use case reachable without that knowledge. The type also removes the read and write surface that `ReadFile` and `WriteFile` reject at runtime.
 
-`Win32.DirectoryHandle` has the ownership model and conformances of `Win32.FileHandle`, described in [SYS-0011](0011-win32-filehandle.md).
+`Win32.DirectoryHandle` has the ownership model and conformances of `Win32.FileHandle`, described in [SYS-0011](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0011-win32-filehandle.md).
 
 `Win32.DirectoryHandle` has no `disposition`, `attributes`, `securityDescriptor`, or `templateFile` parameter. Creating a directory requires `CreateDirectoryW`, not `CreateFileW`, and should be considered in a future proposal.
 
@@ -245,7 +245,7 @@ Developers may be unaware that `FILE_FLAG_BACKUP_SEMANTICS` is required to open 
 
 However, `open` will pass a path that starts with `\\?\` to `CreateFileW` untouched, since that prefix means "pass this path through verbatim". `FileDescriptor` doesn't exempt it, and in testing, `GetFullPathNameW` stripped trailing dots and collapsed `..` even inside a `\\?\` path, so `FileDescriptor.open` opens `\\?\C:\dir\name.` as `name` rather than `name.`.
 
-A failed `PathAllocCanonicalize` reports an `HRESULT`, but `open` throws `Win32Error`, so System will convert the `FACILITY_WIN32` errors internally. A public `HResult` remains future work as described in [SYS-0010](0010-win32-namespace-and-error.md).
+A failed `PathAllocCanonicalize` reports an `HRESULT`, but `open` throws `Win32Error`, so System will convert the `FACILITY_WIN32` errors internally. A public `HResult` remains future work as described in [SYS-0010](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0010-win32-namespace-and-error.md).
 
 ### Supporting types for `open`
 
@@ -281,7 +281,7 @@ Each pair of spellings names one bit, so `mask.contains(.listDirectory)` is true
 
 #### No `.overlapped`
 
-A `Win32.FileHandle` is always synchronous, as [SYS-0011](0011-win32-filehandle.md) describes. `Win32.FileFlags` vends `.overlapped` as an unavailable member so the restriction is discoverable:
+A `Win32.FileHandle` is always synchronous, as [SYS-0011](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0011-win32-filehandle.md) describes. `Win32.FileFlags` vends `.overlapped` as an unavailable member so the restriction is discoverable:
 
 ```swift
 @available(*, unavailable, message: "Overlapped handles are not supported")
@@ -410,12 +410,12 @@ Everything here sits behind `#if os(Windows)`, so cross-platform callers must gu
 
 ## Future directions
 
-[SYS-0010](0010-win32-namespace-and-error.md) lists the rest of this series and the stages that could follow it.
+[SYS-0010](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0010-win32-namespace-and-error.md) lists the rest of this series and the stages that could follow it.
 
 * **Directory operations.** `Win32.DirectoryHandle` is the entry point for enumeration with `FileIdBothDirectoryInfo`, change notification with `ReadDirectoryChangesW`, and per-directory case sensitivity. Creation with `CreateDirectoryW` belongs there too.
 * **Named pipes.** `Win32.FileHandle.open` connects to an existing pipe today, but creating one requires `CreateNamedPipeW` and its pipe mode, instance count, and timeout parameters, or `CreatePipe` for an anonymous pair. `Win32.AccessMask` withholds `FILE_CREATE_PIPE_INSTANCE`, a third spelling of `0x4`, until then. A named-pipe API should also let a client choose an impersonation level, since `open` can set one only through raw `SECURITY_SQOS_PRESENT` and level bits in `Win32.FileFlags`, which share values with flags such as `.openNoRecall`.
 * **Security descriptors.** `Win32.SecurityDescriptor` initially covers only SDDL parsing and could be extended: reading a descriptor with `GetSecurityInfo`, applying one with `SetSecurityInfo`, rendering one to SDDL with `ConvertSecurityDescriptorToStringSecurityDescriptorW`, and typed ACL and SID APIs. All of these allocate with `LocalAlloc`, so they fit the existing `deinit`; an API that frees another way, such as `CreatePrivateObjectSecurity`, would need a different type.
-* **A cross-platform `FileInfo`.** [SYS-0006](0006-system-stat.md) future directions describe an ergonomic metadata abstraction over `Stat` and the Windows types, and this series builds the underlying Windows types.
+* **A cross-platform `FileInfo`.** [SYS-0006](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0006-system-stat.md) future directions describe an ergonomic metadata abstraction over `Stat` and the Windows types, and this series builds the underlying Windows types.
 * **Borrowing `securityDescriptor` and `templateFile` without an annotation.** `Ref<Win32.SecurityDescriptor>?` and `Ref<Win32.FileHandle>?` ([SE-0519](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0519-ref-mutableref-types.md)) would let callers pass a non-optional value directly, as in `templateFile: Ref(template)`. `Ref` is available in Swift 6.4, but adopting it requires raising System's minimum toolchain, and its lifetime checking is still maturing.
 
 ## Alternatives considered

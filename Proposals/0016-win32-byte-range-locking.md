@@ -1,12 +1,12 @@
 # Byte-Range Locking for `Win32.FileHandle`
 
-* Proposal: [SYS-0016](0016-win32-byte-range-locking.md)
+* Proposal: [SYS-0016](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0016-win32-byte-range-locking.md)
 * Author: [Jonathan Flat](https://github.com/jrflat)
 * Review Manager: TBD
 * Status: **Draft**
 * Implementation: TBD
 * Review: TBD
-* Depends on: [SYS-0010](0010-win32-namespace-and-error.md), [SYS-0011](0011-win32-filehandle.md), [SYS-0012](0012-win32-opening-handles.md)
+* Depends on: [SYS-0010](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0010-win32-namespace-and-error.md), [SYS-0011](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0011-win32-filehandle.md), [SYS-0012](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0012-win32-opening-handles.md)
 
 #### Revision history
 
@@ -14,7 +14,7 @@
 
 ## Introduction
 
-This proposal adds scoped byte-range locking to `Win32.FileHandle`, the type introduced in [SYS-0011](0011-win32-filehandle.md).
+This proposal adds scoped byte-range locking to `Win32.FileHandle`, the type introduced in [SYS-0011](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0011-win32-filehandle.md).
 
 ## Motivation
 
@@ -28,7 +28,7 @@ A scoped `withLock(byteRange:mode:_:)` safely releases the lock on every exit an
 
 ## Proposed solution
 
-Add `withLock(byteRange:mode:_:)` and `withLockIfAvailable(byteRange:mode:_:)` to `Win32.FileHandle`. The transfers in this example come from [SYS-0014](0014-win32-file-io.md).
+Add `withLock(byteRange:mode:_:)` and `withLockIfAvailable(byteRange:mode:_:)` to `Win32.FileHandle`. The transfers in this example come from [SYS-0014](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0014-win32-file-io.md).
 
 ```swift
 #if os(Windows)
@@ -148,7 +148,7 @@ Notes on the design:
 
 * **Typed and untyped overloads.** Locking can fail, so unlike `Mutex.withLock`, `body`'s error can't pass through as a generic `E`. The typed overload serves a `body` that doesn't throw or is annotated `throws(Win32Error)`, such as one doing I/O on the same handle. An unannotated throwing `body` gets the untyped overload.
 * **Requires a right in the handle's `Win32.AccessMask`.** Locking needs `.readData` or `.writeData` access, and only an exclusive lock lets the body write to the range it has locked.
-* **Bounds are `Int64`** like every other position and length in the series, so the range an I/O call addresses can be locked without a conversion. `LockFileEx` accepts any unsigned 64-bit offset and length, but no file holds data past `Int64.max`, and .NET's `FileStream.Lock` and Java's `FileChannel.lock` stop there too. A negative bound throws `.invalidParameter` before calling `LockFileEx`, as a negative `offset` does in [SYS-0014](0014-win32-file-io.md). Since a range ends at or below `Int64.max`, `ERROR_INVALID_LOCK_RANGE` is unreachable. The default `0...` passes an offset of zero and a length of `Int64.max`.
+* **Bounds are `Int64`** like every other position and length in the series, so the range an I/O call addresses can be locked without a conversion. `LockFileEx` accepts any unsigned 64-bit offset and length, but no file holds data past `Int64.max`, and .NET's `FileStream.Lock` and Java's `FileChannel.lock` stop there too. A negative bound throws `.invalidParameter` before calling `LockFileEx`, as a negative `offset` does in [SYS-0014](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0014-win32-file-io.md). Since a range ends at or below `Int64.max`, `ERROR_INVALID_LOCK_RANGE` is unreachable. The default `0...` passes an offset of zero and a length of `Int64.max`.
 * **`byteRange` is resolved with `RangeExpression.relative(to:)`** against an internal collection whose indices are `0..<Int64.max`. That collection's `index(after:)` saturates, so `0...Int64.max` clamps rather than trapping on `Int64.max + 1`. Byte `Int64.max` is therefore unaddressable, but no file can hold a byte there anyway.
 * **`withLock` is `noasync`.** It can wait indefinitely for another process to unlock the range, which would block a Swift concurrency thread. `withLockIfAvailable(byteRange:mode:_:)` never waits, so `async` code can still call it.
 * **`LOCKFILE_FAIL_IMMEDIATELY` is an entry point, not a parameter.** `Win32.LockMode` represents only the presence or absence of the other documented `dwFlags` bit, `LOCKFILE_EXCLUSIVE_LOCK`. The fast-fail shape of `withLockIfAvailable` matches `Mutex.withLockIfAvailable`, with the same no-spurious-failure guarantee.

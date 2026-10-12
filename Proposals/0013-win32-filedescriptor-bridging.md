@@ -1,12 +1,12 @@
 # `FileDescriptor` Bridging for `Win32.FileHandle`
 
-* Proposal: [SYS-0013](0013-win32-filedescriptor-bridging.md)
+* Proposal: [SYS-0013](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0013-win32-filedescriptor-bridging.md)
 * Author: [Jonathan Flat](https://github.com/jrflat)
 * Review Manager: TBD
 * Status: **Draft**
 * Implementation: TBD
 * Review: TBD
-* Depends on: [SYS-0010](0010-win32-namespace-and-error.md), [SYS-0011](0011-win32-filehandle.md)
+* Depends on: [SYS-0010](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0010-win32-namespace-and-error.md), [SYS-0011](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0011-win32-filehandle.md)
 
 #### Revision history
 
@@ -14,7 +14,7 @@
 
 ## Introduction
 
-This proposal adds conversions in both directions between `FileDescriptor` and `Win32.FileHandle`, the type introduced in [SYS-0011](0011-win32-filehandle.md).
+This proposal adds conversions in both directions between `FileDescriptor` and `Win32.FileHandle`, the type introduced in [SYS-0011](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0011-win32-filehandle.md).
 
 ## Motivation
 
@@ -26,7 +26,7 @@ Code that recovers a handle needs a failure path for the case where the `CInt` m
 
 ### Not every descriptor has a usable handle
 
-Even a valid descriptor may have no handle behind it, as with the standard descriptors in a process with no console, or wrap an overlapped handle, such as a socket. [SYS-0011](0011-win32-filehandle.md) doesn't allow either in a `Win32.FileHandle`.
+Even a valid descriptor may have no handle behind it, as with the standard descriptors in a process with no console, or wrap an overlapped handle, such as a socket. [SYS-0011](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0011-win32-filehandle.md) doesn't allow either in a `Win32.FileHandle`.
 
 ### Adopting a handle requires unsafe code
 
@@ -128,11 +128,11 @@ extension FileDescriptor {
 }
 ```
 
-`FileDescriptor.withWin32HandleIfAvailable(_:)` is a closure so the scope of the borrow is visible at the call site. Like `withContiguousStorageIfAvailable(_:)`, it returns `nil` instead of calling `body` when there's no handle to lend, so `body` never has to unwrap one. It never throws on its own, so it passes `body`'s error type through as `E`. Both sentinels, `INVALID_HANDLE_VALUE` and `_NO_CONSOLE_FILENO`, return `nil`. An overlapped handle also returns `nil` because the synchronous I/O in [SYS-0014](0014-win32-file-io.md) isn't memory-safe on one. (Note a descriptor can wrap an overlapped handle, e.g. Winsock sockets are overlapped by default.) Detecting an overlapped handle requires an `NtQueryInformationFile` call for `FileModeInformation`. The implementation brackets the call to `_get_osfhandle` with a no-op `_set_thread_local_invalid_parameter_handler`, since `_get_osfhandle` on an invalid descriptor otherwise invokes the C runtime's invalid parameter handler, which terminates the process by default.
+`FileDescriptor.withWin32HandleIfAvailable(_:)` is a closure so the scope of the borrow is visible at the call site. Like `withContiguousStorageIfAvailable(_:)`, it returns `nil` instead of calling `body` when there's no handle to lend, so `body` never has to unwrap one. It never throws on its own, so it passes `body`'s error type through as `E`. Both sentinels, `INVALID_HANDLE_VALUE` and `_NO_CONSOLE_FILENO`, return `nil`. An overlapped handle also returns `nil` because the synchronous I/O in [SYS-0014](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0014-win32-file-io.md) isn't memory-safe on one. (Note a descriptor can wrap an overlapped handle, e.g. Winsock sockets are overlapped by default.) Detecting an overlapped handle requires an `NtQueryInformationFile` call for `FileModeInformation`. The implementation brackets the call to `_get_osfhandle` with a no-op `_set_thread_local_invalid_parameter_handler`, since `_get_osfhandle` on an invalid descriptor otherwise invokes the C runtime's invalid parameter handler, which terminates the process by default.
 
-`FileDescriptor.init(adopting:)` consumes its handle and does not return ownership on failure. It throws `Errno` because it lives on `FileDescriptor`. The `translation` and `append` parameters cover every `_open_osfhandle` flag except the implicit `_O_RDONLY`, which is `0x0000` on Windows, and `_O_WTEXT`. Despite its documentation, `_open_osfhandle` ignores `_O_WTEXT` and produces a binary descriptor, and in Unicode mode an odd-length read or write terminates the process by default, so `FileDescriptor.TranslationMode` omits it. `_open_osfhandle` also rejects a handle whose `GetFileType` is `FILE_TYPE_UNKNOWN`, so the initializer throws `Errno.invalidArgument` if so. The C runtime's `_read` and `_write` call `ReadFile` and `WriteFile` with a null `lpOverlapped`, so an overlapped handle would carry the same hazard as **Synchronous handles only** in [SYS-0011](0011-win32-filehandle.md) describes.
+`FileDescriptor.init(adopting:)` consumes its handle and does not return ownership on failure. It throws `Errno` because it lives on `FileDescriptor`. The `translation` and `append` parameters cover every `_open_osfhandle` flag except the implicit `_O_RDONLY`, which is `0x0000` on Windows, and `_O_WTEXT`. Despite its documentation, `_open_osfhandle` ignores `_O_WTEXT` and produces a binary descriptor, and in Unicode mode an odd-length read or write terminates the process by default, so `FileDescriptor.TranslationMode` omits it. `_open_osfhandle` also rejects a handle whose `GetFileType` is `FILE_TYPE_UNKNOWN`, so the initializer throws `Errno.invalidArgument` if so. The C runtime's `_read` and `_write` call `ReadFile` and `WriteFile` with a null `lpOverlapped`, so an overlapped handle would carry the same hazard as **Synchronous handles only** in [SYS-0011](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0011-win32-filehandle.md) describes.
 
-`Win32.DirectoryHandle` ([SYS-0012](0012-win32-opening-handles.md)) has no bridge: `_open_osfhandle` on a directory handle produces a descriptor that can't be read or written.
+`Win32.DirectoryHandle` ([SYS-0012](https://github.com/jrflat/swift-system/blob/win32-file-api-proposal-series/Proposals/0012-win32-opening-handles.md)) has no bridge: `_open_osfhandle` on a directory handle produces a descriptor that can't be read or written.
 
 ## Source compatibility
 
