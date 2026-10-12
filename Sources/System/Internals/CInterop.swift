@@ -14,6 +14,11 @@ import CSystem
 import ucrt
 #elseif canImport(Glibc)
 import CSystem
+#if os(Linux)
+// SwiftGlibc doesn't export `struct statfs`, so re-export it for clients who
+// need to use the fields of a `CInterop.StatFS`.
+@_exported import CSystemStatFS
+#endif
 import Glibc
 #elseif canImport(Musl)
 import CSystem
@@ -116,4 +121,22 @@ extension CInterop {
   public typealias FileFlags = UInt32
   #endif
 }
+
+#if !os(WASI)
+@available(System 199, *)
+extension CInterop {
+  /// The C `statfs` struct.
+  public typealias StatFS = statfs
+
+  #if SYSTEM_PACKAGE_DARWIN || os(OpenBSD)
+  public typealias MountFlags = UInt32
+  #elseif os(FreeBSD)
+  public typealias MountFlags = UInt64
+  #else
+  public typealias MountFlags = CUnsignedLong
+  #endif
+
+  public typealias FileSystemID = fsid_t
+}
+#endif
 #endif

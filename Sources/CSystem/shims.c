@@ -20,6 +20,26 @@
 
 #ifdef __linux__
 #define _GNU_SOURCE
+#include <sys/statvfs.h>
+#include <stdint.h>
+
+uint64_t _system_get_ST_RDONLY(void) { return ST_RDONLY; }
+uint64_t _system_get_ST_NOSUID(void) { return ST_NOSUID; }
+uint64_t _system_get_ST_NODEV(void) { return ST_NODEV; }
+uint64_t _system_get_ST_NOEXEC(void) { return ST_NOEXEC; }
+uint64_t _system_get_ST_SYNCHRONOUS(void) { return ST_SYNCHRONOUS; }
+uint64_t _system_get_ST_MANDLOCK(void) { return ST_MANDLOCK; }
+uint64_t _system_get_ST_NOATIME(void) { return ST_NOATIME; }
+uint64_t _system_get_ST_NODIRATIME(void) { return ST_NODIRATIME; }
+uint64_t _system_get_ST_RELATIME(void) { return ST_RELATIME; }
+
+// ST_NOSYMFOLLOW wasn't defined until glibc 2.34. 0x2000 is the bit the
+// kernel's internal <linux/statfs.h> and newer glibc both use.
+#ifndef ST_NOSYMFOLLOW
+#define ST_NOSYMFOLLOW 0x2000
+#endif
+uint64_t _system_get_ST_NOSYMFOLLOW(void) { return ST_NOSYMFOLLOW; }
+
 #include <CSystemLinux.h>
 #endif
 

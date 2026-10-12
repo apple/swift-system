@@ -8,4 +8,7 @@ See https://swift.org/LICENSE.txt for license information
 #]]
 
 add_subdirectory(CSystem)
+if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+  add_subdirectory(CSystemStatFS)
+endif()
 add_subdirectory(System)
