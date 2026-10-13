@@ -28,9 +28,8 @@ import Android
 #error("Unsupported Platform")
 #endif
 
-// Some WASI and FreeBSD constants come from CSystem and are inlined into
-// clients.
-#if os(WASI) || os(FreeBSD)
+// Some WASI constants come from CSystem and are inlined into clients.
+#if os(WASI)
 public import CSystem
 #endif
 
@@ -634,10 +633,8 @@ internal var _O_CLOEXEC: CInt {
 #if !os(Windows)
 @_alwaysEmitIntoClient
 internal var _O_CLOFORK: CInt {
-  #if SYSTEM_PACKAGE_DARWIN
-  0x0800_0000 // O_CLOFORK, which SDKs before macOS 27 lack
-  #elseif os(FreeBSD)
-  COMPATIBILITY_O_CLOFORK
+  #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
+  0x0800_0000 // O_CLOFORK, which SDKs before macOS 27 and older FreeBSD lack
   #elseif !os(WASI) && !os(Linux) && !os(Android)
   O_CLOFORK
   #else

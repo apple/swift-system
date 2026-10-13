@@ -16,7 +16,6 @@ install(FILES
   include/CSystemLinux.h
   include/CSystemShared.h
   include/CSystemWASI.h
-  include/CSystemFreeBSD.h
   include/io_uring.h
   include/module.modulemap
   DESTINATION include/CSystem)
