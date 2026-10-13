@@ -328,6 +328,58 @@ final class FileOperationsTestWindows: XCTestCase {
       }
     }
   }
+
+  /// Regression test for 64-bit file offsets on Windows.
+  ///
+  /// C `off_t` is 32-bit on Windows, so before the offset type was widened,
+  /// seeking or performing positioned I/O at or beyond 2 GiB trapped at
+  /// runtime, and the `OVERLAPPED` high dword was always zero so offsets past
+  /// 4 GiB were unreachable.
+  func testLargeFileOffsets() throws {
+    try withTemporaryFilePath(basename: "testLargeFileOffsets") { path in
+      let fd = try FileDescriptor.open(
+        path.appending("large.bin"), .readWrite,
+        options: [.create, .truncate],
+        permissions: .ownerReadWrite
+      )
+      defer { try? fd.close() }
+
+      // 2 GiB is > Int32.max; 5 GiB is > UInt32.max. Both trapped before the fix.
+      let twoGiB: Int64 = 1 << 31
+      let fiveGiB: Int64 = 5 << 30
+
+      // Seeking allocates no storage; it exercises `_lseeki64` and must
+      // round-trip the full 64-bit position rather than trapping or truncating.
+      XCTAssertEqual(try fd.seek(offset: twoGiB, from: .start), twoGiB)
+      XCTAssertEqual(try fd.seek(offset: fiveGiB, from: .start), fiveGiB)
+
+      // Positioned read/write beyond 4 GiB exercises both dwords of the
+      // `OVERLAPPED` offset. Mark the file sparse first so the test does not
+      // allocate several gigabytes of real storage.
+      let handle = try XCTUnwrap(HANDLE(bitPattern: _get_osfhandle(fd.rawValue)))
+      var bytesReturned: DWORD = 0
+      let FSCTL_SET_SPARSE: DWORD = 0x000900C4
+      try XCTSkipUnless(
+        DeviceIoControl(handle, FSCTL_SET_SPARSE, nil, 0, nil, 0,
+                        &bytesReturned, nil),
+        "filesystem does not support sparse files"
+      )
+
+      let marker = Array("swift-system".utf8)
+      let offset = fiveGiB + 123
+      let written = try marker.withUnsafeBytes {
+        try fd.write(toAbsoluteOffset: offset, $0)
+      }
+      XCTAssertEqual(written, marker.count)
+
+      var readBack = [UInt8](repeating: 0, count: marker.count)
+      let read = try readBack.withUnsafeMutableBytes {
+        try fd.read(fromAbsoluteOffset: offset, into: $0)
+      }
+      XCTAssertEqual(read, marker.count)
+      XCTAssertEqual(readBack, marker)
+    }
+  }
 }
 
 #endif // os(Windows)
