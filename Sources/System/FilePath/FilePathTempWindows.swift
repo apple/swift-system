@@ -35,7 +35,7 @@ internal func _getTemporaryDirectory() throws -> FilePath {
 fileprivate func forEachFile(
   at path: FilePath,
   _ body: (WIN32_FIND_DATAW) throws -> ()
-) rethrows {
+) throws {
   let searchPath = path.appending("\\*")
 
   try searchPath.withPlatformString { szPath in
@@ -59,6 +59,15 @@ fileprivate func forEachFile(
 
       try body(findData)
     } while FindNextFileW(hFind, &findData)
+
+    // FindNextFileW returns false both at the end of the enumeration and on
+    // error; only ERROR_NO_MORE_FILES is the normal terminator. Treating a
+    // transient error as end-of-directory would silently skip the remaining
+    // entries and leave the tree partially deleted.
+    let error = GetLastError()
+    if error != ERROR_NO_MORE_FILES {
+      throw Errno(windowsError: error)
+    }
   }
 }
 
@@ -73,14 +82,28 @@ internal func _recursiveRemove(
 ) throws {
   // First, deal with subdirectories
   try forEachFile(at: path) { findData in
-    if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 {
-      let name = withUnsafeBytes(of: findData.cFileName) {
-        return SystemString(platformString: $0.assumingMemoryBound(
-                              to: CInterop.PlatformChar.self).baseAddress!)
-      }
-      let component = FilePath.Component(name)!
-      let subpath = path.appending(component)
+    guard (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0 else {
+      return
+    }
 
+    let name = withUnsafeBytes(of: findData.cFileName) {
+      return SystemString(platformString: $0.assumingMemoryBound(
+                            to: CInterop.PlatformChar.self).baseAddress!)
+    }
+    let component = FilePath.Component(name)!
+    let subpath = path.appending(component)
+
+    // A directory that is also a reparse point (a junction or directory
+    // symlink) must not be recursed into: enumerating it would traverse into
+    // the *target* and delete its contents. Remove the link itself instead;
+    // RemoveDirectoryW deletes the reparse point without touching the target.
+    if (findData.dwFileAttributes & DWORD(FILE_ATTRIBUTE_REPARSE_POINT)) != 0 {
+      try subpath.withPlatformString { subpath in
+        if try !subpath.withCanonicalPathRepresentation({ RemoveDirectoryW($0) }) {
+          throw Errno(windowsError: GetLastError())
+        }
+      }
+    } else {
       try _recursiveRemove(at: subpath)
     }
   }
