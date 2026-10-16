@@ -1,7 +1,7 @@
 #if compiler(>=6.2) && $Lifetimes
 #if os(Linux)
 
-import CSystem
+public import CSystemIOUring
 
 public extension IORing {
     struct Completion: ~Copyable {

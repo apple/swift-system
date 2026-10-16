@@ -15,6 +15,7 @@
 import Darwin
 #elseif os(Windows)
 import ucrt
+import WinSDK
 #elseif canImport(Glibc)
 import Glibc
 #elseif canImport(Musl)
@@ -27,7 +28,10 @@ import Android
 #error("Unsupported Platform")
 #endif
 
-import CSystem
+// Some WASI constants come from CSystem and are inlined into clients.
+#if os(WASI)
+public import CSystem
+#endif
 
 // MARK: errno
 #if SYSTEM_PACKAGE_DARWIN
@@ -630,7 +634,7 @@ internal var _O_CLOEXEC: CInt {
 @_alwaysEmitIntoClient
 internal var _O_CLOFORK: CInt {
   #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD)
-  COMPATIBILITY_O_CLOFORK
+  0x0800_0000 // O_CLOFORK, which SDKs before macOS 27 and older FreeBSD lack
   #elseif !os(WASI) && !os(Linux) && !os(Android)
   O_CLOFORK
   #else
