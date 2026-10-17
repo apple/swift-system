@@ -56,7 +56,7 @@ final class IORequestTests: XCTestCase {
     }
 
     func testInferredRebasedWriteBuffer() {
-        var bytes: [UInt8] = [1, 2, 3];
+        var bytes: [UInt8] = [1, 2, 3]
         bytes.withUnsafeMutableBytes { buffer in
             let written = 1
             let file = FileDescriptor(rawValue: 7)

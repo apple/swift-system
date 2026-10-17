@@ -368,6 +368,8 @@ extension IORing.Request {
         .init(core: .write(file: file, buffer: buffer, offset: offset, context: context))
     }
 
+    @available(*, deprecated, message: "Use the overload accepting UnsafeRawBufferPointer instead.")
+    @_disfavoredOverload
     @inlinable public static func write(
         _ buffer: UnsafeMutableRawBufferPointer,
         into file: IORing.RegisteredFile,
@@ -378,6 +380,8 @@ extension IORing.Request {
                 file: file, buffer: buffer, offset: offset, context: context))
     }
 
+    @available(*, deprecated, message: "Use the overload accepting UnsafeRawBufferPointer instead.")
+    @_disfavoredOverload
     @inlinable public static func write(
         _ buffer: UnsafeMutableRawBufferPointer,
         into file: FileDescriptor,
@@ -411,7 +415,9 @@ extension IORing.Request {
         context: UInt64 = 0
     ) -> IORing.Request {
         // The shared request encoder uses a mutable pointer, but writes only read the buffer.
-        write(UnsafeMutableRawBufferPointer(mutating: buffer), into: file, at: offset, context: context)
+        .init(core: .writeUnregisteredSlot(
+            file: file, buffer: UnsafeMutableRawBufferPointer(mutating: buffer), offset: offset, context: context
+        ))
     }
 
     /// Creates a request to write an unregistered buffer to a file descriptor.
@@ -436,7 +442,9 @@ extension IORing.Request {
         context: UInt64 = 0
     ) -> IORing.Request {
         // The shared request encoder uses a mutable pointer, but writes only read the buffer.
-        write(UnsafeMutableRawBufferPointer(mutating: buffer), into: file, at: offset, context: context)
+        .init(core: .writeUnregistered(
+            file: file, buffer: UnsafeMutableRawBufferPointer(mutating: buffer), offset: offset, context: context
+        ))
     }
 
     @inlinable public static func close(
