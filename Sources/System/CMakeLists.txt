@@ -68,6 +68,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     IORing/IORequest.swift
     IORing/IORing.swift
     IORing/IORing+Util.swift
+    IORing/PollEvents.swift
     IORing/RawIORequest.swift)
 endif()
 target_sources(SystemPackage PRIVATE

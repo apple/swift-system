@@ -81,6 +81,7 @@ let swiftSettings = swiftSettingsAvailability + swiftSettingsCI + [
   .define("SYSTEM_PACKAGE"),
   .define("ENABLE_MOCKING", .when(configuration: .debug)),
   .enableExperimentalFeature("Lifetimes"),
+  .enableUpcomingFeature("MemberImportVisibility"),
 ]
 
 let cSettings: [CSetting] = [

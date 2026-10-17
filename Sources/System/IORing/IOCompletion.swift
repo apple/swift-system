@@ -1,3 +1,12 @@
+/*
+ This source file is part of the Swift System open source project
+
+ Copyright (c) 2023 - 2025 Apple Inc. and the Swift System project authors
+ Licensed under Apache License v2.0 with Runtime Library Exception
+
+ See https://swift.org/LICENSE.txt for license information
+*/
+
 #if compiler(>=6.2) && $Lifetimes
 #if os(Linux)
 
@@ -45,9 +54,24 @@ public extension IORing.Completion {
         }
     }
 
+    /// The result of the completed operation.
+    ///
+    /// A non-negative value is the operation's success result: a byte count
+    /// for a read or a write, an event mask for a poll, and so on.
+    ///
+    /// A negative value is an `errno` code multiplied by -1. Recover the error
+    /// by negating it again: `Errno(rawValue: -completion.result)`, or use
+    /// ``error``.
     @inlinable var result: Int32 {
         get {
             rawValue.res
+        }
+    }
+
+    /// The error of the completed operation, or `nil` if the operation succeeded.
+    @inlinable var error: Errno? {
+        get {
+            rawValue.res < 0 ? Errno(rawValue: -rawValue.res) : nil
         }
     }
 
