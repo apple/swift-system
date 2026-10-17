@@ -120,7 +120,7 @@ Changes must land on the branch corresponding to the earliest release that they 
 
 `release/1.7.0` → `release/1.8.x` → `main`
 
-For example, anything landing on `release/1.6.0` will eventually appear on `release/1.7.0`, then `release/1.8.x` and finally `main` as well. There is no need to file standalone PRs for each release line. (Change propagation currently requires manual work -- it is performed by project maintainers.)
+For example, anything landing on `release/1.7.0` will eventually appear on `release/1.8.x` and finally `main` as well. There is no need to file standalone PRs for each release line. (Merges into `main` are performed by the [automerger](.github/workflows/automerge_to_main.yml); propagation between release branches is performed by project maintainers.)
 
 ### Code of Conduct
 

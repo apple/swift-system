@@ -1,0 +1,20 @@
+name: Create PR to merge release branch into the main branch
+# Changes should land on the earliest release branch they will need to ship on and then be automatically forwarded to main
+permissions:
+  contents: read
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+jobs:
+  create_merge_pr:
+    name: Create PR to merge release branch into main branch
+    uses: swiftlang/github-workflows/.github/workflows/create_automerge_pr.yml@0.0.15
+    with:
+      base_branch: main
+      head_branch: release/1.8.x
+      pr_message: This PR was automatically opened by a GitHub action. Review the changes included in this PR and determine if they should be included on main. If yes, merge the PR. Otherwise revert changes that should not be included on this branch.
+    permissions:
+      contents: write
+      pull-requests: write
+    if: (github.event_name == 'schedule' && github.repository == 'apple/swift-system') || (github.event_name != 'schedule')  # Ensure that we don't run this on a schedule in a fork

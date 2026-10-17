@@ -55,6 +55,25 @@ final class IORequestTests: XCTestCase {
         }
     }
 
+    func testInferredRebasedWriteBuffer() {
+        var bytes: [UInt8] = [1, 2, 3];
+        bytes.withUnsafeMutableBytes { buffer in
+            let written = 1
+            let file = FileDescriptor(rawValue: 7)
+            let request = IORing.Request.write(
+                .init(rebasing: buffer[written...]), into: file, at: UInt64(written)
+            ).makeRawRequest(pathBuffers: PendingPathBuffers(reservedCapacity: 0))
+            let registered = IORing.Request.write(
+                .init(rebasing: buffer[written...]),
+                into: IORing.RegisteredFile(resource: 7, index: 3), at: UInt64(written)
+            ).makeRawRequest(pathBuffers: PendingPathBuffers(reservedCapacity: 0))
+            XCTAssertEqual(request.rawValue.len, 2)
+            XCTAssertEqual(request.rawValue.off, 1)
+            XCTAssertEqual(registered.rawValue.len, 2)
+            XCTAssertEqual(registered.rawValue.off, 1)
+        }
+    }
+
     func testMutableWriteFunctionReferences() {
         let write: (UnsafeMutableRawBufferPointer, FileDescriptor, UInt64, UInt64) -> IORing.Request =
             IORing.Request.write
