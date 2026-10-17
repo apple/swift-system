@@ -22,4 +22,8 @@ install(FILES
   include/io_uring.h
   include/module.modulemap
   DESTINATION include/CSystem)
+install(FILES
+  include/liburing/io_uring.h
+  include/liburing/LICENSE.txt
+  DESTINATION include/CSystem/liburing)
 set_property(GLOBAL APPEND PROPERTY SWIFT_SYSTEM_EXPORTS CSystem)

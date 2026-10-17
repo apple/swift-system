@@ -60,7 +60,7 @@ func isUringEnabled() throws -> Bool {
     //   - ENOSYS  -> syscall doesn't exist (Linux < 5.1) -> disabled.
     //   - EPERM or EACCES -> treat as disabled
     //   - propagate any other error.
-    var params = io_uring_params()
+    var params = swift_io_uring_params()
     let raw = io_uring_setup(1, &params)
     if raw < 0 {
         let err = Errno(rawValue: errno)

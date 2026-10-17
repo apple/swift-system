@@ -86,6 +86,9 @@ jobs:
       - name: Install Dependencies
         shell: bash
         run: apt update && apt install -y cmake ninja-build jq
+      - name: Check io_uring Header Compatibility
+        shell: bash
+        run: bash Tests/CSystemTests/test-io-uring-header.sh
       - name: Configure Project
         shell: bash
         run: |
