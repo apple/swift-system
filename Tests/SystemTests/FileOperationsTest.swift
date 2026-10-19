@@ -201,6 +201,22 @@ final class FileOperationsTest: XCTestCase {
       }
     }
   }
+
+  #if canImport(Darwin, _version: 428) // The macOS 27 SDK defines O_CLOFORK.
+  func testAdHocPipeCloseOnFork() throws {
+    guard #available(macOS 27.0, iOS 27.0, watchOS 27.0, tvOS 27.0, visionOS 27.0, *) else {
+      throw XCTSkip("pipe2 and PipeOptions require anyAppleOS 27 or newer")
+    }
+    // System spells O_CLOFORK as a literal on Darwin.
+    XCTAssertEqual(FileDescriptor.PipeOptions.closeOnFork.rawValue, O_CLOFORK)
+    let pipe = try FileDescriptor.pipe(options: .closeOnFork)
+    try pipe.readEnd.closeAfter {
+      try pipe.writeEnd.closeAfter {
+        XCTAssertEqual(fcntl(pipe.readEnd.rawValue, F_GETFD) & FD_CLOFORK, FD_CLOFORK)
+      }
+    }
+  }
+  #endif
 #endif // !os(WASI)
 
 #if !os(Windows)
