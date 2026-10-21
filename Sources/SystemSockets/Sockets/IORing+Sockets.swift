@@ -271,6 +271,74 @@ extension IORing.Request {
     )
   }
 
+  /// Sends a message on a socket, optionally to a specific address.
+  ///
+  /// On success, the completion's ``IORing/Completion/result`` is the number
+  /// of bytes sent. This is how an unconnected datagram socket sends to a
+  /// peer, by setting the name of `message` to the peer's address.
+  ///
+  /// - Important: The kernel reads `message` and everything that it points to,
+  ///   such as the address and the buffers, until the request completes, so
+  ///   they have to stay valid until the completion has been consumed.
+  ///
+  /// The corresponding C function is `sendmsg`, and the operation is
+  /// `IORING_OP_SENDMSG`.
+  ///
+  /// - Parameters:
+  ///   - message: The message to send.
+  ///   - socket: The socket to send on.
+  ///   - flags: Flags for sending.
+  ///   - context: A value passed through to the completion.
+  /// - Returns: A request that sends the message.
+  public static func sendMessage(
+    _ message: UnsafePointer<CInterop.MsgHdr>,
+    to socket: SocketDescriptor,
+    flags: SocketDescriptor.MessageFlags = .none,
+    context: UInt64 = 0
+  ) -> IORing.Request {
+    ._sendMessage(
+      message,
+      to: FileDescriptor(rawValue: socket.rawValue),
+      flags: flags.rawValue,
+      context: context
+    )
+  }
+
+  /// Receives a message from a socket, including the address of its sender.
+  ///
+  /// On success, the completion's ``IORing/Completion/result`` is the number
+  /// of bytes received, and the kernel updates `message` with the length of
+  /// the sender's address and with the flags of the message, such as
+  /// truncation. This is how an unconnected datagram socket learns which peer
+  /// sent a datagram.
+  ///
+  /// - Important: The kernel writes into `message` and everything that it
+  ///   points to until the request completes, so they have to stay valid until
+  ///   the completion has been consumed.
+  ///
+  /// The corresponding C function is `recvmsg`, and the operation is
+  /// `IORING_OP_RECVMSG`.
+  ///
+  /// - Parameters:
+  ///   - socket: The socket to receive from.
+  ///   - message: The message to receive into.
+  ///   - flags: Flags for receiving.
+  ///   - context: A value passed through to the completion.
+  /// - Returns: A request that receives a message.
+  public static func receiveMessage(
+    _ socket: SocketDescriptor,
+    into message: UnsafeMutablePointer<CInterop.MsgHdr>,
+    flags: SocketDescriptor.MessageFlags = .none,
+    context: UInt64 = 0
+  ) -> IORing.Request {
+    ._receiveMessage(
+      FileDescriptor(rawValue: socket.rawValue),
+      into: message,
+      flags: flags.rawValue,
+      context: context
+    )
+  }
+
   /// Shuts down one or both directions of a socket.
   ///
   /// The corresponding C function is `shutdown`, and the operation is

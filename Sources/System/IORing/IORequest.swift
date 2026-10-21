@@ -154,6 +154,18 @@ internal enum IORequestCore {
         flags: CInt,
         context: UInt64 = 0
     )
+    case sendMessage(
+        socket: FileDescriptor,
+        message: UnsafePointer<msghdr>,
+        flags: CInt,
+        context: UInt64 = 0
+    )
+    case receiveMessage(
+        socket: FileDescriptor,
+        message: UnsafeMutablePointer<msghdr>,
+        flags: CInt,
+        context: UInt64 = 0
+    )
     case shutdown(
         socket: FileDescriptor,
         how: CInt,
@@ -723,6 +735,20 @@ extension IORing.Request {
             request.rawValue.len = UInt32(exactly: buffer.count)!
             request.rawValue.msg_flags = UInt32(bitPattern: flags)
             request.rawValue.user_data = context
+        case .sendMessage(let socket, let message, let flags, let context):
+            request.operation = .sendMessage
+            request.fileDescriptor = socket
+            request.rawValue.addr = UInt64(UInt(bitPattern: message))
+            request.rawValue.len = 1
+            request.rawValue.msg_flags = UInt32(bitPattern: flags)
+            request.rawValue.user_data = context
+        case .receiveMessage(let socket, let message, let flags, let context):
+            request.operation = .receiveMessage
+            request.fileDescriptor = socket
+            request.rawValue.addr = UInt64(UInt(bitPattern: message))
+            request.rawValue.len = 1
+            request.rawValue.msg_flags = UInt32(bitPattern: flags)
+            request.rawValue.user_data = context
         case .shutdown(let socket, let how, let context):
             request.operation = .shutdown
             request.fileDescriptor = socket
@@ -816,6 +842,24 @@ extension IORing.Request {
         context: UInt64
     ) -> IORing.Request {
         .init(core: .receive(socket: socket, buffer: buffer, flags: flags, context: context))
+    }
+
+    package static func _sendMessage(
+        _ message: UnsafePointer<msghdr>,
+        to socket: FileDescriptor,
+        flags: CInt,
+        context: UInt64
+    ) -> IORing.Request {
+        .init(core: .sendMessage(socket: socket, message: message, flags: flags, context: context))
+    }
+
+    package static func _receiveMessage(
+        _ socket: FileDescriptor,
+        into message: UnsafeMutablePointer<msghdr>,
+        flags: CInt,
+        context: UInt64
+    ) -> IORing.Request {
+        .init(core: .receiveMessage(socket: socket, message: message, flags: flags, context: context))
     }
 
     package static func _shutdown(

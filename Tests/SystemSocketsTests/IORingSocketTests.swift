@@ -63,6 +63,11 @@ private let socketSupported = kernelSupports(
 private let shutdownSupported = kernelSupports(.shutdown(invalidSocket, .write))
 
 @available(System 199, *)
+private let sendMessageSupported: Bool = {
+  var header = msghdr()
+  return kernelSupports(.sendMessage(&header, to: invalidSocket))
+}()
+@available(System 199, *)
 private let bindAndListenSupported = kernelSupports(.listen(invalidSocket, backlog: 1))
 
 /// Whether the environment has an IPv6 loopback interface.
@@ -161,6 +166,68 @@ private struct IORingSocketTests {
     let client = try SocketDescriptor.open(.ipv4, .stream, protocol: .tcp)
     defer { try? client.close() }
     try client.connect(to: address)
+  }
+
+  @available(System 199, *)
+  @Test(.enabled(if: sendMessageSupported))
+  func sendAndReceiveMessageWithPeerAddress() throws {
+    let receiver = try SocketDescriptor.open(.ipv4, .datagram, protocol: .udp)
+    defer { try? receiver.close() }
+    try receiver.bind(to: SocketAddress(ipv4: .loopback(port: 0)))
+    let sender = try SocketDescriptor.open(.ipv4, .datagram, protocol: .udp)
+    defer { try? sender.close() }
+    try sender.bind(to: SocketAddress(ipv4: .loopback(port: 0)))
+
+    var receiverAddress = sockaddr_storage()
+    var receiverAddressLength = socklen_t(MemoryLayout<sockaddr_storage>.size)
+    try withUnsafeMutablePointer(to: &receiverAddress) {
+      try $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+        guard getsockname(receiver.rawValue, $0, &receiverAddressLength) == 0 else {
+          throw Errno.current
+        }
+      }
+    }
+
+    var ring = try IORing(queueDepth: 4)
+    let message: [UInt8] = Array("Hello, UDP!".utf8)
+    var received = [UInt8](repeating: 0, count: 64)
+    var peerAddress = sockaddr_storage()
+
+    let results = try message.withUnsafeBytes { sendBytes in
+      try received.withUnsafeMutableBytes { receiveBytes in
+        try withUnsafeMutablePointer(to: &receiverAddress) { receiverAddressPointer in
+          try withUnsafeMutablePointer(to: &peerAddress) { peerAddressPointer in
+            var sendVector = iovec(iov_base: UnsafeMutableRawPointer(mutating: sendBytes.baseAddress), iov_len: sendBytes.count)
+            var receiveVector = iovec(iov_base: receiveBytes.baseAddress, iov_len: receiveBytes.count)
+            var sendHeader = msghdr()
+            sendHeader.msg_name = UnsafeMutableRawPointer(receiverAddressPointer)
+            sendHeader.msg_namelen = receiverAddressLength
+            var receiveHeader = msghdr()
+            receiveHeader.msg_name = UnsafeMutableRawPointer(peerAddressPointer)
+            receiveHeader.msg_namelen = socklen_t(MemoryLayout<sockaddr_storage>.size)
+            return try withUnsafeMutablePointer(to: &sendVector) { sendVectorPointer in
+              try withUnsafeMutablePointer(to: &receiveVector) { receiveVectorPointer in
+                sendHeader.msg_iov = sendVectorPointer
+                sendHeader.msg_iovlen = 1
+                receiveHeader.msg_iov = receiveVectorPointer
+                receiveHeader.msg_iovlen = 1
+                let receivePrepared = ring.prepare(request: .receiveMessage(receiver, into: &receiveHeader, context: 1))
+                #expect(receivePrepared)
+                let sendPrepared = ring.prepare(request: .sendMessage(&sendHeader, to: sender, context: 2))
+                #expect(sendPrepared)
+                try ring.submitPreparedRequests()
+                return try consumeResults(2, from: ring)
+              }
+            }
+          }
+        }
+      }
+    }
+    #expect(results[2] == Int32(message.count))
+    #expect(results[1] == Int32(message.count))
+    #expect(Array(received.prefix(message.count)) == message)
+    // The kernel reports who sent the datagram.
+    #expect(peerAddress.ss_family == sa_family_t(AF_INET))
   }
 
   @available(System 199, *)
