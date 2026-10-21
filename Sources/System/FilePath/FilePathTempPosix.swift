@@ -9,7 +9,6 @@
 
 #if !os(Windows)
 
-import CSystem
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif canImport(Glibc)
@@ -17,6 +16,7 @@ import Glibc
 #elseif canImport(Musl)
 import Musl
 #elseif canImport(WASILibc)
+internal import CSystem // For the members of system_dirent
 import WASILibc
 #elseif canImport(Android)
 import Android
