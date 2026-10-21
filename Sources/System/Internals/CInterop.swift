@@ -10,10 +10,8 @@
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif os(Windows)
-import CSystem
 import ucrt
 #elseif canImport(Glibc)
-import CSystem
 #if os(Linux)
 // SwiftGlibc doesn't export `struct statfs`, so re-export it for clients who
 // need to use the fields of a `CInterop.StatFS`.
@@ -21,13 +19,11 @@ import CSystem
 #endif
 import Glibc
 #elseif canImport(Musl)
-import CSystem
 import Musl
 #elseif canImport(WASILibc)
 import WASILibc
-#elseif canImport(Bionic)
-import CSystem
-import Bionic
+#elseif canImport(Android)
+import Android
 #else
 #error("Unsupported Platform")
 #endif

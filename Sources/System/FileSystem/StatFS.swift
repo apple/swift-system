@@ -79,16 +79,13 @@ public struct StatFS {
 #if SYSTEM_PACKAGE_DARWIN
 import Darwin
 #elseif canImport(Glibc)
-import CSystem
 #if os(Linux)
 import CSystemStatFS
 #endif
 import Glibc
 #elseif canImport(Musl)
-import CSystem
 import Musl
 #elseif canImport(Android)
-import CSystem
 import Android
 #else
 #error("Unsupported Platform")

@@ -2,7 +2,8 @@
 #if os(Linux)
 
 import XCTest
-import CSystem //for eventfd
+import CSystem // for eventfd and csystem_io_uring_setup
+import CSystemIOUring
 #if canImport(Glibc)
 import Glibc // for errno
 #elseif canImport(Musl)
@@ -30,7 +31,7 @@ let failureMessage = "Runtime environment does not support IORing."
 func isUringEnabled() throws -> Bool {
     // Even if the kernel supports io_uring, the SystemPackage build may have
     // been compiled against older kernel headers that lack features it needs
-    // (gated on IORING_TIMEOUT_BOOTTIME in CSystem); in that configuration
+    // (gated on IORING_TIMEOUT_BOOTTIME in io_uring.h); in that configuration
     // IORing.init throws ENOTSUP. Treat that as disabled so tests skip cleanly
     // instead of failing.
     do throws(Errno) {
@@ -61,7 +62,7 @@ func isUringEnabled() throws -> Bool {
     //   - EPERM or EACCES -> treat as disabled
     //   - propagate any other error.
     var params = io_uring_params()
-    let raw = io_uring_setup(1, &params)
+    let raw = csystem_io_uring_setup(1, &params)
     if raw < 0 {
         let err = Errno(rawValue: errno)
         switch err {
@@ -284,6 +285,81 @@ final class IORingTests: XCTestCase {
 
         XCTAssertEqual(thrown, .timeout)
         XCTAssertGreaterThanOrEqual(elapsed, .milliseconds(50))
+    }
+
+    func testBlockingConsumeCompletionsSendsDone() throws {
+        try XCTSkipIf(!uringEnabled, failureMessage)
+        var ring = try IORing(queueDepth: 4)
+        XCTAssertTrue(try ring.submit(linkedRequests: .nop()))
+        var dones: [Bool] = []
+        ring.blockingConsumeCompletions { (completion: consuming IORing.Completion?, error, done) in
+            dones.append(done)
+        }
+        XCTAssertEqual(dones, [false, true])
+    }
+
+    func testBlockingConsumeCompletionsKeepsContextOfFailedCompletion() throws {
+        try XCTSkipIf(!uringEnabled, failureMessage)
+        var ring = try IORing(queueDepth: 4)
+        XCTAssertTrue(try ring.submit(
+            linkedRequests: .close(FileDescriptor(rawValue: -1), context: 42)
+        ))
+
+        var received: [(context: UInt64?, error: Errno?, done: Bool)] = []
+        ring.blockingConsumeCompletions { (completion: consuming IORing.Completion?, error, done) in
+            received.append((completion?.context, error, done))
+        }
+
+        XCTAssertEqual(received.count, 2)
+        XCTAssertEqual(received.first?.context, 42)
+        XCTAssertEqual(received.first?.error, .badFileDescriptor)
+        XCTAssertEqual(received.first?.done, false)
+        XCTAssertEqual(received.last?.context, nil)
+        XCTAssertEqual(received.last?.error, nil)
+        XCTAssertEqual(received.last?.done, true)
+    }
+
+    func testBlockingConsumeCompletionReturnsFailedCompletion() throws {
+        try XCTSkipIf(!uringEnabled, failureMessage)
+        var ring = try IORing(queueDepth: 4)
+        XCTAssertTrue(try ring.submit(
+            linkedRequests: .close(FileDescriptor(rawValue: -1), context: 43)
+        ))
+
+        let completion = try ring.blockingConsumeCompletion()
+        XCTAssertEqual(completion.context, 43)
+        XCTAssertEqual(completion.error, .badFileDescriptor)
+        XCTAssertEqual(completion.result, -Errno.badFileDescriptor.rawValue)
+    }
+
+    func testSubmitAndConsumeCompletionsKeepsContextOfFailedCompletion() throws {
+        try XCTSkipIf(!uringEnabled, failureMessage)
+        var ring = try IORing(queueDepth: 4)
+        XCTAssertTrue(ring.prepare(request: .close(FileDescriptor(rawValue: -1), context: 44)))
+
+        var received: [(context: UInt64?, error: Errno?, done: Bool)] = []
+        ring.submitPreparedRequestsAndConsumeCompletions {
+            (completion: consuming IORing.Completion?, error, done) in
+            received.append((completion?.context, error, done))
+        }
+
+        XCTAssertEqual(received.count, 2)
+        XCTAssertEqual(received.first?.context, 44)
+        XCTAssertEqual(received.first?.error, .badFileDescriptor)
+        XCTAssertEqual(received.first?.done, false)
+        XCTAssertEqual(received.last?.context, nil)
+        XCTAssertEqual(received.last?.error, nil)
+        XCTAssertEqual(received.last?.done, true)
+    }
+
+    func testCompletionOfSuccessfulOperationHasNoError() throws {
+        try XCTSkipIf(!uringEnabled, failureMessage)
+        var ring = try IORing(queueDepth: 4)
+        XCTAssertTrue(try ring.submit(linkedRequests: .nop()))
+
+        let completion = try ring.blockingConsumeCompletion()
+        XCTAssertEqual(completion.result, 0)
+        XCTAssertNil(completion.error)
     }
 
     func testRegisterEventFDTwiceThrows() throws {

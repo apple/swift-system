@@ -9,30 +9,37 @@
 
 #ifdef __linux__
 
-#include <sys/epoll.h>
+// Glibc doesn't export eventfd, which the tests use.
 #include <sys/eventfd.h>
-#include <sys/socket.h>
-#include <sys/sysinfo.h>
-#include <sys/timerfd.h>
-#include <sys/types.h>
-#include <errno.h>
-#include <pthread.h>
-#include <sched.h>
-#include <unistd.h>
-#include "io_uring.h"
 
 // Test-only: libc's `ST_*` values, which glibc gates on _GNU_SOURCE. Defining
 // that here would clash with SwiftGlibc, so shims.c defines it instead.
-#include <stdint.h>
-uint64_t _system_get_ST_RDONLY(void);
-uint64_t _system_get_ST_NOSUID(void);
-uint64_t _system_get_ST_NODEV(void);
-uint64_t _system_get_ST_NOEXEC(void);
-uint64_t _system_get_ST_SYNCHRONOUS(void);
-uint64_t _system_get_ST_MANDLOCK(void);
-uint64_t _system_get_ST_NOATIME(void);
-uint64_t _system_get_ST_NODIRATIME(void);
-uint64_t _system_get_ST_RELATIME(void);
-uint64_t _system_get_ST_NOSYMFOLLOW(void);
-#endif
+unsigned long long _system_get_ST_RDONLY(void);
+unsigned long long _system_get_ST_NOSUID(void);
+unsigned long long _system_get_ST_NODEV(void);
+unsigned long long _system_get_ST_NOEXEC(void);
+unsigned long long _system_get_ST_SYNCHRONOUS(void);
+unsigned long long _system_get_ST_MANDLOCK(void);
+unsigned long long _system_get_ST_NOATIME(void);
+unsigned long long _system_get_ST_NODIRATIME(void);
+unsigned long long _system_get_ST_RELATIME(void);
+unsigned long long _system_get_ST_NOSYMFOLLOW(void);
 
+#if !defined(__ANDROID__)
+#include <stddef.h>
+#include "io_uring.h"
+
+// Defined in shims.c, which can include the libc headers they need.
+extern int csystem_io_uring_setup(unsigned int entries,
+                                  struct io_uring_params *p);
+extern int csystem_io_uring_enter(int fd, unsigned int to_submit,
+                                  unsigned int min_complete,
+                                  unsigned int flags, void *sig);
+extern int csystem_io_uring_enter2(int fd, unsigned int to_submit,
+                                   unsigned int min_complete,
+                                   unsigned int flags, void *args, size_t sz);
+extern int csystem_io_uring_register(int fd, unsigned int opcode, void *arg,
+                                     unsigned int nr_args);
+#endif // !defined(__ANDROID__)
+
+#endif // __linux__

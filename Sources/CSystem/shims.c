@@ -14,37 +14,30 @@
 #include <unistd.h>
 #endif
 
-#if defined(__FreeBSD__)
-#include <CSystemFreeBSD.h>
-#endif
-
 #ifdef __linux__
 #define _GNU_SOURCE
+#include <signal.h>
 #include <sys/statvfs.h>
-#include <stdint.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+#include <CSystemLinux.h>
 
-uint64_t _system_get_ST_RDONLY(void) { return ST_RDONLY; }
-uint64_t _system_get_ST_NOSUID(void) { return ST_NOSUID; }
-uint64_t _system_get_ST_NODEV(void) { return ST_NODEV; }
-uint64_t _system_get_ST_NOEXEC(void) { return ST_NOEXEC; }
-uint64_t _system_get_ST_SYNCHRONOUS(void) { return ST_SYNCHRONOUS; }
-uint64_t _system_get_ST_MANDLOCK(void) { return ST_MANDLOCK; }
-uint64_t _system_get_ST_NOATIME(void) { return ST_NOATIME; }
-uint64_t _system_get_ST_NODIRATIME(void) { return ST_NODIRATIME; }
-uint64_t _system_get_ST_RELATIME(void) { return ST_RELATIME; }
+unsigned long long _system_get_ST_RDONLY(void) { return ST_RDONLY; }
+unsigned long long _system_get_ST_NOSUID(void) { return ST_NOSUID; }
+unsigned long long _system_get_ST_NODEV(void) { return ST_NODEV; }
+unsigned long long _system_get_ST_NOEXEC(void) { return ST_NOEXEC; }
+unsigned long long _system_get_ST_SYNCHRONOUS(void) { return ST_SYNCHRONOUS; }
+unsigned long long _system_get_ST_MANDLOCK(void) { return ST_MANDLOCK; }
+unsigned long long _system_get_ST_NOATIME(void) { return ST_NOATIME; }
+unsigned long long _system_get_ST_NODIRATIME(void) { return ST_NODIRATIME; }
+unsigned long long _system_get_ST_RELATIME(void) { return ST_RELATIME; }
 
 // ST_NOSYMFOLLOW wasn't defined until glibc 2.34. 0x2000 is the bit the
 // kernel's internal <linux/statfs.h> and newer glibc both use.
 #ifndef ST_NOSYMFOLLOW
 #define ST_NOSYMFOLLOW 0x2000
 #endif
-uint64_t _system_get_ST_NOSYMFOLLOW(void) { return ST_NOSYMFOLLOW; }
-
-#include <CSystemLinux.h>
-#endif
-
-#if defined(_WIN32)
-#include <CSystemWindows.h>
+unsigned long long _system_get_ST_NOSYMFOLLOW(void) { return ST_NOSYMFOLLOW; }
 #endif
 
 #include <errno.h>
@@ -90,3 +83,39 @@ extern int csystem_posix_dup3(int fildes, int fildes2, int flag) {
   return -1;
   #endif
 }
+
+#if defined(__linux__) && !defined(__ANDROID__)
+# ifndef __NR_io_uring_setup
+#  define __NR_io_uring_setup		425
+# endif
+# ifndef __NR_io_uring_enter
+#  define __NR_io_uring_enter		426
+# endif
+# ifndef __NR_io_uring_register
+#  define __NR_io_uring_register	427
+# endif
+
+extern int csystem_io_uring_setup(unsigned int entries,
+                                  struct io_uring_params *p) {
+  return syscall(__NR_io_uring_setup, entries, p);
+}
+
+extern int csystem_io_uring_enter2(int fd, unsigned int to_submit,
+                                   unsigned int min_complete,
+                                   unsigned int flags, void *args, size_t sz) {
+  return syscall(__NR_io_uring_enter, fd, to_submit, min_complete, flags,
+                 args, sz);
+}
+
+extern int csystem_io_uring_enter(int fd, unsigned int to_submit,
+                                  unsigned int min_complete,
+                                  unsigned int flags, void *sig) {
+  return csystem_io_uring_enter2(fd, to_submit, min_complete, flags, sig,
+                                 _NSIG / 8);
+}
+
+extern int csystem_io_uring_register(int fd, unsigned int opcode, void *arg,
+                                     unsigned int nr_args) {
+  return syscall(__NR_io_uring_register, fd, opcode, arg, nr_args);
+}
+#endif // defined(__linux__) && !defined(__ANDROID__)
