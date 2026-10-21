@@ -809,9 +809,9 @@ internal var _SF_SNAPSHOT: UInt32 { UInt32(bitPattern: SF_SNAPSHOT) }
 
 // MARK: ST_* bits on Linux and Android
 
-// Literal bits to keep `@_alwaysEmitIntoClient` semantics. Calling CSystem's
-// `_system_get_ST_*` getters would put a CSystem symbol in every client, block
-// constant folding, and fail to compile under an `internal import CSystem`.
+// Literal bits to keep our `@_alwaysEmitIntoClient` semantics. Calling
+// CSystem's `_system_get_ST_*` getters would put a CSystem symbol in every
+// client, block constant folding, and require a public `import CSystem`.
 // `StatFSTests.mountFlagBitsMatchLibc` checks the literals against libc.
 #if os(Linux) || os(Android)
 @available(System 199, *)

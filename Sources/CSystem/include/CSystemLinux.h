@@ -12,8 +12,7 @@
 // Glibc doesn't export eventfd, which the tests use.
 #include <sys/eventfd.h>
 
-// Test-only: libc's `ST_*` values, which glibc gates on _GNU_SOURCE. Defining
-// that here would clash with SwiftGlibc, so shims.c defines it instead.
+// Test-only getters for constants that require _GNU_SOURCE.
 unsigned long long _system_get_ST_RDONLY(void);
 unsigned long long _system_get_ST_NOSUID(void);
 unsigned long long _system_get_ST_NODEV(void);
