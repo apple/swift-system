@@ -437,6 +437,13 @@ final class FilePathSyntaxTest: XCTestCase {
       ),
 
       .unix(
+        "foo/../../../bar",
+        dirname: "foo/../../..", basename: "bar",
+        components: ["foo", "..", "..", "..", "bar"],
+        lexicallyNormalized: "../../bar"
+      ),
+
+      .unix(
         "a/.././.././../b",
         dirname: "a/.././.././..", basename: "b",
         components: ["a", "..", ".", "..", ".", "..", "b"],
