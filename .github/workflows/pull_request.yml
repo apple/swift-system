@@ -10,53 +10,31 @@ on:
 jobs:
   tests:
     name: Test
-    uses: swiftlang/github-workflows/.github/workflows/swift_package_test.yml@0.0.15
+    uses: swiftlang/github-workflows/.github/workflows/swift_package_test.yml@0.0.17
     with:
       swift_flags: "-Xbuild-tools-swiftc -DSYSTEM_CI"
-      enable_linux_checks: true
       linux_os_versions: '["noble", "jammy", "focal"]'
       linux_exclude_swift_versions: |
         [
-          {"swift_version": "5.9"},
-          {"swift_version": "5.10"},
-          {"swift_version": "6.0"},
-          {"os_version": "focal", "swift_version": "nightly-6.2"},
           {"os_version": "focal", "swift_version": "6.2"},
-          {"os_version": "focal", "swift_version": "nightly-6.3"},
           {"os_version": "focal", "swift_version": "6.3"},
+          {"os_version": "focal", "swift_version": "6.4"},
           {"os_version": "focal", "swift_version": "nightly-6.4.x"},
-          {"os_version": "focal", "swift_version": "6.4.x"},
           {"os_version": "focal", "swift_version": "nightly-main"},
         ]
       enable_macos_checks: true
-      macos_exclude_xcode_versions: '[]'
-      enable_windows_checks: true
-      windows_exclude_swift_versions: |
-        [
-          {"swift_version": "5.9"},
-          {"swift_version": "5.10"},
-          {"swift_version": "6.0"},
-        ]
       enable_linux_static_sdk_build: true
       linux_static_sdk_exclude_swift_versions: |
         [
-          {"os_version": "focal", "swift_version": "nightly-6.2"},
-          {"os_version": "focal", "swift_version": "6.2"},
-          {"os_version": "focal", "swift_version": "nightly-6.3"},
-          {"os_version": "focal", "swift_version": "6.3"},
           {"os_version": "focal", "swift_version": "nightly-6.4.x"},
-          {"os_version": "focal", "swift_version": "6.4.x"},
+          {"os_version": "focal", "swift_version": "6.4"},
           {"os_version": "focal", "swift_version": "nightly-main"},
         ]
       enable_wasm_sdk_build: true
       wasm_exclude_swift_versions: |
         [
-          {"os_version": "focal", "swift_version": "nightly-6.2"},
-          {"os_version": "focal", "swift_version": "6.2"},
-          {"os_version": "focal", "swift_version": "nightly-6.3"},
-          {"os_version": "focal", "swift_version": "6.3"},
           {"os_version": "focal", "swift_version": "nightly-6.4.x"},
-          {"os_version": "focal", "swift_version": "6.4.x"},
+          {"os_version": "focal", "swift_version": "6.4"},
           {"os_version": "focal", "swift_version": "nightly-main"},
         ]
       enable_android_sdk_build: true
@@ -65,14 +43,13 @@ jobs:
 
   build-abi-stable:
     name: Build ABI Stable
-    uses: swiftlang/github-workflows/.github/workflows/swift_package_test.yml@0.0.15
+    uses: swiftlang/github-workflows/.github/workflows/swift_package_test.yml@0.0.17
     with:
       enable_linux_checks: false
       enable_macos_checks: true
       enable_windows_checks: false
       # Only build
       macos_build_command: "xcrun swift build --build-tests"
-      macos_exclude_xcode_versions: '[]'
       # Enable availability to match ABI stable verion of system.
       swift_flags: "-Xbuild-tools-swiftc -DSYSTEM_CI -Xbuild-tools-swiftc -DSYSTEM_ABI_STABLE"
 
@@ -112,7 +89,7 @@ jobs:
 
   soundness:
     name: Soundness
-    uses: swiftlang/github-workflows/.github/workflows/soundness.yml@0.0.15
+    uses: swiftlang/github-workflows/.github/workflows/soundness.yml@0.0.17
     with:
       license_header_check_project_name: "Swift.org"
       # https://github.com/apple/swift-system/issues/224
