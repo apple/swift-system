@@ -134,7 +134,7 @@ struct TestPathComponents: TestCase {
 
 @available(System 0.0.2, *)
 final class FilePathComponentsTest: XCTestCase {
-  func testAdHocRRC() {
+  func testAdHocRRC() throws {
     var path: FilePath = "/usr/local/bin"
 
     func expect(
@@ -150,26 +150,26 @@ final class FilePathComponentsTest: XCTestCase {
 
     // Run `body`, restoring `path` afterwards
     func restoreAfter(
-      body: () -> ()
-    ) {
+      body: () throws -> ()
+    ) rethrows {
       let copy = path
       defer { path = copy }
-      body()
+      try body()
     }
 
     // Interior removal keeps path prefix intact, if there is one
-    restoreAfter {
+    try restoreAfter {
       path = "prefix//middle1/middle2////suffix"
-      let suffix = path.components.indices.last!
+      let suffix = try XCTUnwrap(path.components.indices.last)
       path.components.removeSubrange(..<suffix)
       expect("suffix")
     }
 
-    restoreAfter {
+    try restoreAfter {
       path = "prefix//middle1/middle2////suffix"
       let firstMiddle = path.components.index(
         path.components.startIndex, offsetBy: 1)
-      let suffix = path.components.indices.last!
+      let suffix = try XCTUnwrap(path.components.indices.last)
       path.components.removeSubrange(firstMiddle ..< suffix)
       expect("prefix/suffix")
     }
@@ -225,14 +225,16 @@ final class FilePathComponentsTest: XCTestCase {
     }
 
     // Insertion into the middle adds trailing separator
-    restoreAfter {
+    try restoreAfter {
       path.components.remove(
         at: path.components.index(after: path.components.startIndex))
       expect("/usr/bin")
-      path.components.insert("middle", at: path.components.indices.last!)
+      path.components.insert(
+        "middle", at: try XCTUnwrap(path.components.indices.last))
       expect("/usr/middle/bin")
       path.components.insert(
-        contentsOf: ["middle2", "middle3"], at: path.components.indices.last!)
+        contentsOf: ["middle2", "middle3"],
+        at: try XCTUnwrap(path.components.indices.last))
       expect("/usr/middle/middle2/middle3/bin")
 
       let slice = path.components.dropFirst().dropLast()
@@ -242,17 +244,13 @@ final class FilePathComponentsTest: XCTestCase {
       expect("/usr/newMiddle/newMiddle2/newMiddle3/newMiddle4/bin")
     }
 
-    // Replacing a suffix with non-empty elements must not leave a trailing
-    // separator
-    restoreAfter {
-      let last = path.components.indices.last!
+    // Replacing components at the end of a path must not append a separator.
+    try restoreAfter {
+      let last = try XCTUnwrap(path.components.indices.last)
       path.components.replaceSubrange(last..., with: ["sbin"])
       expect("/usr/local/sbin")
       XCTAssertEqual(path.lastComponent, "sbin")
       XCTAssertEqual(path.components.last, "sbin")
-
-      let c = path.components
-      XCTAssertNotEqual(c.index(before: c.endIndex), c.endIndex)
 
       path.components.replaceSubrange(
         path.components.index(after: path.components.startIndex)...,
@@ -267,10 +265,10 @@ final class FilePathComponentsTest: XCTestCase {
         path.components.startIndex..., with: ["x", "y"])
       expect("/x/y")
     }
-    restoreAfter {
+    try restoreAfter {
       path = "a/b"
       path.components.replaceSubrange(
-        path.components.indices.last!..., with: ["x"])
+        try XCTUnwrap(path.components.indices.last)..., with: ["x"])
       expect("a/x")
       XCTAssertEqual(path.lastComponent, "x")
     }
@@ -283,14 +281,15 @@ final class FilePathComponentsTest: XCTestCase {
     }
 
     // Empty insertions / removals
-    restoreAfter {
+    try restoreAfter {
       path.components.replaceSubrange(..<path.components.startIndex, with: [])
       expect("/usr/local/bin")
       path.components.replaceSubrange(path.components.endIndex..., with: [])
       expect("/usr/local/bin")
       path.components.insert(contentsOf: [], at: path.components.startIndex)
       expect("/usr/local/bin")
-      path.components.insert(contentsOf: [], at: path.components.indices.last!)
+      path.components.insert(
+        contentsOf: [], at: try XCTUnwrap(path.components.indices.last))
       expect("/usr/local/bin")
     }
   }
