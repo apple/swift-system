@@ -16,6 +16,7 @@ jobs:
       linux_os_versions: '["noble", "jammy", "focal"]'
       linux_exclude_swift_versions: |
         [
+          {"swift_version": "6.1"},
           {"os_version": "focal", "swift_version": "6.2"},
           {"os_version": "focal", "swift_version": "6.3"},
           {"os_version": "focal", "swift_version": "6.4"},
@@ -23,6 +24,14 @@ jobs:
           {"os_version": "focal", "swift_version": "nightly-main"},
         ]
       enable_macos_checks: true
+      macos_exclude_xcode_versions: |
+        [
+          {"xcode_version": "swift_6.1"},
+        ]
+      windows_exclude_swift_versions: |
+        [
+          {"swift_version": "6.1"},
+        ]
       enable_linux_static_sdk_build: true
       linux_static_sdk_exclude_swift_versions: |
         [
@@ -47,6 +56,10 @@ jobs:
     with:
       enable_linux_checks: false
       enable_macos_checks: true
+      macos_exclude_xcode_versions: |
+        [
+          {"xcode_version": "swift_6.1"},
+        ]
       enable_windows_checks: false
       # Only build
       macos_build_command: "xcrun swift build --build-tests"
