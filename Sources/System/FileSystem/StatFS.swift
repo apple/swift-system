@@ -98,7 +98,7 @@ import Android
 ///
 /// - Note: Not available on Windows or WASI.
 @frozen
-@available(System 199, *)
+@available(System 1.9.0, *)
 public struct FileSystemID: RawRepresentable, Sendable {
 
   /// The raw C file system ID.
@@ -116,7 +116,7 @@ public struct FileSystemID: RawRepresentable, Sendable {
 
 // `CInterop.FileSystemID` is the C `fsid_t` struct (a fixed two-element
 // `int32_t` array), which provides no synthesized conformances.
-@available(System 199, *)
+@available(System 1.9.0, *)
 extension FileSystemID {
   @_alwaysEmitIntoClient
   internal var _words: (Int32, Int32) {
@@ -137,7 +137,7 @@ extension FileSystemID {
   }
 }
 
-@available(System 199, *)
+@available(System 1.9.0, *)
 extension FileSystemID: Equatable {
   @_alwaysEmitIntoClient
   public static func == (lhs: Self, rhs: Self) -> Bool {
@@ -145,7 +145,7 @@ extension FileSystemID: Equatable {
   }
 }
 
-@available(System 199, *)
+@available(System 1.9.0, *)
 extension FileSystemID: Hashable {
   @_alwaysEmitIntoClient
   public func hash(into hasher: inout Hasher) {
@@ -154,7 +154,7 @@ extension FileSystemID: Hashable {
   }
 }
 
-@available(System 199, *)
+@available(System 1.9.0, *)
 extension FileSystemID: Codable {
   @_alwaysEmitIntoClient
   public func encode(to encoder: any Encoder) throws {
@@ -172,7 +172,7 @@ extension FileSystemID: Codable {
   }
 }
 
-@available(System 199, *)
+@available(System 1.9.0, *)
 extension FileSystemID: CustomStringConvertible, CustomDebugStringConvertible {
   /// A textual representation of the file system ID.
   @inline(never)
@@ -192,7 +192,7 @@ extension FileSystemID: CustomStringConvertible, CustomDebugStringConvertible {
 ///
 /// - Note: Only available on Linux and Android.
 @frozen
-@available(System 199, *)
+@available(System 1.9.0, *)
 public struct FileSystemType: RawRepresentable, Sendable, Hashable, Codable {
 
   /// The raw C file system type.
@@ -217,7 +217,7 @@ public struct FileSystemType: RawRepresentable, Sendable, Hashable, Codable {
 ///
 /// - Note: Only available on Darwin.
 @frozen
-@available(System 199, *)
+@available(System 1.9.0, *)
 public struct FileSystemSubtype: RawRepresentable, Sendable, Hashable, Codable {
 
   /// The raw C file system subtype.
@@ -242,7 +242,7 @@ public struct FileSystemSubtype: RawRepresentable, Sendable, Hashable, Codable {
 ///
 /// - Note: Only available on Darwin and BSD.
 @frozen
-@available(System 199, *)
+@available(System 1.9.0, *)
 public struct FileSystemTypeName
   : RawRepresentable, Sendable, Hashable, Codable, ExpressibleByStringLiteral
 {
@@ -284,7 +284,7 @@ public struct FileSystemTypeName
   #endif
 }
 
-@available(System 199, *)
+@available(System 1.9.0, *)
 extension FileSystemTypeName: CustomStringConvertible, CustomDebugStringConvertible {
   /// The file system type name, such as `apfs`.
   @inline(never)
@@ -301,7 +301,7 @@ extension FileSystemTypeName: CustomStringConvertible, CustomDebugStringConverti
 // Helpers for reading the fixed-size, NUL-terminated C character buffers
 // (`f_fstypename`, `f_mntonname`, `f_mntfromname`) in Darwin/BSD `statfs`.
 // If the buffer has no NUL (malformed), the entire buffer is used.
-@available(System 199, *)
+@available(System 1.9.0, *)
 extension String {
   @usableFromInline
   internal init(_nullTerminatedBytes buffer: UnsafeRawBufferPointer) {
@@ -310,7 +310,7 @@ extension String {
   }
 }
 
-@available(System 199, *)
+@available(System 1.9.0, *)
 extension FilePath {
   @usableFromInline
   internal init(_nullTerminatedBytes buffer: UnsafeRawBufferPointer) {
@@ -341,7 +341,7 @@ extension FilePath {
 /// - Note: The numeric properties clamp when converting to or from the
 ///   underlying C field. Use `rawValue` for exact, unclamped access.
 @frozen
-@available(System 199, *)
+@available(System 1.9.0, *)
 public struct StatFS: RawRepresentable, Sendable, Hashable {
 
   /// The raw C `statfs` struct.
@@ -716,7 +716,7 @@ public struct StatFS: RawRepresentable, Sendable, Hashable {
 
 // MARK: - StatFS Equatable & Hashable
 
-@available(System 199, *)
+@available(System 1.9.0, *)
 extension StatFS {
   /// Compares the file system metadata fields of two `StatFS` values,
   /// including fields not exposed as properties, such as `f_flags_ext` on

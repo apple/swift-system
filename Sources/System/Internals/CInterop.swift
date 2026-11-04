@@ -119,7 +119,7 @@ extension CInterop {
 }
 
 #if !os(WASI)
-@available(System 199, *)
+@available(System 1.9.0, *)
 extension CInterop {
   /// The C `statfs` struct.
   public typealias StatFS = statfs

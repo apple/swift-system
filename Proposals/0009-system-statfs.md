@@ -3,7 +3,7 @@
 * Proposal: [SYS-0009](0009-system-statfs.md)
 * Authors: [Jonathan Flat](https://github.com/jrflat)
 * Review Manager: TBD
-* Status: **Awaiting review**
+* Status: **Implemented**
 * Implementation: [apple/swift-system#361](https://github.com/apple/swift-system/pull/361)
 * Review: ([pitch](https://forums.swift.org/t/pitch-statfs-and-supporting-types/88151))
 

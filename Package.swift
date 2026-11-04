@@ -61,6 +61,8 @@ let availability: [Available] = [
 
   Available("1.7.0", "macOS 27.0, iOS 27.0, watchOS 27.0, tvOS 27.0, visionOS 27.0"),
 
+  Available("1.9.0", "macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, visionOS 9999"),
+
   Available("199", "macOS 9999, iOS 9999, watchOS 9999, tvOS 9999, visionOS 9999"),
 ]
 

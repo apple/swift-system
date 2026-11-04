@@ -73,7 +73,7 @@
 /// | `noPermissionChecks`             | N/A                    | N/A               | `MNT_NOPERM`      | N/A              | N/A              |
 /// | `writeExecuteAllowed`            | N/A                    | N/A               | `MNT_WXALLOWED`   | N/A              | N/A              |
 @frozen
-@available(System 199, *)
+@available(System 1.9.0, *)
 public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
 
   /// The raw C flags.
@@ -532,7 +532,7 @@ public struct MountFlags: OptionSet, Sendable, Hashable, Codable {
   #endif
 }
 
-@available(System 199, *)
+@available(System 1.9.0, *)
 extension MountFlags
   : CustomStringConvertible, CustomDebugStringConvertible
 {
