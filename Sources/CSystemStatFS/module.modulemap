@@ -1,0 +1,4 @@
+module CSystemStatFS [system] {
+  header "CSystemStatFS.h"
+  export *
+}

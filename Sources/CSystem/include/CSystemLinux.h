@@ -12,6 +12,18 @@
 // Glibc doesn't export eventfd, which the tests use.
 #include <sys/eventfd.h>
 
+// Test-only getters for constants that require _GNU_SOURCE.
+unsigned long long _system_get_ST_RDONLY(void);
+unsigned long long _system_get_ST_NOSUID(void);
+unsigned long long _system_get_ST_NODEV(void);
+unsigned long long _system_get_ST_NOEXEC(void);
+unsigned long long _system_get_ST_SYNCHRONOUS(void);
+unsigned long long _system_get_ST_MANDLOCK(void);
+unsigned long long _system_get_ST_NOATIME(void);
+unsigned long long _system_get_ST_NODIRATIME(void);
+unsigned long long _system_get_ST_RELATIME(void);
+unsigned long long _system_get_ST_NOSYMFOLLOW(void);
+
 #if !defined(__ANDROID__)
 #include <stddef.h>
 #include "io_uring.h"

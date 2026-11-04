@@ -47,4 +47,26 @@ func _mivProbe(_ s: CInterop.Stat) {
   _ = s.st_atim.tv_sec
   _ = s.st_atim.tv_nsec
 }
+
+// These are the Linux and Android field names. FreeBSD's libc module is also
+// named Glibc, but its `statfs` and `fsid_t` use the BSD names.
+#if os(Linux) || os(Android)
+func _mivProbe(_ s: CInterop.StatFS) {
+  _ = s.f_type
+  _ = s.f_bsize
+  _ = s.f_blocks
+  _ = s.f_bfree
+  _ = s.f_bavail
+  _ = s.f_files
+  _ = s.f_ffree
+  _ = s.f_fsid
+  _ = s.f_namelen
+  _ = s.f_frsize
+  _ = s.f_flags
+}
+
+func _mivProbe(_ id: CInterop.FileSystemID) {
+  _ = id.__val
+}
+#endif
 #endif
