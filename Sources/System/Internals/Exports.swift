@@ -108,11 +108,11 @@ internal func system_fstatat(_ fd: CInt, _ p: UnsafePointer<CChar>, _ s: inout C
 }
 
 #if !os(WASI)
-@available(System 199, *)
+@available(System 1.9.0, *)
 internal func system_statfs(_ p: UnsafePointer<CChar>, _ s: inout CInterop.StatFS) -> Int32 {
   statfs(p, &s)
 }
-@available(System 199, *)
+@available(System 1.9.0, *)
 internal func system_fstatfs(_ fd: CInt, _ s: inout CInterop.StatFS) -> Int32 {
   fstatfs(fd, &s)
 }
