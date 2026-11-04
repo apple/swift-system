@@ -210,6 +210,39 @@ final class FilePathComponentsTest: XCTestCase {
       expect("/usr/newMiddle/newMiddle2/newMiddle3/newMiddle4/bin")
     }
 
+    // Replacing a suffix with non-empty elements must not leave a trailing
+    // separator
+    restoreAfter {
+      let last = path.components.indices.last!
+      path.components.replaceSubrange(last..., with: ["sbin"])
+      expect("/usr/local/sbin")
+      XCTAssertEqual(path.lastComponent, "sbin")
+      XCTAssertEqual(path.components.last, "sbin")
+
+      let c = path.components
+      XCTAssertNotEqual(c.index(before: c.endIndex), c.endIndex)
+
+      path.components.replaceSubrange(
+        path.components.index(after: path.components.startIndex)...,
+        with: ["a", "b", "c"])
+      expect("/usr/a/b/c")
+
+      path.components.append("d")
+      expect("/usr/a/b/c/d")
+      XCTAssertEqual(path.components.count, 5)
+
+      path.components.replaceSubrange(
+        path.components.startIndex..., with: ["x", "y"])
+      expect("/x/y")
+    }
+    restoreAfter {
+      path = "a/b"
+      path.components.replaceSubrange(
+        path.components.indices.last!..., with: ["x"])
+      expect("a/x")
+      XCTAssertEqual(path.lastComponent, "x")
+    }
+
     restoreAfter {
       path.components.removeLast(3)
       expect("/")
