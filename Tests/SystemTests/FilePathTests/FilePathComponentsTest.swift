@@ -70,7 +70,39 @@ struct TestPathComponents: TestCase {
   }
 
   func testRRC() {
-    // TODO: programmatic tests showing parity with Array<Component>
+    // Show that FilePathComponents's replaceSubrange behaves like Array.
+    let pool: [FilePath.Component] = ["x", "..", ".", "longer-name"]
+    let replacements: [[FilePath.Component]] = [[]] + (1 ... 3).flatMap { len in
+      pool.indices.map { offset in
+        (0 ..< len).map { pool[(offset + $0) % pool.count] }
+      }
+    }
+
+    let count = expectedComponents.count
+    for lower in 0 ... count {
+      for upper in lower ... count {
+        for replacement in replacements {
+          var model = expectedComponents
+          model.replaceSubrange(lower ..< upper, with: replacement)
+
+          var p = path
+          let indices = Array(p.components.indices) + [p.components.endIndex]
+          p.components.replaceSubrange(
+            indices[lower] ..< indices[upper], with: replacement
+          )
+
+          let expected = FilePath(root: path.root, model)
+          let message = """
+            replaceSubrange(\(lower)..<\(upper), with: \(replacement)) \
+            returned \(p), expected \(expected)
+            """
+          expectEqual(expected, p, message + " [path]")
+          expectEqual(path.root, p.root, message + " [root]")
+          expectEqualSequence(model, p.components, message + " [components]")
+          expectEqual(model.last, p.lastComponent, message + " [lastComponent]")
+        }
+      }
+    }
   }
 
   func testModify() {
