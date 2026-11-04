@@ -12,7 +12,7 @@ jobs:
     uses: swiftlang/github-workflows/.github/workflows/create_automerge_pr.yml@0.0.15
     with:
       base_branch: main
-      head_branch: release/1.8.x
+      head_branch: release/1.9.x
       pr_message: This PR was automatically opened by a GitHub action. Review the changes included in this PR and determine if they should be included on main. If yes, merge the PR. Otherwise revert changes that should not be included on this branch.
     permissions:
       contents: write
