@@ -86,7 +86,7 @@ do {
 
 See the **Appendix** section at the end of this proposal for a table view of Swift API to C mappings.
 
-All APIs are marked `@_alwaysEmitIntoClient` for performance, except `StatFS`'s `==` and `hash(into:)`, and descriptions, which are ordinary `public` APIs.
+All APIs will be marked `@export(implementation)` for performance, except `StatFS`'s `==` and `hash(into:)`, and descriptions, which are ordinary `public` APIs. Until the package requires Swift 6.4, the implementation will use the equivalent `@_alwaysEmitIntoClient` instead.
 
 ### `MountFlags`
 
