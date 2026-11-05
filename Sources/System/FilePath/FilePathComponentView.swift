@@ -143,7 +143,9 @@ extension FilePath.ComponentView: RangeReplaceableCollection {
       str.append(platformSeparator)
     }
     str.appendComponents(components: newElements)
-    if !atEnd {
+    // If we're replacing through the end, we must not leave a trailing
+    // separator.
+    if subrange.upperBound != endIndex {
       str.append(platformSeparator)
     }
     _path._storage.replaceSubrange(range, with: str)

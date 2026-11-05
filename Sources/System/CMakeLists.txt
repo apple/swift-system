@@ -31,7 +31,7 @@ set_target_properties(SystemPackage PROPERTIES
 set(SWIFT_SYSTEM_AVAILABILITY_VERSIONS
   0.0.1 0.0.2 0.0.3
   1.1.0 1.1.1 1.2.0 1.2.1 1.3.0 1.3.1 1.3.2 1.4.0
-  1.7.0
+  1.7.0 1.9.0
   199)
 set(SWIFT_SYSTEM_SOURCE_AVAILABILITY
   "macOS 10.10, iOS 8.0, watchOS 2.0, tvOS 9.0, visionOS 1.0")

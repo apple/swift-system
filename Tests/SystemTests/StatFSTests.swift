@@ -41,7 +41,7 @@ import Android
 @Suite("StatFS")
 private struct StatFSTests {
 
-  @available(System 199, *)
+  @available(System 1.9.0, *)
   @Test func initializersAgree() async throws {
     try withTemporaryFilePath(basename: "StatFS_initializersAgree") { tempDir in
       let fromFilePath = try StatFS(tempDir)
@@ -60,7 +60,7 @@ private struct StatFSTests {
     }
   }
 
-  @available(System 199, *)
+  @available(System 1.9.0, *)
   @Test func spaceAndBlocks() async throws {
     try withTemporaryFilePath(basename: "StatFS_spaceAndBlocks") { tempDir in
       let statfs = try StatFS(tempDir)
@@ -72,7 +72,7 @@ private struct StatFSTests {
     }
   }
 
-  @available(System 199, *)
+  @available(System 1.9.0, *)
   @Test func readOnlyFlagReflectsWritableFileSystem() async throws {
     try withTemporaryFilePath(basename: "StatFS_readOnly") { tempDir in
       let statfs = try StatFS(tempDir)
@@ -81,7 +81,7 @@ private struct StatFSTests {
   }
 
   #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
-  @available(System 199, *)
+  @available(System 1.9.0, *)
   @Test func darwinAndBSDFields() async throws {
     try withTemporaryFilePath(basename: "StatFS_darwinBSD") { tempDir in
       let statfs = try StatFS(tempDir)
@@ -97,7 +97,7 @@ private struct StatFSTests {
   }
   #endif
 
-  @available(System 199, *)
+  @available(System 1.9.0, *)
   @Test func nonexistentPathThrows() async throws {
     #expect(throws: Errno.noSuchFileOrDirectory) {
       _ = try StatFS("/var/empty/definitely/does/not/exist")
@@ -107,7 +107,7 @@ private struct StatFSTests {
     }
   }
 
-  @available(System 199, *)
+  @available(System 1.9.0, *)
   @Test func badFileDescriptorThrows() async throws {
     let badFD = FileDescriptor(rawValue: -1)
     #expect(throws: Errno.badFileDescriptor) {
@@ -115,7 +115,7 @@ private struct StatFSTests {
     }
   }
 
-  @available(System 199, *)
+  @available(System 1.9.0, *)
   @Test func propertiesMatchRawFields() async throws {
     try withTemporaryFilePath(basename: "StatFS_diff") { tempDir in
       var raw = CInterop.StatFS()
@@ -163,7 +163,7 @@ private struct StatFSTests {
   }
 
   // Each setter writes its own field, and clamps instead of trapping.
-  @available(System 199, *)
+  @available(System 1.9.0, *)
   @Test func settersWriteRawFields() throws {
     var s = StatFS(rawValue: CInterop.StatFS())
     s.blockSize = 1
@@ -190,7 +190,7 @@ private struct StatFSTests {
     #expect(s.blockSize == Int(clamping: type(of: s.rawValue.f_bsize).max))
   }
 
-  @available(System 199, *)
+  @available(System 1.9.0, *)
   @Test func craftedStructComputesSpace() throws {
     var raw = CInterop.StatFS()
     // The block-count unit is f_bsize on Darwin/BSD, f_frsize elsewhere.
@@ -210,7 +210,7 @@ private struct StatFSTests {
     #expect(s.availableSpace == 100 * 512)
   }
 
-  @available(System 199, *)
+  @available(System 1.9.0, *)
   @Test func spaceSaturatesOnOverflow() throws {
     var raw = CInterop.StatFS()
     #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
@@ -229,7 +229,7 @@ private struct StatFSTests {
   }
 
   #if os(FreeBSD) || os(OpenBSD)
-  @available(System 199, *)
+  @available(System 1.9.0, *)
   @Test func negativeCountsClampToZero() throws {
     var raw = CInterop.StatFS()
     raw.f_bsize = 512
@@ -274,7 +274,7 @@ private struct StatFSTests {
     return String(decoding: result, as: UTF8.self)
   }
 
-  @available(System 199, *)
+  @available(System 1.9.0, *)
   @Test func mountFlagsMatchProcMounts() throws {
     let contents = try _readEntireFile("/proc/self/mounts")
 
@@ -319,7 +319,7 @@ private struct StatFSTests {
   #endif
 
   #if os(Linux) || os(Android)
-  @available(System 199, *)
+  @available(System 1.9.0, *)
   @Test func typeIsMagicNumber() throws {
     // PROC_SUPER_MAGIC from <linux/magic.h>.
     #expect(try StatFS("/proc").type == FileSystemType(0x9FA0))
@@ -333,7 +333,7 @@ private struct StatFSTests {
 
   // The kernel sets ST_VALID (0x20) in every `f_flags` to mark the field as
   // filled in, though Bionic's `statfs()` clears it.
-  @available(System 199, *)
+  @available(System 1.9.0, *)
   @Test func mountFlagsOmitValidBit() throws {
     var raw = CInterop.StatFS()
     raw.f_flags = 0x20 | 0x01 // ST_VALID | ST_RDONLY
@@ -352,7 +352,7 @@ private struct StatFSTests {
   #endif
 
   #if os(Linux) || os(Android)
-  @available(System 199, *)
+  @available(System 1.9.0, *)
   @Test func mountFlagBitsMatchLibc() throws {
     let expected: [(name: String, literal: CInterop.MountFlags, libc: UInt64)] = [
       ("ST_RDONLY", _ST_RDONLY_BIT, _system_get_ST_RDONLY()),
@@ -376,7 +376,7 @@ private struct StatFSTests {
   }
   #endif
 
-  @available(System 199, *)
+  @available(System 1.9.0, *)
   @Test func fileSystemIDConformances() throws {
     let id = FileSystemID(_words: (1, 2))
     #expect(id == FileSystemID(_words: (1, 2)))
@@ -392,7 +392,7 @@ private struct StatFSTests {
   }
 
   #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
-  @available(System 199, *)
+  @available(System 1.9.0, *)
   @Test func fileSystemTypeNameConformances() throws {
     let name: FileSystemTypeName = "apfs"
     #expect(name == FileSystemTypeName(rawValue: "apfs"))
@@ -411,7 +411,7 @@ private struct StatFSTests {
   #endif
 
   #if SYSTEM_PACKAGE_DARWIN
-  @available(System 199, *)
+  @available(System 1.9.0, *)
   @Test func fileSystemTypeNameConstants() throws {
     #expect(FileSystemTypeName.apfs.rawValue == "apfs")
     #expect(FileSystemTypeName.hfs.rawValue == "hfs")
@@ -420,7 +420,7 @@ private struct StatFSTests {
   }
   #endif
 
-  @available(System 199, *)
+  @available(System 1.9.0, *)
   @Test func descriptions() throws {
     #expect(MountFlags.readOnly.description == "[.readOnly]")
     let flags: MountFlags = [.readOnly, .noExecution]
@@ -433,7 +433,7 @@ private struct StatFSTests {
 
   #if SYSTEM_PACKAGE_DARWIN || os(FreeBSD) || os(OpenBSD)
   // A name buffer with no NUL terminator (malformed) is read in full.
-  @available(System 199, *)
+  @available(System 1.9.0, *)
   @Test func unterminatedNameBuffers() throws {
     var raw = CInterop.StatFS()
     withUnsafeMutableBytes(of: &raw.f_fstypename) { buffer in
@@ -451,7 +451,7 @@ private struct StatFSTests {
   }
   #endif
 
-  @available(System 199, *)
+  @available(System 1.9.0, *)
   @Test func equalityAndHashing() throws {
     try withTemporaryFilePath(basename: "StatFS_equality") { tempDir in
       let statfs = try StatFS(tempDir)
