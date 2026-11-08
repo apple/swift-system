@@ -1,0 +1,49 @@
+load("@rules_swift//swift:swift.bzl", "swift_library", "swift_test")
+
+config_setting(
+    name = "debug",
+    values = {"compilation_mode": "dbg"},
+)
+
+cc_library(
+    name = "CSystem",
+    hdrs = glob(["Sources/CSystem/include/*.h"]),
+    aspect_hints = ["@rules_swift//swift:auto_module"],
+    defines = select({
+        "@platforms//os:windows": ["_CRT_SECURE_NO_WARNINGS"],
+        "//conditions:default": [],
+    }),
+    linkstatic = True,
+    tags = ["swift_module=CSystem"],
+)
+
+DARWIN_DEFINES = ["SYSTEM_PACKAGE_DARWIN"]
+
+swift_library(
+    name = "SystemPackage",
+    srcs = glob(["Sources/System/**/*.swift"]),
+    defines = ["SYSTEM_PACKAGE"] +
+              select({
+                  "@platforms//os:macos": DARWIN_DEFINES,
+                  "@platforms//os:ios": DARWIN_DEFINES,
+                  "@platforms//os:tvos": DARWIN_DEFINES,
+                  "@platforms//os:watchos": DARWIN_DEFINES,
+                  "@platforms//os:visionos": DARWIN_DEFINES,
+                  "//conditions:default": [],
+              }) +
+              select({
+                  ":debug": ["ENABLE_MOCKING"],
+                  "//conditions:default": [],
+              }),
+    module_name = "SystemPackage",
+    visibility = ["//visibility:public"],
+    deps = [":CSystem"],
+)
+
+swift_test(
+    name = "SystemTests",
+    srcs = glob(["Tests/**/*.swift"]),
+    module_name = "Tests",
+    visibility = ["//visibility:public"],
+    deps = [":SystemPackage"],
+)
