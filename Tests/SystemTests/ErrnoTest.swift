@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 - 2025 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2026 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -17,6 +17,14 @@ import System
 
 #if os(Windows)
 import WinSDK
+#endif
+
+#if SYSTEM_PACKAGE && canImport(CSystem)
+import CSystem // for csystem_strerror_r
+#endif
+
+#if canImport(Dispatch)
+import Dispatch
 #endif
 
 @available(System 0.0.1, *)
@@ -235,5 +243,59 @@ final class ErrnoTest: XCTestCase {
 
   // TODO: `_code/_domain` for NSError bridging
 
-  // TODO: `description`
+  func testDescription() {
+    XCTAssertEqual(Errno.noSuchFileOrDirectory.description, "No such file or directory")
+    XCTAssertEqual(Errno.notPermitted.debugDescription, Errno.notPermitted.description)
+
+    // Unknown error numbers still get a message.
+    let unknown = Errno(rawValue: 98765).description
+    XCTAssertFalse(unknown.isEmpty)
+    #if !os(Windows) && !os(WASI)
+    // Windows' message is just "Unknown error", without the number.
+    XCTAssert(unknown.contains("98765"), unknown)
+    #endif
+  }
+
+  #if canImport(Dispatch)
+  func testDescriptionIsThreadSafe() {
+    // For unknown error numbers, strerror(3) may format the message into a
+    // buffer shared by all threads, so concurrent calls could see each
+    // other's messages.
+    let errnos = (0..<64).map { Errno(rawValue: 90000 + CInt($0)) }
+    let expected = errnos.map(\.description)
+    let iterations = 200
+    nonisolated(unsafe) let mismatches =
+      UnsafeMutableBufferPointer<Int>.allocate(capacity: errnos.count)
+    mismatches.initialize(repeating: 0)
+    defer { mismatches.deallocate() }
+
+    DispatchQueue.concurrentPerform(iterations: errnos.count) { index in
+      for _ in 0..<iterations where errnos[index].description != expected[index] {
+        mismatches[index] += 1
+      }
+    }
+    XCTAssertEqual(mismatches.reduce(0, +), 0)
+  }
+  #endif
+
+  #if SYSTEM_PACKAGE && canImport(CSystem)
+  func testStrerrorShim() {
+    var buffer = [CChar](repeating: 1, count: 256)
+    XCTAssertEqual(csystem_strerror_r(ENOENT, &buffer, buffer.count), 0)
+    XCTAssertEqual(String(cString: buffer), "No such file or directory")
+
+    // A buffer that is too small yields a truncated, NUL-terminated message.
+    var small = [CChar](repeating: 1, count: 4)
+    XCTAssertEqual(csystem_strerror_r(ENOENT, &small, small.count), ERANGE)
+    #if !os(Windows)
+    XCTAssertEqual(String(cString: small), "No ")
+    #endif
+    XCTAssertEqual(small[3], 0)
+
+    // A zero-length buffer is rejected without writing to it.
+    var empty = CChar(1)
+    XCTAssertEqual(csystem_strerror_r(ENOENT, &empty, 0), ERANGE)
+    XCTAssertEqual(empty, 1)
+  }
+  #endif
 }

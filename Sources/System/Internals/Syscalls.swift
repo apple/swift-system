@@ -27,6 +27,16 @@ import Android
 // Interacting with the mocking system, tracing, etc., is a potentially significant
 // amount of code size, so we hand outline that code for every syscall
 
+// strerror(3) isn't guaranteed to be thread-safe: for an unknown error number,
+// it may format the message into a buffer shared by all threads. This wrapper
+// uses a caller-provided buffer instead (strerror_r(3), or strerror_s on
+// Windows). It isn't a syscall, so it isn't mocked.
+internal func system_strerror_r(
+  _ errnum: CInt, _ buffer: UnsafeMutablePointer<CChar>, _ length: Int
+) -> CInt {
+  csystem_strerror_r(errnum, buffer, length)
+}
+
 // open
 internal func system_open(
   _ path: UnsafePointer<CInterop.PlatformChar>, _ oflag: Int32

@@ -1547,11 +1547,22 @@ extension Errno: CustomStringConvertible, CustomDebugStringConvertible {
   ///  A textual representation of the most recent error
   ///  returned by a system call.
   ///
-  /// The corresponding C function is `strerror(3)`.
+  /// The corresponding C function is `strerror(3)`. This property uses a
+  /// thread-safe variant of it, so it is safe to use from multiple threads.
   @inline(never)
   public var description: String {
-    guard let ptr = system_strerror(self.rawValue) else { return "unknown error" }
-    return String(cString: ptr)
+    // Error messages are short, so 256 bytes is plenty. If one is longer,
+    // csystem_strerror_r truncates it.
+    withUnsafeTemporaryAllocation(of: CChar.self, capacity: 256) { buffer in
+      let base = buffer.baseAddress!
+      base.initialize(to: 0)
+      // Even when strerror_r fails, e.g. with EINVAL for an unknown error
+      // number, most C libraries still write a message like
+      // "Unknown error 1234", so use whatever was written.
+      _ = system_strerror_r(self.rawValue, base, buffer.count)
+      guard base.pointee != 0 else { return "unknown error" }
+      return String(cString: base)
+    }
   }
 
   ///  A textual representation,
