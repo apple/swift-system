@@ -20,8 +20,9 @@ extern int csystem_posix_dup3(int fildes, int fildes2, int flag);
 // Writes the message for `errnum` into `buf`, which holds `buflen` bytes, and
 // always NUL-terminates it if `buflen` is not zero. Returns 0 on success, or an
 // error number (e.g. EINVAL for an unknown `errnum`, ERANGE if the message was
-// truncated). Even on failure, `buf` may contain a message such as
-// "Unknown error 1234".
+// truncated). A message that exactly fills the buffer is also reported as
+// ERANGE, because not every C library can tell that apart from truncation.
+// Even on failure, `buf` may contain a message such as "Unknown error 1234".
 //
 // This hides the differences between the XSI and GNU variants of strerror_r,
 // and uses strerror_s on Windows.

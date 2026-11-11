@@ -45,11 +45,7 @@ unsigned long long _system_get_ST_NOSYMFOLLOW(void) { return ST_NOSYMFOLLOW; }
 
 #include <CSystemShared.h>
 
-extern int csystem_strerror_r(int errnum, char *buf, size_t buflen) {
-  if (buf == NULL || buflen == 0) {
-    return ERANGE;
-  }
-  buf[0] = '\0';
+static int csystem_strerror_r_impl(int errnum, char *buf, size_t buflen) {
 #if defined(_WIN32)
   return strerror_s(buf, buflen, errnum);
 #elif defined(_GNU_SOURCE) && \
@@ -78,9 +74,24 @@ extern int csystem_strerror_r(int errnum, char *buf, size_t buflen) {
   if (result == -1) {
     result = errno;
   }
-  buf[buflen - 1] = '\0';
   return result;
 #endif
+}
+
+extern int csystem_strerror_r(int errnum, char *buf, size_t buflen) {
+  if (buf == NULL || buflen == 0) {
+    return ERANGE;
+  }
+  buf[0] = '\0';
+  int result = csystem_strerror_r_impl(errnum, buf, buflen);
+  buf[buflen - 1] = '\0';
+  // strerror_s on Windows and bionic's strerror_r silently truncate the
+  // message and return 0. Report a message that fills the whole buffer as
+  // ERANGE on every platform, since it may have been truncated.
+  if (result == 0 && strlen(buf) == buflen - 1) {
+    result = ERANGE;
+  }
+  return result;
 }
 
 #if !defined(_WIN32) && !defined(__wasi__) && !defined(__APPLE__)

@@ -282,13 +282,17 @@ final class ErrnoTest: XCTestCase {
   func testStrerrorShim() {
     var buffer = [CChar](repeating: 1, count: 256)
     XCTAssertEqual(csystem_strerror_r(ENOENT, &buffer, buffer.count), 0)
-    XCTAssertEqual(String(cString: buffer), "No such file or directory")
+    XCTAssertEqual(
+      buffer.withUnsafeBufferPointer { String(cString: $0.baseAddress!) },
+      "No such file or directory")
 
     // A buffer that is too small yields a truncated, NUL-terminated message.
     var small = [CChar](repeating: 1, count: 4)
     XCTAssertEqual(csystem_strerror_r(ENOENT, &small, small.count), ERANGE)
     #if !os(Windows)
-    XCTAssertEqual(String(cString: small), "No ")
+    XCTAssertEqual(
+      small.withUnsafeBufferPointer { String(cString: $0.baseAddress!) },
+      "No ")
     #endif
     XCTAssertEqual(small[3], 0)
 
