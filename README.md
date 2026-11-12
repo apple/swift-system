@@ -114,13 +114,13 @@ We maintain separate branches for each active minor version of the package:
 | swift-system 1.6.x | release/1.6.0 |
 | swift-system 1.7.x | release/1.7.0 |
 | swift-system 1.8.x | release/1.8.x |
-| swift-system 1.9.x (unreleased) |  |
+| swift-system 1.9.x (unreleased) | release/1.9.x |
 
 Changes must land on the branch corresponding to the earliest release that they will need to ship on. They are periodically propagated to subsequent branches, in the following direction:
 
-`release/1.7.0` → `release/1.8.x` → `main`
+`release/1.8.x` → `release/1.9.x` → `main`
 
-For example, anything landing on `release/1.7.0` will eventually appear on `release/1.8.x` and finally `main` as well. There is no need to file standalone PRs for each release line. (Merges into `main` are performed by the [automerger](.github/workflows/automerge_to_main.yml); propagation between release branches is performed by project maintainers.)
+For example, anything landing on `release/1.8.x` will eventually appear on `release/1.9.x` and finally `main` as well. There is no need to file standalone PRs for each release line. (Merges into `release/1.9.x` and `main` are performed by the [release](.github/workflows/automerge_to_release.yml) and [main](.github/workflows/automerge_to_main.yml) automergers; propagation from older release branches is performed by project maintainers.)
 
 ### Code of Conduct
 

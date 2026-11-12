@@ -41,6 +41,58 @@ unsigned long long _system_get_ST_NOSYMFOLLOW(void) { return ST_NOSYMFOLLOW; }
 #endif
 
 #include <errno.h>
+#include <string.h>
+
+#include <CSystemShared.h>
+
+static int csystem_strerror_r_impl(int errnum, char *buf, size_t buflen) {
+#if defined(_WIN32)
+  return strerror_s(buf, buflen, errnum);
+#elif defined(_GNU_SOURCE) && \
+    (defined(__GLIBC__) || (defined(__ANDROID__) && __ANDROID_API__ >= 23))
+  // With _GNU_SOURCE (defined above on Linux), glibc and bionic provide the
+  // GNU variant, which returns a pointer to the message. That pointer is
+  // either `buf` or an immutable static string, so copying from it is safe.
+  const char *message = strerror_r(errnum, buf, buflen);
+  if (message == NULL) {
+    return EINVAL;
+  }
+  if (message != buf) {
+    size_t length = strlen(message);
+    if (length >= buflen) {
+      memcpy(buf, message, buflen - 1);
+      buf[buflen - 1] = '\0';
+      return ERANGE;
+    }
+    memcpy(buf, message, length + 1);
+  }
+  return 0;
+#else
+  // XSI variant (Darwin, FreeBSD, OpenBSD, musl, WASI). Some implementations
+  // return -1 and set errno instead of returning the error number.
+  int result = strerror_r(errnum, buf, buflen);
+  if (result == -1) {
+    result = errno;
+  }
+  return result;
+#endif
+}
+
+extern int csystem_strerror_r(int errnum, char *buf, size_t buflen) {
+  if (buf == NULL || buflen == 0) {
+    return ERANGE;
+  }
+  buf[0] = '\0';
+  int result = csystem_strerror_r_impl(errnum, buf, buflen);
+  buf[buflen - 1] = '\0';
+  // strerror_s on Windows and bionic's strerror_r silently truncate the
+  // message and return 0. Report a message that fills the whole buffer as
+  // ERANGE on every platform, since it may have been truncated.
+  if (result == 0 && strlen(buf) == buflen - 1) {
+    result = ERANGE;
+  }
+  return result;
+}
 
 #if !defined(_WIN32) && !defined(__wasi__) && !defined(__APPLE__)
 #define HAVE_PIPE2_DUP3

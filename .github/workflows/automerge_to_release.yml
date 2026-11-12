@@ -1,0 +1,21 @@
+name: Create PR to merge the previous release branch into the current release branch
+# Changes should land on the earliest release branch they will need to ship on and then be automatically forwarded to later release branches and main
+permissions:
+  contents: read
+on:
+  schedule:
+    # An hour before automerge_to_main.yml. Runs at the same time would collide due to <HH-MM> branch naming.
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+jobs:
+  create_merge_pr:
+    name: Create PR to merge previous release branch into current release branch
+    uses: swiftlang/github-workflows/.github/workflows/create_automerge_pr.yml@0.0.17
+    with:
+      base_branch: release/1.9.x
+      head_branch: release/1.8.x
+      pr_message: This PR was automatically opened by a GitHub action. Review the changes included in this PR and determine if they should be included on this release branch. If yes, merge the PR. Otherwise revert changes that should not be included on this branch.
+    permissions:
+      contents: write
+      pull-requests: write
+    if: (github.event_name == 'schedule' && github.repository == 'apple/swift-system') || (github.event_name != 'schedule')  # Ensure that we don't run this on a schedule in a fork
