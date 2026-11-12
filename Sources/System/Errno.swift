@@ -1,7 +1,7 @@
 /*
  This source file is part of the Swift System open source project
 
- Copyright (c) 2020 - 2024 Apple Inc. and the Swift System project authors
+ Copyright (c) 2020 - 2026 Apple Inc. and the Swift System project authors
  Licensed under Apache License v2.0 with Runtime Library Exception
 
  See https://swift.org/LICENSE.txt for license information
@@ -1552,17 +1552,20 @@ extension Errno: CustomStringConvertible, CustomDebugStringConvertible {
   @inline(never)
   public var description: String {
     // Error messages are short, so 256 bytes is plenty. If one is longer,
-    // csystem_strerror_r truncates it.
-    withUnsafeTemporaryAllocation(of: CChar.self, capacity: 256) { buffer in
-      let base = buffer.baseAddress!
-      base.initialize(to: 0)
-      // Even when strerror_r fails, e.g. with EINVAL for an unknown error
-      // number, most C libraries still write a message like
-      // "Unknown error 1234", so use whatever was written.
-      _ = system_strerror_r(self.rawValue, base, buffer.count)
-      guard base.pointee != 0 else { return "unknown error" }
-      return String(cString: base)
+    // csystem_strerror_r truncates it. The message is written directly into
+    // the new string's storage.
+    let message = String(_unsafeUninitializedCapacity: 256) { buffer in
+      let capacity = buffer.count
+      buffer.withMemoryRebound(to: CChar.self) { buffer in
+        // Even when strerror_r fails, e.g. with EINVAL for an unknown error
+        // number, most C libraries still write a message like
+        // "Unknown error 1234", so use whatever was written. The shim always
+        // NUL-terminates the buffer.
+        _ = system_strerror_r(self.rawValue, buffer.baseAddress!, capacity)
+      }
+      return UnsafeBufferPointer(buffer).firstIndex(of: 0) ?? 0
     }
+    return message.isEmpty ? "unknown error" : message
   }
 
   ///  A textual representation,

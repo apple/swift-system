@@ -250,8 +250,9 @@ final class ErrnoTest: XCTestCase {
     // Unknown error numbers still get a message.
     let unknown = Errno(rawValue: 98765).description
     XCTAssertFalse(unknown.isEmpty)
-    #if !os(Windows) && !os(WASI)
-    // Windows' message is just "Unknown error", without the number.
+    #if !os(Windows) && !os(WASI) && !canImport(Musl)
+    // Windows' message is just "Unknown error", and musl's (also used by
+    // WASI) is "No error information", without the number.
     XCTAssert(unknown.contains("98765"), unknown)
     #endif
   }
