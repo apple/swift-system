@@ -360,6 +360,59 @@ extension WindowsRootTestCase {
 
 @available(System 0.0.2, *)
 final class FilePathSyntaxTest: XCTestCase {
+  func testUnicodeExtension() {
+    // Cover ASCII, multi-byte UTF-8, UTF-16 surrogate pairs, and combining marks.
+    for ext in ["txt", "é", "文档", "😀", "e\u{301}", "résumé-😀"] {
+      var path = FilePath("file.old")
+      path.extension = ext
+      XCTAssertEqual(path, FilePath("file." + ext))
+      XCTAssertEqual(path.extension, ext)
+      // String equality is canonically equivalent; check the original encoding
+      // too, so the decomposed accent cannot silently become a composed one.
+      XCTAssertEqual(path.extension.map { Array($0.utf8) }, Array(ext.utf8))
+      XCTAssertEqual(path.stem, "file")
+
+      path.extension = nil
+      XCTAssertEqual(path, FilePath("file"))
+      path.extension = ext
+      XCTAssertEqual(path, FilePath("file." + ext))
+    }
+  }
+
+  func testUnicodeExtensionOnHiddenAndCompoundNames() {
+    for (name, stem) in [(".hidden", ".hidden"),
+                         ("archive.tar.old", "archive.tar"),
+                         ("résumé.old", "résumé")] {
+      var path = FilePath("directory").appending(name)
+      let originalParent = path.removingLastComponent()
+      path.extension = "é😀"
+
+      XCTAssertEqual(path.removingLastComponent(), originalParent)
+      XCTAssertEqual(path.stem, stem)
+      XCTAssertEqual(path.lastComponent?.string, stem + ".é😀")
+      XCTAssertEqual(path.extension, "é😀")
+
+      path.extension = "txt"
+      XCTAssertEqual(path.lastComponent?.string, stem + ".txt")
+      path.extension = ""
+      XCTAssertEqual(path.lastComponent?.string, stem + ".")
+      XCTAssertEqual(path.extension, "")
+      path.extension = nil
+      XCTAssertEqual(path.lastComponent?.string, stem)
+    }
+  }
+
+  func testUnicodeExtensionDoesNotChangeSpecialPaths() {
+    for original in [FilePath(), FilePath("/"), FilePath("."),
+                     FilePath(".."), FilePath("directory/."),
+                     FilePath("directory/..")] {
+      var path = original
+      path.extension = "é😀"
+      XCTAssertEqual(path, original)
+      XCTAssertNil(path.extension)
+    }
+  }
+
   func testPathSyntax() {
     let unixPaths: Array<SyntaxTestCase> = [
       .unix("", components: []),
