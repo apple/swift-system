@@ -77,10 +77,6 @@ internal var system_errno: CInt {
 
 // Convention: `system_foo` is system's wrapper for `foo`.
 
-internal func system_strerror(_ __errnum: Int32) -> UnsafeMutablePointer<Int8>! {
-  strerror(__errnum)
-}
-
 internal func system_strlen(_ s: UnsafePointer<CChar>) -> Int {
   strlen(s)
 }
