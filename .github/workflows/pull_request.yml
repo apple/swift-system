@@ -75,7 +75,10 @@ jobs:
         uses: actions/checkout@v6
       - name: Install Dependencies
         shell: bash
-        run: apt update && apt install -y cmake ninja-build jq
+        run: |
+          apt update && apt install -y curl ninja-build jq
+          curl -fsSL "https://github.com/Kitware/CMake/releases/download/v4.0.2/cmake-4.0.2-linux-$(uname -m).tar.gz" \
+            | tar --strip-components=1 -xz -C /usr/local
       - name: Configure Project
         shell: bash
         run: |
