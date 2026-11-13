@@ -651,7 +651,86 @@ final class FilePathSyntaxTest: XCTestCase {
         root: #"C:"#, relative: #"foo\bar\..\..\.."#,
         dirname: #"C:foo\bar\..\.."#, basename: "..",
         components: ["foo", "bar", "..", "..", ".."],
-        lexicallyNormalized: "C:"
+        // `C:` is drive-relative, so the `..` that escapes the relative
+        // portion is preserved rather than collapsed against the root.
+        lexicallyNormalized: #"C:.."#
+      ),
+
+      // A `..` at the front of a drive-relative path refers to the parent of
+      // the drive's current directory, so it is preserved during lexical
+      // normalization (unlike a `..` at the front of a rooted `\` path).
+      .windows(
+        #"C:.."#,
+        absolute: false,
+        root: #"C:"#, relative: #".."#,
+        dirname: #"C:"#, basename: "..",
+        components: [".."],
+        lexicallyNormalized: #"C:.."#
+      ),
+
+      .windows(
+        #"C:..\foo\bar"#,
+        absolute: false,
+        root: #"C:"#, relative: #"..\foo\bar"#,
+        dirname: #"C:..\foo"#, basename: "bar",
+        components: ["..", "foo", "bar"],
+        lexicallyNormalized: #"C:..\foo\bar"#
+      ),
+
+      .windows(
+        #"C:..\..\foo"#,
+        absolute: false,
+        root: #"C:"#, relative: #"..\..\foo"#,
+        dirname: #"C:..\.."#, basename: "foo",
+        components: ["..", "..", "foo"],
+        lexicallyNormalized: #"C:..\..\foo"#
+      ),
+
+      .windows(
+        #"C:foo\..\..\bar"#,
+        absolute: false,
+        root: #"C:"#, relative: #"foo\..\..\bar"#,
+        dirname: #"C:foo\..\.."#, basename: "bar",
+        components: ["foo", "..", "..", "bar"],
+        lexicallyNormalized: #"C:..\bar"#
+      ),
+
+      .windows(
+        #"C:.\..\foo"#,
+        absolute: false,
+        root: #"C:"#, relative: #".\..\foo"#,
+        dirname: #"C:.\.."#, basename: "foo",
+        components: [".", "..", "foo"],
+        lexicallyNormalized: #"C:..\foo"#
+      ),
+
+      .windows(
+        #"C:..\.\..\bar"#,
+        absolute: false,
+        root: #"C:"#, relative: #"..\.\..\bar"#,
+        dirname: #"C:..\.\.."#, basename: "bar",
+        components: ["..", ".", "..", "bar"],
+        lexicallyNormalized: #"C:..\..\bar"#
+      ),
+
+      // In contrast, `\` anchors to the root of the current drive, so a
+      // leading `..` collapses against it rather than being preserved.
+      .windows(
+        #"\..\foo\bar"#,
+        absolute: false,
+        root: #"\"#, relative: #"..\foo\bar"#,
+        dirname: #"\..\foo"#, basename: "bar",
+        components: ["..", "foo", "bar"],
+        lexicallyNormalized: #"\foo\bar"#
+      ),
+
+      .windows(
+        #"\..\..\foo"#,
+        absolute: false,
+        root: #"\"#, relative: #"..\..\foo"#,
+        dirname: #"\..\.."#, basename: "foo",
+        components: ["..", "..", "foo"],
+        lexicallyNormalized: #"\foo"#
       ),
 
       .windows(
