@@ -957,6 +957,14 @@ final class FilePathSyntaxTest: XCTestCase {
       XCTAssert(path.extension == "")
       path.extension = "txt"
       expect("/usr/local/bin/ls.txt")
+      path.extension = "é"
+      
+      expect("/usr/local/bin/ls.é")
+      XCTAssert(path.extension == "é")
+
+      path.extension = "😀"
+      expect("/usr/local/bin/ls.😀")
+      XCTAssert(path.extension == "😀")
     }
 
     restoreAfter {
