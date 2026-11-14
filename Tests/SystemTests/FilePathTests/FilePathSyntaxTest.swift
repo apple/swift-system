@@ -703,6 +703,24 @@ final class FilePathSyntaxTest: XCTestCase {
         components: ["folder", "file.txt"]
       ),
 
+      // Device names that merely begin with "UNC" are not UNC paths
+      .windows(
+        #"\\?\UNCfoo\folder\file.txt"#,
+        absolute: true,
+        root: #"\\?\UNCfoo\"#, relative: #"folder\file.txt"#,
+        dirname: #"\\?\UNCfoo\folder"#, basename: "file.txt",
+        stem: "file", extension: "txt",
+        components: ["folder", "file.txt"]
+      ),
+
+      .windows(
+        #"\\.\UNCdevice\folder"#,
+        absolute: true,
+        root: #"\\.\UNCdevice\"#, relative: #"folder"#,
+        dirname: #"\\.\UNCdevice\"#, basename: "folder",
+        components: ["folder"]
+      ),
+
       .windows(
         #"\\server\share\"#,
         absolute: true,

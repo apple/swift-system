@@ -114,7 +114,20 @@ struct _Lexer {
 
   // Try to consume an explicit "UNC" directory
   mutating func eatUNC() -> Bool {
-    slice._eatSequence("UNC".unicodeScalars.lazy.map { SystemChar(ascii: $0) }) != nil
+    let copy = slice
+    guard slice._eatSequence(
+      "UNC".unicodeScalars.lazy.map { SystemChar(ascii: $0) }) != nil
+    else {
+      return false
+    }
+
+    // Check for a device name that only starts with UNC, like UNCfoo
+    guard isEmpty || slice.first == backslash else {
+      slice = copy
+      return false
+    }
+
+    return true
   }
 
   // Eat everything up to but not including a backslash or null
