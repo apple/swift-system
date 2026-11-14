@@ -113,13 +113,15 @@ public struct FilePermissions: OptionSet, Sendable, Hashable, Codable {
 
   /// Indicates that the file is executed as the owner.
   ///
-  /// For more information, see the `setuid(2)` man page.
+  /// For more information, see the `chmod(2)` man page's
+  /// discussion of `S_ISUID` (the set-user-ID bit).
   @_alwaysEmitIntoClient
   public static var setUserID: FilePermissions { .init(rawValue: 0o4000) }
 
   /// Indicates that the file is executed as the group.
   ///
-  /// For more information, see the `setgid(2)` man page.
+  /// For more information, see the `chmod(2)` man page's
+  /// discussion of `S_ISGID` (the set-group-ID bit).
   @_alwaysEmitIntoClient
   public static var setGroupID: FilePermissions { .init(rawValue: 0o2000) }
 
