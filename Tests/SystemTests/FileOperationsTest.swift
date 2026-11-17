@@ -217,8 +217,25 @@ final class FileOperationsTest: XCTestCase {
     let pipe = try FileDescriptor.pipe(options: .closeOnFork)
     try pipe.readEnd.closeAfter {
       try pipe.writeEnd.closeAfter {
-        let selectedFlag = fcntl(pipe.readEnd.rawValue, F_GETFD) & FD_CLOFORK
-        XCTAssertEqual(selectedFlag, FD_CLOFORK)
+        let flags = fcntl(pipe.readEnd.rawValue, F_GETFD)
+        XCTAssertEqual(flags & FD_CLOFORK, FD_CLOFORK)
+      }
+    }
+#elseif os(FreeBSD)
+    let pipe: (readEnd: FileDescriptor, writeEnd: FileDescriptor)
+    do {
+      pipe = try FileDescriptor.pipe(options: .closeOnFork)
+    } catch {
+      if (error as? Errno) == .invalidArgument {
+        throw XCTSkip("pipe2 does not support O_CLOFORK before FreeBSD 15")
+      }
+      throw error
+    }
+    try pipe.readEnd.closeAfter {
+      try pipe.writeEnd.closeAfter {
+        let flags = fcntl(pipe.readEnd.rawValue, F_GETFD)
+        XCTAssertEqual(flags & FD_CLOEXEC, 0)
+        XCTAssertNotEqual(flags, 0)
       }
     }
 #else
