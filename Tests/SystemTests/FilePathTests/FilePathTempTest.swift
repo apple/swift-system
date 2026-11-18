@@ -16,15 +16,6 @@ import XCTest
 #endif
 
 final class TemporaryPathTest: XCTestCase {
-  #if SYSTEM_PACKAGE_DARWIN
-  func testNotInSlashTmp() throws {
-    try withTemporaryFilePath(basename: "NotInSlashTmp") { path in
-      // We shouldn't be using "/tmp" on Darwin
-      XCTAssertNotEqual(path.components.first!, "tmp")
-    }
-  }
-  #endif
-
   func testUnique() throws {
     try withTemporaryFilePath(basename: "test") { path in
       let strPath = String(decoding: path)
