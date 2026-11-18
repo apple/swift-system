@@ -179,11 +179,12 @@ final class FileOperationsTest: XCTestCase {
   }
 
   func testAdHocPipeWithOptions() throws {
+#if !SYSTEM_PACKAGE_DARWIN || canImport(Darwin, _version: 428)
     guard #available(macOS 27.0, iOS 27.0, watchOS 27.0, tvOS 27.0, visionOS 27.0, *) else {
       throw XCTSkip("pipe2 and PipeOptions require Darwin 27 or newer")
     }
-    // Ad-hoc test testing `Pipe` functionality.
-    // We cannot test `Pipe` using `MockTestCase` because it calls `pipe` with a pointer to an array local to the `Pipe`, the address of which we do not know prior to invoking `Pipe`.
+    // Ad-hoc test: `MockTestCase` can't match the pointer to the local array
+    // that `pipe` receives, because its address isn't known in advance.
     let options: FileDescriptor.PipeOptions = [.closeOnExec]
     let pipe: (readEnd: FileDescriptor, writeEnd: FileDescriptor)
     pipe = try FileDescriptor.pipe(options: options)
@@ -194,16 +195,20 @@ final class FileOperationsTest: XCTestCase {
           _ = try pipe.writeEnd.write(UnsafeRawBufferPointer($0))
         }
         let readLen = 3
-        let readBytes = try Array<UInt8>(unsafeUninitializedCapacity: readLen) { buf, count in
+        let readBytes = try Array<UInt8>(unsafeUninitializedCapacity: readLen) {
+          buf, count in
           count = try pipe.readEnd.read(into: UnsafeMutableRawBufferPointer(buf))
         }
         XCTAssertEqual(readBytes, Array(abc.utf8))
       }
     }
+#else
+    throw XCTSkip("pipe2 requires a Darwin SDK for anyAppleOS 27 or newer")
+#endif
   }
 
-  #if canImport(Darwin, _version: 428) // The macOS 27 SDK defines O_CLOFORK.
   func testAdHocPipeCloseOnFork() throws {
+#if canImport(Darwin, _version: 428)
     guard #available(macOS 27.0, iOS 27.0, watchOS 27.0, tvOS 27.0, visionOS 27.0, *) else {
       throw XCTSkip("pipe2 and PipeOptions require anyAppleOS 27 or newer")
     }
@@ -212,11 +217,31 @@ final class FileOperationsTest: XCTestCase {
     let pipe = try FileDescriptor.pipe(options: .closeOnFork)
     try pipe.readEnd.closeAfter {
       try pipe.writeEnd.closeAfter {
-        XCTAssertEqual(fcntl(pipe.readEnd.rawValue, F_GETFD) & FD_CLOFORK, FD_CLOFORK)
+        let flags = fcntl(pipe.readEnd.rawValue, F_GETFD)
+        XCTAssertEqual(flags & FD_CLOFORK, FD_CLOFORK)
       }
     }
+#elseif os(FreeBSD)
+    let pipe: (readEnd: FileDescriptor, writeEnd: FileDescriptor)
+    do {
+      pipe = try FileDescriptor.pipe(options: .closeOnFork)
+    } catch {
+      if (error as? Errno) == .invalidArgument {
+        throw XCTSkip("pipe2 does not support O_CLOFORK before FreeBSD 15")
+      }
+      throw error
+    }
+    try pipe.readEnd.closeAfter {
+      try pipe.writeEnd.closeAfter {
+        let flags = fcntl(pipe.readEnd.rawValue, F_GETFD)
+        XCTAssertEqual(flags & FD_CLOEXEC, 0)
+        XCTAssertNotEqual(flags, 0)
+      }
+    }
+#else
+    throw XCTSkip("O_CLOFORK requires a Darwin SDK for anyAppleOS 27 or newer")
+#endif
   }
-  #endif
 #endif // !os(WASI)
 
 #if !os(Windows)
@@ -258,6 +283,7 @@ final class FileOperationsTest: XCTestCase {
   }
 
   func testAdHocDuplicate3() throws {
+#if !SYSTEM_PACKAGE_DARWIN || canImport(Darwin, _version: 428)
     guard #available(macOS 27.0, iOS 27.0, watchOS 27.0, tvOS 27.0, visionOS 27.0, *) else {
       throw XCTSkip("dup3 and DuplicateOptions require Darwin 27 or newer")
     }
@@ -292,6 +318,9 @@ final class FileOperationsTest: XCTestCase {
         }
       }
     }
+#else
+    throw XCTSkip("dup3 requires a Darwin SDK for anyAppleOS 27 or newer")
+#endif
   }
 #endif // !os(Windows)
 
