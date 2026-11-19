@@ -298,6 +298,8 @@ extension FilePath {
   /// Otherwise `get` returns everything after the last `.` and `set` will
   /// replace the extension.
   ///
+  /// Extensions can contain non-ASCII characters.
+  ///
   /// Examples:
   ///   * `/tmp/foo.txt                  => txt`
   ///   * `/Applications/Foo.app/        => app`
@@ -312,6 +314,7 @@ extension FilePath {
   ///     var path = "/tmp/file"
   ///     path.extension = "txt" // path is "/tmp/file.txt"
   ///     path.extension = "o"   // path is "/tmp/file.o"
+  ///     path.extension = "é"   // path is "/tmp/file.é"
   ///     path.extension = nil    // path is "/tmp/file"
   ///     path.extension = ""     // path is "/tmp/file."
   public var `extension`: String? {

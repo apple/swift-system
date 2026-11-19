@@ -231,10 +231,7 @@ extension FilePath.Component {
 }
 
 internal func _makeExtension(_ ext: String) -> SystemString {
-  var result = SystemString()
-  result.append(.dot)
-  result.append(contentsOf: ext.unicodeScalars.lazy.map(SystemChar.init))
-  return result
+  SystemString("." + ext)
 }
 
 @available(System 0.0.2, *)
