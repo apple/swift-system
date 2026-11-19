@@ -168,7 +168,7 @@ extension FilePath {
             readIdx = nextStart
             continue
           }
-          assert(self.root == nil && self.components.first!.kind == .parentDirectory)
+          assert(!hasRoot && _isParentDirectory(priorComponent))
         }
       }
 
