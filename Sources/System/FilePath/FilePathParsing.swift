@@ -132,7 +132,11 @@ extension FilePath {
     defer { assert(isLexicallyNormal) }
 
     let relStart = _relativeStart
-    let hasRoot = relStart != _storage.startIndex
+
+    // Whether a leading `..` collapses against a fixed root. A traditional
+    // drive-relative root such as `C:` does not anchor leading `..`, so those
+    // are preserved exactly as for a rootless relative path.
+    let rootAnchorsLeadingParents = _rootAnchorsLeadingParents
 
     // TODO: all this logic might be nicer if _parseComponent considered
     // the null character index to be the next start...
@@ -153,8 +157,8 @@ extension FilePath {
       // otherwise parse-back a component to remove the parent (but stop at
       // root).
       if _isParentDirectory(component) {
-        // Skip over it if we're at the root
-        if hasRoot && writeIdx == relStart {
+        // Skip over it if it collapses against a fixed root
+        if rootAnchorsLeadingParents && writeIdx == relStart {
           readIdx = nextStart
           continue
         }
@@ -168,7 +172,7 @@ extension FilePath {
             readIdx = nextStart
             continue
           }
-          assert(self.root == nil && self.components.first!.kind == .parentDirectory)
+          assert(!rootAnchorsLeadingParents && self.components.first!.kind == .parentDirectory)
         }
       }
 
@@ -204,6 +208,16 @@ extension FilePath {
   }
   internal var _hasRoot: Bool {
     _relativeStart != _storage.startIndex
+  }
+
+  // Whether a leading `..` component refers to the parent of a fixed anchor
+  // (and therefore collapses during lexical normalization), as opposed to
+  // being preserved. This is true when the path has a root, unless that root
+  // is a traditional drive-relative root such as `C:`, which anchors to the
+  // drive's current directory rather than to a fixed location.
+  internal var _rootAnchorsLeadingParents: Bool {
+    guard let root = self.root else { return false }
+    return !root._isTraditionalDriveRelative
   }
 }
 
@@ -320,6 +334,21 @@ extension FilePath.Root {
       (slice.count == 1 && slice.first == .backslash) ||
         (slice.count == 2 && slice.last == .colon))
     return false
+  }
+
+  // Whether this is a traditional drive-relative root, i.e. `X:` with no
+  // trailing separator.
+  //
+  // Such a root anchors the path to the current working directory *on* the
+  // named drive rather than to a fixed directory, so a leading `..` is
+  // meaningful and must not be collapsed during lexical normalization
+  // (`C:..` is the parent of the drive's current directory). This is unlike
+  // `\` and `C:\`, where a leading `..` refers to the parent of a fixed root
+  // and collapses to the root itself.
+  internal var _isTraditionalDriveRelative: Bool {
+    guard _windowsPaths else { return false }
+    let slice = self._slice
+    return slice.count == 2 && slice.last == .colon
   }
 }
 

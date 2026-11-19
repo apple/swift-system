@@ -360,13 +360,14 @@ extension FilePath {
   /// * `"../local/bin".isLexicallyNormal   == true`
   /// * `"local/bin/..".isLexicallyNormal   == false`
   public var isLexicallyNormal: Bool {
-    // `..` components are permitted at the front of a
-    // relative path, otherwise there should be no special directories
-    //
-    // FIXME: Windows `C:..\foo\bar` should probably be lexically normal, but
-    // `\..\foo\bar` should not.
-    components.drop(
-      while: { root == nil && $0.kind == .parentDirectory }
+    // `..` components are permitted at the front of a path that is not anchored
+    // to a fixed root, otherwise there should be no special directories. On
+    // Windows, a traditional drive-relative root such as `C:` does not anchor
+    // leading `..` (e.g. `C:..\foo\bar` is lexically normal), whereas a rooted
+    // path such as `\..\foo\bar` is not.
+    let preservesLeadingParents = !_rootAnchorsLeadingParents
+    return components.drop(
+      while: { preservesLeadingParents && $0.kind == .parentDirectory }
     ).allSatisfy { $0.kind == .regular }
   }
 
