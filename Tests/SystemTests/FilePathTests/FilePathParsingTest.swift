@@ -92,6 +92,8 @@ final class FilePathParsingTest: XCTestCase {
       .windows(#"\\server\share\"#, normalized: #"\\server\share\"#),
       .windows(#"//server/share/"#, normalized: #"\\server\share\"#),
       .windows(#"\\?\UNC/server\share\"#, normalized: #"\\?\UNC\server\share\"#),
+      .windows(#"\\?\UNCfoo\bar"#, normalized: #"\\?\UNCfoo\bar"#),
+      .windows(#"\\.\UNCfoo/bar/"#, normalized: #"\\.\UNCfoo\bar"#),
 
       .windows(#"\\.\C:\"#, normalized: #"\\.\C:\"#),
       .windows(#"C:\"#, normalized: #"C:\"#),
