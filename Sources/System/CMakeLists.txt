@@ -82,6 +82,9 @@ target_sources(SystemPackage PRIVATE
   Internals/RawBuffer.swift
   Internals/Syscalls.swift
   Internals/WindowsSyscallAdapters.swift)
+target_sources(SystemPackage PRIVATE
+  Win32/Win32.swift
+  Win32/Win32Error.swift)
 target_link_libraries(SystemPackage PUBLIC
   CSystem)
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
